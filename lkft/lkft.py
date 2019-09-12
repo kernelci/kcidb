@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from google.cloud import bigquery
 import datetime
 import sys
 import squad_client
@@ -35,12 +36,18 @@ def transform_lkft_to_kci(test, build_version):
                 'vcs_commit': build_vers
             }
     """
+    #return {
+    #    "name": test["name"],
+    #    "status": test[
+    #        "status"
+    #    ].upper(),  # XXX do all squad statuses map to kci status?
+    #    "vcs_commit": build_version,
+    #}
     return {
         "name": test["name"],
-        "status": test[
+        "result": test[
             "status"
         ].upper(),  # XXX do all squad statuses map to kci status?
-        "vcs_commit": build_version,
     }
 
 def valid_date_type(arg_date_str):
@@ -69,6 +76,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     date = args.date
 
+    client = bigquery.Client()
+    dataset_ref = client.dataset('kernelci01')
+    table_ref = dataset_ref.table("tests")
+
     branches = squad_client.get_projects_by_branch()
     for branch, branch_url in branches.items():
         builds_url = branch_url+"builds/"
@@ -79,11 +90,16 @@ if __name__ == "__main__":
                 break
             build_version = build["version"]
             for testrun in squad_client.get_objects(build.get("testruns")):
+                data = []
                 for index, test in enumerate(squad_client.get_objects(testrun.get("tests"))):
+                    data.append(transform_lkft_to_kci(test, build_version))
                     print(transform_lkft_to_kci(test, build_version))
+
                     if index > 10:
                         print("Bailing out after 10 test results")
                         break
+                job = client.load_table_from_json(data, table_ref)
+                job.result()
 
 
 
