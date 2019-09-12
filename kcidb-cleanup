@@ -4,7 +4,7 @@ import argparse
 from google.cloud import bigquery
 from kcidb import schema
 
-description = 'kcidb-init - Initialize a kernelci.org database'
+description = 'kcidb-cleanup - Cleanup a kernelci.org database'
 parser = argparse.ArgumentParser(description=description)
 parser.add_argument(
     '-d', '--dataset',
@@ -16,7 +16,6 @@ args = parser.parse_args()
 client = bigquery.Client()
 dataset_ref = client.dataset(args.dataset)
 
-for table_name, table_schema in schema.table_map.items():
+for table_name, _ in schema.table_map.items():
     table_ref = dataset_ref.table(table_name)
-    table = bigquery.table.Table(table_ref, schema=table_schema)
-    client.create_table(table)
+    client.delete_table(table_ref)
