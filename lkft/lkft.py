@@ -10,7 +10,7 @@ def transform_lkft_to_kci(test, build_version):
         kci schema: https://api.kernelci.org/schema-test-case.html#post
 
         IN:
-            {
+            test: {
                 'has_known_issues': False,
                 'id': 216221035,
                 'known_issues': [],
@@ -23,11 +23,13 @@ def transform_lkft_to_kci(test, build_version):
                 'status': 'pass',
                 'suite': 142
             }
+            build_version: 'v5.3-rc8'
 
         OUT:
             {
                 'name': 'ltp-syscalls-tests/fcntl10_64',
                 'status': 'PASS'
+                'vcs_commit': build_vers
             }
     """
     return {
