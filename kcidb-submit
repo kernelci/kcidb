@@ -6,8 +6,8 @@ from google.cloud import bigquery
 description = 'kcidb-submit - Submit test results to kernelci.org database'
 parser = argparse.ArgumentParser(description=description)
 parser.add_argument(
-    '-d', '--db',
-    help='Database name',
+    '-d', '--dataset',
+    help='Dataset name',
     required=True
 )
 parser.add_argument(
