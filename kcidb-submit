@@ -24,3 +24,8 @@ parser.add_argument(
 args = parser.parse_args()
 
 client = bigquery.Client()
+dataset_ref = client.dataset(args.dataset)
+table_ref = dataset_ref.table("tests")
+data = [{"name": args.name, "result": args.result}]
+job = client.load_table_from_json(data, table_ref)
+job.result()
