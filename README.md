@@ -20,7 +20,7 @@ or a directory path:
     pip3 install --user .
 
 If you want to hack on the source code, install the package in the editable
-mode with the `--edit` option. E.g.:
+mode with the `-e/--editable` option. E.g.:
 
     pip3 install --user --editable .
 
