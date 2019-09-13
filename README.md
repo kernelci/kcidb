@@ -4,6 +4,37 @@ KCIDB
 Kcidb is a package for entering and querying data to/from kernelci.org test
 execution database.
 
+Setup
+-----
+
+To install the package for the current user, run this command:
+
+    pip3 install --user <SOURCE>
+
+Where `<SOURCE>` is the location of the package source, e.g. a git repo:
+
+    pip3 install --user git+https://github.com/spbnick/kcidb.git
+
+or a directory path:
+
+    pip3 install --user .
+
+If you want to hack on the source code, install the package in the editable
+mode with the `--edit` option. E.g.:
+
+    pip3 install --user --editable .
+
+The latter installs kcidb executables which use the modules from the source
+directory, and changes to them will be reflected immediately without the need
+to reinstall.
+
+In any case, make sure your PATH includes the `~/.local/bin` directory, e.g.
+with:
+
+    export PATH="$PATH":~/.local/bin
+
+Usage
+-----
 Kcidb uses Google BigQuery for data storage. To be able to store or query
 anything you need to create a BigQuery dataset.
 
