@@ -39,7 +39,7 @@ Kcidb uses Google BigQuery for data storage. To be able to store or query
 anything you need to create a BigQuery dataset.
 
 Before you execute any of the tools make sure you have the path to your
-BigQuery credentials stored in the GOOGLE_APPLICATION_CREDENTIALS variable.
+BigQuery credentials stored in the `GOOGLE_APPLICATION_CREDENTIALS` variable.
 E.g.:
 
     export GOOGLE_APPLICATION_CREDENTIALS=~/.bq.json
