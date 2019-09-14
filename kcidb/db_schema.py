@@ -1,3 +1,4 @@
+"""Database schema"""
 from google.cloud import bigquery
 
 table_map = dict(

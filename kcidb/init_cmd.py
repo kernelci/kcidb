@@ -2,7 +2,7 @@
 
 import argparse
 from google.cloud import bigquery
-from kcidb import schema
+from kcidb import db_schema
 
 def main():
     """Run the executable"""
@@ -18,7 +18,7 @@ def main():
     client = bigquery.Client()
     dataset_ref = client.dataset(args.dataset)
 
-    for table_name, table_schema in schema.table_map.items():
+    for table_name, table_schema in db_schema.table_map.items():
         table_ref = dataset_ref.table(table_name)
         table = bigquery.table.Table(table_ref, schema=table_schema)
         client.create_table(table)

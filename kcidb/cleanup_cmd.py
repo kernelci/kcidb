@@ -2,7 +2,7 @@
 
 import argparse
 from google.cloud import bigquery
-from kcidb import schema
+from kcidb import db_schema
 
 def main():
     """Run the executable"""
@@ -18,6 +18,6 @@ def main():
     client = bigquery.Client()
     dataset_ref = client.dataset(args.dataset)
 
-    for table_name, _ in schema.table_map.items():
+    for table_name, _ in db_schema.table_map.items():
         table_ref = dataset_ref.table(table_name)
         client.delete_table(table_ref)
