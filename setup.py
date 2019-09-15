@@ -13,7 +13,6 @@
 # along with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 """Install kcidb using setuptools."""
-import sys
 import setuptools
 
 with open("README.md", "r") as fh:
@@ -39,7 +38,8 @@ setuptools.setup(
         "Topic :: Database :: Front-Ends",
     ],
     install_requires=[
-        "google-cloud-bigquery"
+        "google-cloud-bigquery",
+        "jsonschema",
     ],
     entry_points=dict(
         console_scripts=[
