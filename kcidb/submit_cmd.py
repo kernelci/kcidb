@@ -1,7 +1,10 @@
 """kcidb-submit command-line executable"""
 
 import argparse
+import sys
+import json
 from google.cloud import bigquery
+from kcidb import io_schema
 
 def main():
     """Run the executable"""
@@ -12,22 +15,13 @@ def main():
         help='Dataset name',
         required=True
     )
-    parser.add_argument(
-        '-n', '--name',
-        help='Test name',
-        required=True
-    )
-    parser.add_argument(
-        '-r', '--result',
-        help='Test result (PASS/FAIL)',
-        required=True,
-        choices=['PASS', 'FAIL']
-    )
     args = parser.parse_args()
+
+    test_case_list = json.load(sys.stdin)
+    io_schema.validate(test_case_list)
 
     client = bigquery.Client()
     dataset_ref = client.dataset(args.dataset)
     table_ref = dataset_ref.table("tests")
-    data = [{"name": args.name, "result": args.result}]
-    job = client.load_table_from_json(data, table_ref)
+    job = client.load_table_from_json(test_case_list, table_ref)
     job.result()

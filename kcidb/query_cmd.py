@@ -1,7 +1,10 @@
 """kcidb-query command-line executable"""
 
 import argparse
+import json
+import sys
 from google.cloud import bigquery
+from kcidb import io_schema
 
 def main():
     """Run the executable"""
@@ -16,5 +19,6 @@ def main():
 
     client = bigquery.Client()
     query_job = client.query("SELECT * FROM `" + args.dataset + ".tests` ")
-    for row in query_job:
-        print(row)
+    test_case_list = [dict(row.items()) for row in query_job]
+    io_schema.validate(test_case_list)
+    json.dump(test_case_list, sys.stdout, indent=4, sort_keys=True)

@@ -47,6 +47,7 @@ E.g.:
 To initialize the dataset, execute `kcidb-init -d <DATASET>`, where
 `<DATASET>` is the name of the dataset to initialize.
 
-To create records use `kcidb-submit`, to query records - `kcidb-query`.
+To submit records use `kcidb-submit`, to query records - `kcidb-query`.
+Both use the same JSON schema on standard input and output respectively.
 
 To cleanup the dataset (remove the tables) use `kcidb-cleanup`.
