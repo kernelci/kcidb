@@ -6,6 +6,7 @@ import json
 from google.cloud import bigquery
 from kcidb import io_schema
 
+
 def main():
     """Run the executable"""
     description = 'kcidb-submit - Submit test results to kernelci.org database'

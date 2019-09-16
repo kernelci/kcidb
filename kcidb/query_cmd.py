@@ -6,6 +6,7 @@ import sys
 from google.cloud import bigquery
 from kcidb import io_schema
 
+
 def main():
     """Run the executable"""
     description = 'kcidb-query - Query test results from kernelci.org database'

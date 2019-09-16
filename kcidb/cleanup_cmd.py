@@ -4,6 +4,7 @@ import argparse
 from google.cloud import bigquery
 from kcidb import db_schema
 
+
 def main():
     """Run the executable"""
     description = 'kcidb-cleanup - Cleanup a kernelci.org database'
