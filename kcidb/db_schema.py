@@ -2,7 +2,7 @@
 from google.cloud import bigquery
 
 # A map of table names to their BigQuery schemas
-table_map = dict(
+TABLE_MAP = dict(
     tests=[
         bigquery.schema.SchemaField(
             "name", "STRING",

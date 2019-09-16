@@ -19,7 +19,7 @@ def main():
     client = bigquery.Client()
     dataset_ref = client.dataset(args.dataset)
 
-    for table_name, table_schema in db_schema.table_map.items():
+    for table_name, table_schema in db_schema.TABLE_MAP.items():
         table_ref = dataset_ref.table(table_name)
         table = bigquery.table.Table(table_ref, schema=table_schema)
         client.create_table(table)

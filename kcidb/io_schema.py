@@ -3,7 +3,7 @@
 import jsonschema
 
 # JSON schema for I/O data
-json = {
+JSON = {
     "title": "test_case_list",
     "description": "List of test cases",
     "type": "array",
@@ -31,4 +31,4 @@ json = {
 
 def validate(io_data):
     """Validate I/O data with its schema"""
-    jsonschema.validate(instance=io_data, schema=json)
+    jsonschema.validate(instance=io_data, schema=JSON)
