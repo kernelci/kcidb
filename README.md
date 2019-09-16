@@ -20,13 +20,14 @@ or a directory path:
     pip3 install --user .
 
 If you want to hack on the source code, install the package in the editable
-mode with the `-e/--editable` option. E.g.:
+mode with the `-e/--editable` option, and with "dev" extra included. E.g.:
 
-    pip3 install --user --editable .
+    pip3 install --user --editable '.[dev]'
 
 The latter installs kcidb executables which use the modules from the source
 directory, and changes to them will be reflected immediately without the need
-to reinstall.
+to reinstall. It also installs extra development tools, such as `flake8` and
+`pylint`.
 
 In any case, make sure your PATH includes the `~/.local/bin` directory, e.g.
 with:
