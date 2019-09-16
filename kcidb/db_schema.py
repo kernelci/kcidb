@@ -1,14 +1,14 @@
 """Database schema"""
-from google.cloud import bigquery
+from google.cloud.bigquery.schema import SchemaField as Field
 
 # A map of table names to their BigQuery schemas
 TABLE_MAP = dict(
     tests=[
-        bigquery.schema.SchemaField(
+        Field(
             "name", "STRING",
             description="Test name"
         ),
-        bigquery.schema.SchemaField(
+        Field(
             "result", "STRING",
             description="Test result"
         ),
