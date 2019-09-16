@@ -45,6 +45,7 @@ setuptools.setup(
         console_scripts=[
             "kcidb-init = kcidb.init_cmd:main",
             "kcidb-cleanup = kcidb.cleanup_cmd:main",
+            "kcidb-schema = kcidb.schema_cmd:main",
             "kcidb-submit = kcidb.submit_cmd:main",
             "kcidb-query = kcidb.query_cmd:main",
         ]
