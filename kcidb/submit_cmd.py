@@ -18,11 +18,12 @@ def main():
     )
     args = parser.parse_args()
 
-    test_case_list = json.load(sys.stdin)
-    io_schema.validate(test_case_list)
+    data = json.load(sys.stdin)
+    io_schema.validate(data)
 
     client = bigquery.Client()
     dataset_ref = client.dataset(args.dataset)
-    table_ref = dataset_ref.table("tests")
-    job = client.load_table_from_json(test_case_list, table_ref)
-    job.result()
+    if "test_list" in data:
+        table_ref = dataset_ref.table("tests")
+        job = client.load_table_from_json(data["test_list"], table_ref)
+        job.result()

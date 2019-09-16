@@ -2,30 +2,61 @@
 
 import jsonschema
 
+# JSON schema for a test execution
+JSON_TEST = {
+    "title": "test",
+    "description": "A test execution",
+    "type": "object",
+    "properties": {
+        "build_path": {
+            "type": "string",
+            "description":
+                "Dot-separated build tree path of the build being tested",
+            "pattern": "^[.a-zA-Z0-9_]*$"
+        },
+        "path": {
+            "type": "string",
+            "description":
+                "Dot-separated test tree path of the test being executed",
+            "pattern": "^[.a-zA-Z0-9_]*$"
+        },
+        "status": {
+            "type": "string",
+            "description": "Execution status",
+            "enum": ["ERROR", "FAIL", "PASS", "DONE"],
+        },
+        "waived": {
+            "type": "boolean",
+            "description": "Waived flag",
+            "default": False,
+        }
+    },
+    "required": [
+        "build_path",
+        "path",
+    ],
+}
+
 # JSON schema for I/O data
 JSON = {
-    "title": "test_case_list",
-    "description": "List of test cases",
-    "type": "array",
-    "items": {
-        "title": "test_case",
-        "description": "A test case - an execution of a test",
-        "type": "object",
-        "properties": {
-            "name": {
-                "type": "string",
-                "description": "Test name",
-            },
-            "result": {
-                "type": "string",
-                "description": "Test result",
-            },
+    "title": "kcidb",
+    "description": "Kernelci.org test data",
+    "type": "object",
+    "properties": {
+        "version": {
+            "type": "string",
+            "description": "Version of the schema the data complies to",
+            "const": "1"
         },
-        "required": [
-            "name",
-            "result",
-        ],
+        "test_list": {
+            "description": "List of test executions",
+            "type": "array",
+            "items": JSON_TEST,
+        },
     },
+    "required": [
+        "version",
+    ]
 }
 
 

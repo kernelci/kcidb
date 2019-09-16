@@ -20,6 +20,10 @@ def main():
 
     client = bigquery.Client()
     query_job = client.query("SELECT * FROM `" + args.dataset + ".tests` ")
-    test_case_list = [dict(row.items()) for row in query_job]
-    io_schema.validate(test_case_list)
-    json.dump(test_case_list, sys.stdout, indent=4, sort_keys=True)
+    test_list = [
+        dict(item for item in row.items() if item[1] is not None)
+        for row in query_job
+    ]
+    data = dict(version="1", test_list=test_list)
+    io_schema.validate(data)
+    json.dump(data, sys.stdout, indent=4, sort_keys=True)

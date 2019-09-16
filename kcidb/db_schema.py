@@ -5,12 +5,20 @@ from google.cloud.bigquery.schema import SchemaField as Field
 TABLE_MAP = dict(
     tests=[
         Field(
-            "name", "STRING",
-            description="Test name"
+            "build_path", "STRING",
+            description="Dot-separated build path (^[.a-zA-Z0-9_]*$)"
         ),
         Field(
-            "result", "STRING",
-            description="Test result"
+            "path", "STRING",
+            description="Dot-separated test path (^[.a-zA-Z0-9_]*$)"
+        ),
+        Field(
+            "status", "STRING",
+            description="Test status (ERROR/FAIL/PASS/DONE)"
+        ),
+        Field(
+            "waived", "BOOL",
+            description="Waived flag"
         ),
     ]
 )
