@@ -19,6 +19,6 @@ def main():
     client = bigquery.Client()
     dataset_ref = client.dataset(args.dataset)
 
-    for table_name, _ in db_schema.table_map.items():
+    for table_name, _ in db_schema.TABLE_MAP.items():
         table_ref = dataset_ref.table(table_name)
         client.delete_table(table_ref)
