@@ -41,6 +41,12 @@ setuptools.setup(
         "google-cloud-bigquery",
         "jsonschema",
     ],
+    extras_require=dict(
+        dev=[
+            "flake8",
+            "pylint",
+        ],
+    ),
     entry_points=dict(
         console_scripts=[
             "kcidb-init = kcidb.init_cmd:main",
