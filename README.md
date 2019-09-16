@@ -50,6 +50,6 @@ To initialize the dataset, execute `kcidb-init -d <DATASET>`, where
 
 To submit records use `kcidb-submit`, to query records - `kcidb-query`.
 Both use the same JSON schema on standard input and output respectively, which
-can be output with `kcidb-schema`.
+can be displayed by `kcidb-schema`.
 
 To cleanup the dataset (remove the tables) use `kcidb-cleanup`.
