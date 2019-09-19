@@ -19,11 +19,15 @@ def main():
     args = parser.parse_args()
 
     client = bigquery.Client()
-    query_job = client.query("SELECT * FROM `" + args.dataset + ".tests` ")
-    test_list = [
-        dict(item for item in row.items() if item[1] is not None)
-        for row in query_job
-    ]
-    data = dict(version="1", test_list=test_list)
+    data = dict(version="1")
+    for obj_name in ("revision", "build", "test"):
+        query_job = client.query("SELECT * FROM `" +
+                                 args.dataset + "." + obj_name + "s` ")
+        obj_list = [
+            dict(item for item in row.items()
+                 if item[0] != "id" and item[1] is not None)
+            for row in query_job
+        ]
+        data[obj_name + "_list"] = obj_list
     io_schema.validate(data)
     json.dump(data, sys.stdout, indent=4, sort_keys=True)
