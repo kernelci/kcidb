@@ -1,6 +1,6 @@
 {
     "version": "1",
-    "revision_list": [
+    "revisions": [
         {
             "origin": "cki",
             "origin_id": "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git:79ca6d9ed1d67dfe42ca7d6bf2514ca135b991fa"
@@ -10,7 +10,7 @@
             "origin_id": "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git:f7d5b3dc4792a5fe0a4d6b8106a8f3eb20c3c24c"
         }
     ],
-    "build_list": [
+    "builds": [
         {
             "revision_origin": "cki",
             "revision_origin_id": "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git:79ca6d9ed1d67dfe42ca7d6bf2514ca135b991fa",
@@ -48,7 +48,7 @@
             "origin_id": "2398748"
         }
     ],
-    "test_list": [
+    "tests": [
         {
             "build_origin": "cki",
             "build_origin_id": "6334567",

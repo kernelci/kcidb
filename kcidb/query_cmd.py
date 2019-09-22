@@ -5,6 +5,7 @@ import json
 import sys
 from google.cloud import bigquery
 from kcidb import io_schema
+from kcidb import db_schema
 
 
 def main():
@@ -20,14 +21,16 @@ def main():
 
     client = bigquery.Client()
     data = dict(version="1")
-    for obj_name in ("revision", "build", "test"):
+    for obj_list_name in db_schema.TABLE_MAP:
         query_job = client.query("SELECT * FROM `" +
-                                 args.dataset + "." + obj_name + "s` ")
-        obj_list = [
-            dict(item for item in row.items()
-                 if item[0] != "id" and item[1] is not None)
-            for row in query_job
-        ]
-        data[obj_name + "_list"] = obj_list
+                                 args.dataset + "." + obj_list_name + "`")
+        obj_list = []
+        for row in query_job:
+            obj = dict(item for item in row.items() if item[1] is not None)
+            # Parse the "misc" fields
+            if "misc" in obj:
+                obj["misc"] = json.loads(obj["misc"])
+            obj_list.append(obj)
+        data[obj_list_name] = obj_list
     io_schema.validate(data)
     json.dump(data, sys.stdout, indent=4, sort_keys=True)
