@@ -57,9 +57,13 @@ To cleanup the dataset (remove the tables) use `kcidb-cleanup`.
 API
 ---
 You can use the `kcidb` module to do everything the command-line tools do.
-First make sure you have the `GOOGLE_APPLICATION_CREDENTIALS` environment
+
+First, make sure you have the `GOOGLE_APPLICATION_CREDENTIALS` environment
 variable set and pointing at the Google Cloud credentials file. Then you can
 create the client with `kcidb.Client(<dataset_name>)` and call its `init()`,
-`cleanup()`, `submit()` and `query()` methods. You can find the I/O schema in
-kcidb.io_schema.JSON and use `kcidb.io_schema.validate()` to validate your I/O
-data. See the source code for additional documentation.
+`cleanup()`, `submit()` and `query()` methods.
+
+You can find the I/O schema `in kcidb.io_schema.JSON` and use
+`kcidb.io_schema.validate()` to validate your I/O data.
+
+See the source code for additional documentation.
