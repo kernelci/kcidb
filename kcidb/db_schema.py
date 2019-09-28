@@ -109,7 +109,7 @@ TABLE_MAP = dict(
             description="The time the build was started",
         ),
         Field(
-            "duration", "INT64",
+            "duration", "NUMERIC",
             description="The number of seconds it took to complete the build",
         ),
         Field(
@@ -217,7 +217,7 @@ TABLE_MAP = dict(
             description="The time the test run was started",
         ),
         Field(
-            "duration", "INT64",
+            "duration", "NUMERIC",
             description="The number of seconds it took to run the test",
         ),
         Field(
