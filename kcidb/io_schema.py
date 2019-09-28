@@ -347,6 +347,8 @@ JSON_TEST = {
     "required": [
         "build_origin",
         "build_origin_id",
+        "environment_origin",
+        "environment_origin_id",
         "origin",
         "origin_id",
     ],
