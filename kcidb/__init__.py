@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from google.cloud import bigquery
+from google.api_core.exceptions import BadRequest
 from kcidb import db_schema
 from kcidb import io_schema
 
@@ -92,7 +93,12 @@ class Client:
                     obj_list,
                     self.dataset_ref.table(obj_list_name),
                     job_config=job_config)
-                job.result()
+                try:
+                    job.result()
+                except BadRequest:
+                    raise Exception("".join([
+                        f"ERROR: {error['message']}\n" for error in job.errors
+                    ]))
 
 
 def query_main():
