@@ -326,7 +326,7 @@ JSON_TEST = {
         "waived": {
             "type": "boolean",
             "description":
-                "True if the test result should be ignored",
+                "True if the test status should be ignored",
         },
         "start_time": {
             "type": "string",
