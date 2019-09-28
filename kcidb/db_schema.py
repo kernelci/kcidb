@@ -219,7 +219,7 @@ TABLE_MAP = dict(
         ),
         Field(
             "waived", "BOOL",
-            description="Waived flag",
+            description="True if the test result should be ignored",
         ),
         Field(
             "start_time", "TIMESTAMP",
