@@ -206,7 +206,16 @@ TABLE_MAP = dict(
         ),
         Field(
             "status", "STRING",
-            description="Test status",
+            description="The test status, one of the following. "
+                        "\"ERROR\" - the test is faulty, "
+                        "the status of the tested code is unknown. "
+                        "\"FAIL\" - the test has failed, the tested code is "
+                        "faulty. "
+                        "\"PASS\" - the test has passed, the tested code is "
+                        "correct. "
+                        "\"DONE\" - the test has finished successfully, "
+                        "the status of the tested code is unknown. "
+                        "Missing property means the test wasn't executed.",
         ),
         Field(
             "waived", "BOOL",
