@@ -34,11 +34,34 @@ with:
 
     export PATH="$PATH":~/.local/bin
 
-Usage
------
+BigQuery
+--------
+
 Kcidb uses Google BigQuery for data storage. To be able to store or query
 anything you need to create a BigQuery dataset.
 
+The documentation to set up a BigQuery account with a data set and a token can
+be found here:
+https://cloud.google.com/bigquery/docs/quickstarts/quickstart-client-libraries
+
+Alternatively, you may follow these quick steps:
+
+1. Create a Google account if you don't already have one
+2. Go to the "Google Cloud Console" for BigQuery: https://console.cloud.google.com/projectselector2/bigquery
+3. "CREATE" a new project, enter arbitrary project name e.g. `kernelci001`
+4. "CREATE DATASET" in that new project with an arbitrary ID e.g. `kernelci001a`
+5. Go to "Google Cloud Platform" -> "APIs & Services" -> "Credentials",
+   or this URL if you called your project `kernelci001`: https://console.cloud.google.com/apis/credentials?project=kernelci001
+6. Go to "Create credentials" and select "Service Account Key"
+7. Fill these values:
+  * Service Account Name: arbitrary e.g. `admin`
+  * Role: Owner
+  * Format: JSON
+8. "Create" to automatically download the JSON file with your credentials.
+
+
+Usage
+-----
 Before you execute any of the tools make sure you have the path to your
 BigQuery credentials stored in the `GOOGLE_APPLICATION_CREDENTIALS` variable.
 E.g.:
