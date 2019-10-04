@@ -7,6 +7,19 @@ RESOURCE_FIELDS = (
     Field("url", "STRING", description="Resource URL"),
 )
 
+# Test environment fields
+ENVIRONMENT_FIELDS = (
+    Field(
+        "description", "STRING",
+        description="Human-readable description of the environment",
+    ),
+    Field(
+        "misc", "STRING",
+        description="Miscellaneous extra data about the environment "
+                    "in JSON format",
+    ),
+)
+
 # A map of table names to their BigQuery schemas
 TABLE_MAP = dict(
     revisions=[
@@ -144,26 +157,6 @@ TABLE_MAP = dict(
                         "in JSON format",
         ),
     ],
-    environments=[
-        Field(
-            "origin", "STRING",
-            description="The name of the CI system which submitted "
-                        "the environment",
-        ),
-        Field(
-            "origin_id", "STRING",
-            description="Origin-unique ID of the environment",
-        ),
-        Field(
-            "description", "STRING",
-            description="Human-readable description of the environment",
-        ),
-        Field(
-            "misc", "STRING",
-            description="Miscellaneous extra data about the environment "
-                        "in JSON format",
-        ),
-    ],
     tests=[
         Field(
             "build_origin", "STRING",
@@ -175,15 +168,6 @@ TABLE_MAP = dict(
             description="Origin-unique ID of the tested build",
         ),
         Field(
-            "environment_origin", "STRING",
-            description="The name of the CI system which submitted the "
-                        "environment the test ran in",
-        ),
-        Field(
-            "environment_origin_id", "STRING",
-            description="Origin-unique ID of the environment the test ran in",
-        ),
-        Field(
             "origin", "STRING",
             description="The name of the CI system which submitted "
                         "the test run",
@@ -191,6 +175,13 @@ TABLE_MAP = dict(
         Field(
             "origin_id", "STRING",
             description="Origin-unique test run ID",
+        ),
+        Field(
+            "environment", "RECORD", fields=ENVIRONMENT_FIELDS,
+            description="The environment the test ran in. "
+                        "E.g. a host, a set of hosts, or a lab; "
+                        "amount of memory/storage/CPUs, for each host; "
+                        "process environment variables, etc.",
         ),
         Field(
             "path", "STRING",

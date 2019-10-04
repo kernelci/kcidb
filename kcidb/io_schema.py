@@ -222,40 +222,6 @@ JSON_BUILD = {
     ],
 }
 
-# JSON schema for a test environment
-JSON_ENVIRONMENT = {
-    "title": "test",
-    "description": "An environment a test ran in",
-    "type": "object",
-    "properties": {
-        "origin": {
-            "type": "string",
-            "description":
-                "The name of the CI system which submitted the environment",
-            "pattern": "^[a-z0-9_]*$"
-        },
-        "origin_id": {
-            "type": "string",
-            "description": "Origin-unique ID of the environment",
-        },
-        "description": {
-            "type": "string",
-            "description":
-                "Human-readable description of the environment"
-        },
-        "misc": {
-            "type": "object",
-            "description":
-                "Miscellaneous extra data about the environment",
-        },
-    },
-    "additionalProperties": False,
-    "required": [
-        "origin",
-        "origin_id",
-    ],
-}
-
 # JSON schema for a test run on a build
 JSON_TEST = {
     "title": "test",
@@ -274,18 +240,6 @@ JSON_TEST = {
                 "Origin-unique ID of the tested build. The build must be "
                 "valid for the test run to be considered valid.",
         },
-        "environment_origin": {
-            "type": "string",
-            "description":
-                "The name of the CI system which submitted the environment "
-                "the test ran in",
-            "pattern": "^[a-z0-9_]*$"
-        },
-        "environment_origin_id": {
-            "type": "string",
-            "description":
-                "Origin-unique ID of the environment the test ran in",
-        },
         "origin": {
             "type": "string",
             "description":
@@ -295,6 +249,27 @@ JSON_TEST = {
         "origin_id": {
             "type": "string",
             "description": "Origin-unique ID of the tested build",
+        },
+        "environment": {
+            "type": "object",
+            "description":
+                "The environment the test ran in. "
+                "E.g. a host, a set of hosts, or a lab; "
+                "amount of memory/storage/CPUs, for each host; "
+                "process environment variables, etc.",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description":
+                        "Human-readable description of the environment"
+                },
+                "misc": {
+                    "type": "object",
+                    "description":
+                        "Miscellaneous extra data about the environment",
+                },
+            },
+            "additionalProperties": False,
         },
         "path": {
             "type": "string",
@@ -355,8 +330,6 @@ JSON_TEST = {
     "required": [
         "build_origin",
         "build_origin_id",
-        "environment_origin",
-        "environment_origin_id",
         "origin",
         "origin_id",
     ],
@@ -382,11 +355,6 @@ JSON = {
             "description": "List of builds",
             "type": "array",
             "items": JSON_BUILD,
-        },
-        "environments": {
-            "description": "List of test environments",
-            "type": "array",
-            "items": JSON_ENVIRONMENT,
         },
         "tests": {
             "description": "List of test runs",
