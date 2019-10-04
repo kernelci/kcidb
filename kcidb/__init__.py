@@ -1,6 +1,7 @@
 """Kernel CI database management"""
 
 import argparse
+import decimal
 import json
 import sys
 from google.cloud import bigquery
@@ -101,6 +102,16 @@ class Client:
                     ]))
 
 
+class JSONEncoder(json.JSONEncoder):
+    """JSON Encoder supporting types returned by the database"""
+    # It's OK for it to be hidden, if user wants to
+    # pylint: disable=method-hidden
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return float(o)
+        return super().default(o)
+
+
 def query_main():
     """Execute the kcidb-query command-line tool"""
     description = 'kcidb-query - Query test results from kernelci.org database'
@@ -112,7 +123,8 @@ def query_main():
     )
     args = parser.parse_args()
     client = Client(args.dataset)
-    json.dump(client.query(), sys.stdout, indent=4, sort_keys=True)
+    json.dump(client.query(), sys.stdout, cls=JSONEncoder,
+              indent=4, sort_keys=True)
 
 
 def submit_main():
