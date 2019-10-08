@@ -295,8 +295,9 @@ JSON_TEST = {
                 "\"PASS\" - the test has passed, the tested code is correct. "
                 "\"DONE\" - the test has finished successfully, "
                 "the status of the tested code is unknown. "
-                "Missing property means the test wasn't executed.",
-            "enum": ["ERROR", "FAIL", "PASS", "DONE"],
+                "\"SKIP\" - the test wasn't executed, "
+                "the status of the tested code is unknown. ",
+            "enum": ["ERROR", "FAIL", "PASS", "DONE", "SKIP"],
         },
         "waived": {
             "type": "boolean",
