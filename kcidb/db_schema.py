@@ -206,7 +206,8 @@ TABLE_MAP = dict(
                         "correct. "
                         "\"DONE\" - the test has finished successfully, "
                         "the status of the tested code is unknown. "
-                        "Missing property means the test wasn't executed.",
+                        "\"SKIP\" - the test wasn't executed, "
+                        "the status of the tested code is unknown. "
         ),
         Field(
             "waived", "BOOL",
