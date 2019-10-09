@@ -278,7 +278,7 @@ JSON_TEST = {
                 "tree the executed test belongs to. E.g. \"LTPlite.sem01\". "
                 "The empty string, or the absence of the property signify "
                 "the root of the tree, i.e. an abstract test.",
-            "pattern": "^[.a-zA-Z0-9_]*$"
+            "pattern": "^[.a-zA-Z0-9_-]*$"
         },
         "description": {
             "type": "string",
