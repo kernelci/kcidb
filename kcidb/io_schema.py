@@ -10,12 +10,16 @@ JSON_RESOURCE = {
     "properties": {
         "name": {
             "type": "string",
-            "description": "Resource name",
+            "description":
+                "Resource name. Must be usable as a local file name for the "
+                "downloaded resource.",
         },
         "url": {
             "type": "string",
             "format": "uri",
-            "description": "Resource URL",
+            "description":
+                "Resource URL. Must point to the resource file directly, "
+                "so it could be downloaded automatically.",
         },
     },
     "additionalProperties": False,
@@ -23,12 +27,32 @@ JSON_RESOURCE = {
         "name",
         "url",
     ],
+    "examples": [
+        {
+            "name": "console.log",
+            "url":
+                "https://artifacts.cki-project.org/pipelines/223563/logs/"
+                "aarch64_host_1_console.log"
+        },
+        {
+            "name": "kernel.tar.gz",
+            "url":
+                "https://artifacts.cki-project.org/pipelines/224569/"
+                "kernel-stable-aarch64-"
+                "a2fc8ee6676067f27d2f5c6e4d512adff3d9938c.tar.gz"
+        }
+    ]
 }
 
 # JSON schema for a code revision
 JSON_REVISION = {
     "title": "revision",
-    "description": "A revision of the tested code",
+    "description":
+        "A revision of the tested code.\n"
+        "\n"
+        "Represents a way the tested source code could be obtained. E.g. "
+        "checking out a particular commit from a git repo, and applying a "
+        "set of patches on top.",
     "type": "object",
     "properties": {
         "origin": {
@@ -93,13 +117,16 @@ JSON_REVISION = {
             "type": "string",
             "format": "date-time",
             "description":
-                "The time the revision was made public",
+                "The time the revision was made public. E.g. the timestamp "
+                "on a patch message, a commit, or a tag.",
         },
         "discovery_time": {
             "type": "string",
             "format": "date-time",
             "description":
-                "The time the revision was discovered by the CI system",
+                "The time the revision was discovered by the CI system. "
+                "E.g. the time the CI system found a patch message, or "
+                "noticed a new commit or a new tag in a git repo.",
         },
         "contacts": {
             "type": "array",
@@ -238,7 +265,18 @@ JSON_BUILD = {
 # JSON schema for a test run on a build
 JSON_TEST = {
     "title": "test",
-    "description": "A test run against a build",
+    "description":
+        "A test run against a build.\n"
+        "\n"
+        "Could represent a result of execution of a test suite program, a "
+        "result of one of the tests done by the test suite program, as well "
+        "as a summary of a collection of test suite results.\n"
+        "\n"
+        "Each test run should normally have a dot-separated test \"path\" "
+        "specified in the \"path\" property, which could identify a specific "
+        "test within a test suite (e.g. \"LTPlite.sem01\"), a whole test "
+        "suite (e.g. \"LTPlite\"), or the summary of all tests for a build "
+        "("" - the empty string).",
     "type": "object",
     "properties": {
         "build_origin": {
@@ -309,13 +347,26 @@ JSON_TEST = {
                 "\"DONE\" - the test has finished successfully, "
                 "the status of the tested code is unknown. "
                 "\"SKIP\" - the test wasn't executed, "
-                "the status of the tested code is unknown. ",
+                "the status of the tested code is unknown.\n"
+                "\n"
+                "The status names above are listed in priority order "
+                "(highest to lowest), which could be used for producing a "
+                "summary status for a collection of test runs, e.g. for all "
+                "testing done on a build, based on results of executed test "
+                "suites. The summary status would be the highest priority "
+                "status across all test runs in a collection.",
             "enum": ["ERROR", "FAIL", "PASS", "DONE", "SKIP"],
         },
         "waived": {
             "type": "boolean",
             "description":
-                "True if the test status should be ignored",
+                "True if the test status should be ignored.\n"
+                "\n"
+                "Could be used for reporting test results without affecting "
+                "the overall test status and alerting the contacts concerned "
+                "with the tested code revision. For example, for collecting "
+                "test reliability statistics when the test is first "
+                "introduced, or is being fixed.",
         },
         "start_time": {
             "type": "string",
@@ -352,7 +403,33 @@ JSON_TEST = {
 # JSON schema for I/O data
 JSON = {
     "title": "kcidb",
-    "description": "Kernelci.org test data",
+    "description":
+        "Kernelci.org test data. To be submitted to/queried from the common "
+        "test report database.\n"
+        "\n"
+        "Objects in the data are identified and linked together using two "
+        "properties: \"origin\" and \"origin_id\". The former is a string "
+        "identifying the CI system which submitted the object. The latter "
+        "is a string generated by the origin CI system, identifying that "
+        "object uniquely among all objects of the same type, coming from "
+        "that CI system.\n"
+        "\n"
+        "Any of the immediate properties (except \"version\") can be missing "
+        "or be an empty list with each submission/query, but only complete "
+        "data stored in the database should be considered valid.\n"
+        "\n"
+        "E.g. a test run referring to a non-existent build is allowed "
+        "into/from the database, but would only appear in reports once both "
+        "the build and its revision are present.\n"
+        "\n"
+        "No special meaning apart from \"data is missing\" is attached to "
+        "any immediate or deeper properties being omitted, when they're not "
+        "required, and no default values should be assumed for them.\n"
+        "\n"
+        "Extra free-form data can be stored under \"misc\" fields associated "
+        "with various objects throughout the schema, if necessary. That data "
+        "could later be used as the basis for defining new properties to "
+        "house it.",
     "type": "object",
     "properties": {
         "version": {
