@@ -44,6 +44,17 @@ TABLE_MAP = dict(
                         "in the Git repository",
         ),
         Field(
+            "git_repository_commit_name", "STRING",
+            description="A human-readable name of the commit containing the "
+                        "base code of the revision, as would be output by "
+                        "\"git describe\", at the discovery time."
+        ),
+        Field(
+            "git_repository_branch", "STRING",
+            description="The Git repository branch in which the commit with "
+                        "the revision's base code was discovered."
+        ),
+        Field(
             "patch_mboxes", "RECORD", mode="REPEATED", fields=RESOURCE_FIELDS,
             description="List of mboxes containing patches applied "
                         "to the base code of the revision, in order of "
