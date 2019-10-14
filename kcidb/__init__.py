@@ -4,6 +4,7 @@ import argparse
 import decimal
 import json
 import sys
+from datetime import datetime
 from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
 from kcidb import db_schema
@@ -66,6 +67,8 @@ class Client:
             """
             if isinstance(node, decimal.Decimal):
                 node = float(node)
+            elif isinstance(node, datetime):
+                node = node.isoformat()
             elif isinstance(node, list):
                 for index, value in enumerate(node):
                     node[index] = convert_node(value)
