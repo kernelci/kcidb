@@ -73,6 +73,8 @@ class Client:
                 for key, value in list(node.items()):
                     if value is None:
                         del node[key]
+                    elif key == "misc":
+                        node[key] = json.loads(value)
                     else:
                         node[key] = convert_node(value)
             return node
@@ -83,14 +85,10 @@ class Client:
                 default_dataset=self.dataset_ref)
             query_job = self.client.query(
                 f"SELECT * FROM `{obj_list_name}`", job_config=job_config)
-            obj_list = []
-            for row in query_job:
-                obj = convert_node(dict(row.items()))
-                # Parse the "misc" fields
-                if "misc" in obj:
-                    obj["misc"] = json.loads(obj["misc"])
-                obj_list.append(obj)
-            data[obj_list_name] = obj_list
+            data[obj_list_name] = [
+                convert_node(dict(row.items())) for row in query_job
+            ]
+
         io_schema.validate(data)
 
         return data
