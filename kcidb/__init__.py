@@ -53,6 +53,27 @@ class Client:
             The JSON data from the database adhering to the I/O schema
             (kcidb.io_schema.JSON).
         """
+        def convert_node(node):
+            """
+            Convert a retrieved data node (and all its children) to
+            the JSON-compatible and schema-complying representation.
+
+            Args:
+                node:   The node to convert.
+
+            Returns:
+                The converted node.
+            """
+            if isinstance(node, decimal.Decimal):
+                node = float(node)
+            elif isinstance(node, list):
+                for index, value in enumerate(node):
+                    node[index] = convert_node(value)
+            elif isinstance(node, dict):
+                for key, value in node.items():
+                    node[key] = convert_node(value)
+            return node
+
         data = dict(version="1")
         for obj_list_name in db_schema.TABLE_MAP:
             job_config = bigquery.job.QueryJobConfig(
@@ -61,13 +82,16 @@ class Client:
                 f"SELECT * FROM `{obj_list_name}`", job_config=job_config)
             obj_list = []
             for row in query_job:
-                obj = dict(item for item in row.items() if item[1] is not None)
+                obj = convert_node(
+                    dict(item for item in row.items() if item[1] is not None)
+                )
                 # Parse the "misc" fields
                 if "misc" in obj:
                     obj["misc"] = json.loads(obj["misc"])
                 obj_list.append(obj)
             data[obj_list_name] = obj_list
         io_schema.validate(data)
+
         return data
 
     def submit(self, data):
@@ -102,16 +126,6 @@ class Client:
                     ]))
 
 
-class JSONEncoder(json.JSONEncoder):
-    """JSON Encoder supporting types returned by the database"""
-    # It's OK for it to be hidden, if user wants to
-    # pylint: disable=method-hidden
-    def default(self, o):
-        if isinstance(o, decimal.Decimal):
-            return float(o)
-        return super().default(o)
-
-
 def query_main():
     """Execute the kcidb-query command-line tool"""
     description = 'kcidb-query - Query test results from kernelci.org database'
@@ -123,8 +137,7 @@ def query_main():
     )
     args = parser.parse_args()
     client = Client(args.dataset)
-    json.dump(client.query(), sys.stdout, cls=JSONEncoder,
-              indent=4, sort_keys=True)
+    json.dump(client.query(), sys.stdout, indent=4, sort_keys=True)
 
 
 def submit_main():
