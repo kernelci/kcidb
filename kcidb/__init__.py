@@ -70,8 +70,11 @@ class Client:
                 for index, value in enumerate(node):
                     node[index] = convert_node(value)
             elif isinstance(node, dict):
-                for key, value in node.items():
-                    node[key] = convert_node(value)
+                for key, value in list(node.items()):
+                    if value is None:
+                        del node[key]
+                    else:
+                        node[key] = convert_node(value)
             return node
 
         data = dict(version="1")
@@ -82,9 +85,7 @@ class Client:
                 f"SELECT * FROM `{obj_list_name}`", job_config=job_config)
             obj_list = []
             for row in query_job:
-                obj = convert_node(
-                    dict(item for item in row.items() if item[1] is not None)
-                )
+                obj = convert_node(dict(row.items()))
                 # Parse the "misc" fields
                 if "misc" in obj:
                     obj["misc"] = json.loads(obj["misc"])
