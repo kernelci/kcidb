@@ -54,6 +54,19 @@ JSON_REVISION = {
                 "The full commit hash of the revision's base code "
                 "in the Git repository",
         },
+        "git_repository_commit_name": {
+            "type": "string",
+            "description":
+                "A human-readable name of the commit containing the base "
+                "code of the revision, as would be output by "
+                "\"git describe\", at the discovery time."
+        },
+        "git_repository_branch": {
+            "type": "string",
+            "description":
+                "The Git repository branch in which the commit with the "
+                "revision's base code was discovered."
+        },
         "patch_mboxes": {
             "type": "array",
             "description":
