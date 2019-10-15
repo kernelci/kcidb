@@ -104,15 +104,31 @@ class Client:
             data:   The JSON data to submit to the database.
                     Must adhere to the I/O schema (kcidb.io_schema.JSON).
         """
+        def convert_node(node):
+            """
+            Convert a submitted data node (and all its children) to
+            the BigQuery storage-compatible representation.
+
+            Args:
+                node:   The node to convert.
+
+            Returns:
+                The converted node.
+            """
+            if isinstance(node, list):
+                for index, value in enumerate(node):
+                    node[index] = convert_node(value)
+            elif isinstance(node, dict):
+                for key, value in list(node.items()):
+                    # Flatten the "misc" fields
+                    if key == "misc":
+                        node[key] = json.dumps(value)
+            return node
+
         io_schema.validate(data)
         for obj_list_name in db_schema.TABLE_MAP:
             if obj_list_name in data:
-                obj_list = data[obj_list_name]
-                # Flatten the "misc" fields
-                for obj in obj_list:
-                    if "misc" in obj:
-                        obj["misc"] = json.dumps(obj["misc"])
-                # Store
+                obj_list = convert_node(data[obj_list_name])
                 job_config = bigquery.job.LoadJobConfig(
                     autodetect=False,
                     schema=db_schema.TABLE_MAP[obj_list_name])
