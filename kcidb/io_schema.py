@@ -384,5 +384,18 @@ JSON = {
 
 
 def validate(io_data):
-    """Validate I/O data with its schema"""
+    """
+    Validate I/O data with its schema.
+
+    Args:
+        io_data:    The I/O data to validate.
+
+    Return:
+        The validated I/O data.
+
+    Raises:
+        `jsonschema.exceptions.ValidationError` if the instance
+            is invalid
+    """
     jsonschema.validate(instance=io_data, schema=JSON)
+    return io_data
