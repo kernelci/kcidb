@@ -123,6 +123,8 @@ class Client:
                     # Flatten the "misc" fields
                     if key == "misc":
                         node[key] = json.dumps(value)
+                    else:
+                        node[key] = convert_node(value)
             return node
 
         io_schema.validate(data)
