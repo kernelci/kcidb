@@ -21,7 +21,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="kcidb",
     version="1",
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     author="kernelci.org",
     author_email="kernelci@groups.io",
     description="KCIDB = kernelci.org database tools",
@@ -34,7 +34,7 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GPLv2+",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Database :: Front-Ends",
     ],
     install_requires=[
