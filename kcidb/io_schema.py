@@ -289,8 +289,8 @@ JSON_TEST = {
             "description":
                 "Dot-separated path to the node in the test classification "
                 "tree the executed test belongs to. E.g. \"LTPlite.sem01\". "
-                "The empty string, or the absence of the property signify "
-                "the root of the tree, i.e. an abstract test.",
+                "The empty string signifies the root of the tree, i.e. all "
+                "tests for the build, executed by the origin CI system.",
             "pattern": "^[.a-zA-Z0-9_-]*$"
         },
         "description": {
