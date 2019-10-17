@@ -261,7 +261,7 @@ JSON_TEST = {
         },
         "origin_id": {
             "type": "string",
-            "description": "Origin-unique ID of the tested build",
+            "description": "Origin-unique ID of the test run",
         },
         "environment": {
             "type": "object",
