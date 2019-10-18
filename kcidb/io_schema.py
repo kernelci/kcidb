@@ -357,8 +357,23 @@ JSON = {
     "properties": {
         "version": {
             "type": "string",
-            "description": "Version of the schema the data complies to",
-            "const": "1"
+            "description":
+                "Version of the schema the data complies to.\n"
+                "\n"
+                "Must be a string representing two unsigned integer numbers: "
+                "major and minor, separated by a dot. If both the dot and "
+                "the minor number are omitted, the minor number is assumed "
+                "to be zero.\n"
+                "\n"
+                "Increases in major version number represent changes which "
+                "are not backward-compatible, such as renaming a property, "
+                "or changing a type of property, which existing software "
+                "versions cannot handle.\n"
+                "\n"
+                "Increases in minor version number represent changes which "
+                "are backward-compatible, such as tightening value "
+                "restrictions, or making a property mandatory.",
+            "pattern": "^1(\\.[0-9]+)?$"
         },
         "revisions": {
             "description": "List of code revisions",
