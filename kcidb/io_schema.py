@@ -223,6 +223,11 @@ JSON_BUILD = {
                 "Full shell command line used to make the build, "
                 "including environment variables",
         },
+        "compiler": {
+            "type": "string",
+            "description":
+                "Name and version of the compiler used to make the build",
+        },
         "input_files": {
             "type": "array",
             "description":
