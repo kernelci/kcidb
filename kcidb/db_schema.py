@@ -146,6 +146,11 @@ TABLE_MAP = dict(
                         "including environment variables",
         ),
         Field(
+            "compiler", "STRING",
+            description="Name and version of the compiler used to make the "
+                        "build",
+        ),
+        Field(
             "input_files", "RECORD", mode="REPEATED", fields=RESOURCE_FIELDS,
             description="A list of build input files. E.g. configuration.",
         ),
