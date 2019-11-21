@@ -116,9 +116,11 @@ class Client:
                 The converted node.
             """
             if isinstance(node, list):
+                node = node.copy()
                 for index, value in enumerate(node):
                     node[index] = convert_node(value)
             elif isinstance(node, dict):
+                node = node.copy()
                 for key, value in list(node.items()):
                     # Flatten the "misc" fields
                     if key == "misc":
