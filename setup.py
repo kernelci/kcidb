@@ -52,6 +52,7 @@ setuptools.setup(
             "kcidb-init = kcidb:init_main",
             "kcidb-cleanup = kcidb:cleanup_main",
             "kcidb-schema = kcidb:schema_main",
+            "kcidb-validate = kcidb:validate_main",
             "kcidb-submit = kcidb:submit_main",
             "kcidb-query = kcidb:query_main",
         ]

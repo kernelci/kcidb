@@ -5,6 +5,7 @@ import decimal
 import json
 import sys
 from datetime import datetime
+import jsonschema
 from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
 from kcidb import db_schema
@@ -212,3 +213,23 @@ def schema_main():
     parser = argparse.ArgumentParser(description=description)
     parser.parse_args()
     json.dump(io_schema.JSON, sys.stdout, indent=4, sort_keys=True)
+
+
+def validate_main():
+    """Execute the kcidb-validate command-line tool"""
+    description = 'kcidb-validate - Validate I/O JSON data'
+    parser = argparse.ArgumentParser(description=description)
+    parser.parse_args()
+
+    try:
+        data = json.load(sys.stdin)
+    except json.decoder.JSONDecodeError as err:
+        print(err, sys.stderr)
+        return 1
+
+    try:
+        io_schema.validate(data)
+    except jsonschema.exceptions.ValidationError as err:
+        print(err, sys.stderr)
+        return 2
+    return 0
