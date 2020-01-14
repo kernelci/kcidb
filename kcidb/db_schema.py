@@ -159,6 +159,14 @@ TABLE_MAP = dict(
             description="A list of build output files: images, packages, etc.",
         ),
         Field(
+            "config_name", "STRING",
+            description="A name describing the build configuration options.",
+        ),
+        Field(
+            "config_url", "STRING",
+            description="The URL of the build configuration file.",
+        ),
+        Field(
             "log_url", "STRING",
             description="The URL of the build log file.",
         ),

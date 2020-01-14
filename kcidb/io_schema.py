@@ -240,6 +240,17 @@ JSON_BUILD = {
                 "A list of build output files: images, packages, etc.",
             "items": JSON_RESOURCE,
         },
+        "config_name": {
+            "type": "string",
+            "description":
+                "A name describing the build configuration options.",
+        },
+        "config_url": {
+            "type": "string",
+            "format": "uri",
+            "description":
+                "The URL of the build configuration file.",
+        },
         "log_url": {
             "type": "string",
             "format": "uri",
