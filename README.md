@@ -77,6 +77,41 @@ can be displayed by `kcidb-schema`.
 
 To cleanup the dataset (remove the tables) use `kcidb-cleanup`.
 
+Upgrading
+---------
+
+To upgrade the dataset schema, do the following.
+
+1. Authenticate to Google Cloud with the key file (`~/.kernelci-bq.json`
+   here):
+
+        gcloud auth activate-service-account --key-file ~/.kernelci-bq.json
+
+   or login with your credentials (entered via a browser window):
+
+        gcloud auth login
+
+2. Create a new dataset (`kernelci02` in project `kernelci` here) with the new
+   schema:
+
+        bq mk --project_id=kernelci kernelci02
+        # Using new-schema kcidb
+        kcidb-init -d kernelci02
+
+3. Switch all data submitters to using new-schema kcidb and the newly-created
+   dataset.
+
+4. Disable write access to the old dataset using BigQuery management console.
+
+5. Transfer data from the old dataset (named `kernelci01` here) to the new
+   dataset (named `kernelci02` here) using old-schema `kcidb-query` and
+   new-schema `kcidb-submit`.
+
+        # Using old-schema kcidb
+        kcidb-query -d kernelci01 > kernelci01.json
+        # Using new-schema kcidb
+        kcidb-submit -d kernelci02 < kernelci01.json
+
 API
 ---
 You can use the `kcidb` module to do everything the command-line tools do.
