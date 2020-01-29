@@ -83,7 +83,8 @@ class Client:
                         node[key] = convert_node(value)
             return node
 
-        data = dict(version="1")
+        data = dict(version=dict(major=io_schema.JSON_VERSION_MAJOR,
+                                 minor=io_schema.JSON_VERSION_MINOR))
         for obj_list_name in db_schema.TABLE_MAP:
             job_config = bigquery.job.QueryJobConfig(
                 default_dataset=self.dataset_ref)
