@@ -2,6 +2,18 @@
 
 import jsonschema
 
+# Major version number of JSON schema.
+# Increases represent backward-incompatible changes.
+# E.g. deleting or renaming a property, changing a property type, restricting
+# values, making a property required, or adding a new required property.
+JSON_VERSION_MAJOR = 1
+
+# Minor version number of JSON schema.
+# Increases represent backward-compatible changes.
+# E.g. relaxing value restrictions, making a property optional, or adding a
+# new optional property.
+JSON_VERSION_MINOR = 1
+
 # JSON schema for a named remote resource
 JSON_RESOURCE = {
     "title": "resource",
@@ -449,24 +461,62 @@ JSON = {
     "type": "object",
     "properties": {
         "version": {
-            "type": "string",
-            "description":
-                "Version of the schema the data complies to.\n"
-                "\n"
-                "Must be a string representing two unsigned integer numbers: "
-                "major and minor, separated by a dot. If both the dot and "
-                "the minor number are omitted, the minor number is assumed "
-                "to be zero.\n"
-                "\n"
-                "Increases in major version number represent changes which "
-                "are not backward-compatible, such as renaming a property, "
-                "or changing a type of property, which existing software "
-                "versions cannot handle.\n"
-                "\n"
-                "Increases in minor version number represent changes which "
-                "are backward-compatible, such as relaxing value "
-                "restrictions, or making a property optional.",
-            "pattern": "^1(\\.0)?$"
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description":
+                        "Version of the schema the data complies to.\n"
+                        "\n"
+                        "Must be a string representing two unsigned integer "
+                        "numbers: major and minor, separated by a dot. If "
+                        "both the dot and the minor number are omitted, the "
+                        "minor number is assumed to be zero.\n"
+                        "\n"
+                        "Increases in major version number represent changes "
+                        "which are not backward-compatible, such as renaming "
+                        "a property, or changing a type of property, which "
+                        "existing software versions cannot handle.\n"
+                        "\n"
+                        "Increases in minor version number represent changes "
+                        "which are backward-compatible, such as relaxing "
+                        "value restrictions, or making a property optional.",
+                    "pattern": "^1(\\.0)?$"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "major": {
+                            "type": "integer",
+                            "const": JSON_VERSION_MAJOR,
+                            "description":
+                                "Major number of the schema version.\n"
+                                "\n"
+                                "Increases represent backward-incompatible "
+                                "changes. E.g. deleting or renaming a "
+                                "property, changing a property type, "
+                                "restricting values, making a property "
+                                "required, or adding a new required "
+                                "property.",
+                        },
+                        "minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": JSON_VERSION_MINOR,
+                            "description":
+                                "Minor number of the schema version.\n"
+                                "\n"
+                                "Increases represent backward-compatible "
+                                "changes. E.g. relaxing value restrictions, "
+                                "making a property optional, or adding a new "
+                                "optional property.",
+                        }
+                    },
+                    "additionalProperties": False,
+                    "required": [
+                        "major",
+                    ],
+                },
+            ],
         },
         "revisions": {
             "description": "List of code revisions",
