@@ -466,7 +466,7 @@ JSON = {
                 "Increases in minor version number represent changes which "
                 "are backward-compatible, such as relaxing value "
                 "restrictions, or making a property optional.",
-            "pattern": "^1(\\.[0-9]+)?$"
+            "pattern": "^1(\\.0)?$"
         },
         "revisions": {
             "description": "List of code revisions",
