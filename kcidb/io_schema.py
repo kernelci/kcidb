@@ -464,8 +464,8 @@ JSON = {
                 "versions cannot handle.\n"
                 "\n"
                 "Increases in minor version number represent changes which "
-                "are backward-compatible, such as tightening value "
-                "restrictions, or making a property mandatory.",
+                "are backward-compatible, such as relaxing value "
+                "restrictions, or making a property optional.",
             "pattern": "^1(\\.[0-9]+)?$"
         },
         "revisions": {
