@@ -1,0 +1,266 @@
+#
+# Catalog of canonical test identifiers to be used when submitting test
+# results to kcidb.
+#
+# Find the test you are running in the catalog, and use its key as the "path"
+# property when submitting the test result to kcidb.
+#
+# Each "test" here can be a test program or a collection thereof, but not one
+# of the tests executed by such a program. You are encouraged to report the
+# latter to kcidb, but they're not recorded or regulated by this catalog.
+#
+# When adding the test corresponding to a program, use the program's
+# widely-known name, e.g. the same one you would call it at a conference. If
+# the program is only known inside your company, prepend its name with the
+# company name.
+#
+# The "title" property should describe the test briefly, and must be
+# single-line. The optional "description" property could go into greater
+# detail and be multi-line.
+#
+# The "home" property should point to the canonical, upstream location, and is
+# intended for identification and as a reference to more information on the
+# test, rather than a pointer to exact code being executed. The latter should
+# be described within test objects submitted to kcidb instead.
+#
+# E.g. the Linux Test Project test suite *should* be here under the
+# widely-known name "ltp". However, while its own tests, such as "chdir01" or
+# "clone03" are welcome to be reported to kcidb as "ltp.chdir01" or
+# "ltp.clone03", only the "ltp" test should be in this catalog. The LTP
+# project's home page or its main upstream repository should be referred to in
+# the "home" property, and not e.g. the specific code being executed, because
+# code versions will differ between test result origins and even executions.
+#
+# Please keep the tests sorted alphabetically by keys.
+#
+# You can use the "kcidb-tests-validate" tool to check if this file is valid.
+# Like this:
+#
+#   kcidb-tests-validate < tests.yaml
+#
+# If you add the -u/--urls option, it will also check if all URLs are
+# reachable:
+#
+#   kcidb-tests-validate --urls < tests.yaml
+#
+audit:
+  title: Basic Audit Regression Test Suite for the Linux Kernel
+  home: https://github.com/linux-audit/audit-testsuite
+blktests:
+  title: Test framework for the Linux kernel block layer and storage stack
+  home: https://github.com/osandov/blktests
+bootrr:
+  title: Bootrr test suite
+  home: https://github.com/andersson/bootrr
+bpf:
+  title: In-tree BPF test suite module
+  home: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/lib/test_bpf.c
+dacapobench:
+  title: DaCapo Java benchmarking suite
+  home: http://dacapobench.sourceforge.net/
+fio:
+  title: Flexible I/O tester
+  home: https://github.com/axboe/fio
+fwts:
+  title: Firmware Test Suite
+  home: https://wiki.ubuntu.com/FirmwareTestSuite/
+jcstress:
+  title: The Java Concurrency Stress tests
+  home: https://wiki.openjdk.java.net/display/CodeTools/jcstress
+kselftest:
+  title: Kernel self-tests
+  home: https://kselftest.wiki.kernel.org/
+kvm-unit-tests:
+  title: KVM unit tests
+  home: https://www.linux-kvm.org/page/KVM-unit-tests
+libhugetlbfs:
+  title: Libhugetlbfs test suite
+  home: https://github.com/libhugetlbfs/libhugetlbfs
+ltp:
+  title: Linux Test Project test suite
+  home: https://linux-test-project.github.io
+nfs_connectathon:
+  title: NFS Connectathon test suite
+  home: http://wiki.linux-nfs.org/wiki/index.php/Connectathon_test_suite
+perftool:
+  title: Perf tool test suite
+  home: https://github.com/rfmvh/perftool-testsuite.git
+pjdfstest:
+  title: A test suite for exercising filesystem-oriented POSIX system calls
+  home: https://github.com/pjd/pjdfstest
+podman:
+  title: Podman test suite
+  home: https://github.com/containers/libpod/tree/master/test
+redhat_acpi_table:
+  title: Red Hat's test for retrieving ACPI tables
+  home: https://github.com/CKI-project/tests-beaker/tree/master/acpi/acpitable
+redhat_amtu:
+  title: Red Hat's Abstract Machine Test Utility
+  description: |
+    Abstract Machine Test Utility (AMTU) is an administrative utility
+    that checks whether the underlying protection mechanisms of the
+    hardware are being enforced. These checks are a requirement of the
+    Controlled Access Protection Profile (CAPP) FPT_AMT.1.
+  home: https://github.com/CKI-project/tests-beaker/tree/master/misc/amtu
+redhat_apache_mod_ssl:
+  title: Red Hat's Apache mod_ssl smoke tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/packages/httpd/mod_ssl-smoke
+redhat_autofs_connectathon:
+  title: Red Hat's version of AutoFS connectathon test suite
+  home: https://github.com/CKI-project/tests-beaker/tree/master/autofs/connectathon
+redhat_bridge:
+  title: Red Hat's Ethernet bridge tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/bridge/sanity_check
+redhat_cifs_connectathon:
+  title: Red Hat version of LTP's NFS Connectathon modified to test CIFS
+  home: https://github.com/CKI-project/tests-beaker/tree/master/filesystems/cifs/connectathon
+redhat_cpu_die_layout:
+  title: Red Hat's test for correct information on CPU die layout
+  home: https://github.com/CKI-project/tests-beaker/tree/master/cpu/die
+redhat_cpufreq_driver:
+  title: Red Hat's test for correct cpufreq scaling driver
+  home: https://github.com/CKI-project/tests-beaker/tree/master/cpu/driver
+redhat_cpufreq_governor:
+  title: Red Hat's cpufreq governor tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/power-management/cpufreq/cpufreq_governor
+redhat_cpufreq_misc:
+  title: Red Hat's miscellaneous cpufreq tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/power-management/cpufreq/sys_cpufreq
+redhat_cpu_idle_power:
+  title: Red Hat's CPU idle power usage tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/cpu/idle
+redhat_cpupower:
+  title: Red Hat's tests for cpupower tool
+  home: https://github.com/CKI-project/tests-beaker/tree/master/power-management/cpupower/sanity
+redhat_dm:
+  title: Red Hat's Device Mapper (DM) tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/storage/dm/common
+redhat_ethernet:
+  title: Red Hat's Ethernet driver sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/driver/sanity
+redhat_ftrace:
+  title: Red Hat's function tracer tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/trace/ftrace/tracer
+redhat_geneve:
+  title: Red Hat's GENEVE sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/tunnel/geneve/basic
+redhat_gre:
+  title: Red Hat's GRE sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/tunnel/gre/basic
+redhat_i2cdetect:
+  title: Red Hat's i2cdetect tool sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/packages/i2c-tools/sanity/i2cdetect-smoke
+redhat_igmp:
+  title: Red Hat's IGMP sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/igmp/conformance
+redhat_iommu_boot:
+  title: Red Hat's test for booting with various iommu options
+  home: https://github.com/CKI-project/tests-beaker/tree/master/iommu/boot
+redhat_iotop:
+  title: Red Hat's iotop tool sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/packages/iotop/sanity
+redhat_ipmi_driver_stress:
+  title: Red Hat's IPMI driver loading/unloading stress test
+  home: https://github.com/CKI-project/tests-beaker/tree/master/ipmi/stress/driver
+redhat_ipmitool_stress:
+  title: Red Hat's IPMI tool stress tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/ipmi/stress/ipmitool-loop
+redhat_ipsec:
+  title: Red Hat's IPSec tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/ipsec/ipsec_basic/ipsec_basic_netns
+redhat_ipvlan:
+  title: Red Hat's IPVLAN sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/vnic/ipvlan/basic
+redhat_iscsi_params:
+  title: Red Hat's iSCSI parameter fuzzing test
+  home: https://github.com/CKI-project/tests-beaker/tree/master/storage/iscsi/params
+redhat_kaslr:
+  title: Red Hat's sanity test for Kernel Address Space Layout Randomization (KASLR)
+  home: https://github.com/CKI-project/tests-beaker/tree/master/memory/function/kaslr
+redhat_kdump:
+  title: Red Hat's kdump tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/kdump/kdump-sysrq-c
+redhat_l2tp:
+  title: Red Hat's basic L2TP tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/tunnel/l2tp/basic
+redhat_loopdev:
+  title: Red Hat's loop device sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/filesystems/loopdev/sanity
+redhat_lvm_thinp:
+  title: Red Hat's LVM thin provisioning sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/storage/lvm/thinp/sanity
+redhat_macsec:
+  title: Red Hat's sanity test for MACsec support
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/macsec/sanity_check
+redhat_memfd_create:
+  title: Red Hat's test for memfd_create syscall
+  home: https://github.com/CKI-project/tests-beaker/tree/master/memory/function/memfd_create
+redhat_module_load_unload:
+  title: Red Hat's test for module loading and unloading
+  home: https://github.com/CKI-project/tests-beaker/tree/master/misc/module-load
+redhat_netfilter:
+  title: Red Hat's netfilter tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/firewall/netfilter/target
+redhat_pciutils:
+  title: Red Hat's pciutils sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/pciutils/sanity-smoke
+redhat_perftool:
+  title: Red Hat's perf tool test suite
+  home: https://github.com/CKI-project/tests-beaker/tree/master/packages/perf/internal-testsuite
+redhat_pmtu:
+  title: Red Hat's tests for Path MTU discovery
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/route/pmtu
+redhat_rapl:
+  title: Red Hat's tests for Intel's RAPL (Running Average Power Limit) technology
+  home: https://github.com/CKI-project/tests-beaker/tree/master/power-management/rapl/powercap
+redhat_route:
+  title: Red Hat's IP routing tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/route/route_func
+redhat_scsi_vpd:
+  title: Red Hat's SCSI Vital Product Data (VPD) retrieval tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/storage/scsi/vpd
+redhat_sctp_auth_sockopts:
+  title: Red Hat's SCTP authentication socket options tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/sctp/auth/sockopts
+redhat_socket_fuzz:
+  title: Red Hat's socket function fuzzing tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/socket/fuzz
+redhat_sound_aloop:
+  title: Red Hat's ALSA PCM loopback tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/sound/aloop
+redhat_sound_user-ctl-elem:
+  title: Red Hat's ALSA User Control Element (mixer) tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/sound/user-ctl-elem
+redhat_suspend_resume:
+  title: Red Hat's Suspend/Resume tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/power-management/suspend-resume
+redhat_swraid_trim:
+  title: Red Hat's test for software RAID TRIM support
+  home: https://github.com/CKI-project/tests-beaker/tree/master/storage/swraid/trim
+redhat_systemtap_tracepoints:
+  title: Red Hat's test for operation of SystemTap tracepoints
+  home: https://github.com/CKI-project/tests-beaker/tree/master/tracepoints/operational
+redhat_tcp_keepalive:
+  title: Red Hat's tests for TCP Keep-Alive support
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/tcp/tcp_keepalive
+redhat_tuned:
+  title: Red Hat's tuned daemon tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/packages/tuned/tune-processes-through-perf
+redhat_udp_socket:
+  title: Red Hat's tests for UDP socket support
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/udp/udp_socket
+redhat_vxlan:
+  title: Red Hat's VXLAN sanity tests
+  home: https://github.com/CKI-project/tests-beaker/tree/master/networking/tunnel/vxlan/basic
+selinux:
+  title: SELinux Regression Test Suite for the Linux Kernel
+  home: https://github.com/SELinuxProject/selinux-testsuite
+stress-ng:
+  title: Stress-ng test suite
+  home: https://kernel.ubuntu.com/~cking/stress-ng/
+usex:
+  title: UNIX System Exerciser (USEX)
+  home: https://people.redhat.com/anderson/usex/usex
+xfstests:
+  title: Xfstests filesystem testing suite
+  home: https://github.com/kdave/xfstests

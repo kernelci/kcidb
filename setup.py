@@ -40,11 +40,14 @@ setuptools.setup(
     install_requires=[
         "google-cloud-bigquery",
         "jsonschema",
+        "requests",
+        "pyyaml",
     ],
     extras_require=dict(
         dev=[
             "flake8",
             "pylint",
+            "yamllint",
         ],
     ),
     entry_points=dict(
@@ -55,6 +58,7 @@ setuptools.setup(
             "kcidb-validate = kcidb:validate_main",
             "kcidb-submit = kcidb:submit_main",
             "kcidb-query = kcidb:query_main",
+            "kcidb-tests-validate = kcidb:tests_validate_main",
         ]
     )
 )

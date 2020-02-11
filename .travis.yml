@@ -7,3 +7,21 @@ install:
 script:
     - flake8 kcidb
     - pylint kcidb
+    - find -name '*.yaml' | xargs yamllint
+    - kcidb-tests-validate --urls < tests.yaml
+    - |
+        test_list=$(
+            python3 <(
+                echo "import sys, yaml"
+                echo "for k in yaml.safe_load(sys.stdin).keys():"
+                echo "    print(k)"
+            ) < tests.yaml
+        )
+        test_list_diff=$(diff -u <(echo "$test_list") \
+                                 <(echo "$test_list" | sort)) ||
+            {
+                echo "Tests out of alphabetic order." >&2
+                echo "Change the order as below:" >&2
+                echo "$test_list_diff" >&2
+                false
+            }
