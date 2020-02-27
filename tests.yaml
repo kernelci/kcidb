@@ -49,6 +49,9 @@ audit:
 blktests:
   title: Test framework for the Linux kernel block layer and storage stack
   home: https://github.com/osandov/blktests
+boot:
+  title: Machine booted with the tested kernel
+  home: https://www.kernel.org/
 bootrr:
   title: Bootrr test suite
   home: https://github.com/andersson/bootrr
