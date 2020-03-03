@@ -82,7 +82,8 @@ JSON_REVISION = {
             "format": "uri",
             "description":
                 "The URL of the Git repository which contains the base code "
-                "of the revision. The shortest possible HTTPS URL.",
+                "of the revision. The shortest possible https:// URL, or, if "
+                "that's not available, the shortest possible git:// URL.",
         },
         "git_repository_commit_hash": {
             "type": "string",
