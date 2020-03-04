@@ -1,17 +1,11 @@
-"""Kernel CI reporting I/O schema"""
+"""Kernel CI reporting I/O schema v1"""
 
-import jsonschema
+from kcidb.io.schema.misc import Version
 
 # Major version number of JSON schema.
-# Increases represent backward-incompatible changes.
-# E.g. deleting or renaming a property, changing a property type, restricting
-# values, making a property required, or adding a new required property.
 JSON_VERSION_MAJOR = 1
 
 # Minor version number of JSON schema.
-# Increases represent backward-compatible changes.
-# E.g. relaxing value restrictions, making a property optional, or adding a
-# new optional property.
 JSON_VERSION_MINOR = 1
 
 # JSON schema for a named remote resource
@@ -542,19 +536,6 @@ JSON = {
 }
 
 
-def validate(io_data):
-    """
-    Validate I/O data with its schema.
+VERSION = Version(JSON_VERSION_MAJOR, JSON_VERSION_MINOR, JSON)
 
-    Args:
-        io_data:    The I/O data to validate.
-
-    Return:
-        The validated I/O data.
-
-    Raises:
-        `jsonschema.exceptions.ValidationError` if the instance
-            is invalid
-    """
-    jsonschema.validate(instance=io_data, schema=JSON)
-    return io_data
+__all__ = ["VERSION"]

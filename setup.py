@@ -55,6 +55,7 @@ setuptools.setup(
         console_scripts=[
             "kcidb-schema = kcidb:schema_main",
             "kcidb-validate = kcidb:validate_main",
+            "kcidb-upgrade = kcidb:upgrade_main",
             "kcidb-submit = kcidb:submit_main",
             "kcidb-query = kcidb:query_main",
             "kcidb-db-init = kcidb.db:init_main",

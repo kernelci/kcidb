@@ -80,12 +80,12 @@ class Client:
         Query data from the database.
 
         Returns:
-            The JSON data from the database adhering to the I/O schema
-            (kcidb.io.schema.JSON).
+            The JSON data from the database adhering to the latest I/O schema
+            (kcidb.io.schema.LATEST).
         """
 
-        data = dict(version=dict(major=io.schema.JSON_VERSION_MAJOR,
-                                 minor=io.schema.JSON_VERSION_MINOR))
+        data = dict(version=dict(major=io.schema.LATEST.major,
+                                 minor=io.schema.LATEST.minor))
         for obj_list_name in schema.TABLE_MAP:
             job_config = bigquery.job.QueryJobConfig(
                 default_dataset=self.dataset_ref)
@@ -95,8 +95,7 @@ class Client:
                 Client._unpack_node(dict(row.items())) for row in query_job
             ]
 
-        io.schema.validate(data)
-
+        assert io.schema.LATEST.is_valid(data)
         return data
 
     @staticmethod
@@ -131,9 +130,10 @@ class Client:
 
         Args:
             data:   The JSON data to load into the database.
-                    Must adhere to the I/O schema (kcidb.io.schema.JSON).
+                    Must adhere to the latest I/O schema
+                    (kcidb.io.schema.LATEST).
         """
-        io.schema.validate(data)
+        assert io.schema.LATEST.is_valid(data)
         for obj_list_name in schema.TABLE_MAP:
             if obj_list_name in data:
                 obj_list = Client._pack_node(data[obj_list_name])
@@ -169,7 +169,7 @@ class Client:
             If the query string is returned, the query would produce two
             columns: "origin" and "origin_id".
         """
-        io.schema.validate(data)
+        assert io.schema.LATEST.is_valid(data)
         assert isinstance(obj_list_name, str)
         assert obj_list_name.endswith("s")
         obj_name = obj_list_name[:-1]
@@ -231,8 +231,7 @@ class Client:
             join_string:    The JOIN clause string to limit the query with.
             join_params:    The parameters for the JOIN clause.
         """
-        io.schema.validate(data)
-
+        assert io.schema.LATEST.is_valid(data)
         assert isinstance(obj_list_name, str)
         assert obj_list_name.endswith("s")
         assert isinstance(join_string, str)
@@ -262,7 +261,7 @@ class Client:
             self._query_tree(data, child_list_name,
                              child_join_string, join_params)
 
-        io.schema.validate(data)
+        assert io.schema.LATEST.is_valid(data)
 
     def complement(self, data):
         """
@@ -274,17 +273,17 @@ class Client:
 
         Args:
             data:   The JSON data to complement from the database.
-                    Must adhere to the I/O schema (kcidb.io.schema.JSON).
-                    Will not be modified.
+                    Must adhere to the latest I/O schema
+                    (kcidb.io.schema.LATEST). Will not be modified.
 
         Returns:
-            The complemented JSON data from the database adhering to the I/O
-            schema (kcidb.io.schema.JSON).
+            The complemented JSON data from the database adhering to the
+            latest I/O schema (kcidb.io.schema.LATEST).
         """
-        io.schema.validate(data)
+        assert io.schema.LATEST.is_valid(data)
 
-        complement = dict(version=dict(major=io.schema.JSON_VERSION_MAJOR,
-                                       minor=io.schema.JSON_VERSION_MINOR))
+        complement = dict(version=dict(major=io.schema.LATEST.major,
+                                       minor=io.schema.LATEST.minor))
         # For each top-level table
         for obj_list_name in schema.TABLE_CHILDREN_MAP[""]:
             # Get complement IDs
@@ -341,7 +340,7 @@ def complement_main():
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
-    io.schema.validate(data)
+    data = io.schema.LATEST.upgrade(data)
     client = Client(args.dataset)
     json.dump(client.complement(data), sys.stdout, indent=4, sort_keys=True)
 
@@ -373,7 +372,7 @@ def load_main():
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
-    io.schema.validate(data)
+    data = io.schema.LATEST.upgrade(data)
     client = Client(args.dataset)
     client.load(data)
 

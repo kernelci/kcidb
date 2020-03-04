@@ -15,17 +15,17 @@ class Publisher:
     @staticmethod
     def encode_data(io_data):
         """
-        Encode JSON data adhering to the I/O schema (kcidb.io.schema.JSON)
-        into message data.
+        Encode JSON data adhering to the latest I/O schema
+        (kcidb.io.schema.LATEST) into message data.
 
         Args:
-            io_data:    JSON data adhering to the I/O schema
-                        (kcidb.io.schema.JSON) to be encoded.
+            io_data:    JSON data adhering to the latest I/O schema
+                        (kcidb.io.schema.LATEST) to be encoded.
 
         Returns
             The encoded message data.
         """
-        io.schema.validate(io_data)
+        assert io.schema.LATEST.is_valid(io_data)
         return json.dumps(io_data).encode("utf-8")
 
     def __init__(self, project_id, topic_name):
@@ -58,9 +58,10 @@ class Publisher:
 
         Args:
             data:   The JSON data to publish to the message queue.
-                    Must adhere to the I/O schema (kcidb.io.schema.JSON).
+                    Must adhere to the latest I/O schema
+                    (kcidb.io.schema.LATEST).
         """
-        io.schema.validate(data)
+        assert io.schema.LATEST.is_valid(data)
         self.client.publish(self.topic_path, Publisher.encode_data(data))
 
 
@@ -71,8 +72,8 @@ class Subscriber:
     @staticmethod
     def decode_data(message_data):
         """
-        Decode message data to extract the JSON data adhering to the I/O
-        schema (kcidb.io.schema.JSON).
+        Decode message data to extract the JSON data adhering to the latest
+        I/O schema (kcidb.io.schema.LATEST).
 
         Args:
             message_data:   The message data from the message queue
@@ -80,10 +81,11 @@ class Subscriber:
                             decoded.
 
         Returns
-            The decoded JSON data adhering to the I/O schema
-            (kcidb.io.schema.JSON).
+            The decoded JSON data adhering to the latest I/O schema
+            (kcidb.io.schema.LATEST).
         """
-        return io.schema.validate(json.loads(message_data.decode("utf-8")))
+        data = json.loads(message_data.decode("utf-8"))
+        return io.schema.LATEST.upgrade(data)
 
     def __init__(self, project_id, topic_name, subscription_name):
         """
@@ -121,8 +123,8 @@ class Subscriber:
         Returns:
             Two values:
             * The ID to use when acknowledging the reception of the data.
-            * The JSON data from the message queue, adhering to the I/O schema
-              (kcidb.io.schema.JSON).
+            * The JSON data from the message queue, adhering to the latest I/O
+              schema (kcidb.io.schema.LATEST).
         """
         while True:
             try:
@@ -136,7 +138,8 @@ class Subscriber:
                 pass
         message = response.received_messages[0]
         data = Subscriber.decode_data(message.message.data)
-        return message.ack_id, io.schema.validate(data)
+        assert io.schema.LATEST.is_valid(data)
+        return message.ack_id, data
 
     def ack(self, ack_id):
         """
@@ -206,7 +209,7 @@ def publisher_publish_main():
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
-    io.schema.validate(data)
+    data = io.schema.LATEST.upgrade(data)
     publisher = Publisher(args.project, args.topic)
     publisher.publish(data)
 
