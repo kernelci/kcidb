@@ -9,7 +9,7 @@ from kcidb import db, io
 # pylint: disable=invalid-name,fixme
 # TODO Remove once users switched to kcidb.io.schema
 # Compatibility alias
-io_schema = io.schema
+io_schema = io.schema.LATEST
 
 
 class Client:
@@ -34,8 +34,10 @@ class Client:
 
         Args:
             data:   The JSON report data to submit.
-                    Must adhere to the I/O schema (kcidb.io.schema.JSON).
+                    Must adhere to the latest I/O schema
+                    (kcidb.io.schema.LATEST).
         """
+        assert io.schema.LATEST.is_valid(data)
         self.db_client.load(data)
 
     def query(self):
@@ -43,8 +45,8 @@ class Client:
         Query reports.
 
         Returns:
-            The JSON report data adhering to the I/O schema
-            (kcidb.io.schema.JSON).
+            The JSON report data adhering to the latest I/O schema
+            (kcidb.io.schema.LATEST).
         """
         return self.db_client.query()
 
@@ -61,7 +63,7 @@ def submit_main():
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
-    io.schema.validate(data)
+    data = io.schema.LATEST.upgrade(data)
     client = db.Client(args.dataset)
     client.load(data)
 
@@ -83,10 +85,10 @@ def query_main():
 
 def schema_main():
     """Execute the kcidb-schema command-line tool"""
-    description = 'kcidb-schema - Output I/O JSON schema'
+    description = 'kcidb-schema - Output latest I/O JSON schema'
     parser = argparse.ArgumentParser(description=description)
     parser.parse_args()
-    json.dump(io.schema.JSON, sys.stdout, indent=4, sort_keys=True)
+    json.dump(io.schema.LATEST.json, sys.stdout, indent=4, sort_keys=True)
 
 
 def validate_main():
@@ -102,8 +104,30 @@ def validate_main():
         return 1
 
     try:
-        io.schema.validate(data)
+        io.schema.LATEST.upgrade(data)
     except jsonschema.exceptions.ValidationError as err:
         print(err, file=sys.stderr)
         return 2
+    return 0
+
+
+def upgrade_main():
+    """Execute the kcidb-upgrade command-line tool"""
+    description = 'kcidb-upgrade - Upgrade I/O JSON data to latest schema'
+    parser = argparse.ArgumentParser(description=description)
+    parser.parse_args()
+
+    try:
+        data = json.load(sys.stdin)
+    except json.decoder.JSONDecodeError as err:
+        print(err, file=sys.stderr)
+        return 1
+
+    try:
+        data = io.schema.LATEST.upgrade(data)
+    except jsonschema.exceptions.ValidationError as err:
+        print(err, file=sys.stderr)
+        return 2
+
+    json.dump(data, sys.stdout, indent=4, sort_keys=True)
     return 0
