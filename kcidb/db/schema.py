@@ -1,4 +1,4 @@
-"""Database schema"""
+"""Kernel CI report database schema"""
 from google.cloud.bigquery.schema import SchemaField as Field
 
 # Resource record fields

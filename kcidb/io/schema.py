@@ -1,4 +1,4 @@
-"""I/O schema"""
+"""Kernel CI reporting I/O schema"""
 
 import jsonschema
 
