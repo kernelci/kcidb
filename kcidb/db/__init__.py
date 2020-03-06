@@ -166,8 +166,8 @@ class Client:
             The query string and a list of (positional) parameters for it, or
             an empty string and an empty list if there were no object IDs
             referenced in the data.
-            If the query string is returned, the query would produce two
-            columns: "origin" and "origin_id".
+            If the query string is returned, the query would produce one
+            column called "id".
         """
         assert io.schema.LATEST.is_valid(data)
         assert isinstance(obj_list_name, str)
@@ -186,12 +186,10 @@ class Client:
                     query_string += "UNION DISTINCT\n"
                 query_string += \
                     f"SELECT " \
-                    f"table.{obj_name}_origin as origin, " \
-                    f"table.{obj_name}_origin_id as origin_id " \
+                    f"table.{obj_name}_id as id " \
                     f"FROM {child_list_name} as table " \
                     f"INNER JOIN ({child_query_string}) as ids " \
-                    f"ON table.origin = ids.origin AND " \
-                    f"   table.origin_id = ids.origin_id\n"
+                    f"ON table.id = ids.id\n"
                 query_params += child_query_params
         # Workaround client library choking on empty array parameters
         if data.get(obj_list_name, []):
@@ -207,9 +205,7 @@ class Client:
                         bigquery.StructQueryParameter(
                             None,
                             bigquery.ScalarQueryParameter(
-                                "origin", "STRING", obj["origin"]),
-                            bigquery.ScalarQueryParameter(
-                                "origin_id", "STRING", obj["origin_id"])
+                                "id", "STRING", obj["id"])
                         )
                         for obj in data.get(obj_list_name, [])
                     ]
@@ -253,10 +249,7 @@ class Client:
         for child_list_name in schema.TABLE_CHILDREN_MAP[obj_list_name]:
             child_join_string = \
                f"INNER JOIN {obj_list_name} " \
-               f"ON {child_list_name}.{obj_name}_origin = " \
-               f"   {obj_list_name}.origin AND " \
-               f"   {child_list_name}.{obj_name}_origin_id = " \
-               f"   {obj_list_name}.origin_id\n" \
+               f"ON {child_list_name}.{obj_name}_id = {obj_list_name}.id\n" \
                f"{join_string}"
             self._query_tree(data, child_list_name,
                              child_join_string, join_params)
@@ -304,8 +297,7 @@ class Client:
                 # Get object tree starting with complement IDs
                 join_string = \
                     f"INNER JOIN UNNEST(?) as ids " \
-                    f"ON {obj_list_name}.origin = ids.origin AND " \
-                    f"   {obj_list_name}.origin_id = ids.origin_id\n"
+                    f"ON {obj_list_name}.id = ids.id\n"
                 join_params = [
                     bigquery.ArrayQueryParameter(
                         None,
@@ -314,9 +306,7 @@ class Client:
                             bigquery.StructQueryParameter(
                                 None,
                                 bigquery.ScalarQueryParameter(
-                                    "origin", "STRING", row.origin),
-                                bigquery.ScalarQueryParameter(
-                                    "origin_id", "STRING", row.origin_id)
+                                    "id", "STRING", row.id)
                             )
                             for row in result
                         ]

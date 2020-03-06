@@ -33,13 +33,8 @@ TABLE_CHILDREN_MAP = {
 TABLE_MAP = dict(
     revisions=[
         Field(
-            "origin", "STRING",
-            description="The name of the CI system which submitted "
-                        "the revision",
-        ),
-        Field(
-            "origin_id", "STRING",
-            description="Origin-unique revision ID",
+            "id", "STRING",
+            description="Revision ID",
         ),
         Field(
             "git_repository_url", "STRING",
@@ -116,22 +111,12 @@ TABLE_MAP = dict(
     ],
     builds=[
         Field(
-            "revision_origin", "STRING",
-            description="The name of the CI system which submitted "
-                        "the revision",
+            "revision_id", "STRING",
+            description="Revision ID",
         ),
         Field(
-            "revision_origin_id", "STRING",
-            description="Origin-unique revision ID",
-        ),
-        Field(
-            "origin", "STRING",
-            description="The name of the CI system which submitted "
-                        "the build",
-        ),
-        Field(
-            "origin_id", "STRING",
-            description="Origin-unique build ID",
+            "id", "STRING",
+            description="Build ID",
         ),
         Field(
             "description", "STRING",
@@ -192,22 +177,12 @@ TABLE_MAP = dict(
     ],
     tests=[
         Field(
-            "build_origin", "STRING",
-            description="The name of the CI system which submitted "
-                        "the tested build",
+            "build_id", "STRING",
+            description="ID of the tested build",
         ),
         Field(
-            "build_origin_id", "STRING",
-            description="Origin-unique ID of the tested build",
-        ),
-        Field(
-            "origin", "STRING",
-            description="The name of the CI system which submitted "
-                        "the test run",
-        ),
-        Field(
-            "origin_id", "STRING",
-            description="Origin-unique test run ID",
+            "id", "STRING",
+            description="Test run ID",
         ),
         Field(
             "environment", "RECORD", fields=ENVIRONMENT_FIELDS,
