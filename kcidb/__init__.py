@@ -187,7 +187,7 @@ class Client:
             The JSON report data adhering to the I/O schema
             (kcidb.io_schema.JSON).
         """
-        self.db_client.query()
+        return self.db_client.query()
 
 
 def submit_main():
