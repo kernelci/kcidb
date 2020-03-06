@@ -48,7 +48,9 @@ class Client:
             The JSON report data adhering to the latest I/O schema
             (kcidb.io.schema.LATEST).
         """
-        return self.db_client.query()
+        data = self.db_client.query()
+        assert io.schema.LATEST.is_valid(data)
+        return data
 
 
 def submit_main():
