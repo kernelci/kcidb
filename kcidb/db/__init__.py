@@ -12,6 +12,23 @@ from kcidb.db import schema
 from kcidb import io
 
 
+class IncompatibleSchema(Exception):
+    """Database schema is incompatible with latest I/O schema"""
+
+    def __init__(self, db_major, db_minor):
+        """
+        Initialize the exception.
+
+        Args:
+            db_major:   Database schema major version number
+            db_minor:   Database schema minor version number
+        """
+        super().__init__(f"Database schema {db_major}.{db_minor} "
+                         f"is incompatible with I/O schema "
+                         f"{io.schema.LATEST.major}."
+                         f"{io.schema.LATEST.minor}")
+
+
 class Client:
     """Kernel CI report database client"""
 
@@ -30,6 +47,20 @@ class Client:
         self.client = bigquery.Client()
         self.dataset_ref = self.client.dataset(dataset_name)
 
+    def get_schema_version(self):
+        """
+        Get the version of the I/O schema the dataset schema corresponds to.
+
+        Returns:
+            Major version number, minor version number.
+        """
+        dataset = self.client.get_dataset(self.dataset_ref)
+        if "version_major" in dataset.labels and \
+           "version_minor" in dataset.labels:
+            return int(dataset.labels["version_major"]), \
+                int(dataset.labels["version_minor"])
+        return io.schema.V1.major, io.schema.V1.minor
+
     def init(self):
         """
         Initialize the database. The database must be empty.
@@ -38,6 +69,10 @@ class Client:
             table_ref = self.dataset_ref.table(table_name)
             table = bigquery.table.Table(table_ref, schema=table_schema)
             self.client.create_table(table)
+        dataset = self.client.get_dataset(self.dataset_ref)
+        dataset.labels["version_major"] = str(io.schema.LATEST.major)
+        dataset.labels["version_minor"] = str(io.schema.LATEST.minor)
+        self.client.update_dataset(dataset, ["labels"])
 
     def cleanup(self):
         """
@@ -49,6 +84,10 @@ class Client:
                 self.client.delete_table(table_ref)
             except NotFound:
                 pass
+        dataset = self.client.get_dataset(self.dataset_ref)
+        dataset.labels["version_major"] = None
+        dataset.labels["version_minor"] = None
+        self.client.update_dataset(dataset, ["labels"])
 
     @staticmethod
     def _unpack_node(node):
@@ -86,7 +125,14 @@ class Client:
         Returns:
             The JSON data from the database adhering to the latest I/O schema
             (kcidb.io.schema.LATEST).
+
+        Raises:
+            `IncompatibleSchema` if the dataset schema is incompatible with
+            the latest I/O schema.
         """
+        major, minor = self.get_schema_version()
+        if major != io.schema.LATEST.major:
+            raise IncompatibleSchema(major, minor)
 
         data = dict(version=dict(major=io.schema.LATEST.major,
                                  minor=io.schema.LATEST.minor))
@@ -99,8 +145,7 @@ class Client:
                 Client._unpack_node(dict(row.items())) for row in query_job
             ]
 
-        assert io.schema.LATEST.is_valid(data)
-        return data
+        return io.schema.LATEST.validate(data)
 
     @staticmethod
     def _pack_node(node):
@@ -136,8 +181,17 @@ class Client:
             data:   The JSON data to load into the database.
                     Must adhere to the latest I/O schema
                     (kcidb.io.schema.LATEST).
+
+        Raises:
+            `IncompatibleSchema` if the dataset schema is incompatible with
+            the latest I/O schema.
         """
         assert io.schema.LATEST.is_valid(data)
+
+        major, minor = self.get_schema_version()
+        if major != io.schema.LATEST.major:
+            raise IncompatibleSchema(major, minor)
+
         for obj_list_name in schema.TABLE_MAP:
             if obj_list_name in data:
                 obj_list = Client._pack_node(data[obj_list_name])
@@ -278,6 +332,10 @@ class Client:
             latest I/O schema (kcidb.io.schema.LATEST).
         """
         assert io.schema.LATEST.is_valid(data)
+
+        major, minor = self.get_schema_version()
+        if major != io.schema.LATEST.major:
+            raise IncompatibleSchema(major, minor)
 
         complement = dict(version=dict(major=io.schema.LATEST.major,
                                        minor=io.schema.LATEST.minor))
