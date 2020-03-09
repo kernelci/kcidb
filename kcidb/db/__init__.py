@@ -7,6 +7,7 @@ import sys
 from datetime import datetime
 from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
+from google.api_core.exceptions import NotFound
 from kcidb.db import schema
 from kcidb import io
 
@@ -44,7 +45,10 @@ class Client:
         """
         for table_name, _ in schema.TABLE_MAP.items():
             table_ref = self.dataset_ref.table(table_name)
-            self.client.delete_table(table_ref)
+            try:
+                self.client.delete_table(table_ref)
+            except NotFound:
+                pass
 
     @staticmethod
     def _unpack_node(node):
