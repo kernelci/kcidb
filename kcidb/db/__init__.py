@@ -235,7 +235,7 @@ class Client:
         query_string = ""
         query_params = []
 
-        for child_list_name in schema.TABLE_CHILDREN_MAP[obj_list_name]:
+        for child_list_name in io.schema.LATEST.tree[obj_list_name]:
             child_query_string, child_query_params = \
                 Client._get_ids_query(data, child_list_name)
             assert bool(child_query_string) == bool(child_query_params)
@@ -304,7 +304,7 @@ class Client:
             Client._unpack_node(dict(row.items())) for row in query_job
         ]
 
-        for child_list_name in schema.TABLE_CHILDREN_MAP[obj_list_name]:
+        for child_list_name in io.schema.LATEST.tree[obj_list_name]:
             child_join_string = \
                f"INNER JOIN {obj_list_name} " \
                f"ON {child_list_name}.{obj_name}_id = {obj_list_name}.id\n" \
@@ -340,7 +340,7 @@ class Client:
         complement = dict(version=dict(major=io.schema.LATEST.major,
                                        minor=io.schema.LATEST.minor))
         # For each top-level table
-        for obj_list_name in schema.TABLE_CHILDREN_MAP[""]:
+        for obj_list_name in io.schema.LATEST.tree[""]:
             # Get complement IDs
             query_string, query_params = \
                 Client._get_ids_query(data, obj_list_name)
