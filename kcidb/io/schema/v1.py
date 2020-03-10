@@ -535,7 +535,14 @@ JSON = {
     ]
 }
 
+# The parent-child relationship tree
+TREE = {
+    "": ["revisions"],
+    "revisions": ["builds"],
+    "builds": ["tests"],
+    "tests": []
+}
 
-VERSION = Version(JSON_VERSION_MAJOR, JSON_VERSION_MINOR, JSON)
+VERSION = Version(JSON_VERSION_MAJOR, JSON_VERSION_MINOR, JSON, TREE)
 
 __all__ = ["VERSION"]

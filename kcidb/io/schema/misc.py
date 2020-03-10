@@ -6,7 +6,7 @@ import jsonschema
 class Version:
     """A version of the schema"""
     # pylint: disable=too-many-arguments
-    def __init__(self, major, minor, json, previous=None, inherit=None):
+    def __init__(self, major, minor, json, tree, previous=None, inherit=None):
         """
         Initialize the version.
 
@@ -21,6 +21,11 @@ class Version:
                         relaxing value restrictions, making a property
                         optional, or adding a new optional property.
             json:       The JSON schema for this version.
+            tree:       A tree of parent-child relationships for objects in
+                        data's top-level lists, expressed as a dictionary of
+                        object list names to a list of the same, with the
+                        empty string mapping to a list of topmost object list
+                        names.
             previous:   The previous schema version, or None if none.
                         Must have lower major number, if not None.
             inherit:    The data inheritance function. Must accept data
@@ -33,6 +38,11 @@ class Version:
         assert isinstance(major, int) and major >= 0
         assert isinstance(minor, int) and minor >= 0
         assert json is not None
+        assert isinstance(tree, dict)
+        assert all(isinstance(k, str) and
+                   isinstance(v, list) and
+                   all(isinstance(e, str) for e in v)
+                   for k, v in tree.items())
         assert previous is None or \
             isinstance(previous, Version) and (major > previous.major)
         assert inherit is None or previous is not None and callable(inherit)
@@ -41,6 +51,7 @@ class Version:
         self.minor = minor
         self.previous = previous
         self.json = json
+        self.tree = tree
         self.inherit = inherit
 
     def validate(self, data):
