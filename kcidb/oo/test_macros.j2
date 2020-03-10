@@ -1,0 +1,36 @@
+{# Test template macros #}
+
+{% macro summary(test) %}
+    {% set empty = True %}
+    {% if test.path %}
+        {{- test.path -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if test.description %}
+        {{- "" if empty else " - " -}}
+        {{- test.description -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if empty %}
+        {{- test.id -}}
+    {% endif %}
+{% endmacro %}
+
+{% macro waived_emoji(waived_) %}
+    {{- "🚧" if waived_.name == "TRUE" else
+        "" if waived_.name == "FALSE" else
+        "❓" -}}
+{% endmacro %}
+
+{% macro status_emoji(status_) %}
+    {{- "💥" if status_.name == "ERROR" else
+        "❌" if status_.name == "FAIL" else
+        "✅" if status_.name == "PASS" else
+        "🆗" if status_.name == "DONE" else
+        "⏩" if status_.name == "SKIP" else
+        "❓" -}}
+{% endmacro %}
+
+{% macro status_name(status_) %}
+    {{- "" if status_.name == "NONE" else status_.name -}}
+{% endmacro %}

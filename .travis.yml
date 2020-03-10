@@ -25,3 +25,4 @@ script:
                 echo "$test_list_diff" >&2
                 false
             }
+    - pytest

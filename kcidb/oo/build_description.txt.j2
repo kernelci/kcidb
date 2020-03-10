@@ -1,0 +1,94 @@
+{# Build description template #}
+{% import "revision_macros.j2" as revision_macros %}
+{% import "test_macros.j2" as test_macros %}
+Below is the summary of testing results Kernel CI database has recorded
+for this build so far. See complete and up-to-date report at:
+
+    https://staging.kernelci.org:3000/d/build/build?orgId=1&var-id={{ build.id | urlencode }}
+
+BUILD
+
+    Status
+                {{ "❓" if build.valid is none else
+                   "✅" if build.valid else
+                   "❌" }}
+{% if build.description %}
+    Description
+                {{ build.description }}
+{% endif %}
+{% if build.revision_ %}
+    Revision
+                {{ revision_macros.summary(build.revision_) }}
+{% endif %}
+{% if build.architecture %}
+    Architecture
+                {{ build.architecture }}
+{% endif %}
+{% if build.compiler %}
+    Compiler
+                {{ build.compiler }}
+{% endif %}
+{% if build.config_name or build.config_url %}
+    Configuration
+    {% if build.config_name %}
+          name: {{ build.config_name }}
+    {% endif %}
+    {% if build.config_url %}
+          file: {{ build.config_url }}
+    {% endif %}
+{% endif %}
+{% if build.input_files %}
+    Input files
+    {% for input_file in build.input_files %}
+                {{ input_file.name }}: {{ input_file.url }}
+    {% endfor %}
+{% endif %}
+{% if build.output_files %}
+    Output files
+    {% for output_file in build.output_files %}
+                {{ output_file.name }}: {{ output_file.url }}
+    {% endfor %}
+{% endif %}
+    Executed
+            by: {{ build.id.split(":")[0] }}
+{% if build.start_time %}
+            at: {{ build.start_time }}
+{% endif %}
+{% if build.duration %}
+            in: {{ build.duration }} seconds
+{% endif %}
+{% if build.command %}
+       command: {{ build.command }}
+{% endif %}
+{% if build.log_url %}
+           log: {{ build.log_url }}
+{% endif %}
+
+{% set ns = namespace() %}
+{% set ns.got_tests = False %}
+{% set ns.worst_status_ = None %}
+{% set ns.worst_waived_ = None %}
+{% for test in build.tests_.values() %}
+    {% if not ns.got_tests or
+          test.waived_.value * test.status_.value >
+            ns.worst_waived_.value * ns.worst_status_.value %}
+        {% set ns.worst_status_ = test.status_ %}
+        {% set ns.worst_waived_ = test.waived_ %}
+    {% endif %}
+    {% set ns.got_tests = True %}
+{% endfor %}
+{% if ns.got_tests %}
+TESTS
+
+    Status
+                {{ test_macros.waived_emoji(ns.worst_waived_) -}}
+                {{- test_macros.status_emoji(ns.worst_status_) -}}
+                {{- " " + test_macros.status_name(ns.worst_status_) }}
+
+    {% for test in build.tests_.values() %}
+        {{- "    " + test_macros.waived_emoji(test.waived_) -}}
+        {{- test_macros.status_emoji(test.status_) -}}
+        {{- " " + test_macros.summary(test) }}
+    {% endfor %}
+
+{% endif %}

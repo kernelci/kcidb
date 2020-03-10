@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 import jsonschema
-from kcidb import db, io
+from kcidb import db, io, oo
 
 # pylint: disable=invalid-name,fixme
 # TODO Remove once users switched to kcidb.io.schema
@@ -132,4 +132,57 @@ def upgrade_main():
         return 2
 
     json.dump(data, sys.stdout, indent=4, sort_keys=True)
+    return 0
+
+
+def summarize_main():
+    """Execute the kcidb-summarize command-line tool"""
+    description = 'kcidb-summarize - Output summaries of report objects'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        'obj_list_name',
+        metavar='LIST',
+        choices=[n for n in io.schema.LATEST.tree if n],
+        help='Name of the object list to output (%(choices)s)'
+    )
+    parser.add_argument(
+        'ids',
+        metavar='ID',
+        nargs='*',
+        default=[],
+        help='ID of the object to limit output to'
+    )
+    args = parser.parse_args()
+    oo_data = oo.from_io(io.schema.upgrade(json.load(sys.stdin), copy=False))
+    obj_map = oo_data.get(args.obj_list_name, {})
+    for obj_id in args.ids or obj_map:
+        if obj_id in obj_map:
+            print(obj_map[obj_id].summarize())
+    return 0
+
+
+def describe_main():
+    """Execute the kcidb-describe command-line tool"""
+    description = 'kcidb-describe - Output descriptions of report objects'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        'obj_list_name',
+        metavar='LIST',
+        choices=[n for n in io.schema.LATEST.tree if n],
+        help='Name of the object list to output'
+    )
+    parser.add_argument(
+        'ids',
+        metavar='ID',
+        nargs='*',
+        default=[],
+        help='ID of the object to limit output to'
+    )
+    args = parser.parse_args()
+    oo_data = oo.from_io(io.schema.upgrade(json.load(sys.stdin), copy=False))
+    obj_map = oo_data.get(args.obj_list_name, {})
+    for obj_id in args.ids or obj_map:
+        if obj_id in obj_map:
+            sys.stdout.write(obj_map[obj_id].describe())
+            sys.stdout.write("\x00")
     return 0

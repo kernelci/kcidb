@@ -1,0 +1,34 @@
+{# Revision template macros #}
+
+{% macro summary(revision) %}
+    {% set empty = True %}
+    {% if revision.git_repository_url %}
+        {{- "" if empty else " " -}}
+        {{- revision.git_repository_url.split("/")[-1] -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if revision.git_repository_branch %}
+        {{- "" if empty else ":" -}}
+        {{- revision.git_repository_branch -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if revision.git_repository_commit_name %}
+        {{- "" if empty else "@" -}}
+        {{- revision.git_repository_commit_name -}}
+        {% set empty = False %}
+    {% elif revision.git_repository_commit_hash %}
+        {{- "" if empty else "@" -}}
+        {{- revision.git_repository_commit_hash[:12] -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if revision.patch_mboxes %}
+        {{- "" if empty else " +" -}}
+        {{- revision.patch_mboxes | length -}}{{- "P" -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if revision.description %}
+        {{- "" if empty else " " -}}
+        {{- revision.description -}}
+        {% set empty = False %}
+    {% endif %}
+{% endmacro %}
