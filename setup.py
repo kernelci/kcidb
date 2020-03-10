@@ -43,12 +43,14 @@ setuptools.setup(
         "jsonschema",
         "requests",
         "pyyaml",
+        "jinja2",
     ],
     extras_require=dict(
         dev=[
             "flake8",
             "pylint",
             "yamllint",
+            "pytest",
         ],
     ),
     entry_points=dict(
@@ -58,6 +60,8 @@ setuptools.setup(
             "kcidb-upgrade = kcidb:upgrade_main",
             "kcidb-submit = kcidb:submit_main",
             "kcidb-query = kcidb:query_main",
+            "kcidb-summarize = kcidb:summarize_main",
+            "kcidb-describe = kcidb:describe_main",
             "kcidb-db-init = kcidb.db:init_main",
             "kcidb-db-cleanup = kcidb.db:cleanup_main",
             "kcidb-db-load = kcidb.db:load_main",
@@ -72,5 +76,8 @@ setuptools.setup(
             "kcidb-mq-subscriber-pull = kcidb.mq:subscriber_pull_main",
             "kcidb-tests-validate = kcidb.tests:validate_main",
         ]
-    )
+    ),
+    package_data={
+        "": ["*.j2"],
+    },
 )

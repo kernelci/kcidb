@@ -1,0 +1,19 @@
+{# Build template macros #}
+
+{% macro summary(build) %}
+    {% set empty = True %}
+    {% if build.architecture %}
+        {{- build.architecture -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if build.config_name %}
+        {{- "" if empty else " " -}}
+        {{- build.config_name -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if build.description %}
+        {{- "" if empty else " " -}}
+        {{- build.description -}}
+        {% set empty = False %}
+    {% endif %}
+{% endmacro %}
