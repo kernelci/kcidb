@@ -444,6 +444,7 @@ JSON = {
         "No special meaning apart from \"data is missing\" is attached to "
         "any immediate or deeper properties being omitted, when they're not "
         "required, and no default values should be assumed for them.\n"
+        "At the same time, no properties can be null.\n"
         "\n"
         "Extra free-form data can be stored under \"misc\" fields associated "
         "with various objects throughout the schema, if necessary. That data "
