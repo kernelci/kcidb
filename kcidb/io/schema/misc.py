@@ -1,5 +1,6 @@
 """Kernel CI reporting I/O schema - misc definitions"""
 
+from copy import deepcopy
 import jsonschema
 
 
@@ -54,9 +55,9 @@ class Version:
         self.tree = tree
         self.inherit = inherit
 
-    def validate(self, data):
+    def validate_exactly(self, data):
         """
-        Validate the data against this schema version.
+        Validate the data against this schema version only.
 
         Args:
             data:   The data to validate. Will not be changed.
@@ -71,9 +72,47 @@ class Version:
         jsonschema.validate(instance=data, schema=self.json)
         return data
 
+    def is_valid_exactly(self, data):
+        """
+        Check if data is valid according to this schema version only.
+
+        Args:
+            data:   The data to check against the schema.
+
+        Returns:
+            True if the data is valid, false otherwise.
+        """
+        try:
+            self.validate_exactly(data)
+        except jsonschema.exceptions.ValidationError:
+            return False
+        return True
+
+    def validate(self, data):
+        """
+        Validate the data against this or previous schema versions.
+
+        Args:
+            data:   The data to validate. Will not be changed.
+
+        Returns:
+            The validated (but unchanged) data.
+
+        Raises:
+            `jsonschema.exceptions.ValidationError` if the data did not adhere
+            to this or a previous version of the schema.
+        """
+        # Check for "previous" outside except block to avoid re-raising
+        if self.previous:
+            try:
+                return self.validate_exactly(data)
+            except jsonschema.exceptions.ValidationError:
+                return self.previous.validate(data)
+        return self.validate_exactly(data)
+
     def is_valid(self, data):
         """
-        Check if data is valid according to this schema version.
+        Check if data is valid according to this or previous schema version.
 
         Args:
             data:   The data to check against the schema.
@@ -87,14 +126,18 @@ class Version:
             return False
         return True
 
-    def upgrade(self, data):
+    def upgrade(self, data, copy=True):
         """
         Upgrade the data to this version from any of the previous schema
-        versions. Validates the data.
+        versions. Validates the data. Has no effect if the data already
+        adheres to this schema version.
 
         Args:
             data:   The data to upgrade and validate. Must adhere to this
                     version or any of the previous versions.
+            copy:   True, if the data should be copied before upgrading.
+                    False, if the data should be upgraded in-place.
+                    Optional, default is True.
 
         Returns:
             The upgraded and validated data.
@@ -102,12 +145,14 @@ class Version:
         # Check for "previous" outside except block to avoid re-raising
         if self.previous:
             try:
-                self.validate(data)
+                data = self.validate_exactly(data)
             except jsonschema.exceptions.ValidationError:
-                data = self.previous.upgrade(data)
+                if copy:
+                    data = deepcopy(data)
+                data = self.previous.upgrade(data, copy=False)
                 if self.inherit:
                     data = self.inherit(data)
-                assert self.is_valid(data)
+                assert self.is_valid_exactly(data)
         else:
-            self.validate(data)
+            data = self.validate_exactly(data)
         return data

@@ -9,7 +9,7 @@ from kcidb import db, io
 # pylint: disable=invalid-name,fixme
 # TODO Remove once users switched to kcidb.io.schema
 # Compatibility alias
-io_schema = io.schema.LATEST
+io_schema = io.schema
 
 
 class Client:
@@ -34,10 +34,9 @@ class Client:
 
         Args:
             data:   The JSON report data to submit.
-                    Must adhere to the latest I/O schema
-                    (kcidb.io.schema.LATEST).
+                    Must adhere to a version of I/O schema.
         """
-        assert io.schema.LATEST.is_valid(data)
+        assert io.schema.is_valid(data)
         self.db_client.load(data)
 
     def query(self):
@@ -45,11 +44,10 @@ class Client:
         Query reports.
 
         Returns:
-            The JSON report data adhering to the latest I/O schema
-            (kcidb.io.schema.LATEST).
+            The JSON report data adhering to the latest I/O schema.
         """
         data = self.db_client.query()
-        assert io.schema.LATEST.is_valid(data)
+        assert io.schema.is_valid_latest(data)
         return data
 
 
@@ -65,7 +63,7 @@ def submit_main():
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
-    data = io.schema.LATEST.upgrade(data)
+    data = io.schema.upgrade(data, copy=False)
     client = db.Client(args.dataset)
     client.load(data)
 
@@ -106,7 +104,7 @@ def validate_main():
         return 1
 
     try:
-        io.schema.LATEST.upgrade(data)
+        io.schema.validate(data)
     except jsonschema.exceptions.ValidationError as err:
         print(err, file=sys.stderr)
         return 2
@@ -126,7 +124,7 @@ def upgrade_main():
         return 1
 
     try:
-        data = io.schema.LATEST.upgrade(data)
+        data = io.schema.upgrade(data, copy=False)
     except jsonschema.exceptions.ValidationError as err:
         print(err, file=sys.stderr)
         return 2
