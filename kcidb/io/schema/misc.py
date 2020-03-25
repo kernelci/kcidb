@@ -90,14 +90,14 @@ class Version:
     def upgrade(self, data):
         """
         Upgrade the data to this version from any of the previous schema
-        versions.
+        versions. Validates the data.
 
         Args:
-            data:   The data to upgrade. Must adhere to this version or any of
-                    the previous versions.
+            data:   The data to upgrade and validate. Must adhere to this
+                    version or any of the previous versions.
 
         Returns:
-            The upgraded data.
+            The upgraded and validated data.
         """
         # Check for "previous" outside except block to avoid re-raising
         if self.previous:
