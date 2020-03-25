@@ -124,7 +124,7 @@ class Client:
 
         Returns:
             The JSON data from the database adhering to the latest I/O schema
-            (kcidb.io.schema.LATEST).
+            version.
 
         Raises:
             `IncompatibleSchema` if the dataset schema is incompatible with
@@ -145,7 +145,8 @@ class Client:
                 Client._unpack_node(dict(row.items())) for row in query_job
             ]
 
-        return io.schema.LATEST.validate(data)
+        assert io.schema.is_valid_latest(data)
+        return data
 
     @staticmethod
     def _pack_node(node):
@@ -179,14 +180,14 @@ class Client:
 
         Args:
             data:   The JSON data to load into the database.
-                    Must adhere to the latest I/O schema
-                    (kcidb.io.schema.LATEST).
+                    Must adhere to a version of I/O schema.
 
         Raises:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
-        assert io.schema.LATEST.is_valid(data)
+        assert io.schema.is_valid(data)
+        data = io.schema.upgrade(data)
 
         major, minor = self.get_schema_version()
         if major != io.schema.LATEST.major:
@@ -227,7 +228,7 @@ class Client:
             If the query string is returned, the query would produce one
             column called "id".
         """
-        assert io.schema.LATEST.is_valid(data)
+        assert io.schema.is_valid_latest(data)
         assert isinstance(obj_list_name, str)
         assert obj_list_name.endswith("s")
         obj_name = obj_list_name[:-1]
@@ -285,7 +286,7 @@ class Client:
             join_string:    The JOIN clause string to limit the query with.
             join_params:    The parameters for the JOIN clause.
         """
-        assert io.schema.LATEST.is_valid(data)
+        assert io.schema.is_valid_latest(data)
         assert isinstance(obj_list_name, str)
         assert obj_list_name.endswith("s")
         assert isinstance(join_string, str)
@@ -312,7 +313,7 @@ class Client:
             self._query_tree(data, child_list_name,
                              child_join_string, join_params)
 
-        assert io.schema.LATEST.is_valid(data)
+        assert io.schema.is_valid_latest(data)
 
     def complement(self, data):
         """
@@ -324,14 +325,15 @@ class Client:
 
         Args:
             data:   The JSON data to complement from the database.
-                    Must adhere to the latest I/O schema
-                    (kcidb.io.schema.LATEST). Will not be modified.
+                    Must adhere to a version of I/O schema
+                    Will not be modified.
 
         Returns:
             The complemented JSON data from the database adhering to the
-            latest I/O schema (kcidb.io.schema.LATEST).
+            latest version of I/O schema.
         """
-        assert io.schema.LATEST.is_valid(data)
+        assert io.schema.is_valid(data)
+        data = io.schema.upgrade(data)
 
         major, minor = self.get_schema_version()
         if major != io.schema.LATEST.major:
@@ -392,7 +394,7 @@ def complement_main():
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
-    data = io.schema.LATEST.upgrade(data)
+    data = io.schema.upgrade(data, copy=False)
     client = Client(args.dataset)
     json.dump(client.complement(data), sys.stdout, indent=4, sort_keys=True)
 
@@ -424,7 +426,7 @@ def load_main():
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
-    data = io.schema.LATEST.upgrade(data)
+    data = io.schema.upgrade(data, copy=False)
     client = Client(args.dataset)
     client.load(data)
 
