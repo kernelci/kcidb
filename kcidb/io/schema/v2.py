@@ -22,7 +22,9 @@ JSON_RESOURCE = {
             "type": "string",
             "description":
                 "Resource name. Must be usable as a local file name for the "
-                "downloaded resource.",
+                "downloaded resource. Cannot be empty. Should not include "
+                "directories.",
+            "pattern": "^[^/]+$",
         },
         "url": {
             "type": "string",
@@ -536,6 +538,16 @@ def inherit(data):
                 obj[id] = obj[pair[0]] + ':' + obj[pair[1]]
                 del obj[pair[0]]
                 del obj[pair[1]]
+
+    # Replace slashes with underscores in resource names
+    for collection, prop_list in \
+        dict(revisions=["patch_mboxes"],
+             builds=["input_files", "output_files"],
+             tests=["output_files"]).items():
+        for obj in data.get(collection, []):
+            for prop in prop_list:
+                for resource in obj[prop]:
+                    resource["name"] = resource["name"].replace("/", "_")
 
     # Update version
     data['version'] = dict(major=JSON_VERSION_MAJOR,
