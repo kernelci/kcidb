@@ -546,7 +546,7 @@ def inherit(data):
              tests=["output_files"]).items():
         for obj in data.get(collection, []):
             for prop in prop_list:
-                for resource in obj[prop]:
+                for resource in obj.get(prop, []):
                     resource["name"] = resource["name"].replace("/", "_")
 
     # Update version
