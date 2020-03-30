@@ -39,14 +39,26 @@ class Client:
         assert io.schema.is_valid(data)
         self.db_client.load(data)
 
-    def query(self):
+    def query(self, patterns, children=False, parents=False):
         """
-        Query reports.
+        Match and fetch report objects.
+
+        Args:
+            patterns:   A dictionary of object list names, and lists of LIKE
+                        patterns, for IDs of objects to match.
+            children:   True if children of matched objects should be matched
+                        as well.
+            parents:    True if parents of matched objects should be matched
+                        as well.
 
         Returns:
-            The JSON report data adhering to the latest I/O schema.
+            The fetched JSON data adhering to the latest I/O schema version.
+
+        Raises:
+            `IncompatibleSchema` if the dataset schema is incompatible with
+            the latest I/O schema.
         """
-        data = self.db_client.query()
+        data = self.db_client.query(patterns, children, parents)
         assert io.schema.is_valid_latest(data)
         return data
 
@@ -70,17 +82,7 @@ def submit_main():
 
 def query_main():
     """Execute the kcidb-query command-line tool"""
-    description = \
-        'kcidb-query - Query Kernel CI reports'
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
-        required=True
-    )
-    args = parser.parse_args()
-    client = db.Client(args.dataset)
-    json.dump(client.query(), sys.stdout, indent=4, sort_keys=True)
+    return db.query_main("kcidb-query - Query Kernel CI reports")
 
 
 def schema_main():
