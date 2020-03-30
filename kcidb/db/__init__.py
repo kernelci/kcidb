@@ -4,6 +4,7 @@ import argparse
 import decimal
 import json
 import sys
+import textwrap
 from datetime import datetime
 from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
@@ -118,9 +119,9 @@ class Client:
                     node[key] = Client._unpack_node(value)
         return node
 
-    def query(self):
+    def dump(self):
         """
-        Query data from the database.
+        Dump all data from the database.
 
         Returns:
             The JSON data from the database adhering to the latest I/O schema
@@ -141,6 +142,117 @@ class Client:
                 default_dataset=self.dataset_ref)
             query_job = self.client.query(
                 f"SELECT * FROM `{obj_list_name}`", job_config=job_config)
+            data[obj_list_name] = [
+                Client._unpack_node(dict(row.items())) for row in query_job
+            ]
+
+        assert io.schema.is_valid_latest(data)
+        return data
+
+    def query(self, patterns, children=False, parents=False):
+        """
+        Match and fetch objects from the database.
+
+        Args:
+            patterns:   A dictionary of object list names, and lists of LIKE
+                        patterns, for IDs of objects to match.
+            children:   True if children of matched objects should be matched
+                        as well.
+            parents:    True if parents of matched objects should be matched
+                        as well.
+
+        Returns:
+            The JSON data from the database adhering to the latest I/O schema
+            version.
+
+        Raises:
+            `IncompatibleSchema` if the dataset schema is incompatible with
+            the latest I/O schema.
+        """
+        assert isinstance(patterns, dict)
+        assert all(isinstance(k, str) and isinstance(v, list) and
+                   all(isinstance(e, str) for e in v)
+                   for k, v in patterns.items())
+
+        major, minor = self.get_schema_version()
+        if major != io.schema.LATEST.major:
+            raise IncompatibleSchema(major, minor)
+
+        # A dictionary of object list names and tuples containing a SELECT
+        # statement and the list of its parameters, returning IDs of the
+        # objects to fetch.
+        obj_list_queries = {
+            # JOIN selecting objects with IDs matching the patterns
+            obj_list_name: [
+                f"SELECT {obj_list_name}.id AS id " \
+                f"FROM {obj_list_name} " \
+                f"INNER JOIN UNNEST(?) AS id_pattern " \
+                f"ON {obj_list_name}.id LIKE id_pattern\n",
+                [
+                    bigquery.ArrayQueryParameter(
+                        None, "STRING", patterns.get(obj_list_name, [])
+                    )
+                ]
+            ]
+            for obj_list_name in io.schema.LATEST.tree if obj_list_name
+        }
+
+        # Add referenced parents if requested
+        if parents:
+            def add_parents(obj_list_name):
+                """Add parent IDs to query results"""
+                obj_name = obj_list_name[:-1]
+                query = obj_list_queries[obj_list_name]
+                for child_list_name in io.schema.LATEST.tree[obj_list_name]:
+                    add_parents(child_list_name)
+                    child_query = obj_list_queries[child_list_name]
+                    query[0] += \
+                        f"UNION DISTINCT\n" \
+                        f"SELECT {child_list_name}.{obj_name}_id AS id " \
+                        f"FROM {child_list_name} " + \
+                        f"WHERE {child_list_name}.id IN (\n" + \
+                        textwrap.indent(child_query[0], " " * 4) + \
+                        f")\n"
+                    query[1] += child_query[1]
+
+            for obj_list_name in io.schema.LATEST.tree[""]:
+                add_parents(obj_list_name)
+
+        # Add referenced children if requested
+        if children:
+            def add_children(obj_list_name):
+                """Add child IDs to query results"""
+                obj_name = obj_list_name[:-1]
+                query = obj_list_queries[obj_list_name]
+                for child_list_name in io.schema.LATEST.tree[obj_list_name]:
+                    child_query = obj_list_queries[child_list_name]
+                    child_query[0] += \
+                        f"UNION DISTINCT\n" \
+                        f"SELECT {child_list_name}.id AS id " \
+                        f"FROM {child_list_name} " + \
+                        f"WHERE {child_list_name}.{obj_name}_id IN (\n" + \
+                        textwrap.indent(query[0], " " * 4) + \
+                        f")\n"
+                    child_query[1] += query[1]
+                    add_children(child_list_name)
+
+            for obj_list_name in io.schema.LATEST.tree[""]:
+                add_children(obj_list_name)
+
+        # Fetch the data
+        data = dict(version=dict(major=io.schema.LATEST.major,
+                                 minor=io.schema.LATEST.minor))
+        for obj_list_name, query in obj_list_queries.items():
+            job_config = bigquery.job.QueryJobConfig(
+                query_parameters=query[1],
+                default_dataset=self.dataset_ref
+            )
+            query_job = self.client.query(
+                f"SELECT * FROM {obj_list_name} WHERE id IN (\n" +
+                query[0] +
+                f")\n",
+                job_config=job_config
+            )
             data[obj_list_name] = [
                 Client._unpack_node(dict(row.items())) for row in query_job
             ]
@@ -399,10 +511,10 @@ def complement_main():
     json.dump(client.complement(data), sys.stdout, indent=4, sort_keys=True)
 
 
-def query_main():
-    """Execute the kcidb-db-query command-line tool"""
+def dump_main():
+    """Execute the kcidb-db-dump command-line tool"""
     description = \
-        'kcidb-db-query - Query reports from Kernel CI report database'
+        'kcidb-db-dump - Dump all data from Kernel CI report database'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         '-d', '--dataset',
@@ -411,7 +523,62 @@ def query_main():
     )
     args = parser.parse_args()
     client = Client(args.dataset)
-    json.dump(client.query(), sys.stdout, indent=4, sort_keys=True)
+    json.dump(client.dump(), sys.stdout, indent=4, sort_keys=True)
+
+
+def query_main(description=None):
+    """Execute the kcidb-db-query command-line tool"""
+    if description is None:
+        description = \
+            'kcidb-db-query - Query objects from Kernel CI report database'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        '-d', '--dataset',
+        help='Dataset name',
+        required=True
+    )
+    parser.add_argument(
+        '-r', '--revision-id-like',
+        metavar="ID_PATTERN",
+        default=[],
+        help='LIKE pattern for IDs of revisions to match',
+        dest="revision_id_patterns",
+        action='append',
+    )
+    parser.add_argument(
+        '-b', '--build-id-like',
+        metavar="ID_PATTERN",
+        default=[],
+        help='LIKE pattern for IDs of builds to match',
+        dest="build_id_patterns",
+        action='append',
+    )
+    parser.add_argument(
+        '-t', '--test-id-like',
+        metavar="ID_PATTERN",
+        default=[],
+        help='LIKE pattern for IDs of tests to match',
+        dest="test_id_patterns",
+        action='append',
+    )
+    parser.add_argument(
+        '-p', '--parents',
+        help='Match parents of matching objects',
+        action='store_true'
+    )
+    parser.add_argument(
+        '-c', '--children',
+        help='Match children of matching objects',
+        action='store_true'
+    )
+    args = parser.parse_args()
+    client = Client(args.dataset)
+    data = client.query(dict(revisions=args.revision_id_patterns,
+                             builds=args.build_id_patterns,
+                             tests=args.test_id_patterns),
+                        parents=args.parents,
+                        children=args.children)
+    json.dump(data, sys.stdout, indent=4, sort_keys=True)
 
 
 def load_main():
