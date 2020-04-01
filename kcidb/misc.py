@@ -13,7 +13,7 @@ class NotificationMessage:
     """
     Message for a notification about a report object state.
     """
-    def __init__(self, recipients, summary="", details=""):
+    def __init__(self, recipients, summary="", description=""):
         """
         Initialize a notification message.
 
@@ -23,18 +23,18 @@ class NotificationMessage:
             summary:        Summary of the object state being notified about.
                             Must be a single-line string without control
                             characters.
-            details:        Detailed description of the object state being
+            description:    Detailed description of the object state being
                             notified about.
         """
         assert isinstance(recipients, list)
         assert all(isinstance(r, str) for r in recipients)
         assert isinstance(summary, str)
         assert NOTIFICATION_SUMMARY_RE.fullmatch(summary)
-        assert isinstance(details, str)
+        assert isinstance(description, str)
 
         self.recipients = recipients
         self.summary = summary
-        self.details = details
+        self.description = description
 
 
 # pylint: disable=too-few-public-methods
