@@ -33,7 +33,7 @@ class NotificationMessage:
             description:    Detailed description of the object state being
                             notified about.
             id:             String identifier of the notification message.
-                            Must be 256 bytes at most when encoded into UTF-8.
+                            Must encode into 256 bytes of UTF-8 at most.
                             The system will only send one notification with
                             the same ID for the same subscription for each
                             database object.
