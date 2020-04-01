@@ -5,7 +5,7 @@ from kcidb.io import schema
 from kcidb import oo
 
 # A regex matching permitted notification summary strings
-NOTIFICATION_SUMMARY_RE = re.compile(r"^[^\x00-\x1f\x7f]*$")
+NOTIFICATION_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
 
 # pylint: disable=too-few-public-methods
@@ -29,7 +29,7 @@ class NotificationMessage:
         assert isinstance(recipients, list)
         assert all(isinstance(r, str) for r in recipients)
         assert isinstance(summary, str)
-        assert NOTIFICATION_SUMMARY_RE.match(summary)
+        assert NOTIFICATION_SUMMARY_RE.fullmatch(summary)
         assert isinstance(details, str)
 
         self.recipients = recipients
