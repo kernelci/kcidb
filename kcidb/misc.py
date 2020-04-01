@@ -1,11 +1,15 @@
 """Kernel CI reporting - misc definitions"""
 
 import re
+from email.message import EmailMessage
 from kcidb.io import schema
 from kcidb import oo
 
 # We like the "id" name
 # pylint: disable=invalid-name,redefined-builtin
+
+# Address to put into From of notification e-mails
+NOTIFICATION_FROM = "kernelci.org bot <bot@kernelci.org>"
 
 # A regex matching permitted notification summary strings
 NOTIFICATION_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
@@ -84,4 +88,14 @@ class Notification:
     def render(self):
         """
         Render the notification as an e-mail message.
+
+        Returns:
+            An instance of email.message.EmailMessage with the notification
+            ready to send.
         """
+        email = EmailMessage()
+        email["Subject"] = self.message.summary + self.obj.summarize()
+        email["From"] = NOTIFICATION_FROM
+        email["To"] = ", ".join(self.message.recipients)
+        email.set_content(self.message.description + self.obj.describe())
+        return email
