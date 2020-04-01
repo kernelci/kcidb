@@ -4,6 +4,9 @@ import re
 from kcidb.io import schema
 from kcidb import oo
 
+# We like the "id" name
+# pylint: disable=invalid-name,redefined-builtin
+
 # A regex matching permitted notification summary strings
 NOTIFICATION_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
@@ -13,7 +16,7 @@ class NotificationMessage:
     """
     Message for a notification about a report object state.
     """
-    def __init__(self, recipients, summary="", description=""):
+    def __init__(self, recipients, summary="", description="", id=""):
         """
         Initialize a notification message.
 
@@ -25,16 +28,24 @@ class NotificationMessage:
                             characters.
             description:    Detailed description of the object state being
                             notified about.
+            id:             String identifier of the notification message.
+                            Must be 256 bytes at most when encoded into UTF-8.
+                            The system will only send one notification with
+                            the same ID for the same subscription for each
+                            database object.
         """
         assert isinstance(recipients, list)
         assert all(isinstance(r, str) for r in recipients)
         assert isinstance(summary, str)
         assert NOTIFICATION_SUMMARY_RE.fullmatch(summary)
         assert isinstance(description, str)
+        assert isinstance(id, str)
+        assert len(id.encode("utf-8")) <= 256
 
         self.recipients = recipients
         self.summary = summary
         self.description = description
+        self.id = id
 
 
 # pylint: disable=too-few-public-methods
