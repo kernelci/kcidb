@@ -31,10 +31,12 @@ class NotificationMessage:
             recipients:     List of e-mail addresses of notification message
                             recipients.
             summary:        Summary of the object state being notified about.
+                            Must encode into 256 bytes of UTF-8 at most.
                             Must be a single-line string without control
                             characters.
             description:    Detailed description of the object state being
                             notified about.
+                            Must encode into 4096 bytes of UTF-8 at most.
             id:             String identifier of the notification message.
                             Must encode into 256 bytes of UTF-8 at most.
                             The system will only send one notification with
@@ -45,7 +47,9 @@ class NotificationMessage:
         assert all(isinstance(r, str) for r in recipients)
         assert isinstance(summary, str)
         assert NOTIFICATION_MESSAGE_SUMMARY_RE.fullmatch(summary)
+        assert len(summary.encode("utf-8")) <= 256
         assert isinstance(description, str)
+        assert len(id.encode("utf-8")) <= 4096
         assert isinstance(id, str)
         assert len(id.encode("utf-8")) <= 256
 
