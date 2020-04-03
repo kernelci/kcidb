@@ -1,6 +1,7 @@
 """Kernel CI reporting - misc definitions"""
 
 import re
+import base64
 from email.message import EmailMessage
 from kcidb.io import schema
 from kcidb import oo
@@ -16,6 +17,30 @@ NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
 # A regex matching permitted subscription name strings
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
+
+
+def is_valid_firestore_id(value):
+    """
+    Check if a value is valid for use as a Google Firestore
+    collection or document ID, according to
+    https://firebase.google.com/docs/firestore/quotas
+
+    Args:
+        value: The value to check.
+
+    Returns:
+        True if the value is a valid Firestore document/collection ID,
+        False if not.
+    """
+    try:
+        return isinstance(value, str) and \
+               len(value.encode()) <= 1500 and \
+               value != "." and \
+               value != ".." and \
+               "/" not in value and \
+               not (value.startswith("__") and value.endswith("__"))
+    except UnicodeError:
+        return False
 
 
 # pylint: disable=too-few-public-methods
@@ -64,6 +89,35 @@ class Notification:
     """
     Notification about a report object state.
     """
+
+    @staticmethod
+    def _to_id_part(string):
+        """
+        Encode a string for safe use as part of a notification ID.
+
+        Args:
+            string: The string to encode.
+
+        Returns:
+            The encoded string, usable as part of an ID.
+        """
+        return base64.b64encode(string.encode(), altchars=b'+-').decode()
+
+    @staticmethod
+    def _from_id_part(id_part):
+        """
+        Decode an ID part into the original string passed to _to_id_part()
+        previously.
+
+        Args:
+            id: The ID part to decode.
+
+        Returns:
+            The decoded string.
+        """
+        return base64.b64decode(id_part, altchars=b'+-',
+                                validate=True).decode()
+
     def __init__(self, obj_list_name, obj, subscription, message):
         """
         Initialize a notification.
@@ -96,6 +150,12 @@ class Notification:
         self.obj = obj
         self.subscription = subscription
         self.message = message
+        id = self.subscription + ":" + \
+            self.obj_list_name + ":" + \
+            Notification._to_id_part(obj.id) + ":" + \
+            Notification._to_id_part(message.id)
+        assert is_valid_firestore_id(id)
+        self.id = id
 
     def render(self):
         """
