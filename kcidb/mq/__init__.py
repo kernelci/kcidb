@@ -26,7 +26,7 @@ class Publisher:
             The encoded message data.
         """
         assert io.schema.is_valid(io_data)
-        return json.dumps(io.schema.upgrade(io_data)).encode("utf-8")
+        return json.dumps(io.schema.upgrade(io_data)).encode()
 
     def __init__(self, project_id, topic_name):
         """
@@ -82,7 +82,7 @@ class Subscriber:
         Returns
             The decoded JSON data adhering to the latest I/O schema.
         """
-        data = json.loads(message_data.decode("utf-8"))
+        data = json.loads(message_data.decode())
         return io.schema.upgrade(data, copy=False)
 
     def __init__(self, project_id, topic_name, subscription_name):
