@@ -47,11 +47,11 @@ class NotificationMessage:
         assert all(isinstance(r, str) for r in recipients)
         assert isinstance(summary, str)
         assert NOTIFICATION_MESSAGE_SUMMARY_RE.fullmatch(summary)
-        assert len(summary.encode("utf-8")) <= 256
+        assert len(summary.encode()) <= 256
         assert isinstance(description, str)
-        assert len(id.encode("utf-8")) <= 4096
+        assert len(id.encode()) <= 4096
         assert isinstance(id, str)
-        assert len(id.encode("utf-8")) <= 256
+        assert len(id.encode()) <= 256
 
         self.recipients = recipients
         self.summary = summary
