@@ -11,8 +11,8 @@ from kcidb import oo
 # Address to put into From of notification e-mails
 NOTIFICATION_FROM = "kernelci.org bot <bot@kernelci.org>"
 
-# A regex matching permitted notification summary strings
-NOTIFICATION_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
+# A regex matching permitted notification message summary strings
+NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
 
 # pylint: disable=too-few-public-methods
@@ -41,7 +41,7 @@ class NotificationMessage:
         assert isinstance(recipients, list)
         assert all(isinstance(r, str) for r in recipients)
         assert isinstance(summary, str)
-        assert NOTIFICATION_SUMMARY_RE.fullmatch(summary)
+        assert NOTIFICATION_MESSAGE_SUMMARY_RE.fullmatch(summary)
         assert isinstance(description, str)
         assert isinstance(id, str)
         assert len(id.encode("utf-8")) <= 256
