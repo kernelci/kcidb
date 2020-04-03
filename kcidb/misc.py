@@ -14,6 +14,9 @@ NOTIFICATION_FROM = "kernelci.org bot <bot@kernelci.org>"
 # A regex matching permitted notification message summary strings
 NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
+# A regex matching permitted subscription name strings
+SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
+
 
 # pylint: disable=too-few-public-methods
 class NotificationMessage:
@@ -70,6 +73,9 @@ class Notification:
             subscription:   The name of the subscription which generated the
                             notification (e.g. the name of subscription
                             module).
+                            Must consist only of latin letters, digits, and
+                            underscores. Must not start with an underscore.
+                            Must encode into 64 bytes of UTF-8 at most.
             message:        Notification message. An instance of
                             NotificationMessage.
         """
@@ -78,6 +84,8 @@ class Notification:
         assert obj_list_name in schema.LATEST.tree
         assert isinstance(obj, oo.Node)
         assert isinstance(subscription, str)
+        assert SUBSCRIPTION_RE.fullmatch(subscription)
+        assert len(subscription.encode()) <= 64
         assert isinstance(message, NotificationMessage)
 
         self.obj_list_name = obj_list_name
