@@ -40,6 +40,7 @@ setuptools.setup(
     install_requires=[
         "google-cloud-bigquery",
         "google-cloud-pubsub",
+        "google-cloud-firestore",
         "jsonschema",
         "requests",
         "pyyaml",
