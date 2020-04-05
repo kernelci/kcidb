@@ -41,7 +41,8 @@ def _load_match_map():
     return match_map
 
 
-# A dictionary of object list names and a list of tuples, each containing a
+# The default map of subscription matching functions:
+# a dictionary of object list names and a list of tuples, each containing a
 # subscription name (subscription module name) and the object type's matching
 # function. The matching function must accept an object of corresponding type,
 # and return an iterable of kcidb.misc.NotificationMessage objects, or None,
