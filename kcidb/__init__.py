@@ -71,6 +71,10 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
+        assert isinstance(patterns, dict)
+        assert all(isinstance(k, str) and isinstance(v, list) and
+                   all(isinstance(e, str) for e in v)
+                   for k, v in patterns.items())
         data = self.db_client.query(patterns, children, parents)
         assert io.schema.is_valid_latest(data)
         return data
