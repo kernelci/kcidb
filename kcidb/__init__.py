@@ -89,13 +89,22 @@ def submit_main():
     args = parser.parse_args()
     data = json.load(sys.stdin)
     data = io.schema.upgrade(data, copy=False)
-    client = db.Client(args.dataset)
-    client.load(data)
+    client = Client(args.dataset)
+    client.submit(data)
 
 
 def query_main():
     """Execute the kcidb-query command-line tool"""
-    return db.query_main("kcidb-query - Query Kernel CI reports")
+    args = db.query_main_parse_args(
+        "kcidb-query - Query Kernel CI reports"
+    )
+    client = Client(args.dataset)
+    data = client.query(dict(revisions=args.revision_id_patterns,
+                             builds=args.build_id_patterns,
+                             tests=args.test_id_patterns),
+                        parents=args.parents,
+                        children=args.children)
+    json.dump(data, sys.stdout, indent=4, sort_keys=True)
 
 
 def schema_main():
