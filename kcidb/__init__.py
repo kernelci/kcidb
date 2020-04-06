@@ -28,18 +28,35 @@ io_schema = io.schema
 class Client:
     """Kernel CI reporting client"""
 
-    def __init__(self, dataset_name):
+    def __init__(self, project_id=None, dataset_name=None, topic_name=None):
         """
         Initialize a reporting client
 
         Args:
-            dataset_name:   The name of the Kernel CI dataset. The dataset
-                            should be located within the Google Cloud project
-                            specified in the credentials file pointed to by
-                            GOOGLE_APPLICATION_CREDENTIALS environment
-                            variable.
+            project_id:     ID of the Google Cloud project hosting the report
+                            database infrastructure. Can be None to have
+                            submitting disabled.
+            dataset_name:   The name of the Kernel CI dataset to query reports
+                            from. The dataset should be located within the
+                            specified Google Cloud project. Can be None,
+                            to have querying disabled.
+            topic_name:     Name of the message queue topic to publish
+                            submissions to. The message queue should be
+                            located within the specified Google Cloud project.
+                            Can be None, to have submitting disabled.
         """
-        self.db_client = db.Client(dataset_name)
+        assert project_id is None or \
+            isinstance(project_id, str) and project_id
+        assert dataset_name is None or \
+            isinstance(dataset_name, str) and dataset_name
+        assert topic_name is None or \
+            isinstance(topic_name, str) and topic_name
+        self.db_client = \
+            db.Client(dataset_name, project_id=project_id) if dataset_name \
+            else None
+        self.mq_publisher = \
+            mq.Publisher(project_id, topic_name) if project_id and topic_name \
+            else None
 
     def submit(self, data):
         """
@@ -48,9 +65,16 @@ class Client:
         Args:
             data:   The JSON report data to submit.
                     Must adhere to a version of I/O schema.
+
+        Raises:
+            `NotImplementedError`, if not supplied with a project ID or an MQ
+            topic name at initialization time.
         """
         assert io.schema.is_valid(data)
-        self.db_client.load(data)
+        if self.mq_publisher:
+            self.mq_publisher.publish(data)
+        else:
+            raise NotImplementedError
 
     def query(self, patterns, children=False, parents=False):
         """
@@ -68,6 +92,8 @@ class Client:
             The fetched JSON data adhering to the latest I/O schema version.
 
         Raises:
+            `NotImplementedError`, if not supplied with a dataset name at
+            initialization time;
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
@@ -75,7 +101,10 @@ class Client:
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
                    for k, v in patterns.items())
-        data = self.db_client.query(patterns, children, parents)
+        if self.db_client:
+            data = self.db_client.query(patterns, children, parents)
+        else:
+            raise NotImplementedError
         assert io.schema.is_valid_latest(data)
         return data
 
@@ -86,14 +115,19 @@ def submit_main():
         'kcidb-submit - Submit Kernel CI reports'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
+        '-p', '--project',
+        help='ID of the Google Cloud project containing the message queue',
+        required=True
+    )
+    parser.add_argument(
+        '-t', '--topic',
+        help='Name of the message queue topic to publish to',
         required=True
     )
     args = parser.parse_args()
     data = json.load(sys.stdin)
     data = io.schema.upgrade(data, copy=False)
-    client = Client(args.dataset)
+    client = Client(project_id=args.project, topic_name=args.topic)
     client.submit(data)
 
 
@@ -102,7 +136,7 @@ def query_main():
     args = db.query_main_parse_args(
         "kcidb-query - Query Kernel CI reports"
     )
-    client = Client(args.dataset)
+    client = Client(project_id=args.project, dataset_name=args.dataset)
     data = client.query(dict(revisions=args.revision_id_patterns,
                              builds=args.build_id_patterns,
                              tests=args.test_id_patterns),
