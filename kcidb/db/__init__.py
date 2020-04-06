@@ -530,11 +530,19 @@ def dump_main():
     json.dump(client.dump(), sys.stdout, indent=4, sort_keys=True)
 
 
-def query_main(description=None):
-    """Execute the kcidb-db-query command-line tool"""
-    if description is None:
-        description = \
-            'kcidb-db-query - Query objects from Kernel CI report database'
+def query_main_parse_args(description):
+    """
+    Parse arguments for a database-querying command-line tool
+
+    Args:
+        description:    The program description to use in online help
+                        messages.
+
+    Returns:
+        An instance of argparse.Namespace containing the parsed arguments.
+    """
+    assert isinstance(description, str)
+
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         '-d', '--dataset',
@@ -575,7 +583,14 @@ def query_main(description=None):
         help='Match children of matching objects',
         action='store_true'
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def query_main():
+    """Execute the kcidb-db-query command-line tool"""
+    args = query_main_parse_args(
+        "kcidb-db-query - Query objects from Kernel CI report database"
+    )
     client = Client(args.dataset)
     data = client.query(dict(revisions=args.revision_id_patterns,
                              builds=args.build_id_patterns,
