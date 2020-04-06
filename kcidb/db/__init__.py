@@ -33,19 +33,23 @@ class IncompatibleSchema(Exception):
 class Client:
     """Kernel CI report database client"""
 
-    def __init__(self, dataset_name):
+    def __init__(self, dataset_name, project_id=None):
         """
         Initialize a Kernel CI report database client.
 
         Args:
-            dataset_name:   The name of the Kernel CI dataset. The dataset
-                            should be located within the Google Cloud project
-                            specified in the credentials file pointed to by
+            dataset_name:   The name of the Kernel CI dataset where data is
+                            located. The dataset should be located within the
+                            specified Google Cloud project.
+            project_id:     ID of the Google Cloud project hosting the
+                            dataset, or None to use the project from the
+                            credentials file point to by
                             GOOGLE_APPLICATION_CREDENTIALS environment
                             variable.
         """
         assert isinstance(dataset_name, str)
-        self.client = bigquery.Client()
+        assert project_id is None or isinstance(project_id, str)
+        self.client = bigquery.Client(project=project_id)
         self.dataset_ref = self.client.dataset(dataset_name)
 
     def get_schema_version(self):
