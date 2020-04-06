@@ -9,6 +9,7 @@ every notification email is sent, and sent only once (as well as possible).
 
 import datetime
 import email
+import email.policy
 from google.cloud import firestore
 from kcidb.misc import Notification, is_valid_firestore_id
 
