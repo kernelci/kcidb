@@ -574,7 +574,7 @@ def query_main_parse_args(description):
         action='append',
     )
     parser.add_argument(
-        '-p', '--parents',
+        '--parents',
         help='Match parents of matching objects',
         action='store_true'
     )
