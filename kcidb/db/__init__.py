@@ -498,20 +498,42 @@ class Client:
         return complement
 
 
-def complement_main():
-    """Execute the kcidb-db-complement command-line tool"""
-    description = \
-        'kcidb-db-complement - Complement reports from database'
-    parser = argparse.ArgumentParser(description=description)
+def common_main_add_args(parser):
+    """
+    Add arguments common to all tools to an argparse.ArgumentParser object.
+
+    Args:
+        parser: The parser object to add arguments to.
+
+    Returns:
+        The parser with the arguments added.
+    """
+    assert isinstance(parser, argparse.ArgumentParser)
+    parser.add_argument(
+        '-p', '--project',
+        help='ID of the Google Cloud project containing the dataset. '
+             'Taken from credentials by default.',
+        default=None,
+        required=False
+    )
     parser.add_argument(
         '-d', '--dataset',
         help='Dataset name',
         required=True
     )
+    return parser
+
+
+def complement_main():
+    """Execute the kcidb-db-complement command-line tool"""
+    description = \
+        'kcidb-db-complement - Complement reports from database'
+    parser = argparse.ArgumentParser(description=description)
+    common_main_add_args(parser)
     args = parser.parse_args()
     data = json.load(sys.stdin)
     data = io.schema.upgrade(data, copy=False)
-    client = Client(args.dataset)
+    client = Client(args.dataset, project_id=args.project)
     json.dump(client.complement(data), sys.stdout, indent=4, sort_keys=True)
 
 
@@ -520,13 +542,9 @@ def dump_main():
     description = \
         'kcidb-db-dump - Dump all data from Kernel CI report database'
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
-        required=True
-    )
+    common_main_add_args(parser)
     args = parser.parse_args()
-    client = Client(args.dataset)
+    client = Client(args.dataset, project_id=args.project)
     json.dump(client.dump(), sys.stdout, indent=4, sort_keys=True)
 
 
@@ -544,11 +562,7 @@ def query_main_parse_args(description):
     assert isinstance(description, str)
 
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
-        required=True
-    )
+    common_main_add_args(parser)
     parser.add_argument(
         '-r', '--revision-id-like',
         metavar="ID_PATTERN",
@@ -591,7 +605,7 @@ def query_main():
     args = query_main_parse_args(
         "kcidb-db-query - Query objects from Kernel CI report database"
     )
-    client = Client(args.dataset)
+    client = Client(args.dataset, project_id=args.project)
     data = client.query(dict(revisions=args.revision_id_patterns,
                              builds=args.build_id_patterns,
                              tests=args.test_id_patterns),
@@ -605,15 +619,11 @@ def load_main():
     description = \
         'kcidb-db-load - Load reports into Kernel CI report database'
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
-        required=True
-    )
+    common_main_add_args(parser)
     args = parser.parse_args()
     data = json.load(sys.stdin)
     data = io.schema.upgrade(data, copy=False)
-    client = Client(args.dataset)
+    client = Client(args.dataset, project_id=args.project)
     client.load(data)
 
 
@@ -621,13 +631,9 @@ def init_main():
     """Execute the kcidb-db-init command-line tool"""
     description = 'kcidb-db-init - Initialize a Kernel CI report database'
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
-        required=True
-    )
+    common_main_add_args(parser)
     args = parser.parse_args()
-    client = Client(args.dataset)
+    client = Client(args.dataset, project_id=args.project)
     client.init()
 
 
@@ -635,11 +641,7 @@ def cleanup_main():
     """Execute the kcidb-db-cleanup command-line tool"""
     description = 'kcidb-db-cleanup - Cleanup a Kernel CI report database'
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
-        required=True
-    )
+    common_main_add_args(parser)
     args = parser.parse_args()
-    client = Client(args.dataset)
+    client = Client(args.dataset, project_id=args.project)
     client.cleanup()
