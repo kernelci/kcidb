@@ -4,7 +4,20 @@ import argparse
 import json
 import sys
 import jsonschema
-from kcidb import db, io, oo
+from kcidb import db, io, mq, oo, spool, subscriptions, tests
+
+__all__ = [
+    "db", "io", "mq", "oo", "spool", "subscriptions", "tests",
+    "io_schema",
+    "Client",
+    "submit_main",
+    "query_main",
+    "schema_main",
+    "validate_main",
+    "upgrade_main",
+    "summarize_main",
+    "describe_main",
+]
 
 # pylint: disable=invalid-name,fixme
 # TODO Remove once users switched to kcidb.io.schema
