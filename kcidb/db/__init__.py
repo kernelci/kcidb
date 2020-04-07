@@ -371,19 +371,12 @@ class Client:
             if query_string:
                 query_string += "UNION DISTINCT\n"
             query_string += \
-                "SELECT * FROM UNNEST(?)\n"
+                "SELECT * FROM UNNEST(?) AS id\n"
             query_params += [
                 bigquery.ArrayQueryParameter(
                     None,
-                    "STRUCT",
-                    [
-                        bigquery.StructQueryParameter(
-                            None,
-                            bigquery.ScalarQueryParameter(
-                                "id", "STRING", obj["id"])
-                        )
-                        for obj in data.get(obj_list_name, [])
-                    ]
+                    "STRING",
+                    [obj["id"] for obj in data.get(obj_list_name, [])]
                 )
             ]
         assert bool(query_string) == bool(query_params)
@@ -476,20 +469,11 @@ class Client:
             if result.total_rows:
                 # Get object tree starting with complement IDs
                 join_string = \
-                    f"INNER JOIN UNNEST(?) as ids " \
-                    f"ON {obj_list_name}.id = ids.id\n"
+                    f"INNER JOIN UNNEST(?) as id " \
+                    f"ON {obj_list_name}.id = id\n"
                 join_params = [
                     bigquery.ArrayQueryParameter(
-                        None,
-                        "STRUCT",
-                        [
-                            bigquery.StructQueryParameter(
-                                None,
-                                bigquery.ScalarQueryParameter(
-                                    "id", "STRING", row.id)
-                            )
-                            for row in result
-                        ]
+                        None, "STRING", [row.id for row in result]
                     )
                 ]
                 self._query_tree(complement, obj_list_name,
