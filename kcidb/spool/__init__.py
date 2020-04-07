@@ -79,18 +79,19 @@ class Client:
         Args:
             notification:   An instance of kcidb.misc.Notification to put onto
                             the spool.
-            timestamp:      A datetime.datetime object specifying the
+            timestamp:      An "aware" datetime.datetime object specifying the
                             notification creation time, or None to use
-                            datetime.datetime.now().
+                            datetime.datetime.now(datetime.timezone.utc).
 
         Returns:
             True, if the notification was put onto the spool,
             False, if not (it was already there).
         """
         assert isinstance(notification, Notification)
-        assert timestamp is None or isinstance(timestamp, datetime.datetime)
+        assert timestamp is None or \
+            isinstance(timestamp, datetime.datetime) and timestamp.tzinfo
         if timestamp is None:
-            timestamp = datetime.datetime.now()
+            timestamp = datetime.datetime.now(datetime.timezone.utc)
 
         try:
             self._get_doc(notification.id).create(dict(
@@ -113,8 +114,9 @@ class Client:
         Args:
             id:         The ID of the notification to pick.
                         Must be a valid Firestore ID.
-            timestamp:  A datetime.datetime object specifying the picking
-                        time, or None to use datetime.datetime.now().
+            timestamp:  An "aware" datetime.datetime object specifying the
+                        picking time, or None to use
+                        datetime.datetime.now(datetime.timezone.utc).
             timeout:    A datetime.timedelta object specifying how long should
                         the notification stay picked, from the specified
                         timestamp. After that time, the notification becomes
@@ -128,10 +130,11 @@ class Client:
             spool.
         """
         assert Client.is_valid_id(id)
-        assert timestamp is None or isinstance(timestamp, datetime.datetime)
+        assert timestamp is None or \
+            isinstance(timestamp, datetime.datetime) and timestamp.tzinfo
         assert timeout is None or isinstance(timeout, datetime.timedelta)
         if timestamp is None:
-            timestamp = datetime.datetime.now()
+            timestamp = datetime.datetime.now(datetime.timezone.utc)
         if timeout is None:
             timeout = self.pick_timeout
 
@@ -167,14 +170,15 @@ class Client:
         Args:
             id:         The ID of the notification to acknowledge.
                         Must have been picked previously by the same client.
-            timestamp:  A datetime.datetime object specifying the
+            timestamp:  An "aware" datetime.datetime object specifying the
                         acknowledgment time, or None to use
-                        datetime.datetime.now().
+                        datetime.datetime.now(datetime.timezone.utc).
         """
         assert Client.is_valid_id(id)
-        assert timestamp is None or isinstance(timestamp, datetime.datetime)
+        assert timestamp is None or \
+            isinstance(timestamp, datetime.datetime) and timestamp.tzinfo
         if timestamp is None:
-            timestamp = datetime.datetime.now()
+            timestamp = datetime.datetime.now(datetime.timezone.utc)
         self._get_doc(id).update(dict(
             acked_at=timestamp,
             picked_until=datetime.datetime.max,
@@ -195,13 +199,14 @@ class Client:
         Wipe notifications from the spool.
 
         Args:
-            until:  A datetime.datetime object specifying the latest
-                    creation time for removed notifications, or None
-                    to use datetime.datetime.now().
+            until:  An "aware" datetime.datetime object specifying the latest
+                    creation time for removed notifications, or None to use
+                    datetime.datetime.now(datetime.timezone.utc).
         """
-        assert until is None or isinstance(until, datetime.datetime)
+        assert until is None or \
+            isinstance(until, datetime.datetime) and until.tzinfo
         if until is None:
-            until = datetime.datetime.now()
+            until = datetime.datetime.now(datetime.timezone.utc)
         for snapshot in \
             self._get_coll().where("created_at", "<=", until). \
                 select([]).stream():
@@ -212,15 +217,17 @@ class Client:
         Retrieve IDs of notifications, which weren't picked for delivery yet.
 
         Args:
-            timestamp:  A datetime.datetime object specifying the intended
-                        pickup time, or None to use datetime.datetime.now().
+            timestamp:  An "aware" datetime.datetime object specifying the
+                        intended pickup time, or None to use
+                            datetime.datetime.now(datetime.timezone.utc).
 
         Yields:
             The ID of the next notification free for picking.
         """
-        assert timestamp is None or isinstance(timestamp, datetime.datetime)
+        assert timestamp is None or \
+            isinstance(timestamp, datetime.datetime) and timestamp.tzinfo
         if timestamp is None:
-            timestamp = datetime.datetime.now()
+            timestamp = datetime.datetime.now(datetime.timezone.utc)
         for snapshot in \
             self._get_coll().where("picked_until", "<", timestamp). \
                 select([]).stream():
