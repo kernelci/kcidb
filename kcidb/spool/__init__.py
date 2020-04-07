@@ -145,13 +145,14 @@ class Client:
             snapshot = doc.get(field_paths=["picked_until", "message"],
                                transaction=transaction)
             picked_until = snapshot.get("picked_until")
-            text = snapshot.get("message")
+            message_text = snapshot.get("message")
             # If the document doesn't exist, has no "picked_until" field,
             # no "message" field, or the picking has not timed out yet
-            if not picked_until or not text or picked_until > timestamp:
+            if not picked_until or not message_text or \
+               picked_until > timestamp:
                 return None
             # Parse the message
-            message = self.parser.parsebytes(text)
+            message = self.parser.parsebytes(message_text)
             # Mark notification picked until timeout
             transaction.update(doc, dict(
                 picked_at=timestamp,
