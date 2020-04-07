@@ -10,7 +10,7 @@ def match_revision(revision):
         for test in build.tests_.values():
             if test.path == "ltp":
                 if test.status == "FAIL":
-                    return (Message(recipients, "LTP failed"),)
+                    return (Message(recipients, "LTP failed for "),)
                 if test.status == "ERROR":
-                    return (Message(recipients, "LTP aborted"),)
+                    return (Message(recipients, "LTP aborted for "),)
     return ()
