@@ -2,7 +2,7 @@
 
 import os
 import base64
-import smtplib
+# import smtplib
 import kcidb
 
 PROJECT_ID = os.environ["GCP_PROJECT"]
@@ -17,9 +17,9 @@ MQ_LOADED_PUBLISHER = kcidb.mq.Publisher(PROJECT_ID, MQ_LOADED_TOPIC)
 
 
 # pylint: disable=unused-argument
-def kcidb_consume_new(event, context):
+def kcidb_load(event, context):
     """
-    Consume new KCIDB data from a Pub Sub subscription
+    Load KCIDB data from a Pub Sub subscription into the dataset
     """
     # Get new data
     io_new = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
@@ -29,9 +29,9 @@ def kcidb_consume_new(event, context):
     MQ_LOADED_PUBLISHER.publish(io_new)
 
 
-def kcidb_consume_loaded(event, context):
+def kcidb_spool_notifications(event, context):
     """
-    Consume loaded KCIDB data from a Pub Sub subscription
+    Spool notifications about KCIDB data arriving from a Pub Sub subscription
     """
     # Get loaded data
     io_loaded = kcidb.mq.Subscriber.decode_data(
@@ -54,21 +54,25 @@ def kcidb_consume_loaded(event, context):
         SPOOL_CLIENT.put(notification)
 
 
-def kcidb_handle_notification():
+def kcidb_send_notification(data, context):
     """
-    Handle notifications put onto the spool
+    Send notifications from the spool
     """
+    # Get the notification ID
+    notification_id = context.resource.split("/")[-1]
     # Pick the notification if we can
-    message = SPOOL_CLIENT.pick(id)
+    message = SPOOL_CLIENT.pick(notification_id)
     if not message:
         return
     # Connect to the SMTP server
-    smtp = smtplib.SMTP(SMTP_HOST)
+    # smtp = smtplib.SMTP(SMTP_HOST)
     try:
         # Send message
-        smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
+        # smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
+        print(message.as_string())
     finally:
         # Disconnect from the SMTP server
-        smtp.quit()
+        # smtp.quit()
+        pass
     # Acknowledge notification as sent
-    SPOOL_CLIENT.ack(id)
+    SPOOL_CLIENT.ack(notification_id)
