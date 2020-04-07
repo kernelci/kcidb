@@ -10,6 +10,7 @@ every notification email is sent, and sent only once (as well as possible).
 import datetime
 import email
 import email.policy
+from google.cloud.exceptions import Conflict
 from google.cloud import firestore
 from kcidb.misc import Notification, is_valid_firestore_id
 
@@ -88,29 +89,21 @@ class Client:
         """
         assert isinstance(notification, Notification)
         assert timestamp is None or isinstance(timestamp, datetime.datetime)
+        if timestamp is None:
+            timestamp = datetime.datetime.now()
 
-        @firestore.transactional
-        def create_if_not_exists(transaction, doc, notification, timestamp):
-            """Create notification document, if not exists, atomically"""
-            # If the document already exists
-            if doc.get(field_paths=[], transaction=transaction).exists:
-                return False
-            # Render message saving some space by using UTF-8 in headers
-            message_string = notification.render(). \
-                as_string(policy=email.policy.SMTPUTF8)
-            # Store the notification
-            doc.set(dict(
-                created_at=(timestamp or datetime.datetime.now()),
+        try:
+            self._get_doc(notification.id).create(dict(
+                created_at=timestamp,
                 # Set to a definitely timed-out time, free for picking
                 picked_until=datetime.datetime.min,
-                message=message_string,
+                message=notification.render().as_string(
+                    policy=email.policy.SMTPUTF8
+                ),
             ))
-            return True
-
-        return create_if_not_exists(self.db.transaction(),
-                                    self._get_doc(notification.id),
-                                    notification,
-                                    timestamp)
+        except Conflict:
+            return False
+        return True
 
     def pick(self, id, timestamp=None, timeout=None):
         """
@@ -157,7 +150,7 @@ class Client:
             # Parse the message
             message = self.parser.parsebytes(text)
             # Mark notification picked until timeout
-            doc.update(dict(
+            transaction.update(doc, dict(
                 picked_at=timestamp,
                 picked_until=timestamp + timeout,
             ))
