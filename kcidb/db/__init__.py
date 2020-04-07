@@ -4,6 +4,7 @@ import argparse
 import decimal
 import json
 import sys
+import re
 import textwrap
 from datetime import datetime
 from google.cloud import bigquery
@@ -32,6 +33,8 @@ class IncompatibleSchema(Exception):
 
 class Client:
     """Kernel CI report database client"""
+
+    _LIKE_PATTERN_ESCAPE_RE = re.compile(r"([%_\\])")
 
     def __init__(self, dataset_name, project_id=None):
         """
@@ -152,6 +155,19 @@ class Client:
 
         assert io.schema.is_valid_latest(data)
         return data
+
+    @staticmethod
+    def escape_like_pattern(string):
+        """
+        Escape a string for use as a literal in a LIKE pattern.
+
+        Args:
+            string: The string to escape.
+
+        Returns:
+            The escaped string.
+        """
+        return Client._LIKE_PATTERN_ESCAPE_RE.sub(r"\\\1", string)
 
     def query(self, patterns, children=False, parents=False):
         """
@@ -326,104 +342,6 @@ class Client:
                         f"ERROR: {error['message']}\n" for error in job.errors
                     ]))
 
-    @staticmethod
-    def _get_ids_query(data, obj_list_name):
-        """
-        Generate a query string and parameters retrieving IDs of specific
-        objects referenced by the supplied data, both directly and as parents.
-
-        Args:
-            data:           The data to get objects from.
-            obj_list_name:  Plural name of the object type (table name) to
-                            query IDs for.
-
-        Returns:
-            The query string and a list of (positional) parameters for it, or
-            an empty string and an empty list if there were no object IDs
-            referenced in the data.
-            If the query string is returned, the query would produce one
-            column called "id".
-        """
-        assert io.schema.is_valid_latest(data)
-        assert isinstance(obj_list_name, str)
-        assert obj_list_name.endswith("s")
-        obj_name = obj_list_name[:-1]
-
-        query_string = ""
-        query_params = []
-
-        for child_list_name in io.schema.LATEST.tree[obj_list_name]:
-            child_query_string, child_query_params = \
-                Client._get_ids_query(data, child_list_name)
-            assert bool(child_query_string) == bool(child_query_params)
-            if child_query_string:
-                if query_string:
-                    query_string += "UNION DISTINCT\n"
-                query_string += \
-                    f"SELECT " \
-                    f"table.{obj_name}_id as id " \
-                    f"FROM {child_list_name} as table " \
-                    f"INNER JOIN ({child_query_string}) as ids " \
-                    f"ON table.id = ids.id\n"
-                query_params += child_query_params
-        # Workaround client library choking on empty array parameters
-        if data.get(obj_list_name, []):
-            if query_string:
-                query_string += "UNION DISTINCT\n"
-            query_string += \
-                "SELECT * FROM UNNEST(?) AS id\n"
-            query_params += [
-                bigquery.ArrayQueryParameter(
-                    None,
-                    "STRING",
-                    [obj["id"] for obj in data.get(obj_list_name, [])]
-                )
-            ]
-        assert bool(query_string) == bool(query_params)
-        return query_string, query_params
-
-    def _query_tree(self, data, obj_list_name, join_string, join_params):
-        """
-        Retrieve objects of particular type selected by the specified JOIN
-        clause string and parameters, as well as their children.
-
-        Args:
-            data:           The I/O-schema data to put retrieved objects
-                            into.
-            obj_list_name:  Plural name of the type of object (table name)
-                            to retrieve
-            join_string:    The JOIN clause string to limit the query with.
-            join_params:    The parameters for the JOIN clause.
-        """
-        assert io.schema.is_valid_latest(data)
-        assert isinstance(obj_list_name, str)
-        assert obj_list_name.endswith("s")
-        assert isinstance(join_string, str)
-        assert isinstance(join_params, list)
-
-        obj_name = obj_list_name[:-1]
-
-        query_string = \
-            f"SELECT {obj_list_name}.* FROM {obj_list_name}\n{join_string}"
-        job_config = bigquery.job.QueryJobConfig(
-            query_parameters=join_params,
-            default_dataset=self.dataset_ref
-        )
-        query_job = self.client.query(query_string, job_config=job_config)
-        data[obj_list_name] = [
-            Client._unpack_node(dict(row.items())) for row in query_job
-        ]
-
-        for child_list_name in io.schema.LATEST.tree[obj_list_name]:
-            child_join_string = \
-               f"INNER JOIN {obj_list_name} " \
-               f"ON {child_list_name}.{obj_name}_id = {obj_list_name}.id\n" \
-               f"{join_string}"
-            self._query_tree(data, child_list_name,
-                             child_join_string, join_params)
-
-        assert io.schema.is_valid_latest(data)
-
     def complement(self, data):
         """
         Given I/O data, return its complement. I.e. the same data, but with
@@ -444,42 +362,17 @@ class Client:
         assert io.schema.is_valid(data)
         data = io.schema.upgrade(data)
 
-        major, minor = self.get_schema_version()
-        if major != io.schema.LATEST.major:
-            raise IncompatibleSchema(major, minor)
+        # Generate patterns matching IDs of all supplied objects
+        patterns = {}
+        for obj_list_name in io.schema.LATEST.tree.keys():
+            if obj_list_name:
+                patterns[obj_list_name] = list({
+                    Client.escape_like_pattern(obj["id"])
+                    for obj in data.get(obj_list_name, [])
+                })
 
-        complement = dict(version=dict(major=io.schema.LATEST.major,
-                                       minor=io.schema.LATEST.minor))
-        # For each top-level table
-        for obj_list_name in io.schema.LATEST.tree[""]:
-            # Get complement IDs
-            query_string, query_params = \
-                Client._get_ids_query(data, obj_list_name)
-            assert bool(query_string) == bool(query_params)
-            if not query_string:
-                continue
-            job_config = bigquery.job.QueryJobConfig(
-                query_parameters=query_params,
-                default_dataset=self.dataset_ref
-            )
-            query_job = self.client.query(query_string, job_config=job_config)
-            result = query_job.result()
-
-            # Workaround client library choking on empty array parameters
-            if result.total_rows:
-                # Get object tree starting with complement IDs
-                join_string = \
-                    f"INNER JOIN UNNEST(?) as id " \
-                    f"ON {obj_list_name}.id = id\n"
-                join_params = [
-                    bigquery.ArrayQueryParameter(
-                        None, "STRING", [row.id for row in result]
-                    )
-                ]
-                self._query_tree(complement, obj_list_name,
-                                 join_string, join_params)
-
-        return complement
+        # Query the objects along with parents and children
+        return self.query(patterns, children=True, parents=True)
 
 
 def common_main_add_args(parser):
