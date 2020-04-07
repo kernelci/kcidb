@@ -47,7 +47,7 @@ class Client:
         assert pick_timeout is None or \
             isinstance(pick_timeout, datetime.timedelta)
         self.db = firestore.Client()
-        self.parser = email.parser.BytesParser(policy=email.policy.SMTPUTF8)
+        self.parser = email.parser.Parser(policy=email.policy.SMTPUTF8)
         self.pick_timeout = pick_timeout or datetime.timedelta(minutes=10)
 
     def _get_coll(self):
@@ -152,7 +152,7 @@ class Client:
                picked_until > timestamp:
                 return None
             # Parse the message
-            message = self.parser.parsebytes(message_text)
+            message = self.parser.parsestr(message_text)
             # Mark notification picked until timeout
             transaction.update(doc, dict(
                 picked_at=timestamp,
