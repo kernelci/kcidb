@@ -10,6 +10,6 @@ def match_revision(revision):
         if not build.valid:
             return (Message(recipients, "Build failed for "),)
         for test in build.tests_.values():
-            if test.status in ("FAIL", "ERROR"):
+            if test.status in ("FAIL", "ERROR") and not test.waived:
                 return (Message(recipients, "Tests failed for "),)
     return ()
