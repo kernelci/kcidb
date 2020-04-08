@@ -12,33 +12,33 @@ import jinja2
 class Status(enum.IntEnum):
     """Report object status values, in order of severity"""
     # Unknown/missing status
-    NONE = 0
+    NONE = 1
     # The test wasn't executed,
     # the status of the tested code is unknown
-    SKIP = 1
+    SKIP = 2
     # The test has finished successfully,
     # the status of the tested code is unknown
-    DONE = 2
+    DONE = 3
     # The test has passed,
     # the tested code is correct
-    PASS = 3
+    PASS = 4
     # The test has failed,
     # the tested code is faulty
-    FAIL = 4
+    FAIL = 5
     # The test is faulty,
     # the status of the tested code is unknown
-    ERROR = 5
+    ERROR = 6
 
 
 @enum.unique
 class Waived(enum.IntEnum):
     """Report object waived values, in order of severity"""
     # Unknown/missing waived
-    UNKNOWN = 0
+    UNKNOWN = 1
     # Waived
-    TRUE = 1
+    TRUE = 2
     # Unwaived
-    FALSE = 2
+    FALSE = 3
 
 
 # Jinja2 environment for node summary and description templates
