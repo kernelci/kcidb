@@ -41,6 +41,7 @@ setuptools.setup(
         "google-cloud-bigquery",
         "google-cloud-pubsub",
         "google-cloud-firestore",
+        "google-cloud-secret-manager",
         "jsonschema",
         "requests",
         "pyyaml",
