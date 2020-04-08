@@ -42,13 +42,13 @@ class Client:
         Args:
             pick_timeout:   A datetime.timedelta object specifying how long a
                             notification should be considered picked, by
-                            default, or None, meaning 10 minutes.
+                            default, or None, meaning 2 minutes.
         """
         assert pick_timeout is None or \
             isinstance(pick_timeout, datetime.timedelta)
         self.db = firestore.Client()
         self.parser = email.parser.Parser(policy=email.policy.SMTPUTF8)
-        self.pick_timeout = pick_timeout or datetime.timedelta(minutes=10)
+        self.pick_timeout = pick_timeout or datetime.timedelta(minutes=2)
 
     def _get_coll(self):
         """
