@@ -2,7 +2,7 @@
 
 import os
 import base64
-# import smtplib
+import smtplib
 from google.cloud import secretmanager
 import kcidb
 
@@ -27,10 +27,15 @@ def get_secret(project_id, secret_id):
 
 PROJECT_ID = os.environ["GCP_PROJECT"]
 DATASET = os.environ["KCIDB_DATASET"]
-SMTP_HOST = os.environ.get("KCIDB_SMTP_HOST", "")
+MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
+
+SMTP_HOST = os.environ["KCIDB_SMTP_HOST"]
+SMTP_PORT = int(os.environ["KCIDB_SMTP_PORT"])
+SMTP_USER = os.environ["KCIDB_SMTP_USER"]
+SMTP_PASSWORD_SECRET = os.environ["KCIDB_SMTP_PASSWORD_SECRET"]
+SMTP_PASSWORD = get_secret(PROJECT_ID, SMTP_PASSWORD_SECRET)
 SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
-MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
 
 DB_CLIENT = kcidb.db.Client(DATASET)
 SPOOL_CLIENT = kcidb.spool.Client()
@@ -90,14 +95,16 @@ def kcidb_send_notification(data, context):
     if SMTP_FROM_ADDR:
         message['From'] = SMTP_FROM_ADDR
     # Connect to the SMTP server
-    # smtp = smtplib.SMTP(SMTP_HOST)
+    smtp = smtplib.SMTP(host=SMTP_HOST, port=SMTP_PORT)
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.ehlo()
+    smtp.login(SMTP_USER, SMTP_PASSWORD)
     try:
         # Send message
-        # smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
-        print(message.as_string())
+        smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
     finally:
         # Disconnect from the SMTP server
-        # smtp.quit()
-        pass
+        smtp.quit()
     # Acknowledge notification as sent
     SPOOL_CLIENT.ack(notification_id)
