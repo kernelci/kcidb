@@ -61,6 +61,7 @@ class NotificationTestCase(unittest.TestCase):
                          "subscription:revisions:b3JpZ2luOjE=:aWQ=")
         message = notification.render()
         self.assertIsInstance(message, email.message.EmailMessage)
+        self.assertIsNone(message['From'])
         self.assertEqual(message['To'], "foo@kernelci.org, bar@kernelci.org")
         self.assertEqual(message['X-KCIDB-Notification-Message-ID'], "id")
         self.assertIn("Revision detected: ", message['Subject'])

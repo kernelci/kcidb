@@ -9,9 +9,6 @@ from kcidb import oo
 # We like the "id" name
 # pylint: disable=invalid-name,redefined-builtin
 
-# Address to put into From of notification e-mails
-NOTIFICATION_FROM = "kernelci.org bot <bot@kernelci.org>"
-
 # A regex matching permitted notification message summary strings
 NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
@@ -163,11 +160,10 @@ class Notification:
 
         Returns:
             An instance of email.message.EmailMessage with the notification
-            ready to send.
+            ready to send, but missing the From header.
         """
         email = EmailMessage()
         email["Subject"] = self.message.summary + self.obj.summarize()
-        email["From"] = NOTIFICATION_FROM
         email["To"] = ", ".join(self.message.recipients)
         email["X-KCIDB-Notification-Message-ID"] = self.message.id
         email.set_content(self.message.description + self.obj.describe())

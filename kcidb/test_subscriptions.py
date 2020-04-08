@@ -186,6 +186,7 @@ class MatchTestCase(unittest.TestCase):
             obj_name = obj_list_name[:-1]
             self.assertIsInstance(notification, Notification)
             message = notification.render()
+            self.assertIsNone(message['From'])
             self.assertEqual(message['To'], "test@kernelci.org")
             self.assertEqual(message['X-KCIDB-Notification-Message-ID'],
                              obj_name)
