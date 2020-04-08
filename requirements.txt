@@ -1,2 +1,3 @@
 # Pip requirements for Google Cloud Functions
 -e .
+google-cloud-secret-manager
