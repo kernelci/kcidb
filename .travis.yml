@@ -5,6 +5,25 @@ python:
 install:
     - pip3 install '.[dev]'
 script:
+    - |
+        # Check both install_requires in setup.py and requirements.txt contain
+        # the same dependencies
+        (
+          # NOTE: Option change is contained within the subshell to avoid
+          #       breaking the Travis CI wrapper
+          set -e -u -o pipefail
+          unique_requires=$({
+            sed -n '/install_requires=/,/]/ s/.*"\([^"]\+\)".*/\1/p' setup.py |
+              sort -u
+            grep -v '^#' requirements.txt |
+              sort -u
+          } | sort | uniq -u)
+          if [ -n "$unique_requires" ]; then
+            echo "Requirements not both in setup.py and requirements.txt:" >&2
+            echo "$unique_requires" >&2
+            false
+          fi
+        )
     - "flake8 kcidb *.py"
     - "pylint kcidb *.py"
     - find -name '*.yaml' | xargs yamllint

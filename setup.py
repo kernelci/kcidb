@@ -37,6 +37,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Database :: Front-Ends",
     ],
+    # Must match requirements.txt
     install_requires=[
         "google-cloud-bigquery",
         "google-cloud-pubsub",
