@@ -125,9 +125,9 @@ class Client:
 
         Returns:
             An email.message.EmailMessage object containing parsed
-            notification message, ready for sending, or None if the
-            notification was already picked, was invalid, or wasn't in the
-            spool.
+            notification message, ready for sending, except missing the From
+            header, or None if the notification was already picked, was
+            invalid, or wasn't in the spool.
         """
         assert Client.is_valid_id(id)
         assert timestamp is None or \
