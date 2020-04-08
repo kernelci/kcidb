@@ -72,19 +72,19 @@ class Client:
         """
         return self._get_coll().document(id)
 
-    def put(self, notification, timestamp=None):
+    def post(self, notification, timestamp=None):
         """
-        Put a notification onto the spool, if it wasn't there already.
+        Post a notification onto the spool, if it wasn't there already.
 
         Args:
-            notification:   An instance of kcidb.misc.Notification to put onto
-                            the spool.
+            notification:   An instance of kcidb.misc.Notification to post
+                            onto the spool.
             timestamp:      An "aware" datetime.datetime object specifying the
                             notification creation time, or None to use
                             datetime.datetime.now(datetime.timezone.utc).
 
         Returns:
-            True, if the notification was put onto the spool,
+            True, if the notification was posted onto the spool,
             False, if not (it was already there).
         """
         assert isinstance(notification, Notification)

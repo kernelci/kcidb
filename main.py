@@ -59,7 +59,7 @@ def kcidb_spool_notifications(event, context):
     # Spool notifications from subscriptions
     for notification in kcidb.subscriptions.match(oo_loaded_rooted_complement):
         print("NOTIFICATION ID:", notification.id)
-        SPOOL_CLIENT.put(notification)
+        SPOOL_CLIENT.post(notification)
 
 
 def kcidb_send_notification(data, context):
