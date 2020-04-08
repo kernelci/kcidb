@@ -58,7 +58,7 @@ def kcidb_spool_notifications(event, context):
                                                       oo_loaded)
     # Spool notifications from subscriptions
     for notification in kcidb.subscriptions.match(oo_loaded_rooted_complement):
-        print("NOTIFICATION ID:", notification.id)
+        print("POSTING", notification.id)
         SPOOL_CLIENT.post(notification)
 
 
@@ -83,6 +83,7 @@ def kcidb_send_notification(data, context):
     smtp.login(SMTP_USER, SMTP_PASSWORD)
     try:
         # Send message
+        print("SENDING", notification_id)
         smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
     finally:
         # Disconnect from the SMTP server
