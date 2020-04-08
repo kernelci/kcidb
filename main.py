@@ -3,7 +3,27 @@
 import os
 import base64
 # import smtplib
+from google.cloud import secretmanager
 import kcidb
+
+
+def get_secret(project_id, secret_id):
+    """
+    Get the latest version of a secret from secret manager.
+
+    Args:
+        project_id: The ID of the Google Cloud project to fetch secrets from.
+        secret_id:  The ID of the secret to fetch latest version of.
+
+    Returns:
+        The latest version of the secret.
+    """
+    assert isinstance(project_id, str) and project_id
+    assert isinstance(secret_id, str) and secret_id
+    client = secretmanager.SecretManagerServiceClient()
+    path = client.secret_version_path(project_id, secret_id, "latest")
+    return client.access_secret_version(path).payload.data.decode()
+
 
 PROJECT_ID = os.environ["GCP_PROJECT"]
 DATASET = os.environ["KCIDB_DATASET"]
