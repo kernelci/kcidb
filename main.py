@@ -28,6 +28,7 @@ def get_secret(project_id, secret_id):
 PROJECT_ID = os.environ["GCP_PROJECT"]
 DATASET = os.environ["KCIDB_DATASET"]
 SMTP_HOST = os.environ.get("KCIDB_SMTP_HOST", "")
+SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
 
@@ -84,6 +85,9 @@ def kcidb_send_notification(data, context):
     message = SPOOL_CLIENT.pick(notification_id)
     if not message:
         return
+    # Set From address, if specified
+    if SMTP_FROM_ADDR:
+        message['From'] = SMTP_FROM_ADDR
     # Connect to the SMTP server
     # smtp = smtplib.SMTP(SMTP_HOST)
     try:
