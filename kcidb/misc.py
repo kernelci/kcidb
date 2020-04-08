@@ -3,6 +3,7 @@
 import re
 import base64
 from email.message import EmailMessage
+from google.cloud import secretmanager
 from kcidb.io import schema
 from kcidb import oo
 
@@ -14,6 +15,24 @@ NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
 # A regex matching permitted subscription name strings
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
+
+
+def get_secret(project_id, secret_id):
+    """
+    Get the latest version of a secret from Google Secret Manager.
+
+    Args:
+        project_id: The ID of the Google Cloud project to fetch secrets from.
+        secret_id:  The ID of the secret to fetch latest version of.
+
+    Returns:
+        The latest version of the secret.
+    """
+    assert isinstance(project_id, str) and project_id
+    assert isinstance(secret_id, str) and secret_id
+    client = secretmanager.SecretManagerServiceClient()
+    path = client.secret_version_path(project_id, secret_id, "latest")
+    return client.access_secret_version(path).payload.data.decode()
 
 
 def is_valid_firestore_id(value):

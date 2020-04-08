@@ -3,26 +3,7 @@
 import os
 import base64
 import smtplib
-from google.cloud import secretmanager
 import kcidb
-
-
-def get_secret(project_id, secret_id):
-    """
-    Get the latest version of a secret from secret manager.
-
-    Args:
-        project_id: The ID of the Google Cloud project to fetch secrets from.
-        secret_id:  The ID of the secret to fetch latest version of.
-
-    Returns:
-        The latest version of the secret.
-    """
-    assert isinstance(project_id, str) and project_id
-    assert isinstance(secret_id, str) and secret_id
-    client = secretmanager.SecretManagerServiceClient()
-    path = client.secret_version_path(project_id, secret_id, "latest")
-    return client.access_secret_version(path).payload.data.decode()
 
 
 PROJECT_ID = os.environ["GCP_PROJECT"]
@@ -33,7 +14,7 @@ SMTP_HOST = os.environ["KCIDB_SMTP_HOST"]
 SMTP_PORT = int(os.environ["KCIDB_SMTP_PORT"])
 SMTP_USER = os.environ["KCIDB_SMTP_USER"]
 SMTP_PASSWORD_SECRET = os.environ["KCIDB_SMTP_PASSWORD_SECRET"]
-SMTP_PASSWORD = get_secret(PROJECT_ID, SMTP_PASSWORD_SECRET)
+SMTP_PASSWORD = kcidb.misc.get_secret(PROJECT_ID, SMTP_PASSWORD_SECRET)
 SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
