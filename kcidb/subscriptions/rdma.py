@@ -8,7 +8,7 @@ def match_revision(revision):
     recipients = ["rdma-dev-team@redhat.com"]
     for build in revision.builds_.values():
         if not build.valid:
-            return (Message(recipients, "Build failed for "),)
+            return (Message(recipients, "Builds failed for "),)
         for test in build.tests_.values():
             if test.status in ("FAIL", "ERROR") and not test.waived:
                 return (Message(recipients, "Tests failed for "),)
