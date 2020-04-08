@@ -38,6 +38,7 @@ MQ_LOADED_PUBLISHER = kcidb.mq.Publisher(PROJECT_ID, MQ_LOADED_TOPIC)
 
 
 # pylint: disable=unused-argument
+
 def kcidb_load(event, context):
     """
     Load KCIDB data from a Pub Sub subscription into the dataset
