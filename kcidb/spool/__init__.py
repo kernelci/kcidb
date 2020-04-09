@@ -76,6 +76,7 @@ class Client:
         Returns:
             The notification document reference.
         """
+        assert Client.is_valid_id(id)
         return self._get_coll().document(id)
 
     def post(self, notification, timestamp=None):
