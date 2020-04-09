@@ -7,9 +7,11 @@ picked up and sent asynchronously and provides an interface for making sure
 every notification email is sent, and sent only once (as well as possible).
 """
 
+import argparse
 import datetime
 import email
 import email.policy
+import dateutil.parser
 from google.cloud.exceptions import Conflict
 from google.cloud import firestore
 from kcidb.misc import Notification, is_valid_firestore_id
@@ -242,3 +244,25 @@ class Client:
             id = snapshot.id
             assert Client.is_valid_id(id)
             yield id
+
+
+def wipe_main():
+    """Execute the kcidb-spool-wipe command-line tool"""
+    description = \
+        'kcidb-spool-wipe - Remove (old) notifications from the spool'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        'until',
+        metavar='UNTIL',
+        nargs='?',
+        help='An ISO-8601 timestamp specifying the newest notification to be '
+             'removed. The default is current time.'
+    )
+    args = parser.parse_args()
+    if args.until is None:
+        until = None
+    else:
+        until = dateutil.parser.isoparse(args.until)
+        if until.tzinfo is None:
+            until = until.astimezone()
+    Client().wipe(until=until)
