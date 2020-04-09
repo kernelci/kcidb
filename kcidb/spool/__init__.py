@@ -35,18 +35,24 @@ class Client:
         """
         return is_valid_firestore_id(value)
 
-    def __init__(self, pick_timeout=None):
+    def __init__(self, collection_path="notifications", pick_timeout=None):
         """
         Initialize a spool client.
 
         Args:
-            pick_timeout:   A datetime.timedelta object specifying how long a
-                            notification should be considered picked, by
-                            default, or None, meaning 2 minutes.
+            collection_path:    The Google Firestore path to the collection
+                                of notification documents. The default is
+                                "notifications".
+            pick_timeout:       A datetime.timedelta object specifying how
+                                long a notification should be considered
+                                picked, by default, or None, meaning 2
+                                minutes.
         """
+        assert isinstance(collection_path, str) and collection_path
         assert pick_timeout is None or \
             isinstance(pick_timeout, datetime.timedelta)
         self.db = firestore.Client()
+        self.collection_path = collection_path
         self.parser = email.parser.Parser(policy=email.policy.SMTPUTF8)
         self.pick_timeout = pick_timeout or datetime.timedelta(minutes=2)
 
@@ -57,7 +63,7 @@ class Client:
         Returns:
             The notification document collection reference.
         """
-        return self.db.collection("notifications")
+        return self.db.collection(self.collection_path)
 
     def _get_doc(self, id):
         """
