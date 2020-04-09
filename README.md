@@ -46,11 +46,11 @@ You can use the `kcidb` module to do everything the command-line tools do.
 
 First, make sure you have the `GOOGLE_APPLICATION_CREDENTIALS` environment
 variable set and pointing at your Google Cloud credentials file. Then you can
-create the client with `kcidb.Client(<dataset_name>)` and call its `submit()`
-and `query()` methods.
+create the client with `kcidb.Client(...)` and call its `submit(...)`
+and `query(...)` methods.
 
-You can find the I/O schema `in kcidb.io_schema.JSON` and use
-`kcidb.io_schema.validate()` to validate your I/O data.
+You can find the I/O schema `in kcidb.io.schema.LATEST.json` and use
+`kcidb.io.schema.validate()` to validate your I/O data.
 
 See the source code for additional documentation.
 
