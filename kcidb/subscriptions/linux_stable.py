@@ -1,4 +1,4 @@
-"""RDMA tree subscriptions"""
+"""Stable tree subscriptions"""
 
 from kcidb.misc import NotificationMessage as Message
 
