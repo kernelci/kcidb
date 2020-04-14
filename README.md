@@ -57,38 +57,234 @@ See the source code for additional documentation.
 Administrator guide
 -------------------
 
-### BigQuery
+Kcidb infrastructure is mostly based on Google Cloud services at the moment:
 
-Kcidb uses Google BigQuery for data storage. To be able to store or query
-anything you need to create a BigQuery dataset.
+    === Hosts ===  =================== Google Cloud Project ========================
 
-#### Setup
+    ~~ Staging ~~                                                ~~~~ BigQuery ~~~~~
+    kcidb-grafana <---------------------------------------------  . kernelciXX .
+                                                                 :   revisions  :
+    ~~ Client ~~~                                                :   builds     :
+    kcidb-query <----------------------------------------------- :   tests      :
+                                                                  ''''''''''''''
+                    ~~ Pub/Sub ~~   ~~~~ Cloud Functions ~~~~            ^
+    kcidb-submit -> kcidb_new ----> kcidb_load --------------------------'
+                                        |
+                          .-------------'
+                          v                                      ~~~~ Firestore ~~~~
+                    kcidb_loaded -> kcidb_spool_notifications -> notifications
+                                                                       |
+                                               .-----------------------'
+                                               |
+                                               v                 ~ Secret Manager ~~
+                                    kcidb_send_notification <--- kcidb_smtp_password
+                                               |
+                                               |                 ~~~~~~ GMail ~~~~~~
+                                               `---------------> bot@kernelci.org
 
-The documentation to set up a BigQuery account with a data set and a token can
-be found here:
-https://cloud.google.com/bigquery/docs/quickstarts/quickstart-client-libraries
+BigQuery stores the report dataset and serves it to Grafana dashboards hosted
+on staging.kernelci.org, as well as to any clients invoking `kcidb-query` or
+using the kcidb library to query the database.
 
-Alternatively, you may follow these quick steps:
+Whenever a client submits reports, either via `kcidb-submit` or the kcidb
+library, they go to a Pub/Sub message queue topic named `kcidb_new`, then to
+the `kcidb_load` "Cloud Function", which loads the data to the BigQuery
+dataset, and then pushes it to `kcidb_loaded` topic.
 
-1. Create a Google account if you don't already have one
-2. Go to the "Google Cloud Console" for BigQuery: https://console.cloud.google.com/projectselector2/bigquery
-3. "CREATE" a new project, enter arbitrary project name e.g. `kernelci001`
-4. "CREATE DATASET" in that new project with an arbitrary ID e.g. `kernelci001a`
-5. Go to "Google Cloud Platform" -> "APIs & Services" -> "Credentials",
-   or this URL if you called your project `kernelci001`: https://console.cloud.google.com/apis/credentials?project=kernelci001
-6. Go to "Create credentials" and select "Service Account Key"
-7. Fill these values:
-  * Service Account Name: arbitrary e.g. `admin`
-  * Role: Owner
-  * Format: JSON
-8. "Create" to automatically download the JSON file with your credentials.
+That topic is watched by `kcidb_spool_notifications` function, which picks up
+the data, generates report notifications, and stores them in a Firestore
+collection named `notifications`.
 
-To initialize the dataset, execute `kcidb-db-init -d <DATASET>`, where
-`<DATASET>` is the name of the dataset to initialize.
+The last "Cloud Function", `kcidb_send_notification`, picks up the created
+notifications from the Firestore collection, and sends them out through GMail,
+using the `bot@kernelci.org` account, authenticating with the password stored
+in `kcidb_smtp_password` secret, within Secret Manager.
 
-To cleanup the dataset (remove the tables) use `kcidb-db-cleanup`.
+### Setup
 
-#### Upgrading
+To setup and manage most of Google Cloud services you will need the `gcloud`
+tool, which is a part of Google Cloud SDK. You can install it and create a
+Google Cloud Project by following one of the [official quickstart
+guides](https://cloud.google.com/sdk/docs/quickstarts). The instructions below
+assume the created project ID is `kernelci-project` (yours likely won't be).
+
+Authenticate the gcloud tool with your Google account:
+
+    gcloud auth login
+
+Select the project you just created:
+
+    gcloud config set project kernelci-project
+
+Create an administrative service account (`kernelci-project-admin` from here on):
+
+    gcloud iam service-accounts create kernelci-project-admin
+
+Grant the administrative service account the project owner permissions:
+
+    gcloud projects add-iam-policy-binding kernelci-project \
+           --member "serviceAccount:kernelci-project-admin@kernelci-project.iam.gserviceaccount.com" \
+           --role "roles/owner"
+
+Generate the account key file (`kernelci-project-admin.json` here):
+
+    gcloud iam service-accounts keys create kernelci-project-admin.json \
+           --iam-account kernelci-project-admin@kernelci-project.iam.gserviceaccount.com
+
+NOTE: This key allows anyone to do **anything** with the specified
+      Google Cloud project, so keep it safe.
+
+Select the account key for use with Google Cloud API (which kcidb uses):
+
+    export GOOGLE_APPLICATION_CREDENTIALS=`pwd`/kernelci-project-admin.json
+
+Install kcidb as described above.
+
+#### BigQuery
+
+Create a BigQuery dataset (`kernelci03` here):
+
+    bq mk kernelci03
+
+Check it was created successfully:
+
+    bq ls
+
+Initialize the dataset:
+
+    kcidb-db-init -d kernelci03
+
+#### Pub/Sub
+
+Enable the Pub/Sub API:
+
+    gcloud services enable pubsub.googleapis.com
+
+Create the `kernelci_new` topic:
+
+    kcidb-mq-publisher-init -p kernelci-project -t kernelci_new
+
+Create the `kernelci_loaded` topic:
+
+    kcidb-mq-publisher-init -p kernelci-project -t kernelci_loaded
+
+#### Firestore
+
+Create a **native** Firestore database by following [the quickstart
+guide](https://cloud.google.com/firestore/docs/quickstart-servers).
+
+
+Enable the Firestore API:
+
+    gcloud services enable firestore.googleapis.com
+
+#### Secret Manager
+
+Enable the Secret Manager API:
+
+    gcloud services enable secretmanager.googleapis.com
+
+Add the `kcidb_smtp_password` secret containing the GMail password (here
+`PASSWORD`) for bot@kernelci.org:
+
+    echo -n 'PASSWORD' | gcloud secrets create kcidb_smtp_password \
+                                --replication-policy automatic \
+                                --data-file=-
+
+NOTE: For a more secure way specify a file with the secret to the
+      `--data-file` option instead.
+
+#### Cloud Functions
+
+Requires all the services above setup first.
+
+Enable the Cloud Functions API:
+
+    gcloud services enable cloudfunctions.googleapis.com
+
+Allow the default Cloud Functions account access to the SMTP password:
+
+    gcloud secrets add-iam-policy-binding kcidb_smtp_password \
+           --role roles/secretmanager.secretAccessor \
+           --member serviceAccount:kernelci-project@appspot.gserviceaccount.com
+
+Download and unpack, or clone the kcidb version being deployed, and change
+into the source directory. E.g.:
+
+    git clone https://github.com/kernelci/kcidb.git
+    cd kcidb
+
+Make sure the functions' environment variables specify the setup correctly,
+amend if not:
+
+    cat main.env.yaml
+
+Deploy the functions (do **not** allow unauthenticated invocations when
+prompted):
+
+    gcloud functions deploy kcidb_load \
+                            --runtime python37 \
+                            --trigger-topic kernelci_new \
+                            --env-vars-file main.env.yaml \
+                            --retry \
+                            --timeout=540
+
+    gcloud functions deploy kcidb_spool_notifications \
+                            --runtime python37 \
+                            --trigger-topic kernelci_loaded \
+                            --env-vars-file main.env.yaml \
+                            --retry \
+                            --timeout=540
+
+    gcloud functions deploy kcidb_send_notification \
+                            --runtime python37 \
+                            --trigger-event providers/cloud.firestore/eventTypes/document.create \
+                            --trigger-resource 'projects/kernelci-project/databases/(default)/documents/notifications/{notification_id}' \
+                            --env-vars-file main.env.yaml \
+                            --retry \
+                            --timeout=540
+
+#### Grafana
+
+See
+[kcidb-grafana README.md](https://github.com/kernelci/kcidb-grafana/#setup)
+for setup instructions.
+
+#### CI System Accounts
+
+Each submitting/querying CI system needs to have a service account created,
+permissions assigned, and the account key generated. Below is an example for
+a CI system called "CKI" having account named "kernelci-project-ci-cki" created.
+
+Create the service account:
+
+    gcloud iam service-accounts create kernelci-project-ci-cki
+
+Grant the account query permissions for the BigQuery database:
+
+    gcloud projects add-iam-policy-binding kernelci-project \
+           --member "serviceAccount:kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com" \
+           --role "roles/bigquery.dataViewer"
+
+    gcloud projects add-iam-policy-binding kernelci-project \
+           --member "serviceAccount:kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com" \
+           --role "roles/bigquery.jobUser"
+
+Grant the account permissions to submit to the `kernelci_new` Pub/Sub topic:
+
+    gcloud pubsub topics add-iam-policy-binding kernelci_new \
+                         --member="serviceAccount:kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com" \
+                         --role=roles/pubsub.publisher
+
+Generate the account key file (`kernelci-project-ci-cki.json` here) for use by
+the CI system:
+
+    gcloud iam service-accounts keys create kernelci-project-ci-cki.json \
+           --iam-account kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com
+
+### Upgrading
+
+#### BigQuery
 
 To upgrade the dataset schema, do the following.
 
