@@ -244,6 +244,10 @@ prompted):
                             --retry \
                             --timeout=540
 
+NOTE: If you get a 403 Access Denied response to the first `gcloud functions
+      deploy` invocation, try again. It might be a Google infrastructure quirk
+      and could work the second time.
+
 #### Grafana
 
 See
