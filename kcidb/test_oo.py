@@ -17,20 +17,18 @@ class FromIOTestCase(unittest.TestCase):
         """Setup tests"""
         # pylint: disable=invalid-name
         self.maxDiff = None
-        self.version = {
-            "major": schema.LATEST.major,
-            "minor": schema.LATEST.minor
-        }
+        self.version = dict(
+            major=schema.LATEST.major,
+            minor=schema.LATEST.minor
+        )
 
     def test_empty(self):
         """
         Check empty I/O data is converted correctly.
         """
-        io_data = dict(version=dict(major=schema.LATEST.major,
-                                    minor=schema.LATEST.minor))
+        io_data = dict(version=self.version)
 
-        expected_oo_data = dict(version=dict(major=schema.LATEST.major,
-                                             minor=schema.LATEST.minor))
+        expected_oo_data = dict(version=self.version)
 
         oo_data = from_io(io_data)
         self.assertEqual(oo_data, expected_oo_data)
@@ -323,10 +321,10 @@ class ApplyMaskTestCase(unittest.TestCase):
         """Setup tests"""
         # pylint: disable=invalid-name
         self.maxDiff = None
-        self.version = {
-            "major": schema.LATEST.major,
-            "minor": schema.LATEST.minor
-        }
+        self.version = dict(
+            major=schema.LATEST.major,
+            minor=schema.LATEST.minor
+        )
 
     def test_empty_non_empty(self):
         """
@@ -507,10 +505,10 @@ class RemoveOrphansTestCase(unittest.TestCase):
         """Setup tests"""
         # pylint: disable=invalid-name
         self.maxDiff = None
-        self.version = {
-            "major": schema.LATEST.major,
-            "minor": schema.LATEST.minor
-        }
+        self.version = dict(
+            major=schema.LATEST.major,
+            minor=schema.LATEST.minor
+        )
 
     def test_empty(self):
         """
