@@ -18,10 +18,10 @@ class MatchTestCase(unittest.TestCase):
         """Setup tests"""
         # pylint: disable=invalid-name
         self.maxDiff = None
-        self.version = {
-            "major": schema.LATEST.major,
-            "minor": schema.LATEST.minor
-        }
+        self.version = dict(
+            major=schema.LATEST.major,
+            minor=schema.LATEST.minor
+        )
 
     def test_min(self):
         """Check minimal matching"""
