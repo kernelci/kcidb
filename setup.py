@@ -62,6 +62,7 @@ setuptools.setup(
             "kcidb-schema = kcidb:schema_main",
             "kcidb-validate = kcidb:validate_main",
             "kcidb-upgrade = kcidb:upgrade_main",
+            "kcidb-merge = kcidb:merge_main",
             "kcidb-submit = kcidb:submit_main",
             "kcidb-query = kcidb:query_main",
             "kcidb-summarize = kcidb:summarize_main",

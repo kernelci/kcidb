@@ -246,3 +246,33 @@ def describe_main():
             sys.stdout.write(obj_map[obj_id].describe())
             sys.stdout.write("\x00")
     return 0
+
+
+def merge_main():
+    """Execute the kcidb-merge command-line tool"""
+    description = 'kcidb-merge - Upgrade and merge I/O data sets'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        'paths',
+        metavar='JSON_FILE',
+        nargs='*',
+        default=[],
+        help='Path to a JSON file with I/O data to merge'
+    )
+    args = parser.parse_args()
+
+    merged_data = io.new()
+    for path in args.paths:
+        try:
+            with open(path, "r") as json_file:
+                data = io.schema.validate(json.load(json_file))
+            io.merge(merged_data, data, copy=False)
+        except json.decoder.JSONDecodeError as err:
+            print(err, file=sys.stderr)
+            return 1
+        except jsonschema.exceptions.ValidationError as err:
+            print(err, file=sys.stderr)
+            return 2
+
+    json.dump(merged_data, sys.stdout, indent=4, sort_keys=True)
+    return 0
