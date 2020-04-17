@@ -142,8 +142,7 @@ class Client:
         if major != io.schema.LATEST.major:
             raise IncompatibleSchema(major, minor)
 
-        data = dict(version=dict(major=io.schema.LATEST.major,
-                                 minor=io.schema.LATEST.minor))
+        data = io.new()
         for obj_list_name in schema.TABLE_MAP:
             job_config = bigquery.job.QueryJobConfig(
                 default_dataset=self.dataset_ref)
@@ -260,8 +259,7 @@ class Client:
                 add_children(obj_list_name)
 
         # Fetch the data
-        data = dict(version=dict(major=io.schema.LATEST.major,
-                                 minor=io.schema.LATEST.minor))
+        data = io.new()
         for obj_list_name, query in obj_list_queries.items():
             job_config = bigquery.job.QueryJobConfig(
                 query_parameters=query[1],
