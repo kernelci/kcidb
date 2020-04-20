@@ -11,8 +11,8 @@ from kcidb.misc import Notification
 # pylint: disable=line-too-long
 
 
-class MatchTestCase(unittest.TestCase):
-    """kcidb.misc.Notification test case"""
+class MatchOOTestCase(unittest.TestCase):
+    """kcidb.subscriptions.match_oo test case"""
 
     def setUp(self):
         """Setup tests"""
@@ -178,7 +178,7 @@ class MatchTestCase(unittest.TestCase):
             ],
         })
 
-        notifications = subscriptions.match(oo_data)
+        notifications = subscriptions.match_oo(oo_data)
         self.assertEqual(len(notifications), 3)
         for notification in notifications:
             obj_list_name = notification.obj_list_name

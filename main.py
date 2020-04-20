@@ -41,23 +41,12 @@ def kcidb_spool_notifications(event, context):
     """
     Spool notifications about KCIDB data arriving from a Pub Sub subscription
     """
-    # Get loaded data
-    io_loaded = kcidb.mq.Subscriber.decode_data(
-        base64.b64decode(event["data"])
-    )
-    # Load the complement: the loaded data along with all the linked
-    # parents and children
-    io_complement = DB_CLIENT.complement(io_loaded)
-    # Convert loaded and complemented data to object-oriented representation
-    oo_loaded = kcidb.oo.from_io(io_loaded)
-    oo_complement = kcidb.oo.from_io(io_complement)
-    # Remove all objects with missing parents
-    oo_rooted_complement = kcidb.oo.remove_orphans(oo_complement)
-    # Delist everything except loaded or modified objects, but keep references
-    oo_loaded_rooted_complement = kcidb.oo.apply_mask(oo_rooted_complement,
-                                                      oo_loaded)
+    # Get arriving data
+    new_io = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
+    # Load the arriving data (if stored) and all its parents and children
+    base_io = DB_CLIENT.complement(new_io)
     # Spool notifications from subscriptions
-    for notification in kcidb.subscriptions.match(oo_loaded_rooted_complement):
+    for notification in kcidb.subscriptions.match_new_io(base_io, new_io):
         print("POSTING", notification.id)
         SPOOL_CLIENT.post(notification)
 
