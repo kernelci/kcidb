@@ -266,7 +266,7 @@ def merge_main():
         try:
             with open(path, "r") as json_file:
                 data = io.schema.validate(json.load(json_file))
-            io.merge(merged_data, data, copy=False)
+            io.merge(merged_data, data, copy_target=False, copy_source=False)
         except json.decoder.JSONDecodeError as err:
             print(err, file=sys.stderr)
             return 1

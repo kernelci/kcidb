@@ -20,35 +20,40 @@ def new():
     return data
 
 
-def merge(data_a, data_b, copy=True):
+def merge(target, source, copy_target=True, copy_source=True):
     """
-    Merge two I/O data sets.
+    Merge one I/O data into another.
 
     Args:
-        data_a: First dataset to merge.
-        data_b: Second dataset to merge.
-        copy:   True if both "data_a" and "data_b" contents are copied before
-                upgrading and merging. False if neither are copied, both are
-                upgraded in place, if necessary, and "data_b" objects are
-                simply grafted into "data_a". Default is True.
+        target:         The data to merge into.
+        source:         The data to merge from.
+        copy_target:    True if "target" contents should be copied before
+                        upgrading and modifying. False if not.
+                        Default is True.
+        copy_source:    True if "source" contents should be copied before
+                        upgrading and referencing. False if not.
+                        Default is True.
 
     Returns:
         The merged data, adhering to the latest schema version.
     """
-    assert schema.is_valid(data_a)
-    assert schema.is_valid(data_b)
+    assert schema.is_valid(target)
+    assert schema.is_valid(source)
 
-    if copy:
-        data_a = deepcopy(data_a)
-        data_b = deepcopy(data_b)
+    # Make sure the data is copied, if requested
+    if copy_target:
+        target = deepcopy(target)
+    if copy_source:
+        source = deepcopy(source)
 
-    data_a = schema.upgrade(data_a, copy=False)
-    data_b = schema.upgrade(data_b, copy=False)
+    # Upgrade without copying, even if modifications are needed
+    target = schema.upgrade(target, copy=False)
+    source = schema.upgrade(source, copy=False)
 
     for obj_list_name in schema.LATEST.tree:
         if obj_list_name:
-            data_a[obj_list_name] = \
-                data_a.get(obj_list_name, []) + data_b.get(obj_list_name, [])
+            target[obj_list_name] = \
+                target.get(obj_list_name, []) + source.get(obj_list_name, [])
 
-    assert schema.is_valid_latest(data_a)
-    return data_a
+    assert schema.is_valid_latest(target)
+    return target
