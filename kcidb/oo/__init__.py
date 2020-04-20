@@ -99,18 +99,22 @@ def _obj_list_from_io(oo_data, io_data, obj_list_name):
         oo_data[obj_list_name] = oo_obj_map
 
 
-def from_io(io_data):
+def from_io(io_data, copy=True):
     """
     Convert I/O data to OO data.
 
     Args:
         io_data:    The data to convert to objects.
+        copy:       True, if the data should be copied before
+                    referencing/modifying. False, if the data should be
+                    referenced and modified in-place.
+                    Optional, default is True.
 
     Returns:
         The converted OO data.
     """
     assert schema.is_valid(io_data)
-    io_data = schema.upgrade(io_data)
+    io_data = schema.upgrade(io_data, copy)
 
     oo_data = dict(version=dict(major=io_data['version']['major'],
                                 minor=io_data['version']['minor']))
