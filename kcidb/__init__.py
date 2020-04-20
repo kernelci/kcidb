@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+import email
 import jsonschema
 from kcidb import db, io, mq, oo, spool, subscriptions, tests
 
@@ -17,6 +18,7 @@ __all__ = [
     "upgrade_main",
     "summarize_main",
     "describe_main",
+    "notify_main",
 ]
 
 # pylint: disable=invalid-name,fixme
@@ -275,4 +277,50 @@ def merge_main():
             return 2
 
     json.dump(merged_data, sys.stdout, indent=4, sort_keys=True)
+    return 0
+
+
+def notify_main():
+    """Execute the kcidb-notify command-line tool"""
+    description = 'kcidb-notify - Generate notifications for new I/O data'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        'new',
+        metavar='NEW_FILE',
+        help='Path to a JSON file with new I/O data'
+    )
+    parser.add_argument(
+        'base',
+        metavar='BASE_FILE',
+        nargs='?',
+        help='Path to a JSON file with base I/O data'
+    )
+    args = parser.parse_args()
+
+    if args.base is None:
+        base = io.new()
+    else:
+        try:
+            with open(args.base, "r") as json_file:
+                base = io.schema.validate(json.load(json_file))
+        except (json.decoder.JSONDecodeError,
+                jsonschema.exceptions.ValidationError) as err:
+            print("Failed reading base file:", file=sys.stderr)
+            print(err, file=sys.stderr)
+            return 1
+
+    try:
+        with open(args.new, "r") as json_file:
+            new = io.schema.validate(json.load(json_file))
+    except (json.decoder.JSONDecodeError,
+            jsonschema.exceptions.ValidationError) as err:
+        print("Failed reading new file:", file=sys.stderr)
+        print(err, file=sys.stderr)
+        return 1
+
+    for notification in subscriptions.match_new_io(base, new):
+        sys.stdout.write(
+            notification.render().as_string(policy=email.policy.SMTPUTF8)
+        )
+        sys.stdout.write("\x00")
     return 0

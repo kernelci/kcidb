@@ -67,6 +67,7 @@ setuptools.setup(
             "kcidb-query = kcidb:query_main",
             "kcidb-summarize = kcidb:summarize_main",
             "kcidb-describe = kcidb:describe_main",
+            "kcidb-notify = kcidb:notify_main",
             "kcidb-db-init = kcidb.db:init_main",
             "kcidb-db-cleanup = kcidb.db:cleanup_main",
             "kcidb-db-load = kcidb.db:load_main",
