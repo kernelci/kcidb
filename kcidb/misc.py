@@ -3,6 +3,7 @@
 import re
 import base64
 import argparse
+import logging
 from email.message import EmailMessage
 from google.cloud import secretmanager
 from kcidb.io import schema
@@ -16,6 +17,21 @@ NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
 # A regex matching permitted subscription name strings
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
+
+# A dictionary of names of logging levels and their values
+LOGGING_LEVEL_MAP = {
+    name: value
+    for name, value in logging.__dict__.items()
+    if name.isalpha() and name.isupper() and isinstance(value, int) and value
+}
+LOGGING_LEVEL_MAP["NONE"] = max(LOGGING_LEVEL_MAP.values()) + 1
+# Sort levels highest->lowest
+# I don't see it, pylint: disable=unnecessary-comprehension
+LOGGING_LEVEL_MAP = {
+    k: v
+    for k, v in sorted(LOGGING_LEVEL_MAP.items(),
+                       key=lambda i: i[1], reverse=True)
+}
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -32,6 +48,13 @@ class ArgumentParser(argparse.ArgumentParser):
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
+        self.add_argument(
+            '-l', '--log-level',
+            metavar="LEVEL",
+            default="NONE",
+            choices=LOGGING_LEVEL_MAP.keys(),
+            help='Limit logging to LEVEL (%(choices)s). Default is NONE.'
+        )
 
     def parse_args(self, args=None, namespace=None):
         """
@@ -48,6 +71,11 @@ class ArgumentParser(argparse.ArgumentParser):
             Namespace populated with arguments.
         """
         args = super().parse_args(args=args, namespace=namespace)
+        logging.basicConfig(level=LOGGING_LEVEL_MAP[args.log_level])
+        # We'll do it later, pylint: disable=fixme
+        # TODO Consider separate options for controlling the below
+        logging.getLogger("urllib3").setLevel(LOGGING_LEVEL_MAP["NONE"])
+        logging.getLogger("google").setLevel(LOGGING_LEVEL_MAP["NONE"])
         return args
 
 
