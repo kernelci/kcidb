@@ -270,7 +270,7 @@ class Client:
             query_parameters = query[1]
             query_string = \
                 f"SELECT * FROM {obj_list_name} WHERE id IN (\n" + \
-                query[0] + \
+                textwrap.indent(query[0], " " * 4) + \
                 f")\n"
             LOGGER.debug("Query string: %s", query_string)
             LOGGER.debug("Query params: %s", query_parameters)
