@@ -41,12 +41,12 @@ def kcidb_load(event, context):
     Load KCIDB data from a Pub Sub subscription into the dataset
     """
     # Get new data
-    io_new = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
-    LOGGER.debug("DATA: %s", json.dumps(io_new))
+    data = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
+    LOGGER.debug("DATA: %s", json.dumps(data))
     # Store it in the database
-    DB_CLIENT.load(io_new)
+    DB_CLIENT.load(data)
     # Forward the data to the "loaded" MQ topic
-    MQ_LOADED_PUBLISHER.publish(io_new)
+    MQ_LOADED_PUBLISHER.publish(data)
 
 
 def kcidb_spool_notifications(event, context):
