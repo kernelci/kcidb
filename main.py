@@ -1,6 +1,7 @@
 """Google Cloud Functions for Kernel CI reporting"""
 
 import os
+import json
 import base64
 import logging
 import smtplib
@@ -38,6 +39,7 @@ def kcidb_load(event, context):
     """
     # Get new data
     io_new = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
+    LOGGER.debug("DATA: %s", json.dumps(io_new))
     # Store it in the database
     DB_CLIENT.load(io_new)
     # Forward the data to the "loaded" MQ topic
@@ -50,6 +52,7 @@ def kcidb_spool_notifications(event, context):
     """
     # Get arriving data
     new_io = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
+    LOGGER.debug("DATA: %s", json.dumps(new_io))
     # Load the arriving data (if stored) and all its parents and children
     base_io = DB_CLIENT.complement(new_io)
     # Spool notifications from subscriptions
