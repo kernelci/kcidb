@@ -4,6 +4,7 @@ import decimal
 import json
 import sys
 import re
+import logging
 import textwrap
 from datetime import datetime
 from google.cloud import bigquery
@@ -11,6 +12,10 @@ from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import NotFound
 from kcidb.db import schema
 from kcidb import io, misc
+
+
+# Module's logger
+LOGGER = logging.getLogger(__name__)
 
 
 class IncompatibleSchema(Exception):
@@ -145,8 +150,9 @@ class Client:
         for obj_list_name in schema.TABLE_MAP:
             job_config = bigquery.job.QueryJobConfig(
                 default_dataset=self.dataset_ref)
-            query_job = self.client.query(
-                f"SELECT * FROM `{obj_list_name}`", job_config=job_config)
+            query_string = f"SELECT * FROM `{obj_list_name}`"
+            LOGGER.debug("Query string: %s", query_string)
+            query_job = self.client.query(query_string, job_config=job_config)
             data[obj_list_name] = [
                 Client._unpack_node(dict(row.items())) for row in query_job
             ]
@@ -187,6 +193,7 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
+        # Calm down, we'll get to it, pylint: disable=too-many-locals
         assert isinstance(patterns, dict)
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
@@ -260,16 +267,18 @@ class Client:
         # Fetch the data
         data = io.new()
         for obj_list_name, query in obj_list_queries.items():
+            query_parameters = query[1]
+            query_string = \
+                f"SELECT * FROM {obj_list_name} WHERE id IN (\n" + \
+                query[0] + \
+                f")\n"
+            LOGGER.debug("Query string: %s", query_string)
+            LOGGER.debug("Query params: %s", query_parameters)
             job_config = bigquery.job.QueryJobConfig(
-                query_parameters=query[1],
+                query_parameters=query_parameters,
                 default_dataset=self.dataset_ref
             )
-            query_job = self.client.query(
-                f"SELECT * FROM {obj_list_name} WHERE id IN (\n" +
-                query[0] +
-                f")\n",
-                job_config=job_config
-            )
+            query_job = self.client.query(query_string, job_config=job_config)
             data[obj_list_name] = [
                 Client._unpack_node(dict(row.items())) for row in query_job
             ]
