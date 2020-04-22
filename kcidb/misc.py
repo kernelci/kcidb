@@ -2,6 +2,7 @@
 
 import re
 import base64
+import argparse
 from email.message import EmailMessage
 from google.cloud import secretmanager
 from kcidb.io import schema
@@ -15,6 +16,39 @@ NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
 # A regex matching permitted subscription name strings
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    """
+    KCIDB command-line argument parser handling common arguments.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding common arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+
+    def parse_args(self, args=None, namespace=None):
+        """
+        Parse arguments, including common ones, apply ones affecting global
+        state.
+
+        Args:
+            args:       List of strings to parse. The default is taken from
+                        sys.argv.
+            namespace:  An object to take the attributes. The default is a new
+                        empty argparse.Namespace object.
+
+        Returns:
+            Namespace populated with arguments.
+        """
+        args = super().parse_args(args=args, namespace=namespace)
+        return args
 
 
 def get_secret(project_id, secret_id):

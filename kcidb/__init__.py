@@ -1,11 +1,10 @@
 """Kernel CI reporting"""
 
-import argparse
 import json
 import sys
 import email
 import jsonschema
-from kcidb import db, io, mq, oo, spool, subscriptions, tests
+from kcidb import db, io, mq, oo, spool, subscriptions, tests, misc
 
 __all__ = [
     "db", "io", "mq", "oo", "spool", "subscriptions", "tests",
@@ -115,7 +114,7 @@ def submit_main():
     """Execute the kcidb-submit command-line tool"""
     description = \
         'kcidb-submit - Submit Kernel CI reports'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project containing the message queue',
@@ -135,9 +134,10 @@ def submit_main():
 
 def query_main():
     """Execute the kcidb-query command-line tool"""
-    args = db.query_main_parse_args(
+    description = \
         "kcidb-query - Query Kernel CI reports"
-    )
+    parser = db.QueryArgumentParser(description=description)
+    args = parser.parse_args()
     client = Client(project_id=args.project, dataset_name=args.dataset)
     data = client.query(dict(revisions=args.revision_id_patterns,
                              builds=args.build_id_patterns,
@@ -150,7 +150,7 @@ def query_main():
 def schema_main():
     """Execute the kcidb-schema command-line tool"""
     description = 'kcidb-schema - Output latest I/O JSON schema'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.parse_args()
     json.dump(io.schema.LATEST.json, sys.stdout, indent=4, sort_keys=True)
 
@@ -158,7 +158,7 @@ def schema_main():
 def validate_main():
     """Execute the kcidb-validate command-line tool"""
     description = 'kcidb-validate - Validate I/O JSON data'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
     try:
@@ -178,7 +178,7 @@ def validate_main():
 def upgrade_main():
     """Execute the kcidb-upgrade command-line tool"""
     description = 'kcidb-upgrade - Upgrade I/O JSON data to latest schema'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
     try:
@@ -200,7 +200,7 @@ def upgrade_main():
 def summarize_main():
     """Execute the kcidb-summarize command-line tool"""
     description = 'kcidb-summarize - Output summaries of report objects'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         'obj_list_name',
         metavar='LIST',
@@ -226,7 +226,7 @@ def summarize_main():
 def describe_main():
     """Execute the kcidb-describe command-line tool"""
     description = 'kcidb-describe - Output descriptions of report objects'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         'obj_list_name',
         metavar='LIST',
@@ -253,7 +253,7 @@ def describe_main():
 def merge_main():
     """Execute the kcidb-merge command-line tool"""
     description = 'kcidb-merge - Upgrade and merge I/O data sets'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         'paths',
         metavar='JSON_FILE',
@@ -283,7 +283,7 @@ def merge_main():
 def notify_main():
     """Execute the kcidb-notify command-line tool"""
     description = 'kcidb-notify - Generate notifications for new I/O data'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         'new',
         metavar='NEW_FILE',

@@ -1,6 +1,5 @@
 """Kernel CI report database"""
 
-import argparse
 import decimal
 import json
 import sys
@@ -11,7 +10,7 @@ from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import NotFound
 from kcidb.db import schema
-from kcidb import io
+from kcidb import io, misc
 
 
 class IncompatibleSchema(Exception):
@@ -373,38 +372,89 @@ class Client:
         return self.query(patterns, children=True, parents=True)
 
 
-def common_main_add_args(parser):
+class ArgumentParser(misc.ArgumentParser):
     """
-    Add arguments common to all tools to an argparse.ArgumentParser object.
-
-    Args:
-        parser: The parser object to add arguments to.
-
-    Returns:
-        The parser with the arguments added.
+    Command-line argument parser with common database arguments added.
     """
-    assert isinstance(parser, argparse.ArgumentParser)
-    parser.add_argument(
-        '-p', '--project',
-        help='ID of the Google Cloud project containing the dataset. '
-             'Taken from credentials by default.',
-        default=None,
-        required=False
-    )
-    parser.add_argument(
-        '-d', '--dataset',
-        help='Dataset name',
-        required=True
-    )
-    return parser
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding common database arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        self.add_argument(
+            '-p', '--project',
+            help='ID of the Google Cloud project containing the dataset. '
+                 'Taken from credentials by default.',
+            default=None,
+            required=False
+        )
+        self.add_argument(
+            '-d', '--dataset',
+            help='Dataset name',
+            required=True
+        )
+
+
+class QueryArgumentParser(ArgumentParser):
+    """
+    Command-line argument parser with common database query arguments added.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding common database query arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        self.add_argument(
+            '-r', '--revision-id-like',
+            metavar="ID_PATTERN",
+            default=[],
+            help='LIKE pattern for IDs of revisions to match',
+            dest="revision_id_patterns",
+            action='append',
+        )
+        self.add_argument(
+            '-b', '--build-id-like',
+            metavar="ID_PATTERN",
+            default=[],
+            help='LIKE pattern for IDs of builds to match',
+            dest="build_id_patterns",
+            action='append',
+        )
+        self.add_argument(
+            '-t', '--test-id-like',
+            metavar="ID_PATTERN",
+            default=[],
+            help='LIKE pattern for IDs of tests to match',
+            dest="test_id_patterns",
+            action='append',
+        )
+        self.add_argument(
+            '--parents',
+            help='Match parents of matching objects',
+            action='store_true'
+        )
+        self.add_argument(
+            '-c', '--children',
+            help='Match children of matching objects',
+            action='store_true'
+        )
 
 
 def complement_main():
     """Execute the kcidb-db-complement command-line tool"""
     description = \
         'kcidb-db-complement - Complement reports from database'
-    parser = argparse.ArgumentParser(description=description)
-    common_main_add_args(parser)
+    parser = ArgumentParser(description=description)
     args = parser.parse_args()
     data = json.load(sys.stdin)
     data = io.schema.upgrade(data, copy=False)
@@ -416,70 +466,18 @@ def dump_main():
     """Execute the kcidb-db-dump command-line tool"""
     description = \
         'kcidb-db-dump - Dump all data from Kernel CI report database'
-    parser = argparse.ArgumentParser(description=description)
-    common_main_add_args(parser)
+    parser = ArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
     json.dump(client.dump(), sys.stdout, indent=4, sort_keys=True)
 
 
-def query_main_parse_args(description):
-    """
-    Parse arguments for a database-querying command-line tool
-
-    Args:
-        description:    The program description to use in online help
-                        messages.
-
-    Returns:
-        An instance of argparse.Namespace containing the parsed arguments.
-    """
-    assert isinstance(description, str)
-
-    parser = argparse.ArgumentParser(description=description)
-    common_main_add_args(parser)
-    parser.add_argument(
-        '-r', '--revision-id-like',
-        metavar="ID_PATTERN",
-        default=[],
-        help='LIKE pattern for IDs of revisions to match',
-        dest="revision_id_patterns",
-        action='append',
-    )
-    parser.add_argument(
-        '-b', '--build-id-like',
-        metavar="ID_PATTERN",
-        default=[],
-        help='LIKE pattern for IDs of builds to match',
-        dest="build_id_patterns",
-        action='append',
-    )
-    parser.add_argument(
-        '-t', '--test-id-like',
-        metavar="ID_PATTERN",
-        default=[],
-        help='LIKE pattern for IDs of tests to match',
-        dest="test_id_patterns",
-        action='append',
-    )
-    parser.add_argument(
-        '--parents',
-        help='Match parents of matching objects',
-        action='store_true'
-    )
-    parser.add_argument(
-        '-c', '--children',
-        help='Match children of matching objects',
-        action='store_true'
-    )
-    return parser.parse_args()
-
-
 def query_main():
     """Execute the kcidb-db-query command-line tool"""
-    args = query_main_parse_args(
+    description = \
         "kcidb-db-query - Query objects from Kernel CI report database"
-    )
+    parser = QueryArgumentParser(description=description)
+    args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
     data = client.query(dict(revisions=args.revision_id_patterns,
                              builds=args.build_id_patterns,
@@ -493,8 +491,7 @@ def load_main():
     """Execute the kcidb-db-load command-line tool"""
     description = \
         'kcidb-db-load - Load reports into Kernel CI report database'
-    parser = argparse.ArgumentParser(description=description)
-    common_main_add_args(parser)
+    parser = ArgumentParser(description=description)
     args = parser.parse_args()
     data = json.load(sys.stdin)
     data = io.schema.upgrade(data, copy=False)
@@ -505,8 +502,7 @@ def load_main():
 def init_main():
     """Execute the kcidb-db-init command-line tool"""
     description = 'kcidb-db-init - Initialize a Kernel CI report database'
-    parser = argparse.ArgumentParser(description=description)
-    common_main_add_args(parser)
+    parser = ArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
     client.init()
@@ -515,8 +511,7 @@ def init_main():
 def cleanup_main():
     """Execute the kcidb-db-cleanup command-line tool"""
     description = 'kcidb-db-cleanup - Cleanup a Kernel CI report database'
-    parser = argparse.ArgumentParser(description=description)
-    common_main_add_args(parser)
+    parser = ArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
     client.cleanup()
