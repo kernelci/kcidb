@@ -3,6 +3,7 @@
 import json
 import sys
 import email
+import logging
 import jsonschema
 from kcidb import db, io, mq, oo, spool, subscriptions, tests, misc
 
@@ -24,6 +25,9 @@ __all__ = [
 # TODO Remove once users switched to kcidb.io.schema
 # Compatibility alias
 io_schema = io.schema
+
+# Module's logger
+LOGGER = logging.getLogger(__name__)
 
 
 class Client:
