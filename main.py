@@ -18,6 +18,9 @@ kcidb.misc.logging_setup(
 DATASET = os.environ["KCIDB_DATASET"]
 MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
 
+SELECTED_SUBSCRIPTIONS = \
+    os.environ.get("KCIDB_SELECTED_SUBSCRIPTIONS", "").split()
+
 SMTP_HOST = os.environ["KCIDB_SMTP_HOST"]
 SMTP_PORT = int(os.environ["KCIDB_SMTP_PORT"])
 SMTP_USER = os.environ["KCIDB_SMTP_USER"]
@@ -57,8 +60,14 @@ def kcidb_spool_notifications(event, context):
     base_io = DB_CLIENT.complement(new_io)
     # Spool notifications from subscriptions
     for notification in kcidb.subscriptions.match_new_io(base_io, new_io):
-        LOGGER.info("POSTING %s", notification.id)
-        SPOOL_CLIENT.post(notification)
+        if SELECTED_SUBSCRIPTIONS and \
+           notification.subscription in SELECTED_SUBSCRIPTIONS:
+            LOGGER.info("POSTING %s", notification.id)
+            SPOOL_CLIENT.post(notification)
+        else:
+            LOGGER.info("DROPPING ID %s", notification.id)
+            LOGGER.info("DROPPING MESSAGE:\n%s",
+                        notification.render().as_string())
 
 
 def kcidb_send_notification(data, context):
