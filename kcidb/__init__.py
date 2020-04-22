@@ -204,7 +204,7 @@ def summarize_main():
     parser.add_argument(
         'obj_list_name',
         metavar='LIST',
-        choices=[n for n in io.schema.LATEST.tree if n],
+        choices={n for n in io.schema.LATEST.tree if n},
         help='Name of the object list to output (%(choices)s)'
     )
     parser.add_argument(
@@ -230,7 +230,7 @@ def describe_main():
     parser.add_argument(
         'obj_list_name',
         metavar='LIST',
-        choices=[n for n in io.schema.LATEST.tree if n],
+        choices={n for n in io.schema.LATEST.tree if n},
         help='Name of the object list to output (%(choices)s)'
     )
     parser.add_argument(
