@@ -34,6 +34,21 @@ LOGGING_LEVEL_MAP = {
 }
 
 
+def logging_setup(level):
+    """
+    Setup logging.
+
+    Args:
+        level:  Logging level for the root logger.
+    """
+    assert isinstance(level, int)
+    logging.basicConfig(level=level)
+    # We'll do it later, pylint: disable=fixme
+    # TODO Consider separate arguments for controlling the below
+    logging.getLogger("urllib3").setLevel(LOGGING_LEVEL_MAP["NONE"])
+    logging.getLogger("google").setLevel(LOGGING_LEVEL_MAP["NONE"])
+
+
 class ArgumentParser(argparse.ArgumentParser):
     """
     KCIDB command-line argument parser handling common arguments.
@@ -71,11 +86,7 @@ class ArgumentParser(argparse.ArgumentParser):
             Namespace populated with arguments.
         """
         args = super().parse_args(args=args, namespace=namespace)
-        logging.basicConfig(level=LOGGING_LEVEL_MAP[args.log_level])
-        # We'll do it later, pylint: disable=fixme
-        # TODO Consider separate options for controlling the below
-        logging.getLogger("urllib3").setLevel(LOGGING_LEVEL_MAP["NONE"])
-        logging.getLogger("google").setLevel(LOGGING_LEVEL_MAP["NONE"])
+        logging_setup(LOGGING_LEVEL_MAP[args.log_level])
         return args
 
 
