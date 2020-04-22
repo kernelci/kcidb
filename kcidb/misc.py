@@ -24,6 +24,7 @@ LOGGING_LEVEL_MAP = {
     for name, value in logging.__dict__.items()
     if name.isalpha() and name.isupper() and isinstance(value, int) and value
 }
+# Logging level disabling all logging
 LOGGING_LEVEL_MAP["NONE"] = max(LOGGING_LEVEL_MAP.values()) + 1
 # Sort levels highest->lowest
 # I don't see it, pylint: disable=unnecessary-comprehension
