@@ -2,11 +2,18 @@
 
 import os
 import base64
+import logging
 import smtplib
 import kcidb
 
 
 PROJECT_ID = os.environ["GCP_PROJECT"]
+
+LOGGER = logging.getLogger()
+kcidb.misc.logging_setup(
+    kcidb.misc.LOGGING_LEVEL_MAP[os.environ.get("KCIDB_LOG_LEVEL", "NONE")]
+)
+
 DATASET = os.environ["KCIDB_DATASET"]
 MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
 
@@ -47,7 +54,7 @@ def kcidb_spool_notifications(event, context):
     base_io = DB_CLIENT.complement(new_io)
     # Spool notifications from subscriptions
     for notification in kcidb.subscriptions.match_new_io(base_io, new_io):
-        print("POSTING", notification.id)
+        LOGGER.info("POSTING %s", notification.id)
         SPOOL_CLIENT.post(notification)
 
 
@@ -72,7 +79,7 @@ def kcidb_send_notification(data, context):
     smtp.login(SMTP_USER, SMTP_PASSWORD)
     try:
         # Send message
-        print("SENDING", notification_id)
+        LOGGER.info("SENDING %s", notification_id)
         smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
     finally:
         # Disconnect from the SMTP server
