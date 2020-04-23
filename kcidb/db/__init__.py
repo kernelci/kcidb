@@ -387,17 +387,14 @@ class Client:
         assert io.schema.is_valid(data)
         data = io.schema.upgrade(data)
 
-        # Generate patterns matching IDs of all supplied objects
-        patterns = {}
-        for obj_list_name in io.schema.LATEST.tree.keys():
-            if obj_list_name:
-                patterns[obj_list_name] = list({
-                    Client.escape_like_pattern(obj["id"])
-                    for obj in data.get(obj_list_name, [])
-                })
+        # Collect IDs of all supplied objects
+        ids = {
+            obj_list_name: [obj["id"] for obj in data.get(obj_list_name, [])]
+            for obj_list_name in io.schema.LATEST.tree if obj_list_name
+        }
 
         # Query the objects along with parents and children
-        return self.query(patterns=patterns, children=True, parents=True)
+        return self.query(ids=ids, children=True, parents=True)
 
 
 class ArgumentParser(misc.ArgumentParser):
