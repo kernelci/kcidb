@@ -81,13 +81,16 @@ class Client:
         else:
             raise NotImplementedError
 
-    def query(self, patterns, children=False, parents=False):
+    def query(self, ids=None, patterns=None, children=False, parents=False):
         """
         Match and fetch report objects.
 
         Args:
+            ids:        A dictionary of object list names, and lists of IDs of
+                        objects to match. None means empty dictionary.
             patterns:   A dictionary of object list names, and lists of LIKE
-                        patterns, for IDs of objects to match.
+                        patterns, for IDs of objects to match. None means
+                        empty dictionary.
             children:   True if children of matched objects should be matched
                         as well.
             parents:    True if parents of matched objects should be matched
@@ -102,14 +105,25 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
-        assert isinstance(patterns, dict)
+        assert ids is None or isinstance(ids, dict)
+        if ids is None:
+            ids = dict()
+        assert all(isinstance(k, str) and isinstance(v, list) and
+                   all(isinstance(e, str) for e in v)
+                   for k, v in ids.items())
+
+        assert patterns is None or isinstance(patterns, dict)
+        if patterns is None:
+            patterns = dict()
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
                    for k, v in patterns.items())
+
         if self.db_client:
-            data = self.db_client.query(patterns, children, parents)
+            data = self.db_client.query(ids, patterns, children, parents)
         else:
             raise NotImplementedError
+
         assert io.schema.is_valid_latest(data)
         return data
 
@@ -143,9 +157,12 @@ def query_main():
     parser = db.QueryArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(project_id=args.project, dataset_name=args.dataset)
-    data = client.query(dict(revisions=args.revision_id_patterns,
-                             builds=args.build_id_patterns,
-                             tests=args.test_id_patterns),
+    data = client.query(ids=dict(revisions=args.revision_ids,
+                                 builds=args.build_ids,
+                                 tests=args.test_ids),
+                        patterns=dict(revisions=args.revision_id_patterns,
+                                      builds=args.build_id_patterns,
+                                      tests=args.test_id_patterns),
                         parents=args.parents,
                         children=args.children)
     json.dump(data, sys.stdout, indent=4, sort_keys=True)
