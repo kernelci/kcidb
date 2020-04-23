@@ -173,13 +173,16 @@ class Client:
         """
         return Client._LIKE_PATTERN_ESCAPE_RE.sub(r"\\\1", string)
 
-    def query(self, patterns, children=False, parents=False):
+    def query(self, ids=None, patterns=None, children=False, parents=False):
         """
         Match and fetch objects from the database.
 
         Args:
+            ids:        A dictionary of object list names, and lists of IDs of
+                        objects to match. None means empty dictionary.
             patterns:   A dictionary of object list names, and lists of LIKE
-                        patterns, for IDs of objects to match.
+                        patterns, for IDs of objects to match. None means
+                        empty dictionary.
             children:   True if children of matched objects should be matched
                         as well.
             parents:    True if parents of matched objects should be matched
@@ -194,7 +197,16 @@ class Client:
             the latest I/O schema.
         """
         # Calm down, we'll get to it, pylint: disable=too-many-locals
-        assert isinstance(patterns, dict)
+        assert ids is None or isinstance(ids, dict)
+        if ids is None:
+            ids = dict()
+        assert all(isinstance(k, str) and isinstance(v, list) and
+                   all(isinstance(e, str) for e in v)
+                   for k, v in ids.items())
+
+        assert patterns is None or isinstance(patterns, dict)
+        if patterns is None:
+            patterns = dict()
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
                    for k, v in patterns.items())
@@ -209,11 +221,16 @@ class Client:
         obj_list_queries = {
             # JOIN selecting objects with IDs matching the patterns
             obj_list_name: [
+                f"SELECT id FROM UNNEST(?) AS id\n" \
+                f"UNION DISTINCT\n" \
                 f"SELECT {obj_list_name}.id AS id " \
                 f"FROM {obj_list_name} " \
                 f"INNER JOIN UNNEST(?) AS id_pattern " \
                 f"ON {obj_list_name}.id LIKE id_pattern\n",
                 [
+                    bigquery.ArrayQueryParameter(
+                        None, "STRING", ids.get(obj_list_name, [])
+                    ),
                     bigquery.ArrayQueryParameter(
                         None, "STRING", patterns.get(obj_list_name, [])
                     )
@@ -380,7 +397,7 @@ class Client:
                 })
 
         # Query the objects along with parents and children
-        return self.query(patterns, children=True, parents=True)
+        return self.query(patterns=patterns, children=True, parents=True)
 
 
 class ArgumentParser(misc.ArgumentParser):
@@ -425,8 +442,34 @@ class QueryArgumentParser(ArgumentParser):
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
+
         self.add_argument(
-            '-r', '--revision-id-like',
+            '-r', '--revision-id',
+            metavar="ID",
+            default=[],
+            help='ID of a revision to match',
+            dest="revision_ids",
+            action='append',
+        )
+        self.add_argument(
+            '-b', '--build-id',
+            metavar="ID",
+            default=[],
+            help='ID of a build to match',
+            dest="build_ids",
+            action='append',
+        )
+        self.add_argument(
+            '-t', '--test-id',
+            metavar="ID",
+            default=[],
+            help='ID of a test to match',
+            dest="test_ids",
+            action='append',
+        )
+
+        self.add_argument(
+            '-R', '--revision-id-like',
             metavar="ID_PATTERN",
             default=[],
             help='LIKE pattern for IDs of revisions to match',
@@ -434,7 +477,7 @@ class QueryArgumentParser(ArgumentParser):
             action='append',
         )
         self.add_argument(
-            '-b', '--build-id-like',
+            '-B', '--build-id-like',
             metavar="ID_PATTERN",
             default=[],
             help='LIKE pattern for IDs of builds to match',
@@ -442,13 +485,14 @@ class QueryArgumentParser(ArgumentParser):
             action='append',
         )
         self.add_argument(
-            '-t', '--test-id-like',
+            '-T', '--test-id-like',
             metavar="ID_PATTERN",
             default=[],
             help='LIKE pattern for IDs of tests to match',
             dest="test_id_patterns",
             action='append',
         )
+
         self.add_argument(
             '--parents',
             help='Match parents of matching objects',
@@ -490,9 +534,12 @@ def query_main():
     parser = QueryArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
-    data = client.query(dict(revisions=args.revision_id_patterns,
-                             builds=args.build_id_patterns,
-                             tests=args.test_id_patterns),
+    data = client.query(ids=dict(revisions=args.revision_ids,
+                                 builds=args.build_ids,
+                                 tests=args.test_ids),
+                        patterns=dict(revisions=args.revision_id_patterns,
+                                      builds=args.build_id_patterns,
+                                      tests=args.test_id_patterns),
                         parents=args.parents,
                         children=args.children)
     json.dump(data, sys.stdout, indent=4, sort_keys=True)
