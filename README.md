@@ -46,6 +46,8 @@ Both use the same JSON schema on standard input and output respectively, which
 can be displayed by `kcidb-schema`. You can validate the data without
 submitting it using the `kcidb-validate` tool.
 
+See [Submission HOWTO](SUBMISSION_HOWTO.md) for details.
+
 ### API
 
 You can use the `kcidb` module to do everything the command-line tools do.
@@ -385,6 +387,9 @@ to reinstall. It also installs extra development tools, such as `flake8` and
 `pylint`.
 
 ### Releasing
+
+Before releasing make sure the README.md and SUBMISSION_HOWTO.md are up to
+date.
 
 To make a release tag the release commit with `v<NUMBER>`, where `<NUMBER>` is
 the next release number, e.g. `v3`. The very next commit after the tag should
