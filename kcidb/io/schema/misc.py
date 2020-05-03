@@ -152,7 +152,4 @@ class Version:
                 data = self.previous.upgrade(data, copy=False)
                 if self.inherit:
                     data = self.inherit(data)
-                assert self.is_valid_exactly(data)
-        else:
-            data = self.validate_exactly(data)
-        return data
+        return self.validate_exactly(data)
