@@ -259,6 +259,7 @@ class Notification:
         email = EmailMessage()
         email["Subject"] = self.message.summary + self.obj.summarize()
         email["To"] = ", ".join(self.message.recipients)
+        email["X-KCIDB-Notification-ID"] = self.id
         email["X-KCIDB-Notification-Message-ID"] = self.message.id
         email.set_content(self.message.description + self.obj.describe())
         return email
