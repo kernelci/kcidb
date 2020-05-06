@@ -10,10 +10,10 @@ import kcidb
 
 PROJECT_ID = os.environ["GCP_PROJECT"]
 
-LOGGER = logging.getLogger()
 kcidb.misc.logging_setup(
     kcidb.misc.LOGGING_LEVEL_MAP[os.environ.get("KCIDB_LOG_LEVEL", "NONE")]
 )
+LOGGER = logging.getLogger()
 
 DATASET = os.environ["KCIDB_DATASET"]
 MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
