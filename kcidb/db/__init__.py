@@ -252,9 +252,9 @@ class Client:
                         f"UNION DISTINCT\n" \
                         f"SELECT {child_list_name}.{obj_name}_id AS id " \
                         f"FROM {child_list_name} " + \
-                        f"INNER JOIN (\n" + \
+                        "INNER JOIN (\n" + \
                         textwrap.indent(child_query[0], " " * 4) + \
-                        f") USING(id)\n"
+                        ") USING(id)\n"
                     query[1] += child_query[1]
 
             for obj_list_name in io.schema.LATEST.tree[""]:
@@ -272,7 +272,7 @@ class Client:
                         f"UNION DISTINCT\n" \
                         f"SELECT {child_list_name}.id AS id " \
                         f"FROM {child_list_name} " + \
-                        f"INNER JOIN (\n" + \
+                        "INNER JOIN (\n" + \
                         textwrap.indent(query[0], " " * 4) + \
                         f") AS {obj_list_name} ON " \
                         f"{child_list_name}.{obj_name}_id = " \
@@ -290,7 +290,7 @@ class Client:
             query_string = \
                 f"SELECT * FROM {obj_list_name} INNER JOIN (\n" + \
                 textwrap.indent(query[0], " " * 4) + \
-                f") USING(id)\n"
+                ") USING(id)\n"
             LOGGER.debug("Query string: %s", query_string)
             LOGGER.debug("Query params: %s", query_parameters)
             job_config = bigquery.job.QueryJobConfig(
