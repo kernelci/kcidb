@@ -37,13 +37,13 @@ LOGGING_LEVEL_MAP = {
 
 def logging_setup(level):
     """
-    Setup logging.
+    Setup logging: set root logger log level and disable irrelevant logging.
 
     Args:
         level:  Logging level for the root logger.
     """
     assert isinstance(level, int)
-    logging.basicConfig(level=level)
+    logging.getLogger().setLevel(level)
     # We'll do it later, pylint: disable=fixme
     # TODO Consider separate arguments for controlling the below
     logging.getLogger("urllib3").setLevel(LOGGING_LEVEL_MAP["NONE"])
@@ -87,6 +87,7 @@ class ArgumentParser(argparse.ArgumentParser):
             Namespace populated with arguments.
         """
         args = super().parse_args(args=args, namespace=namespace)
+        logging.basicConfig()
         logging_setup(LOGGING_LEVEL_MAP[args.log_level])
         return args
 
