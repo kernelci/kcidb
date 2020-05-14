@@ -5,7 +5,7 @@ from kcidb.misc import NotificationMessage as Message
 
 def match_revision(revision):
     """Match test revisions"""
-    if revision.id.startswith("test:"):
+    if revision.origin == "test":
         return (
             Message(["test@kernelci.org"],
                     "Test revision: ",
@@ -17,7 +17,7 @@ def match_revision(revision):
 
 def match_build(build):
     """Match test builds"""
-    if build.id.startswith("test:"):
+    if build.origin == "test":
         return (
             Message(["test@kernelci.org"],
                     "Test build: ",
@@ -29,7 +29,7 @@ def match_build(build):
 
 def match_test(test):
     """Match test tests"""
-    if test.id.startswith("test:"):
+    if test.origin == "test":
         return (
             Message(["test@kernelci.org"],
                     "Test test: ",

@@ -41,6 +41,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 467715
                     },
                     "id": "non_test:1",
+                    "origin": "non_test",
                     "patch_mboxes": [],
                     "valid": True,
                 },
@@ -56,6 +57,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 467715
                     },
                     "id": "test:1",
+                    "origin": "test",
                     "patch_mboxes": [],
                     "valid": True,
                 },
@@ -68,6 +70,7 @@ class MatchOOTestCase(unittest.TestCase):
                     "config_name": "fedora",
                     "duration": 237.0,
                     "id": "non_test:1",
+                    "origin": "non_test",
                     "input_files": [],
                     "log_url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/03/469720/build_aarch64.log",
                     "misc": {
@@ -86,6 +89,7 @@ class MatchOOTestCase(unittest.TestCase):
                     "config_name": "fedora",
                     "duration": 237.0,
                     "id": "test:1",
+                    "origin": "test",
                     "input_files": [],
                     "log_url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/03/469720/build_aarch64.log",
                     "misc": {
@@ -104,6 +108,7 @@ class MatchOOTestCase(unittest.TestCase):
                     "description": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "non_test:1",
+                    "origin": "non_test",
                     "output_files": [
                         {
                             "name": "x86_64_4_console.log",
@@ -142,6 +147,7 @@ class MatchOOTestCase(unittest.TestCase):
                     "description": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "test:1",
+                    "origin": "test",
                     "output_files": [
                         {
                             "name": "x86_64_4_console.log",

@@ -1,5 +1,6 @@
 """Kernel CI reporting I/O schema v3"""
 
+import re
 from kcidb.io.schema.misc import Version
 from kcidb.io.schema import v2
 
@@ -81,6 +82,12 @@ JSON_REVISION = {
                 "origin CI system, and must identify the revision uniquely "
                 "among all revisions, coming from that CI system.\n",
             "pattern": f"^{ID_PATTERN}$",
+        },
+        "origin": {
+            "type": "string",
+            "description":
+                "The name of the CI system which submitted the revision",
+            "pattern": f"^{ORIGIN_PATTERN}$",
         },
         "git_repository_url": {
             "type": "string",
@@ -181,6 +188,7 @@ JSON_REVISION = {
     "additionalProperties": False,
     "required": [
         "id",
+        "origin",
     ],
 }
 
@@ -208,6 +216,12 @@ JSON_BUILD = {
                 "origin CI system, and must identify the build uniquely "
                 "among all builds, coming from that CI system.\n",
             "pattern": f"^{ID_PATTERN}$",
+        },
+        "origin": {
+            "type": "string",
+            "description":
+                "The name of the CI system which submitted the build",
+            "pattern": f"^{ORIGIN_PATTERN}$",
         },
         "description": {
             "type": "string",
@@ -287,6 +301,7 @@ JSON_BUILD = {
     "required": [
         "revision_id",
         "id",
+        "origin",
     ],
 }
 
@@ -325,6 +340,12 @@ JSON_TEST = {
                 "origin CI system, and must identify the test run uniquely "
                 "among all test runs, coming from that CI system.\n",
             "pattern": f"^{ID_PATTERN}$",
+        },
+        "origin": {
+            "type": "string",
+            "description":
+                "The name of the CI system which submitted the test run",
+            "pattern": f"^{ORIGIN_PATTERN}$",
         },
         "environment": {
             "type": "object",
@@ -420,6 +441,7 @@ JSON_TEST = {
     "required": [
         "build_id",
         "id",
+        "origin",
     ],
 }
 
@@ -526,6 +548,13 @@ def inherit(data):
     Returns:
         The inherited data.
     """
+    # Extract origins into separate fields
+    origin_regex = re.compile(f"^({ORIGIN_PATTERN}):.*")
+    for obj_list_name in VERSION.previous.tree:
+        if obj_list_name:
+            for obj in data.get(obj_list_name, []):
+                obj["origin"] = origin_regex.search(obj["id"]).group(1)
+
     # Update version
     data['version'] = dict(major=JSON_VERSION_MAJOR,
                            minor=JSON_VERSION_MINOR)
