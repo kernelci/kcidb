@@ -52,6 +52,7 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 467715
                     },
                     "id": "redhat:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "origin": "redhat",
                     "patch_mboxes": [],
                     "valid": True,
                 },
@@ -74,6 +75,7 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 467715
                     },
                     "id": "redhat:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "origin": "redhat",
                     "patch_mboxes": [],
                     "valid": True,
                     "builds_": {},
@@ -98,6 +100,7 @@ class FromIOTestCase(unittest.TestCase):
                     "config_name": "fedora",
                     "duration": 237.0,
                     "id": "redhat:678223",
+                    "origin": "redhat",
                     "input_files": [],
                     "log_url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/03/469720/build_aarch64.log",
                     "misc": {
@@ -123,6 +126,7 @@ class FromIOTestCase(unittest.TestCase):
                     "config_name": "fedora",
                     "duration": 237.0,
                     "id": "redhat:678223",
+                    "origin": "redhat",
                     "input_files": [],
                     "log_url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/03/469720/build_aarch64.log",
                     "misc": {
@@ -154,6 +158,7 @@ class FromIOTestCase(unittest.TestCase):
                     "description": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "redhat:107205807",
+                    "origin": "redhat",
                     "output_files": [
                         {
                             "name": "x86_64_4_console.log",
@@ -199,6 +204,7 @@ class FromIOTestCase(unittest.TestCase):
                     "description": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "redhat:107205807",
+                    "origin": "redhat",
                     "output_files": [
                         Node({}, {
                             "name": "x86_64_4_console.log",
@@ -246,54 +252,60 @@ class FromIOTestCase(unittest.TestCase):
         io_data = {
             "version": self.version,
             "revisions": [
-                {
-                    "id": "origin:1",
-                },
-                {
-                    "id": "origin:2",
-                },
+                {"id": "origin:1", "origin": "origin",},
+                {"id": "origin:2", "origin": "origin",},
             ],
             "builds": [
                 {
                     "revision_id": "origin:1",
                     "id": "origin:1",
+                    "origin": "origin",
                 },
                 {
                     "revision_id": "origin:non-existent",
                     "id": "origin:2",
+                    "origin": "origin",
                 },
             ],
             "tests": [
                 {
                     "build_id": "origin:1",
                     "id": "origin:1",
+                    "origin": "origin",
                 },
                 {
                     "build_id": "origin:non-existent",
                     "id": "origin:2",
+                    "origin": "origin",
                 },
             ],
         }
 
         revision1 = Revision({}, {"id": "origin:1",
+                                  "origin": "origin",
                                   "builds_": {}})
         revision2 = Revision({}, {"id": "origin:2",
+                                  "origin": "origin",
                                   "builds_": {}})
         build1 = Build({}, {"revision_id": "origin:1",
                             "id": "origin:1",
+                            "origin": "origin",
                             "revision_": revision1,
                             "tests_": {}})
         build2 = Build({}, {"revision_id": "origin:non-existent",
                             "id": "origin:2",
+                            "origin": "origin",
                             "revision_": None,
                             "tests_": {}})
         revision1.builds_[build1.id] = build1
         test1 = Test({}, {"build_id": "origin:1",
                           "build_": build1,
-                          "id": "origin:1",})
+                          "id": "origin:1",
+                          "origin": "origin",})
         test2 = Test({}, {"build_id": "origin:non-existent",
                           "build_": None,
-                          "id": "origin:2",})
+                          "id": "origin:2",
+                          "origin": "origin",})
         build1.tests_[test1.id] = test1
         expected_oo_data = {
             "version": self.version,
@@ -337,7 +349,7 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         non_empty = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1",},],
+            "revisions": [{"id": "origin:1", "origin": "origin",},],
         })
 
         self.assertEqual(apply_mask(empty, empty), empty)
@@ -356,16 +368,20 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1",},],
-            "builds": [{"id": "origin:1", "revision_id": "origin:1"},],
-            "tests": [{"id": "origin:1", "build_id": "origin:1"},],
+            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "builds": [{"id": "origin:1", "origin": "origin",
+                        "revision_id": "origin:1"},],
+            "tests": [{"id": "origin:1", "origin": "origin",
+                       "build_id": "origin:1"},],
         })
 
         second = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:2",},],
-            "builds": [{"id": "origin:2", "revision_id": "origin:2"},],
-            "tests": [{"id": "origin:2", "build_id": "origin:2"},],
+            "revisions": [{"id": "origin:2", "origin": "origin",},],
+            "builds": [{"id": "origin:2", "origin": "origin",
+                        "revision_id": "origin:2"},],
+            "tests": [{"id": "origin:2", "origin": "origin",
+                       "build_id": "origin:2"},],
         })
 
         self.assertEqual(apply_mask(first, second), empty)
@@ -377,16 +393,20 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1",},],
-            "builds": [{"id": "origin:1", "revision_id": "origin:1"},],
-            "tests": [{"id": "origin:1", "build_id": "origin:1"},],
+            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "builds": [{"id": "origin:1", "origin": "origin",
+                        "revision_id": "origin:1"},],
+            "tests": [{"id": "origin:1", "origin": "origin",
+                       "build_id": "origin:1"},],
         })
 
         second = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1",},],
-            "builds": [{"id": "origin:1", "revision_id": "origin:1"},],
-            "tests": [{"id": "origin:1", "build_id": "origin:1"},],
+            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "builds": [{"id": "origin:1", "origin": "origin",
+                        "revision_id": "origin:1"},],
+            "tests": [{"id": "origin:1", "origin": "origin",
+                       "build_id": "origin:1"},],
         })
 
         self.assertEqual(apply_mask(first, second), first)
@@ -399,48 +419,72 @@ class ApplyMaskTestCase(unittest.TestCase):
         first = from_io({
             "version": self.version,
             "revisions": [
-                {"id": "origin:1",},
-                {"id": "origin:2",},
+                {"id": "origin:1", "origin": "origin",},
+                {"id": "origin:2", "origin": "origin",},
             ],
             "builds": [
-                {"id": "origin:1-1", "revision_id": "origin:1"},
-                {"id": "origin:1-2", "revision_id": "origin:1"},
-                {"id": "origin:2-1", "revision_id": "origin:2"},
-                {"id": "origin:2-2", "revision_id": "origin:2"},
+                {"id": "origin:1-1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:1-2", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:2-1", "origin": "origin",
+                 "revision_id": "origin:2"},
+                {"id": "origin:2-2", "origin": "origin",
+                 "revision_id": "origin:2"},
             ],
             "tests": [
-                {"id": "origin:1-1-1", "build_id": "origin:1-1"},
-                {"id": "origin:1-1-2", "build_id": "origin:1-1"},
-                {"id": "origin:1-2-1", "build_id": "origin:1-2"},
-                {"id": "origin:1-2-2", "build_id": "origin:1-2"},
-                {"id": "origin:2-1-1", "build_id": "origin:2-1"},
-                {"id": "origin:2-1-2", "build_id": "origin:2-1"},
-                {"id": "origin:2-2-1", "build_id": "origin:2-2"},
-                {"id": "origin:2-2-2", "build_id": "origin:2-2"},
+                {"id": "origin:1-1-1", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-1-2", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-2-1", "origin": "origin",
+                 "build_id": "origin:1-2"},
+                {"id": "origin:1-2-2", "origin": "origin",
+                 "build_id": "origin:1-2"},
+                {"id": "origin:2-1-1", "origin": "origin",
+                 "build_id": "origin:2-1"},
+                {"id": "origin:2-1-2", "origin": "origin",
+                 "build_id": "origin:2-1"},
+                {"id": "origin:2-2-1", "origin": "origin",
+                 "build_id": "origin:2-2"},
+                {"id": "origin:2-2-2", "origin": "origin",
+                 "build_id": "origin:2-2"},
             ],
         })
 
         second = from_io({
             "version": self.version,
             "revisions": [
-                {"id": "origin:1",},
-                {"id": "origin:X",},
+                {"id": "origin:1", "origin": "origin",},
+                {"id": "origin:X", "origin": "origin",},
             ],
             "builds": [
-                {"id": "origin:1-1", "revision_id": "origin:1"},
-                {"id": "origin:1-X", "revision_id": "origin:1"},
-                {"id": "origin:2-1", "revision_id": "origin:X"},
-                {"id": "origin:2-X", "revision_id": "origin:X"},
+                {"id": "origin:1-1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:1-X", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:2-1", "origin": "origin",
+                 "revision_id": "origin:X"},
+                {"id": "origin:2-X", "origin": "origin",
+                 "revision_id": "origin:X"},
             ],
             "tests": [
-                {"id": "origin:1-1-1", "build_id": "origin:1-1"},
-                {"id": "origin:1-1-X", "build_id": "origin:1-1"},
-                {"id": "origin:1-2-1", "build_id": "origin:1-2"},
-                {"id": "origin:1-2-X", "build_id": "origin:1-2"},
-                {"id": "origin:2-1-1", "build_id": "origin:2-1"},
-                {"id": "origin:2-1-X", "build_id": "origin:2-1"},
-                {"id": "origin:2-2-1", "build_id": "origin:2-2"},
-                {"id": "origin:2-2-X", "build_id": "origin:2-2"},
+                {"id": "origin:1-1-1", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-1-X", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-2-1", "origin": "origin",
+                 "build_id": "origin:1-2"},
+                {"id": "origin:1-2-X", "origin": "origin",
+                 "build_id": "origin:1-2"},
+                {"id": "origin:2-1-1", "origin": "origin",
+                 "build_id": "origin:2-1"},
+                {"id": "origin:2-1-X", "origin": "origin",
+                 "build_id": "origin:2-1"},
+                {"id": "origin:2-2-1", "origin": "origin",
+                 "build_id": "origin:2-2"},
+                {"id": "origin:2-2-X", "origin": "origin",
+                 "build_id": "origin:2-2"},
             ],
         })
 
@@ -526,7 +570,7 @@ class RemoveOrphansTestCase(unittest.TestCase):
         """
         input_data = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1",},],
+            "revisions": [{"id": "origin:1", "origin": "origin",},],
         })
         expected_output_data = {
             "version": self.version,
@@ -536,7 +580,8 @@ class RemoveOrphansTestCase(unittest.TestCase):
 
         input_data = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1",}, {"id": "origin:2",},],
+            "revisions": [{"id": "origin:1", "origin": "origin",},
+                          {"id": "origin:2", "origin": "origin",},],
         })
         expected_output_data = {
             "version": self.version,
@@ -558,7 +603,8 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "builds": [
-                {"id": "origin:1", "revision_id": "origin:1"},
+                {"id": "origin:1", "origin": "origin",
+                 "revision_id": "origin:1"},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -567,8 +613,10 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "builds": [
-                {"id": "origin:1", "revision_id": "origin:1"},
-                {"id": "origin:2", "revision_id": "origin:2"},
+                {"id": "origin:1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:2", "origin": "origin",
+                 "revision_id": "origin:2"},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -583,7 +631,8 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "tests": [
-                {"id": "origin:1", "build_id": "origin:1"},
+                {"id": "origin:1", "origin": "origin",
+                 "build_id": "origin:1"},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -592,8 +641,10 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "tests": [
-                {"id": "origin:1", "build_id": "origin:1"},
-                {"id": "origin:2", "build_id": "origin:2"},
+                {"id": "origin:1", "origin": "origin",
+                 "build_id": "origin:1"},
+                {"id": "origin:2", "origin": "origin",
+                 "build_id": "origin:2"},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -609,12 +660,16 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "builds": [
-                {"id": "origin:1", "revision_id": "origin:1"},
-                {"id": "origin:2", "revision_id": "origin:2"},
+                {"id": "origin:1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:2", "origin": "origin",
+                 "revision_id": "origin:2"},
             ],
             "tests": [
-                {"id": "origin:1", "build_id": "origin:3"},
-                {"id": "origin:2", "build_id": "origin:4"},
+                {"id": "origin:1", "origin": "origin",
+                 "build_id": "origin:3"},
+                {"id": "origin:2", "origin": "origin",
+                 "build_id": "origin:4"},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -623,12 +678,16 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "builds": [
-                {"id": "origin:1", "revision_id": "origin:1"},
-                {"id": "origin:2", "revision_id": "origin:2"},
+                {"id": "origin:1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:2", "origin": "origin",
+                 "revision_id": "origin:2"},
             ],
             "tests": [
-                {"id": "origin:1", "build_id": "origin:1"},
-                {"id": "origin:2", "build_id": "origin:2"},
+                {"id": "origin:1", "origin": "origin",
+                 "build_id": "origin:1"},
+                {"id": "origin:2", "origin": "origin",
+                 "build_id": "origin:2"},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -642,14 +701,18 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "revisions": [
-                {"id": "origin:1",},
-                {"id": "origin:2",},
+                {"id": "origin:1", "origin": "origin",},
+                {"id": "origin:2", "origin": "origin",},
             ],
             "builds": [
-                {"id": "origin:1-1", "revision_id": "origin:1"},
-                {"id": "origin:1-2", "revision_id": "origin:1"},
-                {"id": "origin:2-1", "revision_id": "origin:2"},
-                {"id": "origin:2-2", "revision_id": "origin:2"},
+                {"id": "origin:1-1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:1-2", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:2-1", "origin": "origin",
+                 "revision_id": "origin:2"},
+                {"id": "origin:2-2", "origin": "origin",
+                 "revision_id": "origin:2"},
             ],
         })
 
@@ -665,24 +728,36 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "revisions": [
-                {"id": "origin:1",},
-                {"id": "origin:2",},
+                {"id": "origin:1", "origin": "origin",},
+                {"id": "origin:2", "origin": "origin",},
             ],
             "builds": [
-                {"id": "origin:1-1", "revision_id": "origin:1"},
-                {"id": "origin:1-2", "revision_id": "origin:1"},
-                {"id": "origin:2-1", "revision_id": "origin:2"},
-                {"id": "origin:2-2", "revision_id": "origin:2"},
+                {"id": "origin:1-1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:1-2", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:2-1", "origin": "origin",
+                 "revision_id": "origin:2"},
+                {"id": "origin:2-2", "origin": "origin",
+                 "revision_id": "origin:2"},
             ],
             "tests": [
-                {"id": "origin:1-1-1", "build_id": "origin:1-1"},
-                {"id": "origin:1-1-2", "build_id": "origin:1-1"},
-                {"id": "origin:1-2-1", "build_id": "origin:1-2"},
-                {"id": "origin:1-2-2", "build_id": "origin:1-2"},
-                {"id": "origin:2-1-1", "build_id": "origin:2-1"},
-                {"id": "origin:2-1-2", "build_id": "origin:2-1"},
-                {"id": "origin:2-2-1", "build_id": "origin:2-2"},
-                {"id": "origin:2-2-2", "build_id": "origin:2-2"},
+                {"id": "origin:1-1-1", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-1-2", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-2-1", "origin": "origin",
+                 "build_id": "origin:1-2"},
+                {"id": "origin:1-2-2", "origin": "origin",
+                 "build_id": "origin:1-2"},
+                {"id": "origin:2-1-1", "origin": "origin",
+                 "build_id": "origin:2-1"},
+                {"id": "origin:2-1-2", "origin": "origin",
+                 "build_id": "origin:2-1"},
+                {"id": "origin:2-2-1", "origin": "origin",
+                 "build_id": "origin:2-2"},
+                {"id": "origin:2-2-2", "origin": "origin",
+                 "build_id": "origin:2-2"},
             ],
         })
 
@@ -703,25 +778,37 @@ class RemoveOrphansTestCase(unittest.TestCase):
         input_data = from_io({
             "version": self.version,
             "revisions": [
-                {"id": "origin:1",},
+                {"id": "origin:1", "origin": "origin",},
             ],
             "builds": [
-                {"id": "origin:1-1", "revision_id": "origin:1"},
-                {"id": "origin:1-2", "revision_id": "origin:1"},
-                {"id": "origin:X-1", "revision_id": "origin:X"},
-                {"id": "origin:X-2", "revision_id": "origin:X"},
+                {"id": "origin:1-1", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:1-2", "origin": "origin",
+                 "revision_id": "origin:1"},
+                {"id": "origin:X-1", "origin": "origin",
+                 "revision_id": "origin:X"},
+                {"id": "origin:X-2", "origin": "origin",
+                 "revision_id": "origin:X"},
             ],
             "tests": [
-                {"id": "origin:1-1-1", "build_id": "origin:1-1"},
-                {"id": "origin:1-1-2", "build_id": "origin:1-1"},
-                {"id": "origin:1-2-1", "build_id": "origin:1-2"},
-                {"id": "origin:1-2-2", "build_id": "origin:1-2"},
+                {"id": "origin:1-1-1", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-1-2", "origin": "origin",
+                 "build_id": "origin:1-1"},
+                {"id": "origin:1-2-1", "origin": "origin",
+                 "build_id": "origin:1-2"},
+                {"id": "origin:1-2-2", "origin": "origin",
+                 "build_id": "origin:1-2"},
 
-                {"id": "origin:X-1-1", "build_id": "origin:X-1"},
-                {"id": "origin:X-1-2", "build_id": "origin:X-1"},
+                {"id": "origin:X-1-1", "origin": "origin",
+                 "build_id": "origin:X-1"},
+                {"id": "origin:X-1-2", "origin": "origin",
+                 "build_id": "origin:X-1"},
 
-                {"id": "origin:X-X-1", "build_id": "origin:X-X"},
-                {"id": "origin:X-X-2", "build_id": "origin:X-X"},
+                {"id": "origin:X-X-1", "origin": "origin",
+                 "build_id": "origin:X-X"},
+                {"id": "origin:X-X-2", "origin": "origin",
+                 "build_id": "origin:X-X"},
             ],
         })
 

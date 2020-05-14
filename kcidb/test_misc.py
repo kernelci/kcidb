@@ -41,6 +41,7 @@ class NotificationTestCase(unittest.TestCase):
                         "pipeline_id": 467715
                     },
                     "id": "origin:1",
+                    "origin": "origin",
                     "patch_mboxes": [],
                     "valid": True,
                 },

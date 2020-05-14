@@ -32,6 +32,11 @@ TABLE_MAP = dict(
             description="Revision ID",
         ),
         Field(
+            "origin", "STRING",
+            description="The name of the CI system which submitted "
+                        "the revision",
+        ),
+        Field(
             "git_repository_url", "STRING",
             description="The URL of the Git repository which contains "
                         "the base code of the revision. The shortest "
@@ -114,6 +119,11 @@ TABLE_MAP = dict(
             description="Build ID",
         ),
         Field(
+            "origin", "STRING",
+            description="The name of the CI system which submitted "
+                        "the build",
+        ),
+        Field(
             "description", "STRING",
             description="Human-readable description of the build",
         ),
@@ -178,6 +188,11 @@ TABLE_MAP = dict(
         Field(
             "id", "STRING",
             description="Test run ID",
+        ),
+        Field(
+            "origin", "STRING",
+            description="The name of the CI system which submitted "
+                        "the test run",
         ),
         Field(
             "environment", "RECORD", fields=ENVIRONMENT_FIELDS,
