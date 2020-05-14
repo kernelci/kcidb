@@ -9,8 +9,11 @@ JSON_VERSION_MAJOR = 3
 # Minor version number of JSON schema.
 JSON_VERSION_MINOR = 0
 
+# A regular expression pattern matching strings containing origin name
+ORIGIN_PATTERN = "[a-z0-9_]+"
+
 # A regular expression pattern matching strings containing an object ID
-ID_PATTERN = "[a-z0-9_]+:.*"
+ID_PATTERN = f"{ORIGIN_PATTERN}:.*"
 
 # JSON schema for a named remote resource
 JSON_RESOURCE = {
