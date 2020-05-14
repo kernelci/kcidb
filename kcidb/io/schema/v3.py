@@ -10,6 +10,10 @@ JSON_VERSION_MAJOR = 3
 # Minor version number of JSON schema.
 JSON_VERSION_MINOR = 0
 
+# A regular expression pattern matching strings containing accepted Git
+# repository URLs
+GIT_REPOSITORY_URL_PATTERN = "(https|git)://.*"
+
 # A regular expression pattern matching strings containing origin name
 ORIGIN_PATTERN = "[a-z0-9_]+"
 
@@ -96,6 +100,7 @@ JSON_REVISION = {
                 "The URL of the Git repository which contains the base code "
                 "of the revision. The shortest possible https:// URL, or, if "
                 "that's not available, the shortest possible git:// URL.",
+            "pattern": f"^{GIT_REPOSITORY_URL_PATTERN}$",
         },
         "git_repository_commit_hash": {
             "type": "string",
