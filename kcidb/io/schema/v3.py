@@ -14,6 +14,13 @@ JSON_VERSION_MINOR = 0
 # repository URLs
 GIT_REPOSITORY_URL_PATTERN = "(https|git)://.*"
 
+# A regular expression pattern matching strings containing sha1 hashes
+SHA1_PATTERN = "[0-9a-f]{40}"
+
+# A regular expression pattern matching strings containing Git repository
+# commit hash (sha1 or sha256)
+GIT_REPOSITORY_COMMIT_HASH_PATTERN = f"{SHA1_PATTERN}"
+
 # A regular expression pattern matching strings containing origin name
 ORIGIN_PATTERN = "[a-z0-9_]+"
 
@@ -107,6 +114,7 @@ JSON_REVISION = {
             "description":
                 "The full commit hash of the revision's base code "
                 "in the Git repository",
+            "pattern": f"^{GIT_REPOSITORY_COMMIT_HASH_PATTERN}$",
         },
         "git_repository_commit_name": {
             "type": "string",
