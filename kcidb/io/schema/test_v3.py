@@ -17,7 +17,7 @@ class UpgradeTestCase(unittest.TestCase):
         self.maxDiff = None
 
     def test_origin(self):
-        """Check origin extraction works"""
+        """Check origin extraction and removal works"""
         prev_version_data = dict(
             version=dict(major=VERSION.previous.major,
                          minor=VERSION.previous.minor),
@@ -41,14 +41,14 @@ class UpgradeTestCase(unittest.TestCase):
             version=dict(major=VERSION.major,
                          minor=VERSION.minor),
             revisions=[
-                dict(id="origin1:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                dict(id="git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                      origin="origin1")
             ],
             builds=[
-                dict(revision_id="origin1:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                dict(revision_id="git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                      id="origin2:1",
                      origin="origin2"),
-                dict(revision_id="origin1:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                dict(revision_id="git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                      id="origin3:2",
                      origin="origin3"),
             ],
