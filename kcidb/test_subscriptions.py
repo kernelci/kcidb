@@ -40,7 +40,7 @@ class MatchOOTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "non_test:1",
+                    "id": "https://git.kernel.org/@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "origin": "non_test",
                     "patch_mboxes": [],
                     "valid": True,
@@ -51,12 +51,12 @@ class MatchOOTestCase(unittest.TestCase):
                     ],
                     "discovery_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
-                    "git_repository_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "git_repository_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "test:1",
+                    "id": "https://git.kernel.org/@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "origin": "test",
                     "patch_mboxes": [],
                     "valid": True,
@@ -78,7 +78,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "redhat:https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "revision_id": "https://git.kernel.org/@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
@@ -97,7 +97,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "redhat:https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "revision_id": "https://git.kernel.org/@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },

@@ -10,6 +10,33 @@ from kcidb.oo import Node, Revision, Build, Test, TestEnvironment, \
 # Needed for (dynamically-added) Node attributes
 # pylint: disable=no-member
 
+IO_REVISION1 = {
+    "id":
+        "https://git.kernel.org/pub/scm/linux/kernel/git/stable/"
+        "linux-stable.git@aa73bcc376865c23e61dcebd467697b527901be8",
+    "origin":
+        "origin",
+}
+
+IO_REVISION2 = {
+    "id":
+        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/"
+        "linux.git@c0d73a868d9b411bd2d0c8e5ff9d98bfa8563cb1"
+        "+903638c087335b10293663c682b9aa0076f9f7be478a8e782"
+        "8bc22e12d301b42",
+    "origin":
+        "origin",
+}
+
+IO_REVISION3 = {
+    "id":
+        "https://git.kernel.org/pub/scm/linux/kernel/git/stable/"
+        "linux-stable.git@7f74c309d3e46088e6606183d15aba89539b650d",
+    "origin":
+        "origin",
+}
+
+
 class FromIOTestCase(unittest.TestCase):
     """kcidb.oo.from_io() test case"""
 
@@ -51,7 +78,7 @@ class FromIOTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "redhat:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "origin": "redhat",
                     "patch_mboxes": [],
                     "valid": True,
@@ -62,7 +89,7 @@ class FromIOTestCase(unittest.TestCase):
         expected_oo_data = {
             "version": self.version,
             "revisions": {
-                "redhat:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e":
+                "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e":
                 Revision({}, {
                     "contacts": [
                         "rdma-dev-team@redhat.com"
@@ -74,7 +101,7 @@ class FromIOTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "redhat:git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "origin": "redhat",
                     "patch_mboxes": [],
                     "valid": True,
@@ -108,7 +135,7 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "redhat:https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "revision_id": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
@@ -134,7 +161,7 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "redhat:https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "revision_id": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True,
                     "revision_": None,
@@ -251,18 +278,15 @@ class FromIOTestCase(unittest.TestCase):
         """
         io_data = {
             "version": self.version,
-            "revisions": [
-                {"id": "origin:1", "origin": "origin",},
-                {"id": "origin:2", "origin": "origin",},
-            ],
+            "revisions": [IO_REVISION1, IO_REVISION2,],
             "builds": [
                 {
-                    "revision_id": "origin:1",
+                    "revision_id": IO_REVISION1["id"],
                     "id": "origin:1",
                     "origin": "origin",
                 },
                 {
-                    "revision_id": "origin:non-existent",
+                    "revision_id": IO_REVISION3["id"],
                     "id": "origin:2",
                     "origin": "origin",
                 },
@@ -281,18 +305,18 @@ class FromIOTestCase(unittest.TestCase):
             ],
         }
 
-        revision1 = Revision({}, {"id": "origin:1",
-                                  "origin": "origin",
-                                  "builds_": {}})
-        revision2 = Revision({}, {"id": "origin:2",
-                                  "origin": "origin",
-                                  "builds_": {}})
-        build1 = Build({}, {"revision_id": "origin:1",
+        revision1_attrs = {"builds_": {}}
+        revision1_attrs.update(IO_REVISION1)
+        revision1 = Revision({}, revision1_attrs)
+        revision2_attrs = {"builds_": {}}
+        revision2_attrs.update(IO_REVISION2)
+        revision2 = Revision({}, revision2_attrs)
+        build1 = Build({}, {"revision_id": IO_REVISION1["id"],
                             "id": "origin:1",
                             "origin": "origin",
                             "revision_": revision1,
                             "tests_": {}})
-        build2 = Build({}, {"revision_id": "origin:non-existent",
+        build2 = Build({}, {"revision_id": IO_REVISION3["id"],
                             "id": "origin:2",
                             "origin": "origin",
                             "revision_": None,
@@ -310,8 +334,8 @@ class FromIOTestCase(unittest.TestCase):
         expected_oo_data = {
             "version": self.version,
             "revisions": {
-                "origin:1": revision1,
-                "origin:2": revision2,
+                IO_REVISION1["id"]: revision1,
+                IO_REVISION2["id"]: revision2,
             },
             "builds": {
                 "origin:1": build1,
@@ -349,7 +373,7 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         non_empty = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "revisions": [IO_REVISION1,],
         })
 
         self.assertEqual(apply_mask(empty, empty), empty)
@@ -368,18 +392,18 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "revisions": [IO_REVISION1,],
             "builds": [{"id": "origin:1", "origin": "origin",
-                        "revision_id": "origin:1"},],
+                        "revision_id": IO_REVISION1["id"]},],
             "tests": [{"id": "origin:1", "origin": "origin",
                        "build_id": "origin:1"},],
         })
 
         second = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:2", "origin": "origin",},],
+            "revisions": [IO_REVISION2,],
             "builds": [{"id": "origin:2", "origin": "origin",
-                        "revision_id": "origin:2"},],
+                        "revision_id": IO_REVISION2["id"]},],
             "tests": [{"id": "origin:2", "origin": "origin",
                        "build_id": "origin:2"},],
         })
@@ -393,18 +417,18 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "revisions": [IO_REVISION1,],
             "builds": [{"id": "origin:1", "origin": "origin",
-                        "revision_id": "origin:1"},],
+                        "revision_id": IO_REVISION1["id"]},],
             "tests": [{"id": "origin:1", "origin": "origin",
                        "build_id": "origin:1"},],
         })
 
         second = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "revisions": [IO_REVISION1,],
             "builds": [{"id": "origin:1", "origin": "origin",
-                        "revision_id": "origin:1"},],
+                        "revision_id": IO_REVISION1["id"]},],
             "tests": [{"id": "origin:1", "origin": "origin",
                        "build_id": "origin:1"},],
         })
@@ -418,19 +442,16 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [
-                {"id": "origin:1", "origin": "origin",},
-                {"id": "origin:2", "origin": "origin",},
-            ],
+            "revisions": [IO_REVISION1, IO_REVISION2,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
                 {"id": "origin:2-2", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
@@ -454,19 +475,16 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         second = from_io({
             "version": self.version,
-            "revisions": [
-                {"id": "origin:1", "origin": "origin",},
-                {"id": "origin:X", "origin": "origin",},
-            ],
+            "revisions": [IO_REVISION1, IO_REVISION3,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:1-X", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": "origin:X"},
+                 "revision_id": IO_REVISION3["id"]},
                 {"id": "origin:2-X", "origin": "origin",
-                 "revision_id": "origin:X"},
+                 "revision_id": IO_REVISION3["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
@@ -492,7 +510,7 @@ class ApplyMaskTestCase(unittest.TestCase):
             "version": first["version"],
             "revisions": {
                 k: first["revisions"][k]
-                for k in ("origin:1", "origin:2",)
+                for k in (IO_REVISION1["id"], IO_REVISION2["id"],)
             },
             "builds": {
                 k: first["builds"][k]
@@ -518,7 +536,7 @@ class ApplyMaskTestCase(unittest.TestCase):
             "version": first["version"],
             "revisions": {
                 k: first["revisions"][k]
-                for k in ("origin:1", "origin:2",)
+                for k in (IO_REVISION1["id"], IO_REVISION2["id"],)
             },
             "builds": {
                 k: first["builds"][k]
@@ -535,7 +553,7 @@ class ApplyMaskTestCase(unittest.TestCase):
             "version": first["version"],
             "revisions": {
                 k: first["revisions"][k]
-                for k in ("origin:1",)
+                for k in (IO_REVISION1["id"],)
             },
         }
 
@@ -570,7 +588,7 @@ class RemoveOrphansTestCase(unittest.TestCase):
         """
         input_data = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1", "origin": "origin",},],
+            "revisions": [IO_REVISION1,],
         })
         expected_output_data = {
             "version": self.version,
@@ -580,8 +598,7 @@ class RemoveOrphansTestCase(unittest.TestCase):
 
         input_data = from_io({
             "version": self.version,
-            "revisions": [{"id": "origin:1", "origin": "origin",},
-                          {"id": "origin:2", "origin": "origin",},],
+            "revisions": [IO_REVISION1, IO_REVISION2,],
         })
         expected_output_data = {
             "version": self.version,
@@ -604,7 +621,7 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -614,9 +631,9 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:2", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -661,9 +678,9 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:2", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
             ],
             "tests": [
                 {"id": "origin:1", "origin": "origin",
@@ -679,9 +696,9 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:2", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
             ],
             "tests": [
                 {"id": "origin:1", "origin": "origin",
@@ -700,19 +717,16 @@ class RemoveOrphansTestCase(unittest.TestCase):
         # Builds
         input_data = from_io({
             "version": self.version,
-            "revisions": [
-                {"id": "origin:1", "origin": "origin",},
-                {"id": "origin:2", "origin": "origin",},
-            ],
+            "revisions": [IO_REVISION1, IO_REVISION2,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
                 {"id": "origin:2-2", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
             ],
         })
 
@@ -727,19 +741,16 @@ class RemoveOrphansTestCase(unittest.TestCase):
         # Tests
         input_data = from_io({
             "version": self.version,
-            "revisions": [
-                {"id": "origin:1", "origin": "origin",},
-                {"id": "origin:2", "origin": "origin",},
-            ],
+            "revisions": [IO_REVISION1, IO_REVISION2,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
                 {"id": "origin:2-2", "origin": "origin",
-                 "revision_id": "origin:2"},
+                 "revision_id": IO_REVISION2["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
@@ -777,18 +788,16 @@ class RemoveOrphansTestCase(unittest.TestCase):
 
         input_data = from_io({
             "version": self.version,
-            "revisions": [
-                {"id": "origin:1", "origin": "origin",},
-            ],
+            "revisions": [IO_REVISION1,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": "origin:1"},
+                 "revision_id": IO_REVISION1["id"]},
                 {"id": "origin:X-1", "origin": "origin",
-                 "revision_id": "origin:X"},
+                 "revision_id": IO_REVISION3["id"]},
                 {"id": "origin:X-2", "origin": "origin",
-                 "revision_id": "origin:X"},
+                 "revision_id": IO_REVISION3["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
