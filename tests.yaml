@@ -182,7 +182,7 @@ redhat_kaslr:
   home: https://github.com/CKI-project/tests-beaker/tree/master/memory/function/kaslr
 redhat_kdump:
   title: Red Hat's kdump tests
-  home: https://github.com/CKI-project/tests-beaker/tree/master/kdump/kdump-sysrq-c
+  home: https://github.com/CKI-project/tests-beaker/tree/master/kdump
 redhat_l2tp:
   title: Red Hat's basic L2TP tests
   home: https://github.com/CKI-project/tests-beaker/tree/master/networking/tunnel/l2tp/basic
