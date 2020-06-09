@@ -37,6 +37,11 @@ TABLE_MAP = dict(
                         "the revision",
         ),
         Field(
+            "tree_name", "STRING",
+            description="The widely-recognized name of the sub-tree (fork) "
+                        "of the main code tree that the revision belongs to."
+        ),
+        Field(
             "git_repository_url", "STRING",
             description="The URL of the Git repository which contains "
                         "the base code of the revision. The shortest "
