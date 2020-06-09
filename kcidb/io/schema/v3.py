@@ -129,6 +129,17 @@ JSON_REVISION = {
                 "The name of the CI system which submitted the revision",
             "pattern": f"^{ORIGIN_PATTERN}$",
         },
+        "tree_name": {
+            "type": "string",
+            "description":
+                "The widely-recognized name of the sub-tree (fork) of the "
+                "main code tree that the revision belongs to.",
+            "examples": [
+                "net-next",
+                "rdma",
+                "mainline",
+            ],
+        },
         "git_repository_url": {
             "type": "string",
             "format": "uri",
