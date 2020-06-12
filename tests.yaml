@@ -263,7 +263,7 @@ stress-ng:
   home: https://kernel.ubuntu.com/~cking/stress-ng/
 usex:
   title: UNIX System Exerciser (USEX)
-  home: https://people.redhat.com/anderson/usex/usex
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/standards/usex
 xfstests:
   title: Xfstests filesystem testing suite
   home: https://github.com/kdave/xfstests
