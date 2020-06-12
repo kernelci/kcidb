@@ -21,7 +21,7 @@ SHA1_PATTERN = "[0-9a-f]{40}"
 SHA256_PATTERN = "[0-9a-f]{64}"
 
 # A regular expression pattern matching strings containing Git repository
-# commit hash (sha1 or sha256)
+# commit hash (sha1)
 GIT_REPOSITORY_COMMIT_HASH_PATTERN = f"{SHA1_PATTERN}"
 
 # A regular expression pattern matching strings containing revision IDs
