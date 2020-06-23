@@ -12,16 +12,14 @@ from kcidb.oo import Node, Revision, Build, Test, TestEnvironment, \
 
 IO_REVISION1 = {
     "id":
-        "https://git.kernel.org/pub/scm/linux/kernel/git/stable/"
-        "linux-stable.git@aa73bcc376865c23e61dcebd467697b527901be8",
+        "aa73bcc376865c23e61dcebd467697b527901be8",
     "origin":
         "origin",
 }
 
 IO_REVISION2 = {
     "id":
-        "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/"
-        "linux.git@c0d73a868d9b411bd2d0c8e5ff9d98bfa8563cb1"
+        "c0d73a868d9b411bd2d0c8e5ff9d98bfa8563cb1"
         "+903638c087335b10293663c682b9aa0076f9f7be478a8e782"
         "8bc22e12d301b42",
     "origin":
@@ -30,8 +28,7 @@ IO_REVISION2 = {
 
 IO_REVISION3 = {
     "id":
-        "https://git.kernel.org/pub/scm/linux/kernel/git/stable/"
-        "linux-stable.git@7f74c309d3e46088e6606183d15aba89539b650d",
+        "7f74c309d3e46088e6606183d15aba89539b650d",
     "origin":
         "origin",
 }
@@ -78,7 +75,7 @@ class FromIOTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "origin": "redhat",
                     "patch_mboxes": [],
                     "valid": True,
@@ -89,7 +86,7 @@ class FromIOTestCase(unittest.TestCase):
         expected_oo_data = {
             "version": self.version,
             "revisions": {
-                "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e":
+                "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e":
                 Revision({}, {
                     "contacts": [
                         "rdma-dev-team@redhat.com"
@@ -101,7 +98,7 @@ class FromIOTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "origin": "redhat",
                     "patch_mboxes": [],
                     "valid": True,
@@ -135,7 +132,7 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "revision_id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
@@ -161,7 +158,7 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "revision_id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True,
                     "revision_": None,

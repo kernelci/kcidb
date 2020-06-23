@@ -40,7 +40,7 @@ class NotificationTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "https://git.kernel.org/@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "origin": "origin",
                     "patch_mboxes": [],
                     "valid": True,
@@ -60,8 +60,8 @@ class NotificationTestCase(unittest.TestCase):
                                     notification_message)
         self.assertEqual(notification.id,
                          "subscription:revisions:"
-                         "aHR0cHM6Ly9naXQua2VybmVsLm9yZy9ANWUyOWQxNDQzYzQ2Yj"
-                         "ZjYTcwYTRjOTQwYTY3ZThjMDlmMDVkY2I3ZQ==:aWQ=")
+                         "NWUyOWQxNDQzYzQ2YjZjYTcwYTRjOTQwYTY3ZThjMDlmMDVkY2"
+                         "I3ZQ==:aWQ=")
         message = notification.render()
         self.assertIsInstance(message, email.message.EmailMessage)
         self.assertIsNone(message['From'])
