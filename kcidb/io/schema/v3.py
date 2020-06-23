@@ -26,8 +26,7 @@ GIT_REPOSITORY_COMMIT_HASH_PATTERN = f"{SHA1_PATTERN}"
 
 # A regular expression pattern matching strings containing revision IDs
 REVISION_ID_PATTERN = \
-    f"{GIT_REPOSITORY_URL_PATTERN}" \
-    f"@{GIT_REPOSITORY_COMMIT_HASH_PATTERN}" \
+    f"{GIT_REPOSITORY_COMMIT_HASH_PATTERN}" \
     f"(\\+{SHA256_PATTERN})?"
 
 # A regular expression pattern matching strings containing origin name
@@ -96,29 +95,20 @@ JSON_REVISION = {
             "description":
                 "Revision ID.\n"
                 "\n"
-                "Must be a string containing the following, in order.\n"
-                "\n"
-                "The URL of the Git repository which contains the base code "
-                "of the revision. The shortest possible https:// URL, or, if "
-                "that's not available, the shortest possible git:// URL."
-                "\n"
-                "The '@' character.\n"
-                "\n"
-                "The full commit hash of the revision's base code in the Git "
-                "repository.\n"
+                "Must contain the full commit hash of the revision's base "
+                "code in the Git repository.\n"
                 "\n"
                 "If the revision had patches applied to the base code, "
-                "the '+' character, followed by a sha256 hash over "
-                "newline-terminated sha256 hashes of each applied patch, "
-                "in order. E.g. generated with this shell command: \""
+                "the commit hash should be followed by the '+' character "
+                "and a sha256 hash over newline-terminated sha256 hashes of "
+                "each applied patch, in order. E.g. generated with this "
+                "shell command: \""
                 "sha256sum *.patch | cut -c-64 | sha256sum | cut -c-64"
                 "\".\n",
             "pattern": f"^{REVISION_ID_PATTERN}$",
             "examples": [
-                "https://git.kernel.org/pub/scm/linux/kernel/git/stable/" +
-                "linux-stable.git@aa73bcc376865c23e61dcebd467697b527901be8",
-                "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/" +
-                "linux.git@c0d73a868d9b411bd2d0c8e5ff9d98bfa8563cb1" +
+                "aa73bcc376865c23e61dcebd467697b527901be8",
+                "c0d73a868d9b411bd2d0c8e5ff9d98bfa8563cb1" +
                 "+903638c087335b10293663c682b9aa0076f9f7be478a8e782" +
                 "8bc22e12d301b42"
             ],

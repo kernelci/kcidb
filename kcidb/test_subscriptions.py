@@ -40,7 +40,7 @@ class MatchOOTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "https://git.kernel.org/@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "origin": "non_test",
                     "patch_mboxes": [],
                     "valid": True,
@@ -56,7 +56,7 @@ class MatchOOTestCase(unittest.TestCase):
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "https://git.kernel.org/@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "origin": "test",
                     "patch_mboxes": [],
                     "valid": True,
@@ -78,7 +78,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "https://git.kernel.org/@5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "revision_id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
@@ -97,7 +97,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "https://git.kernel.org/@1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "revision_id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
