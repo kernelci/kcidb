@@ -35,7 +35,7 @@ class MatchOOTestCase(unittest.TestCase):
                     ],
                     "discovery_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
-                    "git_repository_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
@@ -51,7 +51,7 @@ class MatchOOTestCase(unittest.TestCase):
                     ],
                     "discovery_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
-                    "git_repository_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "git_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
