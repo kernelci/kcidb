@@ -22,11 +22,11 @@ SHA256_PATTERN = "[0-9a-f]{64}"
 
 # A regular expression pattern matching strings containing Git repository
 # commit hash (sha1)
-GIT_REPOSITORY_COMMIT_HASH_PATTERN = f"{SHA1_PATTERN}"
+GIT_COMMIT_HASH_PATTERN = f"{SHA1_PATTERN}"
 
 # A regular expression pattern matching strings containing revision IDs
 REVISION_ID_PATTERN = \
-    f"{GIT_REPOSITORY_COMMIT_HASH_PATTERN}" \
+    f"{GIT_COMMIT_HASH_PATTERN}" \
     f"(\\+{SHA256_PATTERN})?"
 
 # A regular expression pattern matching strings containing origin name
@@ -139,14 +139,13 @@ JSON_REVISION = {
                 "that's not available, the shortest possible git:// URL.",
             "pattern": f"^{GIT_REPOSITORY_URL_PATTERN}$",
         },
-        "git_repository_commit_hash": {
+        "git_commit_hash": {
             "type": "string",
             "description":
-                "The full commit hash of the revision's base code "
-                "in the Git repository",
-            "pattern": f"^{GIT_REPOSITORY_COMMIT_HASH_PATTERN}$",
+                "The full commit hash of the revision's base code",
+            "pattern": f"^{GIT_COMMIT_HASH_PATTERN}$",
         },
-        "git_repository_commit_name": {
+        "git_commit_name": {
             "type": "string",
             "description":
                 "A human-readable name of the commit containing the base "
@@ -606,6 +605,13 @@ def inherit(data):
         revision["id"] = remove_origin(revision["id"])
     for build in data.get("builds", []):
         build["revision_id"] = remove_origin(build["revision_id"])
+
+    # Rename git_repository_commit* to git_commit* in revisions
+    for revision in data.get("revisions", []):
+        for old, new in (("git_repository_commit_hash", "git_commit_hash"),
+                         ("git_repository_commit_name", "git_commit_name")):
+            if old in revision:
+                revision[new] = revision.pop(old)
 
     # Update version
     data['version'] = dict(major=JSON_VERSION_MAJOR,

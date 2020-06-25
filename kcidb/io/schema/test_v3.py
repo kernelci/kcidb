@@ -61,3 +61,34 @@ class UpgradeTestCase(unittest.TestCase):
         )
 
         self.assertEqual(VERSION.upgrade(prev_version_data), new_version_data)
+
+    def test_repository_commit_rename(self):
+        """Check git_repository_commit* rename to git_commit* works"""
+        prev_version_data = dict(
+            version=dict(major=VERSION.previous.major,
+                         minor=VERSION.previous.minor),
+            revisions=[
+                dict(id="origin1:5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                     git_repository_commit_hash="5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                     git_repository_commit_name="foo"),
+                dict(id="origin2:41f53451e75df9864a78c83e935e98ede7a170c2",
+                     git_repository_commit_hash="41f53451e75df9864a78c83e935e98ede7a170c2",
+                     git_repository_commit_name="bar"),
+            ],
+        )
+        new_version_data = dict(
+            version=dict(major=VERSION.major,
+                         minor=VERSION.minor),
+            revisions=[
+                dict(id="5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                     origin="origin1",
+                     git_commit_hash="5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                     git_commit_name="foo"),
+                dict(id="41f53451e75df9864a78c83e935e98ede7a170c2",
+                     origin="origin2",
+                     git_commit_hash="41f53451e75df9864a78c83e935e98ede7a170c2",
+                     git_commit_name="bar"),
+            ],
+        )
+
+        self.assertEqual(VERSION.upgrade(prev_version_data), new_version_data)
