@@ -4,6 +4,7 @@ import re
 import base64
 import argparse
 import logging
+from textwrap import indent
 from email.message import EmailMessage
 from google.cloud import secretmanager
 from kcidb.io import schema
@@ -48,6 +49,30 @@ def logging_setup(level):
     # TODO Consider separate arguments for controlling the below
     logging.getLogger("urllib3").setLevel(LOGGING_LEVEL_MAP["NONE"])
     logging.getLogger("google").setLevel(LOGGING_LEVEL_MAP["NONE"])
+
+
+def format_exception_stack(exc):
+    """
+    Format an exception's context stack as a series of indented messages.
+
+    Args:
+        exc:    The exception to format the stack of.
+
+    Returns:
+        The formatted exception stack.
+    """
+    assert isinstance(exc, Exception)
+    string = ""
+    prefix = ""
+    while True:
+        string += indent(str(exc), prefix)
+        if exc.__context__:
+            string += ":\n"
+            prefix += "  "
+            exc = exc.__context__
+        else:
+            break
+    return string
 
 
 class ArgumentParser(argparse.ArgumentParser):

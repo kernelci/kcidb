@@ -185,13 +185,13 @@ def validate_main():
     try:
         data = json.load(sys.stdin)
     except json.decoder.JSONDecodeError as err:
-        print(err, file=sys.stderr)
+        print(misc.format_exception_stack(err), file=sys.stderr)
         return 1
 
     try:
         io.schema.validate(data)
     except jsonschema.exceptions.ValidationError as err:
-        print(err, file=sys.stderr)
+        print(misc.format_exception_stack(err), file=sys.stderr)
         return 2
     return 0
 
@@ -205,13 +205,13 @@ def upgrade_main():
     try:
         data = json.load(sys.stdin)
     except json.decoder.JSONDecodeError as err:
-        print(err, file=sys.stderr)
+        print(misc.format_exception_stack(err), file=sys.stderr)
         return 1
 
     try:
         data = io.schema.upgrade(data, copy=False)
     except jsonschema.exceptions.ValidationError as err:
-        print(err, file=sys.stderr)
+        print(misc.format_exception_stack(err), file=sys.stderr)
         return 2
 
     json.dump(data, sys.stdout, indent=4, sort_keys=True)
@@ -291,10 +291,10 @@ def merge_main():
                 data = io.schema.validate(json.load(json_file))
             io.merge(merged_data, data, copy_target=False, copy_source=False)
         except json.decoder.JSONDecodeError as err:
-            print(err, file=sys.stderr)
+            print(misc.format_exception_stack(err), file=sys.stderr)
             return 1
         except jsonschema.exceptions.ValidationError as err:
-            print(err, file=sys.stderr)
+            print(misc.format_exception_stack(err), file=sys.stderr)
             return 2
 
     json.dump(merged_data, sys.stdout, indent=4, sort_keys=True)
@@ -327,7 +327,7 @@ def notify_main():
         except (json.decoder.JSONDecodeError,
                 jsonschema.exceptions.ValidationError) as err:
             print("Failed reading base file:", file=sys.stderr)
-            print(err, file=sys.stderr)
+            print(misc.format_exception_stack(err), file=sys.stderr)
             return 1
 
     try:
@@ -336,7 +336,7 @@ def notify_main():
     except (json.decoder.JSONDecodeError,
             jsonschema.exceptions.ValidationError) as err:
         print("Failed reading new file:", file=sys.stderr)
-        print(err, file=sys.stderr)
+        print(misc.format_exception_stack(err), file=sys.stderr)
         return 1
 
     for notification in subscriptions.match_new_io(base, new):
