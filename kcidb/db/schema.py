@@ -48,12 +48,11 @@ TABLE_MAP = dict(
                         "possible HTTPS URL.",
         ),
         Field(
-            "git_repository_commit_hash", "STRING",
-            description="The full commit hash of the revision's base code "
-                        "in the Git repository",
+            "git_commit_hash", "STRING",
+            description="The full commit hash of the revision's base code",
         ),
         Field(
-            "git_repository_commit_name", "STRING",
+            "git_commit_name", "STRING",
             description="A human-readable name of the commit containing the "
                         "base code of the revision, as would be output by "
                         "\"git describe\", at the discovery time."
