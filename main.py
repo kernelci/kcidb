@@ -21,6 +21,8 @@ MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
 SELECTED_SUBSCRIPTIONS = \
     os.environ.get("KCIDB_SELECTED_SUBSCRIPTIONS", "").split()
 
+SPOOL_COLLECTION_PATH = os.environ["KCIDB_SPOOL_COLLECTION_PATH"]
+
 SMTP_HOST = os.environ["KCIDB_SMTP_HOST"]
 SMTP_PORT = int(os.environ["KCIDB_SMTP_PORT"])
 SMTP_USER = os.environ["KCIDB_SMTP_USER"]
@@ -30,7 +32,7 @@ SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
 DB_CLIENT = kcidb.db.Client(DATASET)
-SPOOL_CLIENT = kcidb.spool.Client()
+SPOOL_CLIENT = kcidb.spool.Client(SPOOL_COLLECTION_PATH)
 MQ_LOADED_PUBLISHER = kcidb.mq.Publisher(PROJECT_ID, MQ_LOADED_TOPIC)
 
 
