@@ -37,14 +37,13 @@ class Client:
         """
         return is_valid_firestore_id(value)
 
-    def __init__(self, collection_path="notifications", pick_timeout=None):
+    def __init__(self, collection_path, pick_timeout=None):
         """
         Initialize a spool client.
 
         Args:
             collection_path:    The Google Firestore path to the collection
-                                of notification documents. The default is
-                                "notifications".
+                                of notification documents.
             pick_timeout:       A datetime.timedelta object specifying how
                                 long a notification should be considered
                                 picked, by default, or None, meaning 2
@@ -252,6 +251,11 @@ def wipe_main():
         'kcidb-spool-wipe - Remove (old) notifications from the spool'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
+        '-c', '--collection',
+        help='The Google Firestore path to the spool collection.',
+        required=True
+    )
+    parser.add_argument(
         'until',
         metavar='UNTIL',
         nargs='?',
@@ -265,4 +269,4 @@ def wipe_main():
         until = dateutil.parser.isoparse(args.until)
         if until.tzinfo is None:
             until = until.astimezone()
-    Client().wipe(until=until)
+    Client(args.collection_path).wipe(until=until)
