@@ -37,22 +37,27 @@ class Client:
         """
         return is_valid_firestore_id(value)
 
-    def __init__(self, collection_path, pick_timeout=None):
+    def __init__(self, collection_path, project=None, pick_timeout=None):
         """
         Initialize a spool client.
 
         Args:
             collection_path:    The Google Firestore path to the collection
                                 of notification documents.
+            project:            The Google Cloud project the Firestore
+                                database housing the spool belongs to.
+                                Inferred from the environment, if None is
+                                specified. The default is None.
             pick_timeout:       A datetime.timedelta object specifying how
                                 long a notification should be considered
                                 picked, by default, or None, meaning 2
                                 minutes.
         """
         assert isinstance(collection_path, str) and collection_path
+        assert project is None or isinstance(project, str)
         assert pick_timeout is None or \
             isinstance(pick_timeout, datetime.timedelta)
-        self.db = firestore.Client()
+        self.db = firestore.Client(project=project)
         self.collection_path = collection_path
         self.parser = email.parser.Parser(policy=email.policy.SMTPUTF8)
         self.pick_timeout = pick_timeout or datetime.timedelta(minutes=2)
@@ -251,6 +256,13 @@ def wipe_main():
         'kcidb-spool-wipe - Remove (old) notifications from the spool'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
+        '-p', '--project',
+        help='ID of the Google Cloud project containing the spool. '
+             'Taken from credentials by default.',
+        default=None,
+        required=False
+    )
+    parser.add_argument(
         '-c', '--collection',
         help='The Google Firestore path to the spool collection.',
         required=True
@@ -269,4 +281,4 @@ def wipe_main():
         until = dateutil.parser.isoparse(args.until)
         if until.tzinfo is None:
             until = until.astimezone()
-    Client(args.collection_path).wipe(until=until)
+    Client(args.collection_path, project=args.project).wipe(until=until)
