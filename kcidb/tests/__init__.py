@@ -1,6 +1,5 @@
 """Kernel CI reporting test catalog"""
 
-import argparse
 import sys
 import yaml
 import requests
@@ -12,7 +11,7 @@ from kcidb.tests import schema
 def validate_main():
     """Execute the kcidb-tests-validate command-line tool"""
     description = 'kcidb-tests-validate - Validate test catalog YAML'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         "-u", "--urls",
         action='store_true',

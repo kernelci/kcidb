@@ -1,11 +1,10 @@
 """Kernel CI report message queue"""
 
-import argparse
 import json
 import sys
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
-from kcidb import io
+from kcidb import io, misc
 
 
 class Publisher:
@@ -153,7 +152,7 @@ def publisher_init_main():
     """Execute the kcidb-mq-publisher-init command-line tool"""
     description = \
         'kcidb-mq-publisher-init - Initialize a Kernel CI report publisher'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project with the message queue',
@@ -173,7 +172,7 @@ def publisher_cleanup_main():
     """Execute the kcidb-mq-publisher-cleanup command-line tool"""
     description = \
         'kcidb-mq-publisher-cleanup - Cleanup a Kernel CI report publisher'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project with the message queue',
@@ -194,7 +193,7 @@ def publisher_publish_main():
     description = \
         'kcidb-mq-publisher-publish - ' \
         'Publish with a Kernel CI report publisher'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project with the message queue',
@@ -216,7 +215,7 @@ def subscriber_init_main():
     """Execute the kcidb-mq-subscriber-init command-line tool"""
     description = \
         'kcidb-mq-subscriber-init - Initialize a Kernel CI report subscriber'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project with the message queue',
@@ -241,7 +240,7 @@ def subscriber_cleanup_main():
     """Execute the kcidb-mq-subscriber-cleanup command-line tool"""
     description = \
         'kcidb-mq-subscriber-cleanup - Cleanup a Kernel CI report subscriber'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project with the message queue',
@@ -266,7 +265,7 @@ def subscriber_pull_main():
     """Execute the kcidb-mq-subscriber-pull command-line tool"""
     description = \
         'kcidb-mq-subscriber-pull - Pull with a Kernel CI report subscriber'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project with the message queue',
