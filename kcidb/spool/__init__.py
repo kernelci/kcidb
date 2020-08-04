@@ -14,7 +14,7 @@ import email.policy
 import dateutil.parser
 from google.cloud.exceptions import Conflict
 from google.cloud import firestore
-from kcidb.misc import Notification, is_valid_firestore_id
+from kcidb import misc
 
 # Because we like the "id" name
 # pylint: disable=invalid-name,redefined-builtin
@@ -35,7 +35,7 @@ class Client:
             True if the value is a valid notification ID,
             False if not.
         """
-        return is_valid_firestore_id(value)
+        return misc.is_valid_firestore_id(value)
 
     def __init__(self, collection_path, project=None, pick_timeout=None):
         """
@@ -100,7 +100,7 @@ class Client:
             True, if the notification was posted onto the spool,
             False, if not (it was already there).
         """
-        assert isinstance(notification, Notification)
+        assert isinstance(notification, misc.Notification)
         assert timestamp is None or \
             isinstance(timestamp, datetime.datetime) and timestamp.tzinfo
         if timestamp is None:
