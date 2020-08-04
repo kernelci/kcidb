@@ -7,7 +7,6 @@ picked up and sent asynchronously and provides an interface for making sure
 every notification email is sent, and sent only once (as well as possible).
 """
 
-import argparse
 import datetime
 import email
 import email.policy
@@ -254,7 +253,7 @@ def wipe_main():
     """Execute the kcidb-spool-wipe command-line tool"""
     description = \
         'kcidb-spool-wipe - Remove (old) notifications from the spool'
-    parser = argparse.ArgumentParser(description=description)
+    parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project containing the spool. '
