@@ -68,8 +68,8 @@ def kcidb_spool_notifications(event, context):
             SPOOL_CLIENT.post(notification)
         else:
             LOGGER.info("DROPPING ID %s", notification.id)
-            LOGGER.info("DROPPING MESSAGE:\n%s",
-                        notification.render().as_string())
+            LOGGER.debug("DROPPING MESSAGE:\n%s",
+                         notification.render().as_string())
 
 
 def kcidb_send_notification(data, context):
