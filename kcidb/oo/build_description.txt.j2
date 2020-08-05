@@ -50,7 +50,7 @@ BUILD
     {% endfor %}
 {% endif %}
     Executed
-            by: {{ build.id.split(":")[0] }}
+            by: {{ build.origin }}
 {% if build.start_time %}
             at: {{ build.start_time }}
 {% endif %}
