@@ -12,13 +12,13 @@
         {{- revision.git_repository_branch -}}
         {% set empty = False %}
     {% endif %}
-    {% if revision.git_repository_commit_name %}
+    {% if revision.git_commit_name %}
         {{- "" if empty else "@" -}}
-        {{- revision.git_repository_commit_name -}}
+        {{- revision.git_commit_name -}}
         {% set empty = False %}
-    {% elif revision.git_repository_commit_hash %}
+    {% elif revision.git_commit_hash %}
         {{- "" if empty else "@" -}}
-        {{- revision.git_repository_commit_hash[:12] -}}
+        {{- revision.git_commit_hash[:12] -}}
         {% set empty = False %}
     {% endif %}
     {% if revision.patch_mboxes %}

@@ -30,7 +30,7 @@ TEST
                 {{ build_macros.summary(test.build_) }}
 {% endif %}
     Executed
-            by: {{ test.id.split(":")[0] }}
+            by: {{ test.origin }}
 {% if test.environment and test.environment.description %}
             on: {{ test.environment.description }}
 {% endif %}

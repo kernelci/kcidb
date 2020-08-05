@@ -58,13 +58,13 @@ REVISION
         branch: {{ revision.git_repository_branch }}
     {% endif %}
 {% endif %}
-{% if revision.git_repository_commit_name or revision.git_repository_commit_hash %}
+{% if revision.git_commit_name or revision.git_commit_hash %}
     Commit
-    {% if revision.git_repository_commit_name %}
-          name: {{ revision.git_repository_commit_name }}
+    {% if revision.git_commit_name %}
+          name: {{ revision.git_commit_name }}
     {% endif %}
-    {% if revision.git_repository_commit_hash %}
-          hash: {{ revision.git_repository_commit_hash }}
+    {% if revision.git_commit_hash %}
+          hash: {{ revision.git_commit_hash }}
     {% endif %}
 {% endif %}
 {% if revision.patch_mboxes %}
@@ -74,7 +74,7 @@ REVISION
     {% endfor %}
 {% endif %}
     Discovered
-            by: {{ revision.id.split(":")[0] }}
+            by: {{ revision.origin }}
 {% if revision.discovery_time %}
             at: {{ revision.discovery_time }}
 {% endif %}
