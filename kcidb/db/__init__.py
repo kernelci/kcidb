@@ -101,6 +101,22 @@ class Client:
         dataset.labels["version_minor"] = None
         self.client.update_dataset(dataset, ["labels"])
 
+    def get_last_modified(self):
+        """
+        Get the time the data in the database was last modified.
+
+        Returns:
+            The datetime object representing the last modification time, or
+            None if database was not modified yet.
+        """
+        job_config = bigquery.job.QueryJobConfig(
+            default_dataset=self.dataset_ref)
+        return next(iter(self.client.query(
+            "SELECT TIMESTAMP_MILLIS(MAX(last_modified_time)) "
+            "FROM __TABLES__",
+            job_config=job_config
+        ).result()))[0]
+
     @staticmethod
     def _unpack_node(node):
         """
