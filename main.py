@@ -3,6 +3,7 @@
 import os
 import json
 import base64
+import datetime
 import logging
 import smtplib
 import kcidb
@@ -15,8 +16,19 @@ kcidb.misc.logging_setup(
 )
 LOGGER = logging.getLogger()
 
+LOAD_QUEUE_SUBSCRIBER = kcidb.mq.Subscriber(
+    PROJECT_ID,
+    os.environ["KCIDB_LOAD_QUEUE_TOPIC"],
+    os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"]
+)
+LOAD_QUEUE_MSG_MAX = int(os.environ["KCIDB_LOAD_QUEUE_MSG_MAX"])
+LOAD_QUEUE_OBJ_MAX = int(os.environ["KCIDB_LOAD_QUEUE_OBJ_MAX"])
+LOAD_QUEUE_TIMEOUT_SEC = float(os.environ["KCIDB_LOAD_QUEUE_TIMEOUT_SEC"])
+
 DATASET = os.environ["KCIDB_DATASET"]
-MQ_LOADED_TOPIC = os.environ["KCIDB_MQ_LOADED_TOPIC"]
+DATASET_LOAD_PERIOD = datetime.timedelta(
+    seconds=int(os.environ["KCIDB_DATASET_LOAD_PERIOD_SEC"])
+)
 
 SELECTED_SUBSCRIPTIONS = \
     os.environ.get("KCIDB_SELECTED_SUBSCRIPTIONS", "").split()
@@ -33,14 +45,18 @@ SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
 DB_CLIENT = kcidb.db.Client(DATASET)
 SPOOL_CLIENT = kcidb.spool.Client(SPOOL_COLLECTION_PATH)
-MQ_LOADED_PUBLISHER = kcidb.mq.Publisher(PROJECT_ID, MQ_LOADED_TOPIC)
+LOADED_QUEUE_PUBLISHER = kcidb.mq.Publisher(
+    PROJECT_ID,
+    os.environ["KCIDB_LOADED_QUEUE_TOPIC"]
+)
 
 
 # pylint: disable=unused-argument
 
-def kcidb_load(event, context):
+def kcidb_load_message(event, context):
     """
-    Load KCIDB data from a Pub Sub subscription into the dataset
+    Load a single message's KCIDB data from the triggering Pub Sub
+    subscription into the database.
     """
     # Get new data
     data = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
@@ -48,7 +64,123 @@ def kcidb_load(event, context):
     # Store it in the database
     DB_CLIENT.load(data)
     # Forward the data to the "loaded" MQ topic
-    MQ_LOADED_PUBLISHER.publish(data)
+    LOADED_QUEUE_PUBLISHER.publish(data)
+
+
+def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
+    """
+    Pull I/O data messages from a subscriber with a limit on message number,
+    total object number and time spent.
+
+    Args:
+        subscriber:     The subscriber (kcidb.mq.Subscriber) to pull from.
+        msg_max:        Maximum number of messages to pull.
+        obj_max:        Maximum number of objects to pull.
+        timeout_sec:    Maximum number of seconds to spend.
+
+    Returns:
+        The list of pulled messages.
+    """
+    # Yeah it's crowded, but bear with us, pylint: disable=too-many-locals
+    # Pull data from queue until we get enough, or time runs out
+    start = datetime.datetime.now(datetime.timezone.utc)
+    obj_num = 0
+    pulls = 0
+    msgs = []
+    while True:
+        # Calculate remaining messages
+        pull_msg_max = msg_max - len(msgs)
+        if pull_msg_max <= 0:
+            LOGGER.debug("Received enough messages")
+            break
+
+        # Calculate remaining time
+        pull_timeout_sec = \
+            timeout_sec - \
+            (datetime.datetime.now(datetime.timezone.utc) - start). \
+            total_seconds()
+        if pull_timeout_sec <= 0:
+            LOGGER.debug("Ran out of time")
+            break
+
+        # Pull
+        LOGGER.debug("Pulling <= %u messages from the queue, "
+                     "with timeout %us...", pull_msg_max, pull_timeout_sec)
+        pull_msgs = subscriber.pull(pull_msg_max, timeout=pull_timeout_sec)
+        pulls += 1
+        LOGGER.debug("Pulled %u messages", len(pull_msgs))
+
+        # Add messages up to obj_max, except the first one
+        for index, msg in enumerate(pull_msgs):
+            msg_obj_num = kcidb.io.get_obj_num(msg[1])
+            obj_num += msg_obj_num
+            if msgs and obj_num > obj_max:
+                LOGGER.debug("Message #%u crossed %u-object boundary "
+                             "at %u total objects",
+                             len(msgs) + 1, obj_max, obj_num)
+                obj_num -= msg_obj_num
+                for nack_msg in pull_msgs[index:]:
+                    subscriber.nack(nack_msg[0])
+                LOGGER.debug("NACK'ed %s messages", len(pull_msgs) - index)
+                break
+            msgs.append(msg)
+        else:
+            continue
+        break
+
+    duration_seconds = \
+        (datetime.datetime.now(datetime.timezone.utc) - start).total_seconds()
+    LOGGER.debug("Pulled %u messages, %u objects total "
+                 "in %u pulls and %u seconds",
+                 len(msgs), obj_num, pulls, duration_seconds)
+    return msgs
+
+
+def kcidb_load_queue(event, context):
+    """
+    Load multiple KCIDB data messages from the LOAD_QUEUE_SUBSCRIBER queue
+    into the database, if it stayed unmodified for at least
+    DATASET_LOAD_PERIOD.
+    """
+    # Do nothing, if updated recently
+    now = datetime.datetime.now(datetime.timezone.utc)
+    last_modified = DB_CLIENT.get_last_modified()
+    LOGGER.debug("Now: %s, Last modified: %s", now, last_modified)
+    if last_modified and now - last_modified < DATASET_LOAD_PERIOD:
+        LOGGER.info("Database too fresh, exiting")
+        return
+
+    # Pull messages
+    msgs = kcidb_load_queue_msgs(LOAD_QUEUE_SUBSCRIBER,
+                                 LOAD_QUEUE_MSG_MAX,
+                                 LOAD_QUEUE_OBJ_MAX,
+                                 LOAD_QUEUE_TIMEOUT_SEC)
+    if msgs:
+        LOGGER.info("Pulled %u messages", len(msgs))
+    else:
+        LOGGER.info("Pulled nothing, exiting")
+        return
+
+    # Create merged data referencing the pulled pieces
+    LOGGER.debug("Merging %u messages...", len(msgs))
+    data = kcidb.io.merge(kcidb.io.new(), (msg[1] for msg in msgs),
+                          copy_target=False, copy_sources=False)
+    LOGGER.info("Merged %u messages", len(msgs))
+    # Load the merged data into the database
+    obj_num = kcidb.io.get_obj_num(data)
+    LOGGER.debug("Loading %u objects...", obj_num)
+    DB_CLIENT.load(data)
+    LOGGER.info("Loaded %u objects", obj_num)
+
+    # Acknowledge all the loaded data
+    for msg in msgs:
+        LOAD_QUEUE_SUBSCRIBER.ack(msg[0])
+    LOGGER.debug("ACK'ed %u messages", len(msgs))
+
+    # Forward the loaded data to the "loaded" topic
+    for msg in msgs:
+        LOADED_QUEUE_PUBLISHER.publish(msg[1])
+    LOGGER.debug("Forwarded %u messages", len(msgs))
 
 
 def kcidb_spool_notifications(event, context):
