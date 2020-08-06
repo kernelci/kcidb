@@ -1,10 +1,16 @@
 """Kernel CI report message queue"""
 
 import json
+import logging
 import sys
+import jsonschema
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
 from kcidb import io, misc
+
+
+# Module's logger
+LOGGER = logging.getLogger(__name__)
 
 
 class Publisher:
@@ -113,30 +119,51 @@ class Subscriber:
         """
         self.client.delete_subscription(self.subscription_path)
 
-    def pull(self):
+    def pull(self, max_num, timeout=0):
         """
-        Pull published data from the message queue.
+        Pull published data from the message queue, discarding (and logging as
+        errors) invalid JSON and data not matching any of the known schema
+        versions.
+
+        Args:
+            max_num:    Maximum number of data messages to pull and return.
+            timeout:    Maximum time to wait for request to complete, seconds,
+                        or zero for infinite timeout. Default is zero.
 
         Returns:
-            Two values:
+            A list of "messages" - tuples containing the data received within
+            the timeout, each with two items:
             * The ID to use when acknowledging the reception of the data.
             * The JSON data from the message queue, adhering to the latest I/O
               schema.
         """
+        assert isinstance(max_num, int)
+        assert isinstance(timeout, (int, float))
+        messages = []
         while True:
             try:
                 # Setting *some* timeout, because infinite timeout doesn't
                 # seem to be supported
-                response = self.client.pull(self.subscription_path, 1,
-                                            timeout=300)
-                if response.received_messages:
-                    break
+                response = self.client.pull(self.subscription_path, max_num,
+                                            timeout=(timeout or 300))
+                messages = response.received_messages
             except DeadlineExceeded:
                 pass
-        message = response.received_messages[0]
-        data = Subscriber.decode_data(message.message.data)
-        assert io.schema.is_valid_latest(data)
-        return message.ack_id, data
+            if timeout or messages:
+                break
+
+        items = []
+        for message in messages:
+            try:
+                items.append((message.ack_id,
+                              Subscriber.decode_data(message.message.data)))
+            except (json.decoder.JSONDecodeError,
+                    jsonschema.exceptions.ValidationError) as err:
+                LOGGER.error("%s\nDropping invalid message:\n%s",
+                             misc.format_exception_stack(err),
+                             message.message.data)
+                self.ack(message.ack_id)
+        return items
 
     def ack(self, ack_id):
         """
@@ -290,9 +317,19 @@ def subscriber_pull_main():
         help='Name of the subscription to pull from',
         required=True
     )
+    parser.add_argument(
+        '--timeout',
+        metavar="SECONDS",
+        type=float,
+        help='Wait the specified number of SECONDS for a report message',
+        default=0,
+        required=False
+    )
     args = parser.parse_args()
     subscriber = Subscriber(args.project, args.topic, args.subscription)
-    ack_id, data = subscriber.pull()
-    json.dump(data, sys.stdout, indent=4, sort_keys=True)
-    sys.stdout.flush()
-    subscriber.ack(ack_id)
+    items = subscriber.pull(1, timeout=args.timeout)
+    if items:
+        ack_id, data = items[0]
+        json.dump(data, sys.stdout, indent=4, sort_keys=True)
+        sys.stdout.flush()
+        subscriber.ack(ack_id)
