@@ -147,6 +147,15 @@ class Subscriber:
         """
         self.client.acknowledge(self.subscription_path, [ack_id])
 
+    def nack(self, ack_id):
+        """
+        Signal data wasn't received.
+
+        Args:
+            ack_id: The ID received with the data to be marked not received.
+        """
+        self.client.modify_ack_deadline(self.subscription_path, [ack_id], 0)
+
 
 def publisher_init_main():
     """Execute the kcidb-mq-publisher-init command-line tool"""
