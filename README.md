@@ -74,7 +74,7 @@ Kcidb infrastructure is mostly based on Google Cloud services at the moment:
     kcidb-query <----------------------------------------------- :   tests      :
                                                                   ''''''''''''''
                     ~~ Pub/Sub ~~   ~~~~ Cloud Functions ~~~~            ^
-    kcidb-submit -> kcidb_new ----> kcidb_load --------------------------'
+    kcidb-submit -> kcidb_new ----> kcidb_load_message ------------------'
                                         |
                           .-------------'
                           v                                      ~~~~ Firestore ~~~~
@@ -94,8 +94,8 @@ using the kcidb library to query the database.
 
 Whenever a client submits reports, either via `kcidb-submit` or the kcidb
 library, they go to a Pub/Sub message queue topic named `kcidb_new`, then to
-the `kcidb_load` "Cloud Function", which loads the data to the BigQuery
-dataset, and then pushes it to `kcidb_loaded` topic.
+the `kcidb_load_message` "Cloud Function", which loads the data to the
+BigQuery dataset, and then pushes it to `kcidb_loaded` topic.
 
 That topic is watched by `kcidb_spool_notifications` function, which picks up
 the data, generates report notifications, and stores them in a Firestore
@@ -228,7 +228,7 @@ amend if not:
 Deploy the functions (do **not** allow unauthenticated invocations when
 prompted):
 
-    gcloud functions deploy kcidb_load \
+    gcloud functions deploy kcidb_load_message \
                             --runtime python37 \
                             --trigger-topic kernelci_new \
                             --env-vars-file main.env.yaml \
