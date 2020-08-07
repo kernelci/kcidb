@@ -218,6 +218,28 @@ def upgrade_main():
     return 0
 
 
+def count_main():
+    """Execute the kcidb-count command-line tool"""
+    description = 'kcidb-count - Count number of objects in I/O JSON data'
+    parser = misc.ArgumentParser(description=description)
+    parser.parse_args()
+
+    try:
+        data = json.load(sys.stdin)
+    except json.decoder.JSONDecodeError as err:
+        print(misc.format_exception_stack(err), file=sys.stderr)
+        return 1
+
+    try:
+        io.schema.validate(data)
+    except jsonschema.exceptions.ValidationError as err:
+        print(misc.format_exception_stack(err), file=sys.stderr)
+        return 2
+
+    print(io.get_obj_num(data))
+    return 0
+
+
 def summarize_main():
     """Execute the kcidb-summarize command-line tool"""
     description = 'kcidb-summarize - Output summaries of report objects'
