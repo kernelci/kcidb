@@ -284,12 +284,11 @@ def merge_main():
     )
     args = parser.parse_args()
 
-    merged_data = io.new()
+    sources = []
     for path in args.paths:
         try:
             with open(path, "r") as json_file:
-                data = io.schema.validate(json.load(json_file))
-            io.merge(merged_data, data, copy_target=False, copy_source=False)
+                sources.append(io.schema.validate(json.load(json_file)))
         except json.decoder.JSONDecodeError as err:
             print(misc.format_exception_stack(err), file=sys.stderr)
             return 1
@@ -297,6 +296,8 @@ def merge_main():
             print(misc.format_exception_stack(err), file=sys.stderr)
             return 2
 
+    merged_data = io.merge(io.new(), sources,
+                           copy_target=False, copy_sources=False)
     json.dump(merged_data, sys.stdout, indent=4, sort_keys=True)
     return 0
 
