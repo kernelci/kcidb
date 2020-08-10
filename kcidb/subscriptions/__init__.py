@@ -140,7 +140,8 @@ def match_new_io(base_io, new_io, match_map=None, copy=True):
     assert io.schema.is_valid(new_io)
 
     # Merge the new data into the base (*copy* new data as we'll need it)
-    merged_io = io.merge(base_io, new_io, copy_target=copy, copy_source=True)
+    merged_io = io.merge(base_io, [new_io],
+                         copy_target=copy, copy_sources=True)
     # Convert both to OO representation
     merged_oo = oo.from_io(merged_io, copy=False)
     new_oo = oo.from_io(new_io, copy=copy)
