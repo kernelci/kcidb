@@ -74,6 +74,8 @@ Kcidb infrastructure is mostly based on Google Cloud services at the moment:
     kcidb-query <--------------------------------------------------- :   tests      :
                                                                       ''''''''''''''
                     ~~ Pub/Sub ~~       ~~~~ Cloud Functions ~~~~            ^
+                    kernelci_trigger -------.                                |
+                                            v                                |
     kcidb-submit -> kernelci_new -----> kcidb_load_queue --------------------'
                                             |
                           .-----------------'
@@ -94,8 +96,10 @@ using the kcidb library to query the database.
 
 Whenever a client submits reports, either via `kcidb-submit` or the kcidb
 library, they go to a Pub/Sub message queue topic named `kcidb_new`, then to
-the `kcidb_load_message` "Cloud Function", which loads the data to the
-BigQuery dataset, and then pushes it to `kcidb_loaded` topic.
+the `kcidb_load_queue` "Cloud Function", which loads the data to the BigQuery
+dataset, and then pushes it to `kcidb_loaded` topic. The `kcidb_load_queue`
+function is triggered periodically via messages to `kcidb_trigger` topic,
+pushed there by the Cloud Scheduler service.
 
 That topic is watched by `kcidb_spool_notifications` function, which picks up
 the data, generates report notifications, and stores them in a Firestore
@@ -166,9 +170,26 @@ Enable the Pub/Sub API:
 
     gcloud services enable pubsub.googleapis.com
 
+Create the `kernelci_trigger` topic used to trigger the execution of
+the `kernelci_load_queue` function:
+
+    gcloud pubsub topics create kcidb_trigger
+
 Create the `kernelci_new` topic:
 
     kcidb-mq-publisher-init -p kernelci-project -t kernelci_new
+
+Create the `kernelci_new_load` subscription used by the `kernelci_load_queue`
+function to receive the submissions from the `kernelci_new` topic:
+
+    kcidb-mq-subscriber-init -p kernelci-project \
+                             -t kernelci_new \
+                             -s kernelci_new_load
+
+Set the `kernelci_new_load` ACK deadline to match the maximum runtime of the
+`kernelci_load_queue` function:
+
+    gcloud pubsub subscriptions update kernelci_new_load --ack-deadline=540
 
 Create the `kernelci_loaded` topic:
 
@@ -228,11 +249,10 @@ amend if not:
 Deploy the functions (do **not** allow unauthenticated invocations when
 prompted):
 
-    gcloud functions deploy kcidb_load_message \
+    gcloud functions deploy kcidb_load_queue \
                             --runtime python37 \
-                            --trigger-topic kernelci_new \
+                            --trigger-topic kernelci_trigger \
                             --env-vars-file main.env.yaml \
-                            --retry \
                             --timeout=540
 
     gcloud functions deploy kcidb_spool_notifications \
@@ -253,6 +273,20 @@ prompted):
 NOTE: If you get a 403 Access Denied response to the first `gcloud functions
       deploy` invocation, try again. It might be a Google infrastructure quirk
       and could work the second time.
+
+#### Cloud Scheduler
+
+Enable the Cloud Scheduler API:
+
+    gcloud services enable cloudscheduler.googleapis.com
+
+Create a scheduler job triggering the `kcidb_load_queue` function every
+minute via the `kernelci_trigger` topic:
+
+    gcloud scheduler jobs create pubsub kernelci_trigger \
+                                        --schedule='* * * * *' \
+                                        --topic=kernelci_trigger \
+                                        --message-body='{}'
 
 #### Grafana
 
