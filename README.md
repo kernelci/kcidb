@@ -65,28 +65,28 @@ Administrator guide
 
 Kcidb infrastructure is mostly based on Google Cloud services at the moment:
 
-    === Hosts ===  =================== Google Cloud Project ========================
+    === Hosts ===  ======================= Google Cloud Project ========================
 
-    ~~ Staging ~~                                                ~~~~ BigQuery ~~~~~
-    kcidb-grafana <---------------------------------------------  . kernelciXX .
-                                                                 :   revisions  :
-    ~~ Client ~~~                                                :   builds     :
-    kcidb-query <----------------------------------------------- :   tests      :
-                                                                  ''''''''''''''
-                    ~~ Pub/Sub ~~   ~~~~ Cloud Functions ~~~~            ^
-    kcidb-submit -> kcidb_new ----> kcidb_load_message ------------------'
-                                        |
-                          .-------------'
-                          v                                      ~~~~ Firestore ~~~~
-                    kcidb_loaded -> kcidb_spool_notifications -> notifications
-                                                                       |
-                                               .-----------------------'
-                                               |
-                                               v                 ~ Secret Manager ~~
-                                    kcidb_send_notification <--- kcidb_smtp_password
-                                               |
-                                               |                 ~~~~~~ GMail ~~~~~~
-                                               `---------------> bot@kernelci.org
+    ~~ Staging ~~                                                    ~~~~ BigQuery ~~~~~
+    kcidb-grafana <-------------------------------------------------  . kernelciXX .
+                                                                     :   revisions  :
+    ~~ Client ~~~                                                    :   builds     :
+    kcidb-query <--------------------------------------------------- :   tests      :
+                                                                      ''''''''''''''
+                    ~~ Pub/Sub ~~       ~~~~ Cloud Functions ~~~~            ^
+    kcidb-submit -> kernelci_new -----> kcidb_load_queue --------------------'
+                                            |
+                          .-----------------'
+                          v                                          ~~~~ Firestore ~~~~
+                    kernelci_loaded --> kcidb_spool_notifications -> notifications
+                                                                           |
+                                                   .-----------------------'
+                                                   |
+                                                   v                 ~ Secret Manager ~~
+                                        kcidb_send_notification <--- kcidb_smtp_password
+                                                   |
+                                                   |                 ~~~~~~ GMail ~~~~~~
+                                                   `---------------> bot@kernelci.org
 
 BigQuery stores the report dataset and serves it to Grafana dashboards hosted
 on staging.kernelci.org, as well as to any clients invoking `kcidb-query` or
