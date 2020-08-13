@@ -19,6 +19,8 @@ __all__ = [
     "summarize_main",
     "describe_main",
     "notify_main",
+    "merge_main",
+    "count_main",
 ]
 
 # pylint: disable=invalid-name,fixme
