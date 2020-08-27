@@ -138,6 +138,10 @@ JSON_REVISION = {
                 "of the revision. The shortest possible https:// URL, or, if "
                 "that's not available, the shortest possible git:// URL.",
             "pattern": f"^{GIT_REPOSITORY_URL_PATTERN}$",
+            "examples": [
+                "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                "torvalds/linux.git",
+            ],
         },
         "git_commit_hash": {
             "type": "string",
@@ -186,6 +190,9 @@ JSON_REVISION = {
             "description":
                 "The time the revision was made public. E.g. the timestamp "
                 "on a patch message, a commit, or a tag.",
+            "examples": [
+                "2020-08-14T23:08:06.967000+00:00",
+            ],
         },
         "discovery_time": {
             "type": "string",
@@ -194,6 +201,9 @@ JSON_REVISION = {
                 "The time the revision was discovered by the CI system. "
                 "E.g. the time the CI system found a patch message, or "
                 "noticed a new commit or a new tag in a git repo.",
+            "examples": [
+                "2020-08-14T23:08:06.967000+00:00",
+            ],
         },
         "contacts": {
             "type": "array",
@@ -275,6 +285,9 @@ JSON_BUILD = {
             "format": "date-time",
             "description":
                 "The time the build was started",
+            "examples": [
+                "2020-08-14T23:08:06.967000+00:00",
+            ],
         },
         "duration": {
             "type": "number",
@@ -417,7 +430,12 @@ JSON_TEST = {
                 "tree the executed test belongs to. E.g. \"ltp.sem01\". "
                 "The empty string signifies the root of the tree, i.e. all "
                 "tests for the build, executed by the origin CI system.",
-            "pattern": "^[.a-zA-Z0-9_-]*$"
+            "pattern": "^[.a-zA-Z0-9_-]*$",
+            "examples": [
+                "",
+                "ltp",
+                "ltp.sem01",
+            ],
         },
         "description": {
             "type": "string",
@@ -461,6 +479,9 @@ JSON_TEST = {
             "format": "date-time",
             "description":
                 "The time the test run was started",
+            "examples": [
+                "2020-08-14T23:08:06.967000+00:00",
+            ],
         },
         "duration": {
             "type": "number",
