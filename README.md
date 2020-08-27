@@ -13,6 +13,8 @@ notifications of arriving results.
 Installation
 ------------
 
+Kcidb requires Python v3.6 or later.
+
 To install the package for the current user, run this command:
 
     pip3 install --user <SOURCE>
