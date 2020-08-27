@@ -445,7 +445,7 @@ JSON_TEST = {
         "status": {
             "type": "string",
             "description":
-                "The test status, one of the following. "
+                "The test status string, one of the following. "
                 "\"ERROR\" - the test is faulty, "
                 "the status of the tested code is unknown. "
                 "\"FAIL\" - the test has failed, the tested code is faulty. "
