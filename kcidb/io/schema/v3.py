@@ -414,7 +414,7 @@ JSON_TEST = {
             "type": "string",
             "description":
                 "Dot-separated path to the node in the test classification "
-                "tree the executed test belongs to. E.g. \"LTPlite.sem01\". "
+                "tree the executed test belongs to. E.g. \"ltp.sem01\". "
                 "The empty string signifies the root of the tree, i.e. all "
                 "tests for the build, executed by the origin CI system.",
             "pattern": "^[.a-zA-Z0-9_-]*$"
