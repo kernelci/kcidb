@@ -378,10 +378,10 @@ class Client:
                     job_config=job_config)
                 try:
                     job.result()
-                except BadRequest:
+                except BadRequest as exc:
                     raise Exception("".join([
                         f"ERROR: {error['message']}\n" for error in job.errors
-                    ]))
+                    ])) from exc
 
     def complement(self, data):
         """
