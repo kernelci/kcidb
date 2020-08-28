@@ -120,7 +120,7 @@ To setup and manage most of Google Cloud services you will need the `gcloud`
 tool, which is a part of Google Cloud SDK. You can install it and create a
 Google Cloud Project by following one of the [official quickstart
 guides](https://cloud.google.com/sdk/docs/quickstarts). The instructions below
-assume the created project ID is `kernelci-project` (yours likely won't be).
+assume the created project ID is `kernelci-production` (yours likely won't be).
 
 Authenticate the gcloud tool with your Google account:
 
@@ -128,29 +128,29 @@ Authenticate the gcloud tool with your Google account:
 
 Select the project you just created:
 
-    gcloud config set project kernelci-project
+    gcloud config set project kernelci-production
 
-Create an administrative service account (`kernelci-project-admin` from here on):
+Create an administrative service account (`kernelci-production-admin` from here on):
 
-    gcloud iam service-accounts create kernelci-project-admin
+    gcloud iam service-accounts create kernelci-production-admin
 
 Grant the administrative service account the project owner permissions:
 
-    gcloud projects add-iam-policy-binding kernelci-project \
-           --member "serviceAccount:kernelci-project-admin@kernelci-project.iam.gserviceaccount.com" \
+    gcloud projects add-iam-policy-binding kernelci-production \
+           --member "serviceAccount:kernelci-production-admin@kernelci-production.iam.gserviceaccount.com" \
            --role "roles/owner"
 
-Generate the account key file (`kernelci-project-admin.json` here):
+Generate the account key file (`kernelci-production-admin.json` here):
 
-    gcloud iam service-accounts keys create kernelci-project-admin.json \
-           --iam-account kernelci-project-admin@kernelci-project.iam.gserviceaccount.com
+    gcloud iam service-accounts keys create kernelci-production-admin.json \
+           --iam-account kernelci-production-admin@kernelci-production.iam.gserviceaccount.com
 
 NOTE: This key allows anyone to do **anything** with the specified
       Google Cloud project, so keep it safe.
 
 Select the account key for use with Google Cloud API (which kcidb uses):
 
-    export GOOGLE_APPLICATION_CREDENTIALS=`pwd`/kernelci-project-admin.json
+    export GOOGLE_APPLICATION_CREDENTIALS=`pwd`/kernelci-production-admin.json
 
 Install kcidb as described above.
 
@@ -181,12 +181,12 @@ the `kernelci_load_queue` function:
 
 Create the `kernelci_new` topic:
 
-    kcidb-mq-publisher-init -p kernelci-project -t kernelci_new
+    kcidb-mq-publisher-init -p kernelci-production -t kernelci_new
 
 Create the `kernelci_new_load` subscription used by the `kernelci_load_queue`
 function to receive the submissions from the `kernelci_new` topic:
 
-    kcidb-mq-subscriber-init -p kernelci-project \
+    kcidb-mq-subscriber-init -p kernelci-production \
                              -t kernelci_new \
                              -s kernelci_new_load
 
@@ -197,13 +197,12 @@ Set the `kernelci_new_load` ACK deadline to match the maximum runtime of the
 
 Create the `kernelci_loaded` topic:
 
-    kcidb-mq-publisher-init -p kernelci-project -t kernelci_loaded
+    kcidb-mq-publisher-init -p kernelci-production -t kernelci_loaded
 
 #### Firestore
 
 Create a **native** Firestore database by following [the quickstart
 guide](https://cloud.google.com/firestore/docs/quickstart-servers).
-
 
 Enable the Firestore API:
 
@@ -237,7 +236,7 @@ Allow the default Cloud Functions account access to the SMTP password:
 
     gcloud secrets add-iam-policy-binding kcidb_smtp_password \
            --role roles/secretmanager.secretAccessor \
-           --member serviceAccount:kernelci-project@appspot.gserviceaccount.com
+           --member serviceAccount:kernelci-production@appspot.gserviceaccount.com
 
 Download and unpack, or clone the kcidb version being deployed, and change
 into the source directory. E.g.:
@@ -269,7 +268,7 @@ prompted):
     gcloud functions deploy kcidb_send_notification \
                             --runtime python37 \
                             --trigger-event providers/cloud.firestore/eventTypes/document.create \
-                            --trigger-resource 'projects/kernelci-project/databases/(default)/documents/notifications/{notification_id}' \
+                            --trigger-resource 'projects/kernelci-production/databases/(default)/documents/notifications/{notification_id}' \
                             --env-vars-file main.env.yaml \
                             --retry \
                             --timeout=540
@@ -302,33 +301,33 @@ for setup instructions.
 
 Each submitting/querying CI system needs to have a service account created,
 permissions assigned, and the account key generated. Below is an example for
-a CI system called "CKI" having account named "kernelci-project-ci-cki" created.
+a CI system called "CKI" having account named "kernelci-production-ci-cki" created.
 
 Create the service account:
 
-    gcloud iam service-accounts create kernelci-project-ci-cki
+    gcloud iam service-accounts create kernelci-production-ci-cki
 
 Grant the account query permissions for the BigQuery database:
 
-    gcloud projects add-iam-policy-binding kernelci-project \
-           --member "serviceAccount:kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com" \
+    gcloud projects add-iam-policy-binding kernelci-production \
+           --member "serviceAccount:kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com" \
            --role "roles/bigquery.dataViewer"
 
-    gcloud projects add-iam-policy-binding kernelci-project \
-           --member "serviceAccount:kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com" \
+    gcloud projects add-iam-policy-binding kernelci-production \
+           --member "serviceAccount:kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com" \
            --role "roles/bigquery.jobUser"
 
 Grant the account permissions to submit to the `kernelci_new` Pub/Sub topic:
 
     gcloud pubsub topics add-iam-policy-binding kernelci_new \
-                         --member="serviceAccount:kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com" \
+                         --member="serviceAccount:kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com" \
                          --role=roles/pubsub.publisher
 
-Generate the account key file (`kernelci-project-ci-cki.json` here) for use by
+Generate the account key file (`kernelci-production-ci-cki.json` here) for use by
 the CI system:
 
-    gcloud iam service-accounts keys create kernelci-project-ci-cki.json \
-           --iam-account kernelci-project-ci-cki@kernelci-project.iam.gserviceaccount.com
+    gcloud iam service-accounts keys create kernelci-production-ci-cki.json \
+           --iam-account kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com
 
 ### Upgrading
 
