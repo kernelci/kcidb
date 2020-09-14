@@ -65,7 +65,8 @@ def format_exception_stack(exc):
     string = ""
     prefix = ""
     while True:
-        string += indent(str(exc), prefix)
+        summary = ": ".join(s for s in (type(exc).__name__, str(exc)) if s)
+        string += indent(summary, prefix)
         if exc.__context__:
             string += ":\n"
             prefix += "  "
