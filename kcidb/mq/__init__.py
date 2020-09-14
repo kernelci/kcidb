@@ -244,10 +244,10 @@ def publisher_publish_main():
         required=True
     )
     args = parser.parse_args()
-    data = json.load(sys.stdin)
-    data = io.schema.upgrade(data, copy=False)
     publisher = Publisher(args.project, args.topic)
-    publisher.publish(data)
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        data = io.schema.upgrade(data, copy=False)
+        publisher.publish(data)
 
 
 def subscriber_init_main():
