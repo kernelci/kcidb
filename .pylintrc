@@ -1,7 +1,4 @@
 [MASTER]
-# Add files or directories to the blacklist. They should be base names, not
-# paths.
-ignore=lkft
 
 [MESSAGES CONTROL]
 # Disable the message, report, category or checker with the given id(s). You
