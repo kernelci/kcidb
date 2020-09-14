@@ -1,6 +1,7 @@
 """Kernel CI reporting - misc definitions"""
 
 import re
+import os
 import sys
 import base64
 import traceback
@@ -9,6 +10,7 @@ import logging
 from textwrap import indent
 from email.message import EmailMessage
 from google.cloud import secretmanager
+import jq
 from kcidb.io import schema
 from kcidb import oo
 
@@ -136,6 +138,28 @@ class ArgumentParser(argparse.ArgumentParser):
         logging.basicConfig()
         logging_setup(LOGGING_LEVEL_MAP[args.log_level])
         return args
+
+
+def json_load_stream_fd(stream_fd, chunk_size=4*1024*1024):
+    """
+    Load a series of JSON values from a stream file descriptor.
+
+    Args:
+        stream_fd:  The file descriptor for the stream to read.
+        chunk_size: Maximum size of chunks to read from the file, bytes.
+
+    Returns:
+        An iterator returning loaded JSON values.
+    """
+    def read_chunk():
+        while True:
+            chunk = os.read(stream_fd, chunk_size)
+            if chunk:
+                yield chunk
+            else:
+                break
+
+    return jq.parse_json(text_iter=read_chunk())
 
 
 def get_secret(project_id, secret_id):

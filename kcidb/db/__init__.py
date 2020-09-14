@@ -525,10 +525,11 @@ def complement_main():
         'kcidb-db-complement - Complement reports from database'
     parser = ArgumentParser(description=description)
     args = parser.parse_args()
-    data = json.load(sys.stdin)
-    data = io.schema.upgrade(data, copy=False)
     client = Client(args.dataset, project_id=args.project)
-    json.dump(client.complement(data), sys.stdout, indent=4, sort_keys=True)
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        data = io.schema.upgrade(data, copy=False)
+        json.dump(client.complement(data),
+                  sys.stdout, indent=4, sort_keys=True)
 
 
 def dump_main():
@@ -568,10 +569,10 @@ def load_main():
         'kcidb-db-load - Load reports into Kernel CI report database'
     parser = ArgumentParser(description=description)
     args = parser.parse_args()
-    data = json.load(sys.stdin)
-    data = io.schema.upgrade(data, copy=False)
     client = Client(args.dataset, project_id=args.project)
-    client.load(data)
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        data = io.schema.upgrade(data, copy=False)
+        client.load(data)
 
 
 def init_main():

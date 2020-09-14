@@ -5,6 +5,7 @@ import sys
 import email
 import logging
 import jsonschema
+import jq
 from kcidb import db, io, mq, oo, spool, subscriptions, tests, misc
 
 __all__ = [
@@ -147,10 +148,10 @@ def submit_main():
         required=True
     )
     args = parser.parse_args()
-    data = json.load(sys.stdin)
-    data = io.schema.upgrade(data, copy=False)
     client = Client(project_id=args.project, topic_name=args.topic)
-    client.submit(data)
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        data = io.schema.upgrade(data, copy=False)
+        client.submit(data)
 
 
 def query_main():
@@ -188,8 +189,8 @@ def validate_main():
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
-    data = json.load(sys.stdin)
-    io.schema.validate(data)
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        io.schema.validate(data)
 
 
 def upgrade_main():
@@ -199,9 +200,9 @@ def upgrade_main():
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
-    data = json.load(sys.stdin)
-    data = io.schema.upgrade(data, copy=False)
-    json.dump(data, sys.stdout, indent=4, sort_keys=True)
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        data = io.schema.upgrade(data, copy=False)
+        json.dump(data, sys.stdout, indent=4, sort_keys=True)
 
 
 def count_main():
@@ -211,9 +212,9 @@ def count_main():
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
-    data = json.load(sys.stdin)
-    io.schema.validate(data)
-    print(io.get_obj_num(data))
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        io.schema.validate(data)
+        print(io.get_obj_num(data))
 
 
 def summarize_main():
@@ -235,11 +236,12 @@ def summarize_main():
         help='ID of the object to limit output to'
     )
     args = parser.parse_args()
-    oo_data = oo.from_io(io.schema.upgrade(json.load(sys.stdin), copy=False))
-    obj_map = oo_data.get(args.obj_list_name, {})
-    for obj_id in args.ids or obj_map:
-        if obj_id in obj_map:
-            print(obj_map[obj_id].summarize())
+    for io_data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        oo_data = oo.from_io(io.schema.upgrade(io_data, copy=False))
+        obj_map = oo_data.get(args.obj_list_name, {})
+        for obj_id in args.ids or obj_map:
+            if obj_id in obj_map:
+                print(obj_map[obj_id].summarize())
 
 
 def describe_main():
@@ -261,12 +263,13 @@ def describe_main():
         help='ID of the object to limit output to'
     )
     args = parser.parse_args()
-    oo_data = oo.from_io(io.schema.upgrade(json.load(sys.stdin), copy=False))
-    obj_map = oo_data.get(args.obj_list_name, {})
-    for obj_id in args.ids or obj_map:
-        if obj_id in obj_map:
-            sys.stdout.write(obj_map[obj_id].describe())
-            sys.stdout.write("\x00")
+    for io_data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        oo_data = oo.from_io(io.schema.upgrade(io_data, copy=False))
+        obj_map = oo_data.get(args.obj_list_name, {})
+        for obj_id in args.ids or obj_map:
+            if obj_id in obj_map:
+                sys.stdout.write(obj_map[obj_id].describe())
+                sys.stdout.write("\x00")
 
 
 def merge_main():
@@ -286,7 +289,8 @@ def merge_main():
     sources = []
     for path in args.paths:
         with open(path, "r") as json_file:
-            sources.append(io.schema.validate(json.load(json_file)))
+            for data in misc.json_load_stream_fd(json_file.fileno()):
+                sources.append(io.schema.validate(data))
 
     merged_data = io.merge(io.new(), sources,
                            copy_target=False, copy_sources=False)
@@ -316,20 +320,28 @@ def notify_main():
     else:
         try:
             with open(args.base, "r") as json_file:
-                base = io.schema.validate(json.load(json_file))
-        except (json.decoder.JSONDecodeError,
+                base = io.merge(
+                    base, list(misc.json_load_stream_fd(json_file.fileno())),
+                    copy_target=False, copy_sources=False
+                )
+        except (jq.JSONParseError,
                 jsonschema.exceptions.ValidationError) as err:
             raise Exception("Failed reading base file") from err
 
     try:
         with open(args.new, "r") as json_file:
-            new = io.schema.validate(json.load(json_file))
-    except (json.decoder.JSONDecodeError,
+            for new in misc.json_load_stream_fd(json_file.fileno()):
+                new = io.schema.validate(new)
+                for notification in subscriptions.match_new_io(base, new):
+                    sys.stdout.write(
+                        notification.render().
+                        as_string(policy=email.policy.SMTPUTF8)
+                    )
+                    sys.stdout.write("\x00")
+                base = io.merge(
+                    base, [new],
+                    copy_target=False, copy_sources=False
+                )
+    except (jq.JSONParseError,
             jsonschema.exceptions.ValidationError) as err:
         raise Exception("Failed reading new file") from err
-
-    for notification in subscriptions.match_new_io(base, new):
-        sys.stdout.write(
-            notification.render().as_string(policy=email.policy.SMTPUTF8)
-        )
-        sys.stdout.write("\x00")
