@@ -119,6 +119,11 @@ JSON_REVISION = {
                 "The name of the CI system which submitted the revision",
             "pattern": f"^{ORIGIN_PATTERN}$",
         },
+        "origin_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL of the revision in the origin CI system",
+        },
         "tree_name": {
             "type": "string",
             "description":
@@ -275,6 +280,15 @@ JSON_BUILD = {
                 "The name of the CI system which submitted the build",
             "pattern": f"^{ORIGIN_PATTERN}$",
         },
+        "origin_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL of the build in the origin CI system",
+            "examples": [
+                "https://kernelci.org/build/net-next/branch/master/"
+                "kernel/v5.8-rc4-1414-g4ff91fa0a3ac/",
+            ],
+        },
         "description": {
             "type": "string",
             "description":
@@ -402,6 +416,14 @@ JSON_TEST = {
                 "The name of the CI system which submitted the test run",
             "pattern": f"^{ORIGIN_PATTERN}$",
         },
+        "origin_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL of the test run in the origin CI system",
+            "examples": [
+                "https://kernelci.org/test/case/id/5f0e86fc459ceb8c2885bb39/",
+            ],
+        },
         "environment": {
             "type": "object",
             "description":
@@ -410,6 +432,13 @@ JSON_TEST = {
                 "amount of memory/storage/CPUs, for each host; "
                 "process environment variables, etc.",
             "properties": {
+                "origin_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description":
+                        "The URL of the environment in the origin CI system",
+                    "examples": ["https://kernelci.org/soc/allwinner/"],
+                },
                 "description": {
                     "type": "string",
                     "description":

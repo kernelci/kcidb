@@ -14,6 +14,10 @@ RESOURCE_FIELDS = (
 # Test environment fields
 ENVIRONMENT_FIELDS = (
     Field(
+        "origin_url", "STRING",
+        description="The URL of the environment in the origin CI system",
+    ),
+    Field(
         "description", "STRING",
         description="Human-readable description of the environment",
     ),
@@ -35,6 +39,10 @@ TABLE_MAP = dict(
             "origin", "STRING",
             description="The name of the CI system which submitted "
                         "the revision",
+        ),
+        Field(
+            "origin_url", "STRING",
+            description="The URL of the revision in the origin CI system",
         ),
         Field(
             "tree_name", "STRING",
@@ -128,6 +136,10 @@ TABLE_MAP = dict(
                         "the build",
         ),
         Field(
+            "origin_url", "STRING",
+            description="The URL of the build in the origin CI system",
+        ),
+        Field(
             "description", "STRING",
             description="Human-readable description of the build",
         ),
@@ -197,6 +209,10 @@ TABLE_MAP = dict(
             "origin", "STRING",
             description="The name of the CI system which submitted "
                         "the test run",
+        ),
+        Field(
+            "origin_url", "STRING",
+            description="The URL of the test run in the origin CI system",
         ),
         Field(
             "environment", "RECORD", fields=ENVIRONMENT_FIELDS,
