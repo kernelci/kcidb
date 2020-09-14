@@ -520,6 +520,7 @@ class QueryArgumentParser(ArgumentParser):
 
 def complement_main():
     """Execute the kcidb-db-complement command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-db-complement - Complement reports from database'
     parser = ArgumentParser(description=description)
@@ -532,6 +533,7 @@ def complement_main():
 
 def dump_main():
     """Execute the kcidb-db-dump command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-db-dump - Dump all data from Kernel CI report database'
     parser = ArgumentParser(description=description)
@@ -542,6 +544,7 @@ def dump_main():
 
 def query_main():
     """Execute the kcidb-db-query command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         "kcidb-db-query - Query objects from Kernel CI report database"
     parser = QueryArgumentParser(description=description)
@@ -560,6 +563,7 @@ def query_main():
 
 def load_main():
     """Execute the kcidb-db-load command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-db-load - Load reports into Kernel CI report database'
     parser = ArgumentParser(description=description)
@@ -572,6 +576,7 @@ def load_main():
 
 def init_main():
     """Execute the kcidb-db-init command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-db-init - Initialize a Kernel CI report database'
     parser = ArgumentParser(description=description)
     args = parser.parse_args()
@@ -581,6 +586,7 @@ def init_main():
 
 def cleanup_main():
     """Execute the kcidb-db-cleanup command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-db-cleanup - Cleanup a Kernel CI report database'
     parser = ArgumentParser(description=description)
     args = parser.parse_args()
