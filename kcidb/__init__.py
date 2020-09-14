@@ -132,6 +132,7 @@ class Client:
 
 def submit_main():
     """Execute the kcidb-submit command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-submit - Submit Kernel CI reports'
     parser = misc.ArgumentParser(description=description)
@@ -154,6 +155,7 @@ def submit_main():
 
 def query_main():
     """Execute the kcidb-query command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         "kcidb-query - Query Kernel CI reports"
     parser = db.QueryArgumentParser(description=description)
@@ -172,6 +174,7 @@ def query_main():
 
 def schema_main():
     """Execute the kcidb-schema command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-schema - Output latest I/O JSON schema'
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
@@ -180,70 +183,42 @@ def schema_main():
 
 def validate_main():
     """Execute the kcidb-validate command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-validate - Validate I/O JSON data'
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
-    try:
-        data = json.load(sys.stdin)
-    except json.decoder.JSONDecodeError as err:
-        print(misc.format_exception_stack(err), file=sys.stderr)
-        return 1
-
-    try:
-        io.schema.validate(data)
-    except jsonschema.exceptions.ValidationError as err:
-        print(misc.format_exception_stack(err), file=sys.stderr)
-        return 2
-    return 0
+    data = json.load(sys.stdin)
+    io.schema.validate(data)
 
 
 def upgrade_main():
     """Execute the kcidb-upgrade command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-upgrade - Upgrade I/O JSON data to latest schema'
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
-    try:
-        data = json.load(sys.stdin)
-    except json.decoder.JSONDecodeError as err:
-        print(misc.format_exception_stack(err), file=sys.stderr)
-        return 1
-
-    try:
-        data = io.schema.upgrade(data, copy=False)
-    except jsonschema.exceptions.ValidationError as err:
-        print(misc.format_exception_stack(err), file=sys.stderr)
-        return 2
-
+    data = json.load(sys.stdin)
+    data = io.schema.upgrade(data, copy=False)
     json.dump(data, sys.stdout, indent=4, sort_keys=True)
-    return 0
 
 
 def count_main():
     """Execute the kcidb-count command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-count - Count number of objects in I/O JSON data'
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
 
-    try:
-        data = json.load(sys.stdin)
-    except json.decoder.JSONDecodeError as err:
-        print(misc.format_exception_stack(err), file=sys.stderr)
-        return 1
-
-    try:
-        io.schema.validate(data)
-    except jsonschema.exceptions.ValidationError as err:
-        print(misc.format_exception_stack(err), file=sys.stderr)
-        return 2
-
+    data = json.load(sys.stdin)
+    io.schema.validate(data)
     print(io.get_obj_num(data))
-    return 0
 
 
 def summarize_main():
     """Execute the kcidb-summarize command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-summarize - Output summaries of report objects'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
@@ -265,11 +240,11 @@ def summarize_main():
     for obj_id in args.ids or obj_map:
         if obj_id in obj_map:
             print(obj_map[obj_id].summarize())
-    return 0
 
 
 def describe_main():
     """Execute the kcidb-describe command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-describe - Output descriptions of report objects'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
@@ -292,11 +267,11 @@ def describe_main():
         if obj_id in obj_map:
             sys.stdout.write(obj_map[obj_id].describe())
             sys.stdout.write("\x00")
-    return 0
 
 
 def merge_main():
     """Execute the kcidb-merge command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-merge - Upgrade and merge I/O data sets'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
@@ -310,24 +285,17 @@ def merge_main():
 
     sources = []
     for path in args.paths:
-        try:
-            with open(path, "r") as json_file:
-                sources.append(io.schema.validate(json.load(json_file)))
-        except json.decoder.JSONDecodeError as err:
-            print(misc.format_exception_stack(err), file=sys.stderr)
-            return 1
-        except jsonschema.exceptions.ValidationError as err:
-            print(misc.format_exception_stack(err), file=sys.stderr)
-            return 2
+        with open(path, "r") as json_file:
+            sources.append(io.schema.validate(json.load(json_file)))
 
     merged_data = io.merge(io.new(), sources,
                            copy_target=False, copy_sources=False)
     json.dump(merged_data, sys.stdout, indent=4, sort_keys=True)
-    return 0
 
 
 def notify_main():
     """Execute the kcidb-notify command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-notify - Generate notifications for new I/O data'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
@@ -351,22 +319,17 @@ def notify_main():
                 base = io.schema.validate(json.load(json_file))
         except (json.decoder.JSONDecodeError,
                 jsonschema.exceptions.ValidationError) as err:
-            print("Failed reading base file:", file=sys.stderr)
-            print(misc.format_exception_stack(err), file=sys.stderr)
-            return 1
+            raise Exception("Failed reading base file") from err
 
     try:
         with open(args.new, "r") as json_file:
             new = io.schema.validate(json.load(json_file))
     except (json.decoder.JSONDecodeError,
             jsonschema.exceptions.ValidationError) as err:
-        print("Failed reading new file:", file=sys.stderr)
-        print(misc.format_exception_stack(err), file=sys.stderr)
-        return 1
+        raise Exception("Failed reading new file") from err
 
     for notification in subscriptions.match_new_io(base, new):
         sys.stdout.write(
             notification.render().as_string(policy=email.policy.SMTPUTF8)
         )
         sys.stdout.write("\x00")
-    return 0

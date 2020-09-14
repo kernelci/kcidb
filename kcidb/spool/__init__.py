@@ -7,6 +7,7 @@ picked up and sent asynchronously and provides an interface for making sure
 every notification email is sent, and sent only once (as well as possible).
 """
 
+import sys
 import datetime
 import email
 import email.policy
@@ -251,6 +252,7 @@ class Client:
 
 def wipe_main():
     """Execute the kcidb-spool-wipe command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-spool-wipe - Remove (old) notifications from the spool'
     parser = misc.ArgumentParser(description=description)

@@ -1,7 +1,9 @@
 """Kernel CI reporting - misc definitions"""
 
 import re
+import sys
 import base64
+import traceback
 import argparse
 import logging
 from textwrap import indent
@@ -12,6 +14,9 @@ from kcidb import oo
 
 # We like the "id" name
 # pylint: disable=invalid-name,redefined-builtin
+
+# Module's logger
+LOGGER = logging.getLogger(__name__)
 
 # A regex matching permitted notification message summary strings
 NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
@@ -74,6 +79,21 @@ def format_exception_stack(exc):
         else:
             break
     return string
+
+
+def log_and_print_excepthook(type, value, tb):
+    """
+    Log an exception with DEBUG level and print its summary to stderr.
+    Adheres to sys.excepthook interface.
+
+    Args:
+        type:   Exception class.
+        value:  Exception instance.
+        tb:     Exception traceback object.
+    """
+    lines = traceback.format_exception(type, value, tb)
+    LOGGER.debug("%s", "".join(lines).rstrip())
+    print(format_exception_stack(value), file=sys.stderr)
 
 
 class ArgumentParser(argparse.ArgumentParser):

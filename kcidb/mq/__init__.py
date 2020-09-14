@@ -186,6 +186,7 @@ class Subscriber:
 
 def publisher_init_main():
     """Execute the kcidb-mq-publisher-init command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-publisher-init - Initialize a Kernel CI report publisher'
     parser = misc.ArgumentParser(description=description)
@@ -206,6 +207,7 @@ def publisher_init_main():
 
 def publisher_cleanup_main():
     """Execute the kcidb-mq-publisher-cleanup command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-publisher-cleanup - Cleanup a Kernel CI report publisher'
     parser = misc.ArgumentParser(description=description)
@@ -226,6 +228,7 @@ def publisher_cleanup_main():
 
 def publisher_publish_main():
     """Execute the kcidb-mq-publisher-publish command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-publisher-publish - ' \
         'Publish with a Kernel CI report publisher'
@@ -249,6 +252,7 @@ def publisher_publish_main():
 
 def subscriber_init_main():
     """Execute the kcidb-mq-subscriber-init command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-subscriber-init - Initialize a Kernel CI report subscriber'
     parser = misc.ArgumentParser(description=description)
@@ -274,6 +278,7 @@ def subscriber_init_main():
 
 def subscriber_cleanup_main():
     """Execute the kcidb-mq-subscriber-cleanup command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-subscriber-cleanup - Cleanup a Kernel CI report subscriber'
     parser = misc.ArgumentParser(description=description)
@@ -299,6 +304,7 @@ def subscriber_cleanup_main():
 
 def subscriber_pull_main():
     """Execute the kcidb-mq-subscriber-pull command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-subscriber-pull - Pull with a Kernel CI report subscriber'
     parser = misc.ArgumentParser(description=description)
