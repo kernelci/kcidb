@@ -146,6 +146,55 @@ class Client:
                     node[key] = Client._unpack_node(value)
         return node
 
+    def dump_iter(self, objects_per_report=0):
+        """
+        Dump all data from the database in object number-limited chunks.
+
+        Args:
+            objects_per_report: An integer number of objects per each returned
+                                report data, or zero for no limit.
+
+        Returns:
+            An iterator returning report JSON data adhering to the latest I/O
+            schema version, each containing at most the specified number of
+            objects.
+
+        Raises:
+            `IncompatibleSchema` if the dataset schema is incompatible with
+            the latest I/O schema.
+        """
+        assert isinstance(objects_per_report, int)
+        assert objects_per_report >= 0
+        major, minor = self.get_schema_version()
+        if major != io.schema.LATEST.major:
+            raise IncompatibleSchema(major, minor)
+
+        obj_num = 0
+        data = io.new()
+        for obj_list_name in schema.TABLE_MAP:
+            job_config = bigquery.job.QueryJobConfig(
+                default_dataset=self.dataset_ref)
+            query_string = f"SELECT * FROM `{obj_list_name}`"
+            LOGGER.debug("Query string: %s", query_string)
+            query_job = self.client.query(query_string, job_config=job_config)
+            obj_list = None
+            for row in query_job:
+                if obj_list is None:
+                    obj_list = []
+                    data[obj_list_name] = obj_list
+                obj_list.append(Client._unpack_node(dict(row.items())))
+                obj_num += 1
+                if objects_per_report and obj_num >= objects_per_report:
+                    assert io.schema.is_valid_latest(data)
+                    yield data
+                    obj_num = 0
+                    data = io.new()
+                    obj_list = None
+
+        if obj_num:
+            assert io.schema.is_valid_latest(data)
+            yield data
+
     def dump(self):
         """
         Dump all data from the database.
@@ -158,23 +207,7 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
-        major, minor = self.get_schema_version()
-        if major != io.schema.LATEST.major:
-            raise IncompatibleSchema(major, minor)
-
-        data = io.new()
-        for obj_list_name in schema.TABLE_MAP:
-            job_config = bigquery.job.QueryJobConfig(
-                default_dataset=self.dataset_ref)
-            query_string = f"SELECT * FROM `{obj_list_name}`"
-            LOGGER.debug("Query string: %s", query_string)
-            query_job = self.client.query(query_string, job_config=job_config)
-            data[obj_list_name] = [
-                Client._unpack_node(dict(row.items())) for row in query_job
-            ]
-
-        assert io.schema.is_valid_latest(data)
-        return data
+        return next(self.dump_iter(objects_per_report=0))
 
     @staticmethod
     def escape_like_pattern(string):
@@ -189,24 +222,32 @@ class Client:
         """
         return Client._LIKE_PATTERN_ESCAPE_RE.sub(r"\\\1", string)
 
-    def query(self, ids=None, patterns=None, children=False, parents=False):
+    # We can live with this for now, pylint: disable=too-many-arguments
+    def query_iter(self, ids=None, patterns=None,
+                   children=False, parents=False,
+                   objects_per_report=0):
         """
-        Match and fetch objects from the database.
+        Match and fetch objects from the database, in object number-limited
+        chunks.
 
         Args:
-            ids:        A dictionary of object list names, and lists of IDs of
-                        objects to match. None means empty dictionary.
-            patterns:   A dictionary of object list names, and lists of LIKE
-                        patterns, for IDs of objects to match. None means
-                        empty dictionary.
-            children:   True if children of matched objects should be matched
-                        as well.
-            parents:    True if parents of matched objects should be matched
-                        as well.
+            ids:                A dictionary of object list names, and lists
+                                of IDs of objects to match. None means empty
+                                dictionary.
+            patterns:           A dictionary of object list names, and lists
+                                of LIKE patterns, for IDs of objects to match.
+                                None means empty dictionary.
+            children:           True if children of matched objects should be
+                                matched as well.
+            parents:            True if parents of matched objects should be
+                                matched as well.
+            objects_per_report: An integer number of objects per each returned
+                                report data, or zero for no limit.
 
         Returns:
-            The JSON data from the database adhering to the latest I/O schema
-            version.
+            An iterator returning report JSON data adhering to the latest I/O
+            schema version, each containing at most the specified number of
+            objects.
 
         Raises:
             `IncompatibleSchema` if the dataset schema is incompatible with
@@ -226,6 +267,9 @@ class Client:
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
                    for k, v in patterns.items())
+
+        assert isinstance(objects_per_report, int)
+        assert objects_per_report >= 0
 
         major, minor = self.get_schema_version()
         if major != io.schema.LATEST.major:
@@ -300,6 +344,7 @@ class Client:
                 add_children(obj_list_name)
 
         # Fetch the data
+        obj_num = 0
         data = io.new()
         for obj_list_name, query in obj_list_queries.items():
             query_parameters = query[1]
@@ -314,12 +359,50 @@ class Client:
                 default_dataset=self.dataset_ref
             )
             query_job = self.client.query(query_string, job_config=job_config)
-            data[obj_list_name] = [
-                Client._unpack_node(dict(row.items())) for row in query_job
-            ]
+            obj_list = None
+            for row in query_job:
+                if obj_list is None:
+                    obj_list = []
+                    data[obj_list_name] = obj_list
+                obj_list.append(Client._unpack_node(dict(row.items())))
+                obj_num += 1
+                if objects_per_report and obj_num >= objects_per_report:
+                    assert io.schema.is_valid_latest(data)
+                    yield data
+                    obj_num = 0
+                    data = io.new()
+                    obj_list = None
 
-        assert io.schema.is_valid_latest(data)
-        return data
+        if obj_num:
+            assert io.schema.is_valid_latest(data)
+            yield data
+
+    def query(self, ids=None, patterns=None, children=False, parents=False):
+        """
+        Match and fetch objects from the database.
+
+        Args:
+            ids:        A dictionary of object list names, and lists of IDs of
+                        objects to match. None means empty dictionary.
+            patterns:   A dictionary of object list names, and lists of LIKE
+                        patterns, for IDs of objects to match. None means
+                        empty dictionary.
+            children:   True if children of matched objects should be matched
+                        as well.
+            parents:    True if parents of matched objects should be matched
+                        as well.
+
+        Returns:
+            The JSON data from the database adhering to the latest I/O schema
+            version.
+
+        Raises:
+            `IncompatibleSchema` if the dataset schema is incompatible with
+            the latest I/O schema.
+        """
+        return next(self.query_iter(ids=ids, patterns=patterns,
+                                    children=children, parents=parents,
+                                    objects_per_report=0))
 
     @staticmethod
     def _pack_node(node):
