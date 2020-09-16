@@ -84,6 +84,61 @@ class Client:
         else:
             raise NotImplementedError
 
+    # We can live with this for now, pylint: disable=too-many-arguments
+    def query_iter(self, ids=None, patterns=None,
+                   children=False, parents=False,
+                   objects_per_report=0):
+        """
+        Match and fetch reports, in object number-limited chunks.
+
+        Args:
+            ids:                A dictionary of object list names, and lists
+                                of IDs of objects to match. None means empty
+                                dictionary.
+            patterns:           A dictionary of object list names, and lists
+                                of LIKE patterns, for IDs of objects to match.
+                                None means empty dictionary.
+            children:           True if children of matched objects should be
+                                matched as well.
+            parents:            True if parents of matched objects should be
+                                matched as well.
+            objects_per_report: A positive integer number of objects per each
+                                returned report, or zero for no limit.
+
+        Returns:
+            An iterator returning report JSON data adhering to the latest I/O
+            schema version, each containing at most the specified number of
+            objects.
+
+        Raises:
+            `NotImplementedError`, if not supplied with a dataset name at
+            initialization time;
+            `IncompatibleSchema` if the dataset schema is incompatible with
+            the latest I/O schema.
+        """
+        assert ids is None or isinstance(ids, dict)
+        if ids is None:
+            ids = dict()
+        assert all(isinstance(k, str) and isinstance(v, list) and
+                   all(isinstance(e, str) for e in v)
+                   for k, v in ids.items())
+
+        assert patterns is None or isinstance(patterns, dict)
+        if patterns is None:
+            patterns = dict()
+        assert all(isinstance(k, str) and isinstance(v, list) and
+                   all(isinstance(e, str) for e in v)
+                   for k, v in patterns.items())
+
+        assert isinstance(objects_per_report, int)
+        assert objects_per_report >= 0
+
+        if not self.db_client:
+            raise NotImplementedError
+
+        return self.db_client.query_iter(ids, patterns, children, parents,
+                                         objects_per_report)
+
     def query(self, ids=None, patterns=None, children=False, parents=False):
         """
         Match and fetch report objects.
