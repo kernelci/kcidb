@@ -294,11 +294,6 @@ def notify_main():
     description = 'kcidb-notify - Generate notifications for new I/O data'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
-        'new',
-        metavar='NEW_FILE',
-        help='Path to a JSON file with new I/O data'
-    )
-    parser.add_argument(
         'base',
         metavar='BASE_FILE',
         nargs='?',
@@ -306,33 +301,31 @@ def notify_main():
     )
     args = parser.parse_args()
 
-    if args.base is None:
-        base = io.new()
-    else:
+    base = io.new()
+    if args.base is not None:
         try:
             with open(args.base, "r") as json_file:
-                base = io.merge(
-                    base, list(misc.json_load_stream_fd(json_file.fileno())),
-                    copy_target=False, copy_sources=False
-                )
+                base_reports = [
+                    io.schema.validate(data)
+                    for data in misc.json_load_stream_fd(json_file.fileno())
+                ]
+                base = io.merge(base, base_reports,
+                                copy_target=False, copy_sources=False)
         except (jq.JSONParseError,
                 jsonschema.exceptions.ValidationError) as err:
             raise Exception("Failed reading base file") from err
 
     try:
-        with open(args.new, "r") as json_file:
-            for new in misc.json_load_stream_fd(json_file.fileno()):
-                new = io.schema.validate(new)
-                for notification in subscriptions.match_new_io(base, new):
-                    sys.stdout.write(
-                        notification.render().
-                        as_string(policy=email.policy.SMTPUTF8)
-                    )
-                    sys.stdout.write("\x00")
-                base = io.merge(
-                    base, [new],
-                    copy_target=False, copy_sources=False
+        for new in misc.json_load_stream_fd(sys.stdin.fileno()):
+            new = io.schema.validate(new)
+            for notification in subscriptions.match_new_io(base, new):
+                sys.stdout.write(
+                    notification.render().
+                    as_string(policy=email.policy.SMTPUTF8)
                 )
+                sys.stdout.write("\x00")
+            base = io.merge(base, [new],
+                            copy_target=False, copy_sources=False)
     except (jq.JSONParseError,
             jsonschema.exceptions.ValidationError) as err:
-        raise Exception("Failed reading new file") from err
+        raise Exception("Failed reading new I/O data") from err
