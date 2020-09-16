@@ -327,7 +327,8 @@ def subscriber_pull_main():
         '--timeout',
         metavar="SECONDS",
         type=float,
-        help='Wait the specified number of SECONDS for a report message',
+        help='Wait the specified number of SECONDS for a report message, '
+             'or forever, if zero',
         default=0,
         required=False
     )
