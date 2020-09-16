@@ -277,21 +277,12 @@ def merge_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-merge - Upgrade and merge I/O data sets'
     parser = misc.ArgumentParser(description=description)
-    parser.add_argument(
-        'paths',
-        metavar='JSON_FILE',
-        nargs='*',
-        default=[],
-        help='Path to a JSON file with I/O data to merge'
-    )
-    args = parser.parse_args()
+    parser.parse_args()
 
-    sources = []
-    for path in args.paths:
-        with open(path, "r") as json_file:
-            for data in misc.json_load_stream_fd(json_file.fileno()):
-                sources.append(io.schema.validate(data))
-
+    sources = [
+        io.schema.validate(data)
+        for data in misc.json_load_stream_fd(sys.stdin.fileno())
+    ]
     merged_data = io.merge(io.new(), sources,
                            copy_target=False, copy_sources=False)
     json.dump(merged_data, sys.stdout, indent=4, sort_keys=True)
