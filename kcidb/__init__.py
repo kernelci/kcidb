@@ -224,16 +224,17 @@ def query_main():
                                       tests=args.test_id_patterns),
                         parents=args.parents,
                         children=args.children)
-    misc.json_dump(data, sys.stdout, indent=4)
+    misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
 
 
 def schema_main():
     """Execute the kcidb-schema command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-schema - Output latest I/O JSON schema'
-    parser = misc.ArgumentParser(description=description)
-    parser.parse_args()
-    misc.json_dump(io.schema.LATEST.json, sys.stdout, indent=4)
+    parser = misc.OutputArgumentParser(description=description)
+    args = parser.parse_args()
+    misc.json_dump(io.schema.LATEST.json, sys.stdout,
+                   indent=args.indent, seq=args.seq)
 
 
 def validate_main():
@@ -251,12 +252,12 @@ def upgrade_main():
     """Execute the kcidb-upgrade command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-upgrade - Upgrade I/O JSON data to latest schema'
-    parser = misc.ArgumentParser(description=description)
-    parser.parse_args()
+    parser = misc.OutputArgumentParser(description=description)
+    args = parser.parse_args()
 
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
         data = io.schema.upgrade(data, copy=False)
-        misc.json_dump(data, sys.stdout, indent=4)
+        misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
 
 
 def count_main():
@@ -330,8 +331,8 @@ def merge_main():
     """Execute the kcidb-merge command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-merge - Upgrade and merge I/O data sets'
-    parser = misc.ArgumentParser(description=description)
-    parser.parse_args()
+    parser = misc.OutputArgumentParser(description=description)
+    args = parser.parse_args()
 
     sources = [
         io.schema.validate(data)
@@ -339,7 +340,7 @@ def merge_main():
     ]
     merged_data = io.merge(io.new(), sources,
                            copy_target=False, copy_sources=False)
-    misc.json_dump(merged_data, sys.stdout, indent=4)
+    misc.json_dump(merged_data, sys.stdout, indent=args.indent, seq=args.seq)
 
 
 def notify_main():
