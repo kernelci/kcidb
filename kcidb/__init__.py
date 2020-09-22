@@ -278,7 +278,8 @@ def count_main():
 
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
         io.schema.validate(data)
-        print(io.get_obj_num(data))
+        print(io.get_obj_num(data), file=sys.stdout)
+        sys.stdout.flush()
 
 
 def summarize_main():
@@ -305,7 +306,8 @@ def summarize_main():
         obj_map = oo_data.get(args.obj_list_name, {})
         for obj_id in args.ids or obj_map:
             if obj_id in obj_map:
-                print(obj_map[obj_id].summarize())
+                print(obj_map[obj_id].summarize(), file=sys.stdout)
+                sys.stdout.flush()
 
 
 def describe_main():
@@ -334,6 +336,7 @@ def describe_main():
             if obj_id in obj_map:
                 sys.stdout.write(obj_map[obj_id].describe())
                 sys.stdout.write("\x00")
+                sys.stdout.flush()
 
 
 def merge_main():
@@ -388,6 +391,7 @@ def notify_main():
                     as_string(policy=email.policy.SMTPUTF8)
                 )
                 sys.stdout.write("\x00")
+                sys.stdout.flush()
             base = io.merge(base, [new],
                             copy_target=False, copy_sources=False)
     except (jq.JSONParseError,
