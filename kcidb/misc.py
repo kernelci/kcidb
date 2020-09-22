@@ -7,6 +7,7 @@ import base64
 import traceback
 import argparse
 import logging
+import json
 from textwrap import indent
 from email.message import EmailMessage
 from google.cloud import secretmanager
@@ -160,6 +161,25 @@ def json_load_stream_fd(stream_fd, chunk_size=4*1024*1024):
                 break
 
     return jq.parse_json(text_iter=read_chunk())
+
+
+# It's OK, pylint: disable=redefined-outer-name
+def json_dump(value, fp, indent=0, seq=False):
+    """
+    Dump a JSON value to a file, followed by a newline.
+
+    Args:
+        value:  The JSON value to dump.
+        fp:     The file-like object to output to.
+        indent: Number of indent spaces for pretty-printing, or zero to
+                disable pretty-printing and dump the value single-line.
+        seq:    Prefix the value with an RS character, to make output comply
+                with RFC 7464 and the "application/json-seq" media type.
+    """
+    if seq:
+        fp.write("\x1e")
+    json.dump(value, fp, indent=indent or None)
+    fp.write("\n")
 
 
 def get_secret(project_id, secret_id):

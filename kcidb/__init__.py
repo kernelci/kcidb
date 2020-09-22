@@ -1,6 +1,5 @@
 """Kernel CI reporting"""
 
-import json
 import sys
 import email
 import logging
@@ -225,7 +224,7 @@ def query_main():
                                       tests=args.test_id_patterns),
                         parents=args.parents,
                         children=args.children)
-    json.dump(data, sys.stdout, indent=4)
+    misc.json_dump(data, sys.stdout, indent=4)
 
 
 def schema_main():
@@ -234,7 +233,7 @@ def schema_main():
     description = 'kcidb-schema - Output latest I/O JSON schema'
     parser = misc.ArgumentParser(description=description)
     parser.parse_args()
-    json.dump(io.schema.LATEST.json, sys.stdout, indent=4)
+    misc.json_dump(io.schema.LATEST.json, sys.stdout, indent=4)
 
 
 def validate_main():
@@ -257,7 +256,7 @@ def upgrade_main():
 
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
         data = io.schema.upgrade(data, copy=False)
-        json.dump(data, sys.stdout, indent=4)
+        misc.json_dump(data, sys.stdout, indent=4)
 
 
 def count_main():
@@ -340,7 +339,7 @@ def merge_main():
     ]
     merged_data = io.merge(io.new(), sources,
                            copy_target=False, copy_sources=False)
-    json.dump(merged_data, sys.stdout, indent=4)
+    misc.json_dump(merged_data, sys.stdout, indent=4)
 
 
 def notify_main():
