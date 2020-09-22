@@ -235,6 +235,26 @@ def json_dump(value, fp, indent=0, seq=False):
     fp.write("\n")
 
 
+# It's OK, pylint: disable=redefined-outer-name
+def json_dump_stream(value_iter, fp, indent=0, seq=False):
+    """
+    Dump a series of JSON values to a file, each followed by a newline.
+
+    Args:
+        value_iter:     An iterator returning the JSON values to dump.
+        fp:             The file-like object to output to.
+        indent:         Number of indent spaces for pretty-printing,
+                        or zero to disable pretty-printing and dump values
+                        single-line.
+        seq:            Prefix each value with an RS character, to make output
+                        comply with RFC 7464 and the "application/json-seq"
+                        media type.
+    """
+    for value in value_iter:
+        json_dump(value, fp, indent=indent, seq=seq)
+        fp.flush()
+
+
 def get_secret(project_id, secret_id):
     """
     Get the latest version of a secret from Google Secret Manager.

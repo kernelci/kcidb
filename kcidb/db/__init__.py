@@ -638,10 +638,13 @@ def complement_main():
     parser = OutputArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
-    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        data = io.schema.upgrade(data, copy=False)
-        misc.json_dump(client.complement(data), sys.stdout,
-                       indent=args.indent, seq=args.seq)
+    misc.json_dump_stream(
+        (
+            client.complement(io.schema.upgrade(data, copy=False))
+            for data in misc.json_load_stream_fd(sys.stdin.fileno())
+        ),
+        sys.stdout, indent=args.indent, seq=args.seq
+    )
 
 
 def dump_main():
