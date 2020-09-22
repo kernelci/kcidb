@@ -141,6 +141,59 @@ class ArgumentParser(argparse.ArgumentParser):
         return args
 
 
+def non_negative_int(string):
+    """
+    Parse a non-negative integer out of a string.
+    Matches the argparse type function interface.
+
+    Args:
+        string: The string to parse.
+
+    Returns:
+        The non-negative integer parsed out of the string.
+
+    Raises:
+        argparse.ArgumentTypeError: the string wasn't representing a
+        non-negative integer.
+    """
+    if not re.match("^[0-9]+$", string):
+        raise argparse.ArgumentTypeError(
+            f'{repr(string)} is not a positive integer, nor zero'
+        )
+    return int(string)
+
+
+class OutputArgumentParser(ArgumentParser):
+    """
+    Command-line argument parser for tools outputting JSON.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding report output arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        self.add_argument(
+            '--indent',
+            metavar="NUMBER",
+            type=non_negative_int,
+            help='Pretty-print JSON using NUMBER of spaces for indenting. '
+                 'Print single-line if zero. Default is 4.',
+            default=4,
+            required=False
+        )
+        self.add_argument(
+            '--seq',
+            help='Prefix JSON output with the RS character, to match '
+                 'RFC 7464 and "application/json-seq" media type.',
+            action='store_true'
+        )
+
+
 def json_load_stream_fd(stream_fd, chunk_size=4*1024*1024):
     """
     Load a series of JSON values from a stream file descriptor.

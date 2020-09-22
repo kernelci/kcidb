@@ -307,7 +307,7 @@ def subscriber_pull_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-subscriber-pull - Pull with a Kernel CI report subscriber'
-    parser = misc.ArgumentParser(description=description)
+    parser = misc.OutputArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project with the message queue',
@@ -337,6 +337,6 @@ def subscriber_pull_main():
     items = subscriber.pull(1, timeout=args.timeout)
     if items:
         ack_id, data = items[0]
-        misc.json_dump(data, sys.stdout, indent=4)
+        misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
         sys.stdout.flush()
         subscriber.ack(ack_id)

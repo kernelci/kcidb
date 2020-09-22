@@ -497,6 +497,27 @@ class Client:
         return self.query(ids=ids, children=True, parents=True)
 
 
+def argparse_add_db_args(parser):
+    """
+    Add common database arguments to an argument parser.
+
+    Args:
+        The parser to add arguments to.
+    """
+    parser.add_argument(
+        '-p', '--project',
+        help='ID of the Google Cloud project containing the dataset. '
+             'Taken from credentials by default.',
+        default=None,
+        required=False
+    )
+    parser.add_argument(
+        '-d', '--dataset',
+        help='Dataset name',
+        required=True
+    )
+
+
 class ArgumentParser(misc.ArgumentParser):
     """
     Command-line argument parser with common database arguments added.
@@ -511,21 +532,28 @@ class ArgumentParser(misc.ArgumentParser):
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        self.add_argument(
-            '-p', '--project',
-            help='ID of the Google Cloud project containing the dataset. '
-                 'Taken from credentials by default.',
-            default=None,
-            required=False
-        )
-        self.add_argument(
-            '-d', '--dataset',
-            help='Dataset name',
-            required=True
-        )
+        argparse_add_db_args(self)
 
 
-class QueryArgumentParser(ArgumentParser):
+class OutputArgumentParser(misc.OutputArgumentParser):
+    """
+    Command-line argument parser for tools outputting JSON,
+    with common database arguments added.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding split-report output arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        argparse_add_db_args(self)
+
+
+class QueryArgumentParser(OutputArgumentParser):
     """
     Command-line argument parser with common database query arguments added.
     """
@@ -607,12 +635,13 @@ def complement_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-db-complement - Complement reports from database'
-    parser = ArgumentParser(description=description)
+    parser = OutputArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
         data = io.schema.upgrade(data, copy=False)
-        misc.json_dump(client.complement(data), sys.stdout, indent=4)
+        misc.json_dump(client.complement(data), sys.stdout,
+                       indent=args.indent, seq=args.seq)
 
 
 def dump_main():
@@ -620,10 +649,10 @@ def dump_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-db-dump - Dump all data from Kernel CI report database'
-    parser = ArgumentParser(description=description)
+    parser = OutputArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
-    misc.json_dump(client.dump(), sys.stdout, indent=4)
+    misc.json_dump(client.dump(), sys.stdout, indent=args.indent, seq=args.seq)
 
 
 def query_main():
@@ -642,7 +671,7 @@ def query_main():
                                       tests=args.test_id_patterns),
                         parents=args.parents,
                         children=args.children)
-    misc.json_dump(data, sys.stdout, indent=4)
+    misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
 
 
 def load_main():
