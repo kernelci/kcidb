@@ -40,9 +40,9 @@ setuptools.setup(
     # Must match requirements.txt
     install_requires=[
         "google-cloud-bigquery",
-        "google-cloud-pubsub",
+        "google-cloud-pubsub<2.0.0dev",
         "google-cloud-firestore",
-        "google-cloud-secret-manager",
+        "google-cloud-secret-manager<2.0.0dev",
         "jsonschema",
         "requests",
         "pyyaml",
