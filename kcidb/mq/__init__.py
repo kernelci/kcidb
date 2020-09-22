@@ -337,6 +337,6 @@ def subscriber_pull_main():
     items = subscriber.pull(1, timeout=args.timeout)
     if items:
         ack_id, data = items[0]
-        json.dump(data, sys.stdout, indent=4, sort_keys=True)
+        json.dump(data, sys.stdout, indent=4)
         sys.stdout.flush()
         subscriber.ack(ack_id)

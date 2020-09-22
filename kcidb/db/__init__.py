@@ -612,8 +612,7 @@ def complement_main():
     client = Client(args.dataset, project_id=args.project)
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
         data = io.schema.upgrade(data, copy=False)
-        json.dump(client.complement(data),
-                  sys.stdout, indent=4, sort_keys=True)
+        json.dump(client.complement(data), sys.stdout, indent=4)
 
 
 def dump_main():
@@ -624,7 +623,7 @@ def dump_main():
     parser = ArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
-    json.dump(client.dump(), sys.stdout, indent=4, sort_keys=True)
+    json.dump(client.dump(), sys.stdout, indent=4)
 
 
 def query_main():
@@ -643,7 +642,7 @@ def query_main():
                                       tests=args.test_id_patterns),
                         parents=args.parents,
                         children=args.children)
-    json.dump(data, sys.stdout, indent=4, sort_keys=True)
+    json.dump(data, sys.stdout, indent=4)
 
 
 def load_main():
