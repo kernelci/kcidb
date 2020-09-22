@@ -253,7 +253,8 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
-        # Calm down, we'll get to it, pylint: disable=too-many-locals
+        # Calm down, we'll get to it,
+        # pylint: disable=too-many-locals,too-many-statements
         assert ids is None or isinstance(ids, dict)
         if ids is None:
             ids = dict()
