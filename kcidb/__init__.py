@@ -255,9 +255,13 @@ def upgrade_main():
     parser = misc.OutputArgumentParser(description=description)
     args = parser.parse_args()
 
-    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        data = io.schema.upgrade(data, copy=False)
-        misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
+    misc.json_dump_stream(
+        (
+            io.schema.upgrade(data, copy=False)
+            for data in misc.json_load_stream_fd(sys.stdin.fileno())
+        ),
+        sys.stdout, indent=args.indent, seq=args.seq
+    )
 
 
 def count_main():
