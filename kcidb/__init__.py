@@ -216,15 +216,20 @@ def query_main():
     parser = db.QueryArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(project_id=args.project, dataset_name=args.dataset)
-    data = client.query(ids=dict(revisions=args.revision_ids,
-                                 builds=args.build_ids,
-                                 tests=args.test_ids),
-                        patterns=dict(revisions=args.revision_id_patterns,
-                                      builds=args.build_id_patterns,
-                                      tests=args.test_id_patterns),
-                        parents=args.parents,
-                        children=args.children)
-    misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
+    query_iter = client.query_iter(
+        ids=dict(revisions=args.revision_ids,
+                 builds=args.build_ids,
+                 tests=args.test_ids),
+        patterns=dict(revisions=args.revision_id_patterns,
+                      builds=args.build_id_patterns,
+                      tests=args.test_id_patterns),
+        parents=args.parents,
+        children=args.children,
+        objects_per_report=args.objects_per_report
+    )
+    misc.json_dump_stream(
+        query_iter, sys.stdout, indent=args.indent, seq=args.seq
+    )
 
 
 def schema_main():

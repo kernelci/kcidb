@@ -194,6 +194,31 @@ class OutputArgumentParser(ArgumentParser):
         )
 
 
+class SplitOutputArgumentParser(OutputArgumentParser):
+    """
+    Command-line argument parser for tools supporting split-report output.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding split-report output arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        self.add_argument(
+            '-o', '--objects-per-report',
+            metavar="NUMBER",
+            type=non_negative_int,
+            help='Put maximum NUMBER of objects into each output '
+                 'report, or all, if zero. Default is zero.',
+            default=0,
+            required=False
+        )
+
+
 def json_load_stream_fd(stream_fd, chunk_size=4*1024*1024):
     """
     Load a series of JSON values from a stream file descriptor.

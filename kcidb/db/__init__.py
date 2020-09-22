@@ -553,7 +553,26 @@ class OutputArgumentParser(misc.OutputArgumentParser):
         argparse_add_db_args(self)
 
 
-class QueryArgumentParser(OutputArgumentParser):
+class SplitOutputArgumentParser(misc.SplitOutputArgumentParser):
+    """
+    Command-line argument parser for tools outputting split-report streams,
+    with common database arguments added.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding split-report output arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        argparse_add_db_args(self)
+
+
+# No, it's OK, pylint: disable=too-many-ancestors
+class QueryArgumentParser(SplitOutputArgumentParser):
     """
     Command-line argument parser with common database query arguments added.
     """
@@ -652,10 +671,13 @@ def dump_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-db-dump - Dump all data from Kernel CI report database'
-    parser = OutputArgumentParser(description=description)
+    parser = SplitOutputArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
-    misc.json_dump(client.dump(), sys.stdout, indent=args.indent, seq=args.seq)
+    misc.json_dump_stream(
+        client.dump_iter(args.objects_per_report),
+        sys.stdout, indent=args.indent, seq=args.seq
+    )
 
 
 def query_main():
@@ -666,15 +688,20 @@ def query_main():
     parser = QueryArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
-    data = client.query(ids=dict(revisions=args.revision_ids,
-                                 builds=args.build_ids,
-                                 tests=args.test_ids),
-                        patterns=dict(revisions=args.revision_id_patterns,
-                                      builds=args.build_id_patterns,
-                                      tests=args.test_id_patterns),
-                        parents=args.parents,
-                        children=args.children)
-    misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
+    query_iter = client.query_iter(
+        ids=dict(revisions=args.revision_ids,
+                 builds=args.build_ids,
+                 tests=args.test_ids),
+        patterns=dict(revisions=args.revision_id_patterns,
+                      builds=args.build_id_patterns,
+                      tests=args.test_id_patterns),
+        parents=args.parents,
+        children=args.children,
+        objects_per_report=args.objects_per_report
+    )
+    misc.json_dump_stream(
+        query_iter, sys.stdout, indent=args.indent, seq=args.seq
+    )
 
 
 def load_main():
