@@ -43,7 +43,7 @@ setuptools.setup(
         "google-cloud-pubsub<2.0.0dev",
         "google-cloud-firestore",
         "google-cloud-secret-manager<2.0.0dev",
-        "jsonschema",
+        "jsonschema[format]",
         "requests",
         "pyyaml",
         "jinja2",

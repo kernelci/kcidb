@@ -69,7 +69,8 @@ class Version:
             `jsonschema.exceptions.ValidationError` if the data did not adhere
             to this version of the schema.
         """
-        jsonschema.validate(instance=data, schema=self.json)
+        jsonschema.validate(instance=data, schema=self.json,
+                            format_checker=jsonschema.draft7_format_checker)
         return data
 
     def is_valid_exactly(self, data):
