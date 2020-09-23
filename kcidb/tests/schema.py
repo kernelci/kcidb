@@ -56,5 +56,6 @@ def validate(catalog):
         `jsonschema.exceptions.ValidationError` if the catalog
             is invalid
     """
-    jsonschema.validate(instance=catalog, schema=JSON)
+    jsonschema.validate(instance=catalog, schema=JSON,
+                        format_checker=jsonschema.draft7_format_checker)
     return catalog

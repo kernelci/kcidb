@@ -13,7 +13,7 @@ script:
           #       breaking the Travis CI wrapper
           set -e -u -o pipefail
           unique_requires=$({
-            sed -n '/install_requires=/,/]/ s/.*"\([^"]\+\)".*/\1/p' setup.py |
+            sed -n '/install_requires=/,/],/ s/.*"\([^"]\+\)".*/\1/p' setup.py |
               sort -u
             grep -v '^#' requirements.txt |
               sort -u
