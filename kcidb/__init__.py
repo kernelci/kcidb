@@ -5,10 +5,10 @@ import email
 import logging
 import jsonschema
 import jq
-from kcidb import db, io, mq, oo, spool, subscriptions, tests, misc
+from kcidb import db, io, mq, oo, spool, subscriptions, tests, unittest, misc
 
 __all__ = [
-    "db", "io", "mq", "oo", "spool", "subscriptions", "tests",
+    "db", "io", "mq", "oo", "spool", "subscriptions", "tests", "unittest",
     "io_schema",
     "Client",
     "submit_main",
