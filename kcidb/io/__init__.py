@@ -65,10 +65,9 @@ def merge(target, sources, copy_target=True, copy_sources=True):
             source = deepcopy(source)
         source = schema.upgrade(source, copy=False)
         for obj_list_name in schema.LATEST.tree:
-            if obj_list_name:
+            if obj_list_name in source:
                 target[obj_list_name] = \
-                    target.get(obj_list_name, []) + \
-                    source.get(obj_list_name, [])
+                    target.get(obj_list_name, []) + source[obj_list_name]
 
     assert schema.is_valid_latest(target)
     return target
