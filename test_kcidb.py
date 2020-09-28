@@ -39,7 +39,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
         empty = kcidb.io.new()
 
-        empty_driver_source = textwrap.dedent(f"""
+        driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             client = Mock()
             client.submit = Mock()
@@ -51,9 +51,9 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             return status
         """)
         self.assertExecutes(json.dumps(empty), *argv,
-                            driver_source=empty_driver_source)
+                            driver_source=driver_source)
 
-        twice_empty_driver_source = textwrap.dedent(f"""
+        driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock, call
             client = Mock()
             client.submit = Mock()
@@ -67,7 +67,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             return status
         """)
         self.assertExecutes(json.dumps(empty) + json.dumps(empty), *argv,
-                            driver_source=twice_empty_driver_source)
+                            driver_source=driver_source)
 
     def test_query_main(self):
         """Check kcidb-query works"""
