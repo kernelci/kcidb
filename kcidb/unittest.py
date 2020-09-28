@@ -19,8 +19,8 @@ class TestCase(unittest.TestCase):
         Args:
             stdin:          A string to pass to the standard input of the
                             executable.
-            name:           The name of the executable, must start with the
-                            "kcidb-" prefix.
+            name:           The fully-qualified name of the executable's main
+                            function. Must end with "_main".
             args:           Command-line arguments to the executable.
             driver_source:  The Python source code for the body of the
                             function's driver (setup/teardown) function. To be
@@ -33,8 +33,8 @@ class TestCase(unittest.TestCase):
             An instance of subprocess.CompletedProcess representing the
             execution results.
         """
-        assert name.startswith("kcidb-")
-        function = name[6:].replace("-", "_") + "_main"
+        assert name.endswith("_main")
+        executable = name[:-5].replace(".", "-").replace("_", "-")
         # It's really OK, pylint: disable=subprocess-run-check
         return subprocess.run(
             [
@@ -45,8 +45,8 @@ class TestCase(unittest.TestCase):
                 "def run_function(function):\n" +
                 textwrap.indent(driver_source, "    ") +
                 "\n"
-                f"sys.argv[0] = {repr(name)}\n"
-                f"sys.exit(run_function(kcidb.{function}))\n",
+                f"sys.argv[0] = {repr(executable)}\n"
+                f"sys.exit(run_function({name}))\n",
                 *args
             ],
             encoding="utf8",
@@ -66,8 +66,8 @@ class TestCase(unittest.TestCase):
         Args:
             stdin:          A string to pass to the standard input of the
                             executable.
-            name:           The name of the executable, must start with the
-                            "kcidb-" prefix.
+            name:           The fully-qualified name of the executable's main
+                            function. Must end with "_main".
             args:           Command-line arguments to the executable.
             driver_source:  The Python source code for the function's driver
                             (execution setup/teardown) to be interpreted
