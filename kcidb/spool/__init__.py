@@ -282,4 +282,4 @@ def wipe_main():
         until = dateutil.parser.isoparse(args.until)
         if until.tzinfo is None:
             until = until.astimezone()
-    Client(args.collection_path, project=args.project).wipe(until=until)
+    Client(args.collection, project=args.project).wipe(until=until)
