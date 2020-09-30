@@ -20,7 +20,8 @@ class MainTestCase(unittest.TestCase):
                     mq_publisher, mq_subscriber, get_secret):
         """Check main.py can be loaded"""
         # Load deployment environment variables
-        with open("main.env.yaml", "r") as env_file:
+        file_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(file_dir, "main.env.yaml"), "r") as env_file:
             env = yaml.safe_load(env_file)
         env["GCP_PROJECT"] = "TEST_PROJECT"
 
