@@ -3,6 +3,7 @@
 import re
 import textwrap
 import json
+import kcidb_io
 import kcidb
 
 
@@ -43,7 +44,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_dump_main(self):
         """Check kcidb-db-dump works"""
-        empty = kcidb.io.new()
+        empty = kcidb_io.new()
         argv = ["kcidb.db.dump_main", "-p", "project", "-d", "dataset",
                 "--indent=0"]
 
@@ -94,7 +95,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             "--parents", "--children", "--objects-per-report", "10",
             "--indent=0",
         ]
-        empty = kcidb.io.new()
+        empty = kcidb_io.new()
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             client = Mock()
@@ -141,7 +142,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', *argv, driver_source=driver_source,
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = kcidb.io.new()
+        empty = kcidb_io.new()
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
@@ -188,10 +189,10 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             status=1, stderr_re=".*ValidationError.*")
 
         git_commit_hash = "4ff6a2469104218a044ff595a0c1eb469ca7ea01"
-        report_a = {**kcidb.io.new(),
+        report_a = {**kcidb_io.new(),
                     "revisions": [dict(id=git_commit_hash, origin="test")]}
         git_commit_hash = "8dc8588e6fd405df996d5a83fcc6c5af6284f72d"
-        report_b = {**kcidb.io.new(),
+        report_b = {**kcidb_io.new(),
                     "revisions": [dict(id=git_commit_hash, origin="test")]}
 
         driver_source = textwrap.dedent(f"""

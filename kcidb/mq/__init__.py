@@ -6,7 +6,8 @@ import sys
 import jsonschema
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
-from kcidb import io, misc
+import kcidb_io as io
+from kcidb import misc
 
 
 # Module's logger

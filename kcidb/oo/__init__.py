@@ -34,7 +34,7 @@ The I/O data is converted to objects according to the following rules.
            values, which can be sorted by severity.
 """
 
-from kcidb.io import schema
+from kcidb_io import schema
 from kcidb.oo.misc import Node
 from kcidb.oo.revision import Node as Revision
 from kcidb.oo.build import Node as Build

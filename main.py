@@ -6,6 +6,7 @@ import base64
 import datetime
 import logging
 import smtplib
+import kcidb_io
 import kcidb
 
 
@@ -112,7 +113,7 @@ def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
 
         # Add messages up to obj_max, except the first one
         for index, msg in enumerate(pull_msgs):
-            msg_obj_num = kcidb.io.get_obj_num(msg[1])
+            msg_obj_num = kcidb_io.get_obj_num(msg[1])
             obj_num += msg_obj_num
             if msgs and obj_num > obj_max:
                 LOGGER.debug("Message #%u crossed %u-object boundary "
@@ -163,11 +164,11 @@ def kcidb_load_queue(event, context):
 
     # Create merged data referencing the pulled pieces
     LOGGER.debug("Merging %u messages...", len(msgs))
-    data = kcidb.io.merge(kcidb.io.new(), (msg[1] for msg in msgs),
+    data = kcidb_io.merge(kcidb_io.new(), (msg[1] for msg in msgs),
                           copy_target=False, copy_sources=False)
     LOGGER.info("Merged %u messages", len(msgs))
     # Load the merged data into the database
-    obj_num = kcidb.io.get_obj_num(data)
+    obj_num = kcidb_io.get_obj_num(data)
     LOGGER.debug("Loading %u objects...", obj_num)
     DB_CLIENT.load(data)
     LOGGER.info("Loaded %u objects", obj_num)

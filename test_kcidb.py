@@ -3,6 +3,7 @@
 import re
 import json
 import textwrap
+import kcidb_io
 import kcidb
 
 
@@ -37,7 +38,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', *argv, driver_source=driver_source,
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = kcidb.io.new()
+        empty = kcidb_io.new()
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
@@ -87,7 +88,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             "--parents", "--children", "--objects-per-report", "10",
             "--indent=0",
         ]
-        empty = kcidb.io.new()
+        empty = kcidb_io.new()
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             client = Mock()
@@ -136,8 +137,8 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_upgrade_main(self):
         """Check kcidb-upgrade works"""
-        major = kcidb.io.schema.LATEST.major
-        minor = kcidb.io.schema.LATEST.minor
+        major = kcidb_io.schema.LATEST.major
+        minor = kcidb_io.schema.LATEST.minor
 
         prev_version = \
             json.dumps(dict(version=dict(major=major - 1, minor=minor))) + "\n"

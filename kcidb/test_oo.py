@@ -1,6 +1,6 @@
 """kcdib.oo module tests"""
 import unittest
-from kcidb.io import schema
+from kcidb_io import schema
 from kcidb.oo import Node, Revision, Build, Test, TestEnvironment, \
     from_io, apply_mask, remove_orphans
 

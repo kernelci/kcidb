@@ -3,6 +3,7 @@
 import re
 import textwrap
 import json
+import kcidb_io
 import kcidb
 
 
@@ -46,7 +47,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """Check kcidb-mq-publisher-publish works"""
         argv = ["kcidb.mq.publisher_publish_main",
                 "-p", "project", "-t", "topic"]
-        empty = kcidb.io.new()
+        empty = kcidb_io.new()
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
@@ -123,7 +124,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         argv = ["kcidb.mq.subscriber_pull_main",
                 "-p", "project", "-t", "topic", "-s", "subscription",
                 "--timeout", "123", "--indent=0"]
-        empty = kcidb.io.new()
+        empty = kcidb_io.new()
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             subscriber = Mock()
