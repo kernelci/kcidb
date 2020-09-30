@@ -49,6 +49,7 @@ setuptools.setup(
         "jinja2",
         "python-dateutil",
         "jq@git+https://github.com/spbnick/jq.py.git@1.0.3spbnick1",
+        "kcidb-io@git+https://github.com/kernelci/kcidb-io.git@v1",
     ],
     extras_require=dict(
         dev=[

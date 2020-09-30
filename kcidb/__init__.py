@@ -5,10 +5,11 @@ import email
 import logging
 import jsonschema
 import jq
-from kcidb import db, io, mq, oo, spool, subscriptions, tests, unittest, misc
+import kcidb_io as io
+from kcidb import db, mq, oo, spool, subscriptions, tests, unittest, misc
 
 __all__ = [
-    "db", "io", "mq", "oo", "spool", "subscriptions", "tests", "unittest",
+    "db", "mq", "oo", "spool", "subscriptions", "tests", "unittest",
     "io_schema",
     "Client",
     "submit_main",
@@ -24,7 +25,7 @@ __all__ = [
 ]
 
 # pylint: disable=invalid-name,fixme
-# TODO Remove once users switched to kcidb.io.schema
+# TODO Remove once users switched to kcidb_io.schema
 # Compatibility alias
 io_schema = io.schema
 

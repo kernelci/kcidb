@@ -1,7 +1,7 @@
 """kcdib.subscriptions module tests"""
 
 import unittest
-from kcidb.io import schema
+from kcidb_io import schema
 from kcidb import oo
 from kcidb import subscriptions
 from kcidb.misc import Notification

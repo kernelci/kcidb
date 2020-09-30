@@ -12,7 +12,7 @@ from textwrap import indent
 from email.message import EmailMessage
 from google.cloud import secretmanager
 import jq
-from kcidb.io import schema
+from kcidb_io import schema
 from kcidb import oo
 
 # We like the "id" name

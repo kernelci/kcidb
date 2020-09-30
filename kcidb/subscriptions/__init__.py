@@ -2,7 +2,8 @@
 
 import pkgutil
 import importlib
-from kcidb import io, oo
+import kcidb_io as io
+from kcidb import oo
 from kcidb.misc import Notification
 
 

@@ -10,8 +10,9 @@ from datetime import datetime
 from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import NotFound
+import kcidb_io as io
 from kcidb.db import schema
-from kcidb import io, misc
+from kcidb import misc
 
 
 # Module's logger
