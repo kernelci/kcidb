@@ -6,6 +6,7 @@ REPO_URL_BASE = "https://git.kernel.org/pub/scm/linux/kernel/git"
 REPO_URL_LIST = [
     REPO_URL_BASE + suffix for suffix in [
         "/stable/linux-stable-rc.git",
+        "/stable/linux-stable.git",
         "/sashal/linux-stable.git",
         "/stable/stable-queue.git",
     ]
