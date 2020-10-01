@@ -194,7 +194,8 @@ def kcidb_spool_notifications(event, context):
     # Load the arriving data (if stored) and all its parents and children
     base_io = DB_CLIENT.complement(new_io)
     # Spool notifications from subscriptions
-    for notification in kcidb.subscriptions.match_new_io(base_io, new_io):
+    for notification in \
+            kcidb.subscriptions.match_new_io(base_io, new_io, copy=False):
         if not SELECTED_SUBSCRIPTIONS or \
            notification.subscription in SELECTED_SUBSCRIPTIONS:
             LOGGER.info("POSTING %s", notification.id)
