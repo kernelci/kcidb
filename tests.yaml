@@ -261,6 +261,9 @@ selinux:
 stress-ng:
   title: Stress-ng test suite
   home: https://kernel.ubuntu.com/~cking/stress-ng/
+syzkaller:
+  title: syzkaller fuzzer
+  home: https://github.com/google/syzkaller
 usex:
   title: UNIX System Exerciser (USEX)
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/standards/usex
