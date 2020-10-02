@@ -173,15 +173,14 @@ def kcidb_load_queue(event, context):
     DB_CLIENT.load(data)
     LOGGER.info("Loaded %u objects", obj_num)
 
-    # Acknowledge all the loaded data
+    # Acknowledge all the loaded messages
     for msg in msgs:
         LOAD_QUEUE_SUBSCRIBER.ack(msg[0])
     LOGGER.debug("ACK'ed %u messages", len(msgs))
 
     # Forward the loaded data to the "loaded" topic
-    for msg in msgs:
-        LOADED_QUEUE_PUBLISHER.publish(msg[1])
-    LOGGER.debug("Forwarded %u messages", len(msgs))
+    LOADED_QUEUE_PUBLISHER.publish(data)
+    LOGGER.info("Forwarded %u objects", obj_num)
 
 
 def kcidb_spool_notifications(event, context):
