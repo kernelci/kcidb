@@ -65,7 +65,7 @@ def kcidb_load_message(event, context):
     # Store it in the database
     DB_CLIENT.load(data)
     # Forward the data to the "loaded" MQ topic
-    LOADED_QUEUE_PUBLISHER.publish(data)
+    LOADED_QUEUE_PUBLISHER.publish(data).result()
 
 
 def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
@@ -179,7 +179,7 @@ def kcidb_load_queue(event, context):
     LOGGER.debug("ACK'ed %u messages", len(msgs))
 
     # Forward the loaded data to the "loaded" topic
-    LOADED_QUEUE_PUBLISHER.publish(data)
+    LOADED_QUEUE_PUBLISHER.publish(data).result()
     LOGGER.info("Forwarded %u objects", obj_num)
 
 
