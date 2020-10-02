@@ -52,7 +52,9 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             publisher = Mock()
-            publisher.publish = Mock()
+            future = Mock()
+            future.result = Mock(return_value="id")
+            publisher.publish = Mock(return_value=future)
             with patch("kcidb.mq.Publisher", return_value=publisher) as \
                     Publisher:
                 status = function()
@@ -65,12 +67,15 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', *argv, driver_source=driver_source,
                             status=1, stderr_re=".*ValidationError.*")
         self.assertExecutes(json.dumps(empty), *argv,
-                            driver_source=driver_source)
+                            driver_source=driver_source,
+                            stdout_re="id\n")
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock, call
             publisher = Mock()
-            publisher.publish = Mock()
+            future = Mock()
+            future.result = Mock(return_value="id")
+            publisher.publish = Mock(return_value=future)
             with patch("kcidb.mq.Publisher", return_value=publisher) as \
                     Publisher:
                 status = function()
@@ -81,7 +86,8 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             return status
         """)
         self.assertExecutes(json.dumps(empty) + json.dumps(empty), *argv,
-                            driver_source=driver_source)
+                            driver_source=driver_source,
+                            stdout_re="id\nid\n")
 
     def test_subscriber_init_main(self):
         """Check kcidb-mq-subscriber-init works"""

@@ -65,9 +65,14 @@ class Publisher:
         Args:
             data:   The JSON data to publish to the message queue.
                     Must adhere to a version of I/O schema.
+
+        Returns:
+            A "future" representing the publishing result, returning the
+            publishing ID string.
         """
         assert io.schema.is_valid(data)
-        self.client.publish(self.topic_path, Publisher.encode_data(data))
+        return self.client.publish(self.topic_path,
+                                   Publisher.encode_data(data))
 
 
 class Subscriber:
@@ -232,7 +237,7 @@ def publisher_publish_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-publisher-publish - ' \
-        'Publish with a Kernel CI report publisher'
+        'Publish with a Kernel CI report publisher, print publishing IDs'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -246,9 +251,12 @@ def publisher_publish_main():
     )
     args = parser.parse_args()
     publisher = Publisher(args.project, args.topic)
-    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        data = io.schema.upgrade(data, copy=False)
-        publisher.publish(data)
+    futures = [
+        publisher.publish(io.schema.upgrade(data, copy=False))
+        for data in misc.json_load_stream_fd(sys.stdin.fileno())
+    ]
+    for future in futures:
+        print(future.result())
 
 
 def subscriber_init_main():

@@ -43,7 +43,9 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             client = Mock()
-            client.submit = Mock()
+            future = Mock()
+            future.result = Mock(return_value="id")
+            client.submit = Mock(return_value=future)
             with patch("kcidb.Client", return_value=client) as Client:
                 status = function()
             Client.assert_called_once_with(project_id="project",
@@ -52,12 +54,15 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             return status
         """)
         self.assertExecutes(json.dumps(empty), *argv,
-                            driver_source=driver_source)
+                            driver_source=driver_source,
+                            stdout_re="id\n")
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock, call
             client = Mock()
-            client.submit = Mock()
+            future = Mock()
+            future.result = Mock(return_value="id")
+            client.submit = Mock(return_value=future)
             with patch("kcidb.Client", return_value=client) as Client:
                 status = function()
             Client.assert_called_once_with(project_id="project",
@@ -68,7 +73,8 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             return status
         """)
         self.assertExecutes(json.dumps(empty) + json.dumps(empty), *argv,
-                            driver_source=driver_source)
+                            driver_source=driver_source,
+                            stdout_re="id\nid\n")
 
     def test_query_main(self):
         """Check kcidb-query works"""

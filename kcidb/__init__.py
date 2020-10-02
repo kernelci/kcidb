@@ -74,15 +74,18 @@ class Client:
             data:   The JSON report data to submit.
                     Must adhere to a version of I/O schema.
 
+        Returns:
+            A "future" representing the submission result, returning the
+            submission ID string.
+
         Raises:
             `NotImplementedError`, if not supplied with a project ID or an MQ
             topic name at initialization time.
         """
         assert io.schema.is_valid(data)
-        if self.mq_publisher:
-            self.mq_publisher.publish(data)
-        else:
+        if not self.mq_publisher:
             raise NotImplementedError
+        return self.mq_publisher.publish(data)
 
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids=None, patterns=None,
@@ -190,7 +193,7 @@ def submit_main():
     """Execute the kcidb-submit command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-submit - Submit Kernel CI reports'
+        'kcidb-submit - Submit Kernel CI reports, print submission IDs'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -204,9 +207,12 @@ def submit_main():
     )
     args = parser.parse_args()
     client = Client(project_id=args.project, topic_name=args.topic)
-    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        data = io.schema.upgrade(data, copy=False)
-        client.submit(data)
+    futures = [
+        client.submit(io.schema.upgrade(data, copy=False))
+        for data in misc.json_load_stream_fd(sys.stdin.fileno())
+    ]
+    for future in futures:
+        print(future.result())
 
 
 def query_main():
