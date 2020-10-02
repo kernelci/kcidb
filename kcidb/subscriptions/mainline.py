@@ -15,6 +15,9 @@ def match_revision(revision):
         if not build.valid:
             return (Message(RECIPIENTS, "Builds failed for "),)
         for test in build.tests_.values():
+            # Ignore syzbot until we have issues/incidents
+            if test.origin == "syzbot":
+                continue
             if test.status == "FAIL" and not test.waived:
                 return (Message(RECIPIENTS, "Tests failed for "),)
     return ()
