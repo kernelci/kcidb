@@ -58,9 +58,9 @@ class Publisher:
         """
         self.client.delete_topic(self.topic_path)
 
-    def publish(self, data):
+    def future_publish(self, data):
         """
-        Publish data to the message queue.
+        Publish data to the message queue in the future.
 
         Args:
             data:   The JSON data to publish to the message queue.
@@ -73,6 +73,20 @@ class Publisher:
         assert io.schema.is_valid(data)
         return self.client.publish(self.topic_path,
                                    Publisher.encode_data(data))
+
+    def publish(self, data):
+        """
+        Publish data to the message queue.
+
+        Args:
+            data:   The JSON data to publish to the message queue.
+                    Must adhere to a version of I/O schema.
+
+        Returns:
+            Publishing ID string.
+        """
+        assert io.schema.is_valid(data)
+        return self.future_publish(data).result()
 
 
 class Subscriber:
@@ -252,7 +266,7 @@ def publisher_publish_main():
     args = parser.parse_args()
     publisher = Publisher(args.project, args.topic)
     futures = [
-        publisher.publish(io.schema.upgrade(data, copy=False))
+        publisher.future_publish(io.schema.upgrade(data, copy=False))
         for data in misc.json_load_stream_fd(sys.stdin.fileno())
     ]
     for future in futures:
