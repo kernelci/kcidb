@@ -54,12 +54,12 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             publisher = Mock()
             future = Mock()
             future.result = Mock(return_value="id")
-            publisher.publish = Mock(return_value=future)
+            publisher.future_publish = Mock(return_value=future)
             with patch("kcidb.mq.Publisher", return_value=publisher) as \
                     Publisher:
                 status = function()
             Publisher.assert_called_once_with("project", "topic")
-            publisher.publish.assert_called_once_with({repr(empty)})
+            publisher.future_publish.assert_called_once_with({repr(empty)})
             return status
         """)
         self.assertExecutes('{', *argv, driver_source=driver_source,
@@ -75,14 +75,14 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             publisher = Mock()
             future = Mock()
             future.result = Mock(return_value="id")
-            publisher.publish = Mock(return_value=future)
+            publisher.future_publish = Mock(return_value=future)
             with patch("kcidb.mq.Publisher", return_value=publisher) as \
                     Publisher:
                 status = function()
             Publisher.assert_called_once_with("project", "topic")
-            assert publisher.publish.call_count == 2
-            publisher.publish.assert_has_calls([call({repr(empty)}),
-                                                call({repr(empty)})])
+            assert publisher.future_publish.call_count == 2
+            publisher.future_publish.assert_has_calls([call({repr(empty)}),
+                                                       call({repr(empty)})])
             return status
         """)
         self.assertExecutes(json.dumps(empty) + json.dumps(empty), *argv,

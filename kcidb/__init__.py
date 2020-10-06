@@ -75,8 +75,7 @@ class Client:
                     Must adhere to a version of I/O schema.
 
         Returns:
-            A "future" representing the submission result, returning the
-            submission ID string.
+            Submission ID string.
 
         Raises:
             `NotImplementedError`, if not supplied with a project ID or an MQ
