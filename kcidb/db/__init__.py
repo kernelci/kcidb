@@ -208,7 +208,10 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
-        return next(self.dump_iter(objects_per_report=0))
+        try:
+            return next(self.dump_iter(objects_per_report=0))
+        except StopIteration:
+            return io.new()
 
     @staticmethod
     def escape_like_pattern(string):
@@ -402,9 +405,12 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
-        return next(self.query_iter(ids=ids, patterns=patterns,
-                                    children=children, parents=parents,
-                                    objects_per_report=0))
+        try:
+            return next(self.query_iter(ids=ids, patterns=patterns,
+                                        children=children, parents=parents,
+                                        objects_per_report=0))
+        except StopIteration:
+            return io.new()
 
     @staticmethod
     def _pack_node(node):
