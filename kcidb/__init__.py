@@ -86,6 +86,25 @@ class Client:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
 
+    def submit_iter(self, data_iter, done_cb=None):
+        """
+        Submit reports returned by an iterator.
+
+        Args:
+            data_iter:  An iterator returning the JSON report data to submit.
+                        Each must adhere to a version of I/O schema.
+            done_cb:    A function to call when a report is successfully
+                        submitted. Will be called with the submission ID of
+                        each report returned by the iterator, in order.
+
+        Raises:
+            `NotImplementedError`, if not supplied with a project ID or an MQ
+            topic name at initialization time.
+        """
+        if not self.mq_publisher:
+            raise NotImplementedError
+        return self.mq_publisher.publish_iter(data_iter, done_cb=done_cb)
+
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids=None, patterns=None,
                    children=False, parents=False,

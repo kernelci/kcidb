@@ -2,6 +2,7 @@
 
 import json
 import logging
+import threading
 import sys
 import jsonschema
 from google.cloud import pubsub
@@ -87,6 +88,55 @@ class Publisher:
         """
         assert io.schema.is_valid(data)
         return self.future_publish(data).result()
+
+    def publish_iter(self, data_iter, done_cb=None):
+        """
+        Publish data returned by an iterator.
+
+        Args:
+            data_iter:  An iterator returning the JSON data to publish to the
+                        message queue. Each must adhere to a version of I/O
+                        schema.
+            done_cb:    A function to call when a JSON data is successfully
+                        published. Will be called with the publishing ID of
+                        each data returned by the iterator, in order.
+        """
+        if done_cb is None:
+            def done_cb(publishing_id):
+                pass
+
+        futures = []
+        futures_lock = threading.Lock()
+
+        def done(_):
+            """
+            Report and remove all initial completed futures.
+            """
+            with futures_lock:
+                idx = 0
+                for idx, future in enumerate(futures):
+                    if not future.done():
+                        break
+                for future in futures[0:idx]:
+                    done_cb(future.result())
+                del futures[0:idx]
+
+        # Queue submission futures for all supplied reports
+        for data in data_iter:
+            future = self.future_publish(data)
+            with futures_lock:
+                futures.append(future)
+            future.add_done_callback(done)
+
+        # Grab remaining futures
+        remaining_futures = []
+        with futures_lock:
+            remaining_futures = futures[:]
+            del futures[:]
+
+        # Wait for and report remaining futures
+        for future in remaining_futures:
+            done_cb(future.result())
 
 
 class Subscriber:
