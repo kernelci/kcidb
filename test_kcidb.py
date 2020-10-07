@@ -26,9 +26,13 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     def test_submit_main(self):
         """Check kcidb-submit works"""
         driver_source = textwrap.dedent("""
-            from unittest.mock import patch
-            with patch("kcidb.Client"):
-                return function()
+            from unittest.mock import patch, Mock
+            with patch("kcidb.mq.Publisher.__init__",
+                       return_value=None) as init, \
+                 patch("kcidb.mq.Publisher.future_publish") as future_publish:
+                status = function()
+                init.assert_called_once_with("project", "topic")
+            return status
         """)
         argv = ["kcidb.submit_main", "-p", "project", "-t", "topic"]
 
@@ -42,15 +46,17 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
-            client = Mock()
             future = Mock()
+            future.done = lambda: True
+            future.add_done_callback = lambda cb: cb(future)
             future.result = Mock(return_value="id")
-            client.submit = Mock(return_value=future)
-            with patch("kcidb.Client", return_value=client) as Client:
+            with patch("kcidb.mq.Publisher.__init__",
+                       return_value=None) as init, \
+                 patch("kcidb.mq.Publisher.future_publish",
+                       return_value=future) as future_publish:
                 status = function()
-            Client.assert_called_once_with(project_id="project",
-                                           topic_name="topic")
-            client.submit.assert_called_once_with({repr(empty)})
+                init.assert_called_once_with("project", "topic")
+                future_publish.assert_called_once_with({repr(empty)})
             return status
         """)
         self.assertExecutes(json.dumps(empty), *argv,
@@ -59,17 +65,19 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock, call
-            client = Mock()
             future = Mock()
+            future.done = lambda: True
+            future.add_done_callback = lambda cb: cb(future)
             future.result = Mock(return_value="id")
-            client.submit = Mock(return_value=future)
-            with patch("kcidb.Client", return_value=client) as Client:
+            with patch("kcidb.mq.Publisher.__init__",
+                       return_value=None) as init, \
+                 patch("kcidb.mq.Publisher.future_publish",
+                       return_value=future) as future_publish:
                 status = function()
-            Client.assert_called_once_with(project_id="project",
-                                           topic_name="topic")
-            assert client.submit.call_count == 2
-            client.submit.assert_has_calls([call({repr(empty)}),
-                                            call({repr(empty)})])
+                init.assert_called_once_with("project", "topic")
+                assert future_publish.call_count == 2
+                future_publish.assert_has_calls([call({repr(empty)}),
+                                                 call({repr(empty)})])
             return status
         """)
         self.assertExecutes(json.dumps(empty) + json.dumps(empty), *argv,

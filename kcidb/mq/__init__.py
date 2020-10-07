@@ -315,12 +315,16 @@ def publisher_publish_main():
     )
     args = parser.parse_args()
     publisher = Publisher(args.project, args.topic)
-    futures = [
-        publisher.future_publish(io.schema.upgrade(data, copy=False))
-        for data in misc.json_load_stream_fd(sys.stdin.fileno())
-    ]
-    for future in futures:
-        print(future.result())
+
+    def print_publishing_id(publishing_id):
+        print(publishing_id, file=sys.stdout)
+        sys.stdout.flush()
+
+    publisher.publish_iter(
+        (io.schema.upgrade(data, copy=False)
+         for data in misc.json_load_stream_fd(sys.stdin.fileno())),
+        done_cb=print_publishing_id
+    )
 
 
 def subscriber_init_main():
