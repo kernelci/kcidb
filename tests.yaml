@@ -69,7 +69,7 @@ fwts:
   home: https://wiki.ubuntu.com/FirmwareTestSuite/
 jcstress:
   title: The Java Concurrency Stress tests
-  home: https://wiki.openjdk.java.net/display/CodeTools/jcstress
+  home: https://github.com/openjdk/jcstress
 kselftest:
   title: Kernel self-tests
   home: https://kselftest.wiki.kernel.org/
