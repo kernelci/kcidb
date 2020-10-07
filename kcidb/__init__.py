@@ -225,12 +225,16 @@ def submit_main():
     )
     args = parser.parse_args()
     client = Client(project_id=args.project, topic_name=args.topic)
-    futures = [
-        client.submit(io.schema.upgrade(data, copy=False))
-        for data in misc.json_load_stream_fd(sys.stdin.fileno())
-    ]
-    for future in futures:
-        print(future.result())
+
+    def print_submission_id(submission_id):
+        print(submission_id, file=sys.stdout)
+        sys.stdout.flush()
+
+    client.submit_iter(
+        (io.schema.upgrade(data, copy=False)
+         for data in misc.json_load_stream_fd(sys.stdin.fileno())),
+        done_cb=print_submission_id
+    )
 
 
 def query_main():

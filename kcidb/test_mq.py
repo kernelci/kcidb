@@ -49,40 +49,54 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                 "-p", "project", "-t", "topic"]
         empty = kcidb_io.new()
 
-        driver_source = textwrap.dedent(f"""
+        driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
-            publisher = Mock()
-            future = Mock()
-            future.result = Mock(return_value="id")
-            publisher.future_publish = Mock(return_value=future)
-            with patch("kcidb.mq.Publisher", return_value=publisher) as \
-                    Publisher:
+            with patch("kcidb.mq.Publisher.__init__",
+                       return_value=None) as init, \
+                 patch("kcidb.mq.Publisher.future_publish") as future_publish:
                 status = function()
-            Publisher.assert_called_once_with("project", "topic")
-            publisher.future_publish.assert_called_once_with({repr(empty)})
+                init.assert_called_once_with("project", "topic")
             return status
         """)
         self.assertExecutes('{', *argv, driver_source=driver_source,
                             status=1, stderr_re=".*JSONParseError.*")
         self.assertExecutes('{}', *argv, driver_source=driver_source,
                             status=1, stderr_re=".*ValidationError.*")
+
+        driver_source = textwrap.dedent(f"""
+            from unittest.mock import patch, Mock
+            future = Mock()
+            future.done = lambda: True
+            future.add_done_callback = lambda cb: cb(future)
+            future.result = Mock(return_value="id")
+            with patch("kcidb.mq.Publisher.__init__",
+                       return_value=None) as init, \
+                 patch("kcidb.mq.Publisher.future_publish",
+                       return_value=future) as future_publish:
+                status = function()
+                init.assert_called_once_with("project", "topic")
+                future_publish.assert_called_once_with({repr(empty)})
+            return status
+        """)
         self.assertExecutes(json.dumps(empty), *argv,
                             driver_source=driver_source,
                             stdout_re="id\n")
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock, call
-            publisher = Mock()
             future = Mock()
+            future.done = lambda: True
+            future.add_done_callback = lambda cb: cb(future)
             future.result = Mock(return_value="id")
-            publisher.future_publish = Mock(return_value=future)
-            with patch("kcidb.mq.Publisher", return_value=publisher) as \
-                    Publisher:
+            with patch("kcidb.mq.Publisher.__init__",
+                       return_value=None) as init, \
+                 patch("kcidb.mq.Publisher.future_publish",
+                       return_value=future) as future_publish:
                 status = function()
-            Publisher.assert_called_once_with("project", "topic")
-            assert publisher.future_publish.call_count == 2
-            publisher.future_publish.assert_has_calls([call({repr(empty)}),
-                                                       call({repr(empty)})])
+                init.assert_called_once_with("project", "topic")
+                assert future_publish.call_count == 2
+                future_publish.assert_has_calls([call({repr(empty)}),
+                                                 call({repr(empty)})])
             return status
         """)
         self.assertExecutes(json.dumps(empty) + json.dumps(empty), *argv,
