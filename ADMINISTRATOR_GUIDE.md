@@ -212,6 +212,23 @@ NOTE: If you get a 403 Access Denied response to the first `gcloud functions
       deploy` invocation, try again. It might be a Google infrastructure quirk
       and could work the second time.
 
+If you'd like to deploy a Cloud Function with a name different from its name
+in the `main.py` source file, change the first argument to `gcloud functions
+deploy` to be the name you want, and add the `--entry-point` option specifying
+the actual Python function to execute.
+
+E.g. to deploy the `kcidb_load_queue` function under name
+`playground_kcidb_load_queue` (and using the environment from
+`playground.env.yaml`) execute:
+
+    gcloud functions deploy playground_kcidb_load_queue \
+                            --entry-point kcidb_load_queue \
+                            --runtime python37 \
+                            --trigger-topic kernelci_trigger \
+                            --env-vars-file playground.env.yaml \
+                            --timeout=540
+
+
 ### Cloud Scheduler
 
 Enable the Cloud Scheduler API:
