@@ -231,7 +231,7 @@ def submit_main():
         sys.stdout.flush()
 
     client.submit_iter(
-        (io.schema.upgrade(data, copy=False)
+        (io.schema.upgrade(io.schema.validate(data), copy=False)
          for data in misc.json_load_stream_fd(sys.stdin.fileno())),
         done_cb=print_submission_id
     )
@@ -291,7 +291,7 @@ def upgrade_main():
 
     misc.json_dump_stream(
         (
-            io.schema.upgrade(data, copy=False)
+            io.schema.upgrade(io.schema.validate(data), copy=False)
             for data in misc.json_load_stream_fd(sys.stdin.fileno())
         ),
         sys.stdout, indent=args.indent, seq=args.seq
@@ -306,8 +306,7 @@ def count_main():
     parser.parse_args()
 
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        io.schema.validate(data)
-        print(io.get_obj_num(data), file=sys.stdout)
+        print(io.get_obj_num(io.schema.validate(data)), file=sys.stdout)
         sys.stdout.flush()
 
 
@@ -331,7 +330,8 @@ def summarize_main():
     )
     args = parser.parse_args()
     for io_data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        oo_data = oo.from_io(io.schema.upgrade(io_data, copy=False))
+        io_data = io.schema.upgrade(io.schema.validate(io_data), copy=False)
+        oo_data = oo.from_io(io_data)
         obj_map = oo_data.get(args.obj_list_name, {})
         for obj_id in args.ids or obj_map:
             if obj_id in obj_map:
@@ -359,7 +359,8 @@ def describe_main():
     )
     args = parser.parse_args()
     for io_data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        oo_data = oo.from_io(io.schema.upgrade(io_data, copy=False))
+        io_data = io.schema.upgrade(io.schema.validate(io_data), copy=False)
+        oo_data = oo.from_io(io_data)
         obj_map = oo_data.get(args.obj_list_name, {})
         for obj_id in args.ids or obj_map:
             if obj_id in obj_map:

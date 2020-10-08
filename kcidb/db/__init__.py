@@ -666,7 +666,9 @@ def complement_main():
     client = Client(args.dataset, project_id=args.project)
     misc.json_dump_stream(
         (
-            client.complement(io.schema.upgrade(data, copy=False))
+            client.complement(
+                io.schema.upgrade(io.schema.validate(data), copy=False)
+            )
             for data in misc.json_load_stream_fd(sys.stdin.fileno())
         ),
         sys.stdout, indent=args.indent, seq=args.seq
@@ -720,7 +722,7 @@ def load_main():
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        data = io.schema.upgrade(data, copy=False)
+        data = io.schema.upgrade(io.schema.validate(data), copy=False)
         client.load(data)
 
 

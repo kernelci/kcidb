@@ -158,7 +158,7 @@ class Subscriber:
             The decoded JSON data adhering to the latest I/O schema.
         """
         data = json.loads(message_data.decode())
-        return io.schema.upgrade(data, copy=False)
+        return io.schema.upgrade(io.schema.validate(data), copy=False)
 
     def __init__(self, project_id, topic_name, subscription_name):
         """
@@ -321,7 +321,7 @@ def publisher_publish_main():
         sys.stdout.flush()
 
     publisher.publish_iter(
-        (io.schema.upgrade(data, copy=False)
+        (io.schema.upgrade(io.schema.validate(data), copy=False)
          for data in misc.json_load_stream_fd(sys.stdin.fileno())),
         done_cb=print_publishing_id
     )
