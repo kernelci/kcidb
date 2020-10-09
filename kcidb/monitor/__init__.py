@@ -3,6 +3,7 @@
 import kcidb_io as io
 from kcidb import oo
 from kcidb.monitor import subscriptions, output, spool, misc
+from kcidb.misc import LIGHT_ASSERTS
 
 __all__ = [
     "subscriptions",
@@ -39,7 +40,7 @@ def match_oo(oo_data, match_map=None):
     Returns:
         The list of notifications: kcidb.monitor.output.Notification objects.
     """
-    assert oo.is_valid(oo_data)
+    assert LIGHT_ASSERTS or oo.is_valid(oo_data)
 
     if match_map is None:
         match_map = subscriptions.MATCH_MAP
@@ -103,8 +104,8 @@ def match_new_io(base_io, new_io, match_map=None, copy=True):
     Returns:
         The list of notifications: kcidb.monitor.output.Notification objects.
     """
-    assert io.schema.is_valid(base_io)
-    assert io.schema.is_valid(new_io)
+    assert LIGHT_ASSERTS or io.schema.is_valid(base_io)
+    assert LIGHT_ASSERTS or io.schema.is_valid(new_io)
 
     # Merge the new data into the base (*copy* new data as we'll need it)
     merged_io = io.merge(base_io, [new_io],

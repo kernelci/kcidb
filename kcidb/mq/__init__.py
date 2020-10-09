@@ -9,6 +9,7 @@ from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
 import kcidb_io as io
 from kcidb import misc
+from kcidb.misc import LIGHT_ASSERTS
 
 
 # Module's logger
@@ -32,7 +33,7 @@ class Publisher:
         Returns
             The encoded message data.
         """
-        assert io.schema.is_valid(io_data)
+        assert LIGHT_ASSERTS or io.schema.is_valid(io_data)
         return json.dumps(io.schema.upgrade(io_data)).encode()
 
     def __init__(self, project_id, topic_name):
@@ -71,7 +72,7 @@ class Publisher:
             A "future" representing the publishing result, returning the
             publishing ID string.
         """
-        assert io.schema.is_valid(data)
+        assert LIGHT_ASSERTS or io.schema.is_valid(data)
         return self.client.publish(self.topic_path,
                                    Publisher.encode_data(data))
 
@@ -86,7 +87,7 @@ class Publisher:
         Returns:
             Publishing ID string.
         """
-        assert io.schema.is_valid(data)
+        assert LIGHT_ASSERTS or io.schema.is_valid(data)
         return self.future_publish(data).result()
 
     def publish_iter(self, data_iter, done_cb=None):

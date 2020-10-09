@@ -44,4 +44,4 @@ script:
                 echo "$test_list_diff" >&2
                 false
             }
-    - pytest
+    - KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest
