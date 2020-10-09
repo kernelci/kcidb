@@ -30,6 +30,9 @@ LOGGING_LEVEL_MAP = {
                        key=lambda i: i[1], reverse=True)
 }
 
+# Check light assertions only, if True
+LIGHT_ASSERTS = not os.environ.get("KCIDB_HEAVY_ASSERTS", "")
+
 
 def logging_setup(level):
     """

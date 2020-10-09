@@ -7,6 +7,19 @@ import kcidb_io
 import kcidb
 
 
+class LightAssertsTestCase(kcidb.unittest.TestCase):
+    """Light assertions test case"""
+
+    def test_light_asserts_are_disabled(self):
+        """Check light asserts are disabled"""
+        self.assertFalse(kcidb_io.misc.LIGHT_ASSERTS,
+                         "Tests must run with KCIDB_IO_HEAVY_ASSERTS "
+                         "environment variable set to a non-empty string")
+        self.assertFalse(kcidb.misc.LIGHT_ASSERTS,
+                         "Tests must run with KCIDB_HEAVY_ASSERTS "
+                         "environment variable set to a non-empty string")
+
+
 class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 

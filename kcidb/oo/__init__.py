@@ -35,6 +35,7 @@ The I/O data is converted to objects according to the following rules.
 """
 
 from kcidb_io import schema
+from kcidb.misc import LIGHT_ASSERTS
 from kcidb.oo.misc import Node
 from kcidb.oo.revision import Node as Revision
 from kcidb.oo.build import Node as Build
@@ -64,7 +65,7 @@ def _obj_list_from_io(oo_data, io_data, obj_list_name):
         obj_list_name:  The name of the object list to convert.
     """
     assert isinstance(oo_data, dict)
-    assert schema.is_valid_latest(io_data)
+    assert LIGHT_ASSERTS or schema.is_valid_latest(io_data)
     assert isinstance(obj_list_name, str)
     assert obj_list_name.endswith("s")
     obj_name = obj_list_name[:-1]
@@ -113,7 +114,7 @@ def from_io(io_data, copy=True):
     Returns:
         The converted OO data.
     """
-    assert schema.is_valid(io_data)
+    assert LIGHT_ASSERTS or schema.is_valid(io_data)
     io_data = schema.upgrade(io_data, copy)
 
     oo_data = dict(version=dict(major=io_data['version']['major'],
@@ -187,7 +188,7 @@ def to_io(oo_data):
         The converted I/O data.
     """
     io_data = _to_io(oo_data)
-    assert schema.is_valid_latest(io_data)
+    assert LIGHT_ASSERTS or schema.is_valid_latest(io_data)
     return io_data
 
 
@@ -200,7 +201,7 @@ def _obj_list_remove_orphans(oo_data, obj_list_name):
         oo_data:        The OO data to remove orphans from. Will be modified.
         obj_list_name:  The name of the object list to remove orphans from.
     """
-    assert is_valid(oo_data)
+    assert LIGHT_ASSERTS or is_valid(oo_data)
     assert isinstance(obj_list_name, str)
     assert obj_list_name.endswith("s")
     obj_name = obj_list_name[:-1]
@@ -239,7 +240,7 @@ def _obj_list_remove_orphans(oo_data, obj_list_name):
     for child_list_name in child_list_name_list:
         _obj_list_remove_orphans(oo_data, child_list_name)
 
-    assert is_valid(oo_data)
+    assert LIGHT_ASSERTS or is_valid(oo_data)
 
 
 def remove_orphans(oo_data):
@@ -252,10 +253,10 @@ def remove_orphans(oo_data):
     Returns:
         The OO data with orphans removed.
     """
-    assert is_valid(oo_data)
+    assert LIGHT_ASSERTS or is_valid(oo_data)
     for obj_list_name in schema.LATEST.tree[""]:
         _obj_list_remove_orphans(oo_data, obj_list_name)
-    assert is_valid(oo_data)
+    assert LIGHT_ASSERTS or is_valid(oo_data)
     return oo_data
 
 
@@ -269,9 +270,9 @@ def _obj_list_apply_mask(output, base, mask, obj_list_name):
         base:   The base OO data to mask.
         mask:   The mask OO data to mask with.
     """
-    assert is_valid(output)
-    assert is_valid(base)
-    assert is_valid(mask)
+    assert LIGHT_ASSERTS or is_valid(output)
+    assert LIGHT_ASSERTS or is_valid(base)
+    assert LIGHT_ASSERTS or is_valid(mask)
     assert isinstance(obj_list_name, str)
     assert obj_list_name.endswith("s")
     obj_name = obj_list_name[:-1]
@@ -298,7 +299,7 @@ def _obj_list_apply_mask(output, base, mask, obj_list_name):
     # Output the masked object list, if not empty
     if obj_map:
         output[obj_list_name] = obj_map
-    assert is_valid(output)
+    assert LIGHT_ASSERTS or is_valid(output)
 
 
 def apply_mask(base, mask):
@@ -316,8 +317,8 @@ def apply_mask(base, mask):
     Returns:
         The masked OO data referencing objects from "base".
     """
-    assert is_valid(base)
-    assert is_valid(mask)
+    assert LIGHT_ASSERTS or is_valid(base)
+    assert LIGHT_ASSERTS or is_valid(mask)
 
     output = dict(version=dict(major=base['version']['major'],
                                minor=base['version']['minor']))
@@ -325,5 +326,5 @@ def apply_mask(base, mask):
     for obj_list_name in schema.LATEST.tree[""]:
         _obj_list_apply_mask(output, base, mask, obj_list_name)
 
-    assert is_valid(output)
+    assert LIGHT_ASSERTS or is_valid(output)
     return output

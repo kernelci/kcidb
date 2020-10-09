@@ -7,6 +7,7 @@ import jsonschema
 import jq
 import kcidb_io as io
 from kcidb import db, mq, oo, monitor, tests, unittest, misc
+from kcidb.misc import LIGHT_ASSERTS
 
 __all__ = [
     "db", "mq", "oo", "monitor", "tests", "unittest",
@@ -81,7 +82,7 @@ class Client:
             `NotImplementedError`, if not supplied with a project ID or an MQ
             topic name at initialization time.
         """
-        assert io.schema.is_valid(data)
+        assert LIGHT_ASSERTS or io.schema.is_valid(data)
         if not self.mq_publisher:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
@@ -203,7 +204,7 @@ class Client:
         else:
             raise NotImplementedError
 
-        assert io.schema.is_valid_latest(data)
+        assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
         return data
 
 

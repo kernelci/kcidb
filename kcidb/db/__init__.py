@@ -13,6 +13,7 @@ from google.api_core.exceptions import NotFound
 import kcidb_io as io
 from kcidb.db import schema
 from kcidb import misc
+from kcidb.misc import LIGHT_ASSERTS
 
 
 # Module's logger
@@ -186,14 +187,14 @@ class Client:
                 obj_list.append(Client._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
-                    assert io.schema.is_valid_latest(data)
+                    assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
                     yield data
                     obj_num = 0
                     data = io.new()
                     obj_list = None
 
         if obj_num:
-            assert io.schema.is_valid_latest(data)
+            assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
             yield data
 
     def dump(self):
@@ -372,14 +373,14 @@ class Client:
                 obj_list.append(Client._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
-                    assert io.schema.is_valid_latest(data)
+                    assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
                     yield data
                     obj_num = 0
                     data = io.new()
                     obj_list = None
 
         if obj_num:
-            assert io.schema.is_valid_latest(data)
+            assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
             yield data
 
     def query(self, ids=None, patterns=None, children=False, parents=False):
@@ -450,7 +451,7 @@ class Client:
             `IncompatibleSchema` if the dataset schema is incompatible with
             the latest I/O schema.
         """
-        assert io.schema.is_valid(data)
+        assert LIGHT_ASSERTS or io.schema.is_valid(data)
         data = io.schema.upgrade(data)
 
         major, minor = self.get_schema_version()
@@ -491,7 +492,7 @@ class Client:
             The complemented JSON data from the database adhering to the
             latest version of I/O schema.
         """
-        assert io.schema.is_valid(data)
+        assert LIGHT_ASSERTS or io.schema.is_valid(data)
         data = io.schema.upgrade(data)
 
         # Collect IDs of all supplied objects
