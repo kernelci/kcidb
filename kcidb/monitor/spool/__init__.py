@@ -14,7 +14,9 @@ import email.policy
 import dateutil.parser
 from google.cloud.exceptions import Conflict
 from google.cloud import firestore
-from kcidb import misc
+from kcidb.misc import ArgumentParser, log_and_print_excepthook
+from kcidb.monitor.misc import is_valid_firestore_id
+from kcidb.monitor.output import Notification
 
 # Because we like the "id" name
 # pylint: disable=invalid-name,redefined-builtin
@@ -35,7 +37,7 @@ class Client:
             True if the value is a valid notification ID,
             False if not.
         """
-        return misc.is_valid_firestore_id(value)
+        return is_valid_firestore_id(value)
 
     def __init__(self, collection_path, project=None, pick_timeout=None):
         """
@@ -90,8 +92,8 @@ class Client:
         Post a notification onto the spool, if it wasn't there already.
 
         Args:
-            notification:   An instance of kcidb.misc.Notification to post
-                            onto the spool.
+            notification:   An instance of kcidb.monitor.output.Notification
+                            to post onto the spool.
             timestamp:      An "aware" datetime.datetime object specifying the
                             notification creation time, or None to use
                             datetime.datetime.now(datetime.timezone.utc).
@@ -100,7 +102,7 @@ class Client:
             True, if the notification was posted onto the spool,
             False, if not (it was already there).
         """
-        assert isinstance(notification, misc.Notification)
+        assert isinstance(notification, Notification)
         assert timestamp is None or \
             isinstance(timestamp, datetime.datetime) and timestamp.tzinfo
         if timestamp is None:
@@ -251,11 +253,11 @@ class Client:
 
 
 def wipe_main():
-    """Execute the kcidb-spool-wipe command-line tool"""
-    sys.excepthook = misc.log_and_print_excepthook
+    """Execute the kcidb-monitor-spool-wipe command-line tool"""
+    sys.excepthook = log_and_print_excepthook
     description = \
-        'kcidb-spool-wipe - Remove (old) notifications from the spool'
-    parser = misc.ArgumentParser(description=description)
+        'kcidb-monitor-spool-wipe - Remove (old) notifications from the spool'
+    parser = ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project containing the spool. '

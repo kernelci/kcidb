@@ -6,10 +6,10 @@ import logging
 import jsonschema
 import jq
 import kcidb_io as io
-from kcidb import db, mq, oo, spool, subscriptions, tests, unittest, misc
+from kcidb import db, mq, oo, monitor, tests, unittest, misc
 
 __all__ = [
-    "db", "mq", "oo", "spool", "subscriptions", "tests", "unittest",
+    "db", "mq", "oo", "monitor", "tests", "unittest",
     "io_schema",
     "Client",
     "submit_main",
@@ -415,7 +415,7 @@ def notify_main():
     try:
         for new in misc.json_load_stream_fd(sys.stdin.fileno()):
             new = io.schema.validate(new)
-            for notification in subscriptions.match_new_io(base, new):
+            for notification in monitor.match_new_io(base, new):
                 sys.stdout.write(
                     notification.render().
                     as_string(policy=email.policy.SMTPUTF8)

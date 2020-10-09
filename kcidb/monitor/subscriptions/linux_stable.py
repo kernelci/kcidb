@@ -1,6 +1,6 @@
 """Stable tree subscriptions"""
 
-from kcidb.misc import NotificationMessage as Message
+from kcidb.monitor.output import NotificationMessage as Message
 
 REPO_URL_BASE = "https://git.kernel.org/pub/scm/linux/kernel/git"
 REPO_URL_LIST = [
