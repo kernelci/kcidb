@@ -84,7 +84,7 @@ setuptools.setup(
             "kcidb-mq-subscriber-cleanup = kcidb.mq:subscriber_cleanup_main",
             "kcidb-mq-subscriber-pull = kcidb.mq:subscriber_pull_main",
             "kcidb-tests-validate = kcidb.tests:validate_main",
-            "kcidb-spool-wipe = kcidb.spool:wipe_main",
+            "kcidb-monitor-spool-wipe = kcidb.monitor.spool:wipe_main",
         ]
     ),
     package_data={

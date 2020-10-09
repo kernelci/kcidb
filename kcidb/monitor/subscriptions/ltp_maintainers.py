@@ -1,6 +1,6 @@
 """LTP maintainer subscription"""
 
-from kcidb.misc import NotificationMessage as Message
+from kcidb.monitor.output import NotificationMessage as Message
 
 
 def match_revision(revision):

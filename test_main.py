@@ -13,7 +13,7 @@ class MainTestCase(unittest.TestCase):
     @patch('kcidb.misc.get_secret')
     @patch('kcidb.mq.Publisher')
     @patch('kcidb.mq.Subscriber')
-    @patch('kcidb.spool.Client')
+    @patch('kcidb.monitor.spool.Client')
     @patch('kcidb.db.Client')
     # pylint: disable=unused-argument,too-many-arguments
     def test_import(self, db_client, spool_client,

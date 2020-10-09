@@ -1,10 +1,10 @@
-"""kcdib.misc module tests"""
+"""kcdib.monitor.output module tests"""
 
 import email
 import unittest
 from kcidb_io import schema
 from kcidb import oo
-from kcidb.misc import NotificationMessage, Notification
+from kcidb.monitor.output import NotificationMessage, Notification
 
 # Disable long line checking for JSON data
 # flake8: noqa
@@ -12,7 +12,7 @@ from kcidb.misc import NotificationMessage, Notification
 
 
 class NotificationTestCase(unittest.TestCase):
-    """kcidb.misc.Notification test case"""
+    """kcidb.monitor.output.Notification test case"""
 
     def setUp(self):
         """Setup tests"""

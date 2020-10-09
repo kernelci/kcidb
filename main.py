@@ -45,7 +45,7 @@ SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
 DB_CLIENT = kcidb.db.Client(DATASET)
-SPOOL_CLIENT = kcidb.spool.Client(SPOOL_COLLECTION_PATH)
+SPOOL_CLIENT = kcidb.monitor.spool.Client(SPOOL_COLLECTION_PATH)
 LOADED_QUEUE_PUBLISHER = kcidb.mq.Publisher(
     PROJECT_ID,
     os.environ["KCIDB_LOADED_QUEUE_TOPIC"]
@@ -194,7 +194,7 @@ def kcidb_spool_notifications(event, context):
     base_io = DB_CLIENT.complement(new_io)
     # Spool notifications from subscriptions
     for notification in \
-            kcidb.subscriptions.match_new_io(base_io, new_io, copy=False):
+            kcidb.monitor.match_new_io(base_io, new_io, copy=False):
         if not SELECTED_SUBSCRIPTIONS or \
            notification.subscription in SELECTED_SUBSCRIPTIONS:
             LOGGER.info("POSTING %s", notification.id)

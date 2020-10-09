@@ -1,10 +1,8 @@
-"""kcdib.subscriptions module tests"""
+"""kcdib.monitor module tests"""
 
 import unittest
 from kcidb_io import schema
-from kcidb import oo
-from kcidb import subscriptions
-from kcidb.misc import Notification
+from kcidb import oo, monitor
 
 # Disable long line checking for JSON data
 # flake8: noqa
@@ -12,7 +10,7 @@ from kcidb.misc import Notification
 
 
 class MatchOOTestCase(unittest.TestCase):
-    """kcidb.subscriptions.match_oo test case"""
+    """kcidb.monitor.match_oo test case"""
 
     def setUp(self):
         """Setup tests"""
@@ -184,13 +182,13 @@ class MatchOOTestCase(unittest.TestCase):
             ],
         })
 
-        notifications = subscriptions.match_oo(oo_data)
+        notifications = monitor.match_oo(oo_data)
         self.assertEqual(len(notifications), 3)
         for notification in notifications:
             obj_list_name = notification.obj_list_name
             assert obj_list_name.endswith("s")
             obj_name = obj_list_name[:-1]
-            self.assertIsInstance(notification, Notification)
+            self.assertIsInstance(notification, monitor.output.Notification)
             message = notification.render()
             self.assertIsNone(message['From'])
             self.assertEqual(message['To'], "test@kernelci.org")

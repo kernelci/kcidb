@@ -1,6 +1,6 @@
 """Mainline tree subscriptions"""
 
-from kcidb.misc import NotificationMessage as Message
+from kcidb.monitor.output import NotificationMessage as Message
 
 REPO_URL = \
     "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
