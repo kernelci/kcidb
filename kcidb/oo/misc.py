@@ -66,13 +66,13 @@ class Node:
     _NAME = None
 
     # A Jinja2 template object generating a single-line string summarizing the
-    # node. Must expect the node in "node" variable. Can be None, signifying
-    # missing template.
+    # node. Will be provided the node in variable with _NAME name. Can be
+    # None, signifying missing template.
     _SUMMARY_TEMPLATE = None
 
     # A Jinja2 template object generating a string with detailed description
-    # of the node. Must expect the node in "node" variable. Can be None,
-    # signifying missing template.
+    # of the node. Will be provided the node in variable with _NAME name. Can
+    # be None, signifying missing template.
     _DESCRIPTION_TEMPLATE = None
 
     @staticmethod
