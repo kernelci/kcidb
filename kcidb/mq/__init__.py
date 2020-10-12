@@ -121,22 +121,23 @@ class Publisher:
                     done_cb(future.result())
                 del futures[0:idx]
 
-        # Queue submission futures for all supplied reports
-        for data in data_iter:
-            future = self.future_publish(data)
+        try:
+            # Queue submission futures for all supplied reports
+            for data in data_iter:
+                future = self.future_publish(data)
+                with futures_lock:
+                    futures.append(future)
+                future.add_done_callback(done)
+        finally:
+            # Grab remaining futures
+            remaining_futures = []
             with futures_lock:
-                futures.append(future)
-            future.add_done_callback(done)
+                remaining_futures = futures[:]
+                del futures[:]
 
-        # Grab remaining futures
-        remaining_futures = []
-        with futures_lock:
-            remaining_futures = futures[:]
-            del futures[:]
-
-        # Wait for and report remaining futures
-        for future in remaining_futures:
-            done_cb(future.result())
+            # Wait for and report remaining futures
+            for future in remaining_futures:
+                done_cb(future.result())
 
 
 class Subscriber:
