@@ -255,6 +255,9 @@ redhat_udp_socket:
 redhat_vxlan:
   title: Red Hat's VXLAN sanity tests
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/tunnel/vxlan/basic
+redhat_watchdog_test:
+  title: Red Hat's Watchdog Timer tests
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/watchdog/hw-generic
 selinux:
   title: SELinux Regression Test Suite for the Linux Kernel
   home: https://github.com/SELinuxProject/selinux-testsuite
