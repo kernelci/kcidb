@@ -390,6 +390,21 @@ If you want to retrieve all its builds and tests as well, execute:
 See the output of `kcidb-query --help` for usage information, including how to
 retrieve builds, tests, and how to retrieve object parents.
 
+### Submitting directly
+
+If for any reason you cannot use the command-line tools, and you don't use
+Python 3 (e.g. you are using another language in a "serverless" environment),
+you can implement interfacing with KCIDB submission system directly.
+
+NOTE: this interface is less stable than the command-line, and the library
+interfaces, and is more likely to change in the future.
+
+You will have to use one of the Google Cloud [Pub/Sub client
+libraries][pub_sub_libraries] or [service APIs][pub_sub_apis] to publish your
+reports to the Pub/Sub topic specified above, using the provided credentials.
+Please make sure to validate each report against the schema output by
+`kcidb-schema` before publishing it.
+
 5\. Go to 3, if you have more
 ------------------------------
 Do not hesitate to start submitting your reports as soon as you can. This will
@@ -401,3 +416,5 @@ reporting faster!
 [datetime_format]: https://tools.ietf.org/html/rfc3339#section-5.6
 [tests]: https://github.com/kernelci/kcidb/blob/master/tests.yaml
 [dashboard]: https://staging.kernelci.org:3000/
+[pub_sub_libraries]: https://cloud.google.com/pubsub/docs/reference/libraries
+[pub_sub_apis]: https://cloud.google.com/pubsub/docs/reference/service_apis_overview
