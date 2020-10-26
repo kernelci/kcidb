@@ -394,7 +394,7 @@ retrieve builds, tests, and how to retrieve object parents.
 
 If for any reason you cannot use the command-line tools, and you don't use
 Python 3 (e.g. you are using another language in a "serverless" environment),
-you can implement interfacing with KCIDB submission system directly.
+you can interface with KCIDB submission system directly.
 
 NOTE: this interface is less stable than the command-line, and the library
 interfaces, and is more likely to change in the future.
