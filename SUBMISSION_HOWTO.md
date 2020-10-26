@@ -405,6 +405,18 @@ reports to the Pub/Sub topic specified above, using the provided credentials.
 Please make sure to validate each report against the schema output by
 `kcidb-schema` before publishing it.
 
+### Submitting objects multiple times
+
+If you submit an object with the same ID more than once, then the database
+will still consider them as one object, but will pick the value for each of
+its properties randomly, from across all submitted objects, wherever present.
+
+This can be used to submit object properties gradually. E.g. you can send a
+test object without the `duration` and `status` properties when you start the
+test. Then, when it finishes, you can send a report with a test containing the
+same `id`, and only the `duration` and `status` properties, to mark its
+completion.
+
 5\. Go to 3, if you have more
 ------------------------------
 Do not hesitate to start submitting your reports as soon as you can. This will
