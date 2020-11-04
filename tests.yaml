@@ -111,6 +111,12 @@ redhat_apache_mod_ssl:
 redhat_autofs_connectathon:
   title: Red Hat's version of AutoFS connectathon test suite
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/autofs/connectathon
+redhat_block_fs_fio:
+  title: Red Hat's Storage block filesystem fio tests
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/block/fs_fio
+redhat_block_mq_sche:
+  title: Red Hat's Storage block queue scheduler tests
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/block/mq_sche
 redhat_bridge:
   title: Red Hat's Ethernet bridge tests
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/bridge/sanity_check
