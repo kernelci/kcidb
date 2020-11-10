@@ -14,6 +14,7 @@ import kcidb_io as io
 from kcidb.db import schema
 from kcidb import misc
 from kcidb.misc import LIGHT_ASSERTS
+from kcidb.bigquery import validate_json_obj_list
 
 
 # Module's logger
@@ -458,9 +459,11 @@ class Client:
         if major != io.schema.LATEST.major:
             raise IncompatibleSchema(major, minor)
 
-        for obj_list_name in schema.TABLE_MAP:
+        for obj_list_name, table_schema in schema.TABLE_MAP.items():
             if obj_list_name in data:
                 obj_list = Client._pack_node(data[obj_list_name])
+                if not LIGHT_ASSERTS:
+                    validate_json_obj_list(table_schema, obj_list)
                 job_config = bigquery.job.LoadJobConfig(
                     autodetect=False,
                     schema=schema.TABLE_MAP[obj_list_name])
