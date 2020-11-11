@@ -286,7 +286,7 @@ def count_main():
     parser.parse_args()
 
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        print(io.get_obj_num(io.schema.validate(data)), file=sys.stdout)
+        print(io.count(io.schema.validate(data)), file=sys.stdout)
         sys.stdout.flush()
 
 
