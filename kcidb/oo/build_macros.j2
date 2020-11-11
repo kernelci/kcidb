@@ -11,9 +11,9 @@
         {{- build.config_name -}}
         {% set empty = False %}
     {% endif %}
-    {% if build.description %}
+    {% if build.comment %}
         {{- "" if empty else " " -}}
-        {{- build.description -}}
+        {{- build.comment -}}
         {% set empty = False %}
     {% endif %}
 {% endmacro %}

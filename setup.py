@@ -37,7 +37,8 @@ setuptools.setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Database :: Front-Ends",
     ],
-    # Must match requirements.txt
+    # Must match requirements.txt.
+    # Let's make that easier, pylint: disable=line-too-long
     install_requires=[
         "google-cloud-bigquery",
         "google-cloud-pubsub<2.0.0dev",
@@ -49,7 +50,7 @@ setuptools.setup(
         "jinja2",
         "python-dateutil",
         "jq@git+https://github.com/spbnick/jq.py.git@1.1.2.post1",
-        "kcidb-io@git+https://github.com/kernelci/kcidb-io.git@v2",
+        "kcidb-io@git+https://github.com/kernelci/kcidb-io.git@8190c1f5bee4140bc91cd1432191ca8d2acb9107",  # noqa: E501
     ],
     extras_require=dict(
         dev=[

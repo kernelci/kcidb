@@ -7,11 +7,11 @@ REPO_URL = \
 RECIPIENTS = ["Linux Kernel Mailing List <linux-kernel@vger.kernel.org>"]
 
 
-def match_revision(revision):
-    """Match revisions of interest to stable tree developers"""
-    if revision.git_repository_url != REPO_URL:
+def match_checkout(checkout):
+    """Match checkouts of interest to stable tree developers"""
+    if checkout.git_repository_url != REPO_URL:
         return ()
-    for build in revision.builds_.values():
+    for build in checkout.builds_.values():
         if not build.valid:
             return (Message(RECIPIENTS, "Builds failed for "),)
         for test in build.tests_.values():

@@ -1,0 +1,34 @@
+{# Checkout template macros #}
+
+{% macro summary(checkout) %}
+    {% set empty = True %}
+    {% if checkout.git_repository_url %}
+        {{- "" if empty else " " -}}
+        {{- checkout.git_repository_url.split("/")[-1] -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if checkout.git_repository_branch %}
+        {{- "" if empty else ":" -}}
+        {{- checkout.git_repository_branch -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if checkout.git_commit_name %}
+        {{- "" if empty else "@" -}}
+        {{- checkout.git_commit_name -}}
+        {% set empty = False %}
+    {% elif checkout.git_commit_hash %}
+        {{- "" if empty else "@" -}}
+        {{- checkout.git_commit_hash[:12] -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if checkout.patchset_files %}
+        {{- "" if empty else " +" -}}
+        {{- checkout.patchset_files | length -}}{{- "P" -}}
+        {% set empty = False %}
+    {% endif %}
+    {% if checkout.comment %}
+        {{- "" if empty else " " -}}
+        {{- checkout.comment -}}
+        {% set empty = False %}
+    {% endif %}
+{% endmacro %}

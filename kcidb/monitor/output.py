@@ -97,7 +97,7 @@ class Notification:
         Initialize a notification.
 
         Args:
-            obj_list_name:  Name of the object list (e.g. "revisions") to
+            obj_list_name:  Name of the object list (e.g. "checkouts") to
                             which the object notified about belongs (and
                             therefore its type).
             obj:            Object-oriented representation of the object

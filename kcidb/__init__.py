@@ -229,7 +229,7 @@ def query_main():
     args = parser.parse_args()
     client = Client(project_id=args.project, dataset_name=args.dataset)
     query_iter = client.query_iter(
-        ids=dict(revisions=args.revision_ids,
+        ids=dict(checkouts=args.checkout_ids,
                  builds=args.build_ids,
                  tests=args.test_ids),
         parents=args.parents,

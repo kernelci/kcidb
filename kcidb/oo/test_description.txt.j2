@@ -1,5 +1,5 @@
 {# Test description template #}
-{% import "revision_macros.j2" as revision_macros %}
+{% import "checkout_macros.j2" as checkout_macros %}
 {% import "build_macros.j2" as build_macros %}
 {% import "test_macros.j2" as test_macros %}
 Below is the summary of execution results Kernel CI database has recorded for
@@ -17,22 +17,22 @@ TEST
     Path
                 {{ test.path }}
 {% endif %}
-{% if test.description %}
-    Description
-                {{ test.description }}
+{% if test.comment %}
+    Comment
+                {{ test.comment }}
 {% endif %}
 {% if test.build_ %}
-    {% if test.build_.revision_ %}
-    Revision
-                {{ revision_macros.summary(test.build_.revision_) }}
+    {% if test.build_.checkout_ %}
+    Checkout
+                {{ checkout_macros.summary(test.build_.checkout_) }}
     {% endif %}
     Build
                 {{ build_macros.summary(test.build_) }}
 {% endif %}
     Executed
             by: {{ test.origin }}
-{% if test.environment and test.environment.description %}
-            on: {{ test.environment.description }}
+{% if test.environment and test.environment.comment %}
+            on: {{ test.environment.comment }}
 {% endif %}
 {% if test.start_time %}
             at: {{ test.start_time }}

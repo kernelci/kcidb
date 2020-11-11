@@ -14,8 +14,8 @@ RESOURCE_FIELDS = (
 # Test environment fields
 ENVIRONMENT_FIELDS = (
     Field(
-        "description", "STRING",
-        description="Human-readable description of the environment",
+        "comment", "STRING",
+        description="A human-readable comment regarding the environment."
     ),
     Field(
         "misc", "STRING",
@@ -26,97 +26,122 @@ ENVIRONMENT_FIELDS = (
 
 # A map of table names to their BigQuery schemas
 TABLE_MAP = dict(
-    revisions=[
+    checkouts=[
         Field(
             "id", "STRING",
-            description="Revision ID",
+            description="Source code checkout ID",
         ),
         Field(
             "origin", "STRING",
             description="The name of the CI system which submitted "
-                        "the revision",
+                        "the checkout",
         ),
         Field(
             "tree_name", "STRING",
             description="The widely-recognized name of the sub-tree (fork) "
-                        "of the main code tree that the revision belongs to."
+                        "of the main code tree where the checked out base "
+                        "source code came from.",
         ),
         Field(
             "git_repository_url", "STRING",
-            description="The URL of the Git repository which contains "
-                        "the base code of the revision. The shortest "
-                        "possible HTTPS URL.",
+            description="The URL of the Git repository which contains the "
+                        "checked out base source code. The shortest "
+                        "possible https:// URL, or, if that's not available, "
+                        "the shortest possible git:// URL.",
         ),
         Field(
             "git_commit_hash", "STRING",
-            description="The full commit hash of the revision's base code",
+            description="The full commit hash of the checked out base source "
+                        "code",
         ),
         Field(
             "git_commit_name", "STRING",
             description="A human-readable name of the commit containing the "
-                        "base code of the revision, as would be output by "
-                        "\"git describe\", at the discovery time."
+                        "checked out base source code, as would be output by "
+                        "\"git describe\", at the checkout time."
         ),
         Field(
             "git_repository_branch", "STRING",
-            description="The Git repository branch in which the commit with "
-                        "the revision's base code was discovered."
+            description="The Git repository branch from which the commit "
+                        "with the base source code was checked out."
         ),
         Field(
-            "patch_mboxes", "RECORD", mode="REPEATED", fields=RESOURCE_FIELDS,
-            description="List of mboxes containing patches applied "
-                        "to the base code of the revision, in order of "
-                        "application",
+            "patchset_files", "RECORD", mode="REPEATED",
+            fields=RESOURCE_FIELDS,
+            description="List of patch files representing the patchset "
+                        "applied to the checked out base source code, "
+                        "in order of application. "
+                        "Each linked file must be in a format accepted by "
+                        "\"git apply\".",
+        ),
+        Field(
+            "patchset_hash", "STRING",
+            description="The patchset hash.\n"
+                        "\n"
+                        "A sha256 hash over newline-terminated sha256 hashes "
+                        "of each patch from the patchset, in order. E.g. "
+                        "generated with this shell command: \""
+                        "sha256sum *.patch | cut -c-64 | sha256sum | "
+                        "cut -c-64\".\n"
+                        "\n"
+                        "An empty string, if no patches were applied to the "
+                        "checked out base source code.\n",
         ),
         Field(
             "message_id", "STRING",
             description="The value of the Message-ID header of the e-mail "
-                        "message introducing this code revision, if any. "
-                        "E.g. a message with the revision's patchset, or "
-                        "a release announcement sent to a maillist.",
+                        "message introducing the checked-out source code, "
+                        "if any. E.g. a message with the applied patchset, "
+                        "or a release announcement sent to a maillist.",
         ),
         Field(
-            "description", "STRING",
-            description="Human-readable description of the revision. "
-                        "E.g. a release version, or the subject of a "
-                        "patchset message.",
+            "comment", "STRING",
+            description="A human-readable comment regarding the checkout. "
+                        "E.g. the checked out release version, or the "
+                        "subject of the message with the applied patchset."
         ),
         Field(
             "publishing_time", "TIMESTAMP",
-            description="The time the revision was made public",
+            description="The time the checked out source code was made "
+                        "public. E.g. the timestamp on a patch message, "
+                        "a commit, or a tag.",
         ),
         Field(
-            "discovery_time", "TIMESTAMP",
-            description="The time the revision was discovered by "
-                        "the CI system",
+            "start_time", "TIMESTAMP",
+            description="The time the checkout was started.",
         ),
         Field(
             "contacts", "STRING", mode="REPEATED",
             description="List of e-mail addresses of contacts concerned with "
-                        "this revision, such as authors, reviewers, and mail "
-                        "lists",
+                        "the checked out source code, such as authors, "
+                        "reviewers, and mail lists",
         ),
         Field(
             "log_url", "STRING",
-            description="The URL of the log file of the attempt to construct "
-                        "this revision from its parts. E.g. 'git am' output.",
+            description="The URL of the log file of the checkout attempt. "
+                        "E.g. 'git am' output.",
+        ),
+        Field(
+            "log_excerpt", "STRING",
+            description="A part of the log file of the checkout attempt most "
+                        "relevant to its outcome.",
         ),
         Field(
             "valid", "BOOL",
-            description="True if the revision is valid, i.e. if its parts "
-                        "could be combined. False if not, e.g. if its "
-                        "patches failed to apply.",
+            description="True if the checkout succeeded, i.e. if the source "
+                        "code parts could be combined. False if not, e.g. if "
+                        "the patches failed to apply.",
         ),
         Field(
             "misc", "STRING",
-            description="Miscellaneous extra data about the revision "
+            description="Miscellaneous extra data about the checkout "
                         "in JSON format",
         ),
     ],
     builds=[
         Field(
-            "revision_id", "STRING",
-            description="Revision ID",
+            "checkout_id", "STRING",
+            description="ID of the built source code checkout.",
         ),
         Field(
             "id", "STRING",
@@ -128,8 +153,8 @@ TABLE_MAP = dict(
                         "the build",
         ),
         Field(
-            "description", "STRING",
-            description="Human-readable description of the build",
+            "comment", "STRING",
+            description="A human-readable comment regarding the build"
         ),
         Field(
             "start_time", "TIMESTAMP",
@@ -174,6 +199,11 @@ TABLE_MAP = dict(
             description="The URL of the build log file.",
         ),
         Field(
+            "log_excerpt", "STRING",
+            description="A part of the log file of the build most relevant "
+                        "to its outcome.",
+        ),
+        Field(
             "valid", "BOOL",
             description="True if the build is valid, i.e. if it could be "
                         "completed. False if not.",
@@ -214,8 +244,8 @@ TABLE_MAP = dict(
                         "tree, i.e. an abstract test.",
         ),
         Field(
-            "description", "STRING",
-            description="Human-readable description of the test run",
+            "comment", "STRING",
+            description="A human-readable comment regarding the test run"
         ),
         Field(
             "status", "STRING",

@@ -28,21 +28,21 @@ class NotificationTestCase(unittest.TestCase):
 
         oo_data = oo.from_io({
             "version": self.version,
-            "revisions": [
+            "checkouts": [
                 {
                     "contacts": [
                         "rdma-dev-team@redhat.com"
                     ],
-                    "discovery_time": "2020-03-02T15:16:15.790000+00:00",
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
                     "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "origin:1",
                     "origin": "origin",
-                    "patch_mboxes": [],
+                    "patchset_files": [],
                     "valid": True,
                 },
             ],
@@ -50,23 +50,21 @@ class NotificationTestCase(unittest.TestCase):
 
         notification_message = NotificationMessage(
             ["foo@kernelci.org", "bar@kernelci.org"],
-            "Revision detected: ",
-            "We detected a new revision!\n\n",
+            "Checkout detected: ",
+            "We detected a new checkout!\n\n",
             "id"
         )
-        notification = Notification("revisions",
-                                    next(iter(oo_data["revisions"].values())),
+        notification = Notification("checkouts",
+                                    next(iter(oo_data["checkouts"].values())),
                                     "subscription",
                                     notification_message)
         self.assertEqual(notification.id,
-                         "subscription:revisions:"
-                         "NWUyOWQxNDQzYzQ2YjZjYTcwYTRjOTQwYTY3ZThjMDlmMDVkY2"
-                         "I3ZQ==:aWQ=")
+                         "subscription:checkouts:b3JpZ2luOjE=:aWQ=")
         message = notification.render()
         self.assertIsInstance(message, email.message.EmailMessage)
         self.assertIsNone(message['From'])
         self.assertEqual(message['To'], "foo@kernelci.org, bar@kernelci.org")
         self.assertEqual(message['X-KCIDB-Notification-ID'], notification.id)
         self.assertEqual(message['X-KCIDB-Notification-Message-ID'], "id")
-        self.assertIn("Revision detected: ", message['Subject'])
-        self.assertIn("We detected a new revision!", message.get_payload())
+        self.assertIn("Checkout detected: ", message['Subject'])
+        self.assertIn("We detected a new checkout!", message.get_payload())

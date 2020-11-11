@@ -1,7 +1,7 @@
 """kcdib.oo module tests"""
 import unittest
 from kcidb_io import schema
-from kcidb.oo import Node, Revision, Build, Test, TestEnvironment, \
+from kcidb.oo import Node, Checkout, Build, Test, TestEnvironment, \
     from_io, apply_mask, remove_orphans
 
 # Disable long line checking for JSON data
@@ -10,27 +10,19 @@ from kcidb.oo import Node, Revision, Build, Test, TestEnvironment, \
 # Needed for (dynamically-added) Node attributes
 # pylint: disable=no-member
 
-IO_REVISION1 = {
-    "id":
-        "aa73bcc376865c23e61dcebd467697b527901be8",
-    "origin":
-        "origin",
+IO_CHECKOUT1 = {
+    "id": "origin:1",
+    "origin": "origin",
 }
 
-IO_REVISION2 = {
-    "id":
-        "c0d73a868d9b411bd2d0c8e5ff9d98bfa8563cb1"
-        "+903638c087335b10293663c682b9aa0076f9f7be478a8e782"
-        "8bc22e12d301b42",
-    "origin":
-        "origin",
+IO_CHECKOUT2 = {
+    "id": "origin:2",
+    "origin": "origin",
 }
 
-IO_REVISION3 = {
-    "id":
-        "7f74c309d3e46088e6606183d15aba89539b650d",
-    "origin":
-        "origin",
+IO_CHECKOUT3 = {
+    "id": "origin:3",
+    "origin": "origin",
 }
 
 
@@ -57,27 +49,27 @@ class FromIOTestCase(unittest.TestCase):
         oo_data = from_io(io_data)
         self.assertEqual(oo_data, expected_oo_data)
 
-    def test_revision(self):
+    def test_checkout(self):
         """
         Check single-build I/O data is converted correctly.
         """
         io_data = {
             "version": self.version,
-            "revisions": [
+            "checkouts": [
                 {
                     "contacts": [
                         "rdma-dev-team@redhat.com"
                     ],
-                    "discovery_time": "2020-03-02T15:16:15.790000+00:00",
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
                     "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "redhat:1",
                     "origin": "redhat",
-                    "patch_mboxes": [],
+                    "patchset_files": [],
                     "valid": True,
                 },
             ],
@@ -85,22 +77,22 @@ class FromIOTestCase(unittest.TestCase):
 
         expected_oo_data = {
             "version": self.version,
-            "revisions": {
-                "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e":
-                Revision({}, {
+            "checkouts": {
+                "redhat:1":
+                Checkout({}, {
                     "contacts": [
                         "rdma-dev-team@redhat.com"
                     ],
-                    "discovery_time": "2020-03-02T15:16:15.790000+00:00",
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
                     "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "redhat:1",
                     "origin": "redhat",
-                    "patch_mboxes": [],
+                    "patchset_files": [],
                     "valid": True,
                     "builds_": {},
                 }),
@@ -132,7 +124,7 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "checkout_id": "redhat:1",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
@@ -158,10 +150,10 @@ class FromIOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "checkout_id": "redhat:1",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True,
-                    "revision_": None,
+                    "checkout_": None,
                     "tests_": {},
                 }),
             },
@@ -179,7 +171,7 @@ class FromIOTestCase(unittest.TestCase):
             "tests": [
                 {
                     "build_id": "redhat:679936",
-                    "description": "IOMMU boot test",
+                    "comment": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "redhat:107205807",
                     "origin": "redhat",
@@ -202,7 +194,7 @@ class FromIOTestCase(unittest.TestCase):
                         }
                     ],
                     "environment": {
-                        "description": "meson-gxl-s905d-p230 in lab-baylibre",
+                        "comment": "meson-gxl-s905d-p230 in lab-baylibre",
                         "misc": {
                             "device": "meson-gxl-s905d-p230",
                             "instance": "meson-gxl-s905d-p230-sea",
@@ -225,7 +217,7 @@ class FromIOTestCase(unittest.TestCase):
                 "redhat:107205807":
                 Test({}, {
                     "build_id": "redhat:679936",
-                    "description": "IOMMU boot test",
+                    "comment": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "redhat:107205807",
                     "origin": "redhat",
@@ -248,7 +240,7 @@ class FromIOTestCase(unittest.TestCase):
                         })
                     ],
                     "environment": TestEnvironment({}, {
-                        "description": "meson-gxl-s905d-p230 in lab-baylibre",
+                        "comment": "meson-gxl-s905d-p230 in lab-baylibre",
                         "misc": {
                             "device": "meson-gxl-s905d-p230",
                             "instance": "meson-gxl-s905d-p230-sea",
@@ -275,15 +267,15 @@ class FromIOTestCase(unittest.TestCase):
         """
         io_data = {
             "version": self.version,
-            "revisions": [IO_REVISION1, IO_REVISION2,],
+            "checkouts": [IO_CHECKOUT1, IO_CHECKOUT2,],
             "builds": [
                 {
-                    "revision_id": IO_REVISION1["id"],
+                    "checkout_id": IO_CHECKOUT1["id"],
                     "id": "origin:1",
                     "origin": "origin",
                 },
                 {
-                    "revision_id": IO_REVISION3["id"],
+                    "checkout_id": IO_CHECKOUT3["id"],
                     "id": "origin:2",
                     "origin": "origin",
                 },
@@ -302,23 +294,23 @@ class FromIOTestCase(unittest.TestCase):
             ],
         }
 
-        revision1_attrs = {"builds_": {}}
-        revision1_attrs.update(IO_REVISION1)
-        revision1 = Revision({}, revision1_attrs)
-        revision2_attrs = {"builds_": {}}
-        revision2_attrs.update(IO_REVISION2)
-        revision2 = Revision({}, revision2_attrs)
-        build1 = Build({}, {"revision_id": IO_REVISION1["id"],
+        checkout1_attrs = {"builds_": {}}
+        checkout1_attrs.update(IO_CHECKOUT1)
+        checkout1 = Checkout({}, checkout1_attrs)
+        checkout2_attrs = {"builds_": {}}
+        checkout2_attrs.update(IO_CHECKOUT2)
+        checkout2 = Checkout({}, checkout2_attrs)
+        build1 = Build({}, {"checkout_id": IO_CHECKOUT1["id"],
                             "id": "origin:1",
                             "origin": "origin",
-                            "revision_": revision1,
+                            "checkout_": checkout1,
                             "tests_": {}})
-        build2 = Build({}, {"revision_id": IO_REVISION3["id"],
+        build2 = Build({}, {"checkout_id": IO_CHECKOUT3["id"],
                             "id": "origin:2",
                             "origin": "origin",
-                            "revision_": None,
+                            "checkout_": None,
                             "tests_": {}})
-        revision1.builds_[build1.id] = build1
+        checkout1.builds_[build1.id] = build1
         test1 = Test({}, {"build_id": "origin:1",
                           "build_": build1,
                           "id": "origin:1",
@@ -330,9 +322,9 @@ class FromIOTestCase(unittest.TestCase):
         build1.tests_[test1.id] = test1
         expected_oo_data = {
             "version": self.version,
-            "revisions": {
-                IO_REVISION1["id"]: revision1,
-                IO_REVISION2["id"]: revision2,
+            "checkouts": {
+                IO_CHECKOUT1["id"]: checkout1,
+                IO_CHECKOUT2["id"]: checkout2,
             },
             "builds": {
                 "origin:1": build1,
@@ -370,7 +362,7 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         non_empty = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1,],
+            "checkouts": [IO_CHECKOUT1,],
         })
 
         self.assertEqual(apply_mask(empty, empty), empty)
@@ -389,18 +381,18 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1,],
+            "checkouts": [IO_CHECKOUT1,],
             "builds": [{"id": "origin:1", "origin": "origin",
-                        "revision_id": IO_REVISION1["id"]},],
+                        "checkout_id": IO_CHECKOUT1["id"]},],
             "tests": [{"id": "origin:1", "origin": "origin",
                        "build_id": "origin:1"},],
         })
 
         second = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION2,],
+            "checkouts": [IO_CHECKOUT2,],
             "builds": [{"id": "origin:2", "origin": "origin",
-                        "revision_id": IO_REVISION2["id"]},],
+                        "checkout_id": IO_CHECKOUT2["id"]},],
             "tests": [{"id": "origin:2", "origin": "origin",
                        "build_id": "origin:2"},],
         })
@@ -414,18 +406,18 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1,],
+            "checkouts": [IO_CHECKOUT1,],
             "builds": [{"id": "origin:1", "origin": "origin",
-                        "revision_id": IO_REVISION1["id"]},],
+                        "checkout_id": IO_CHECKOUT1["id"]},],
             "tests": [{"id": "origin:1", "origin": "origin",
                        "build_id": "origin:1"},],
         })
 
         second = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1,],
+            "checkouts": [IO_CHECKOUT1,],
             "builds": [{"id": "origin:1", "origin": "origin",
-                        "revision_id": IO_REVISION1["id"]},],
+                        "checkout_id": IO_CHECKOUT1["id"]},],
             "tests": [{"id": "origin:1", "origin": "origin",
                        "build_id": "origin:1"},],
         })
@@ -439,16 +431,16 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         first = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1, IO_REVISION2,],
+            "checkouts": [IO_CHECKOUT1, IO_CHECKOUT2,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
                 {"id": "origin:2-2", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
@@ -472,16 +464,16 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         second = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1, IO_REVISION3,],
+            "checkouts": [IO_CHECKOUT1, IO_CHECKOUT3,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:1-X", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": IO_REVISION3["id"]},
+                 "checkout_id": IO_CHECKOUT3["id"]},
                 {"id": "origin:2-X", "origin": "origin",
-                 "revision_id": IO_REVISION3["id"]},
+                 "checkout_id": IO_CHECKOUT3["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
@@ -505,9 +497,9 @@ class ApplyMaskTestCase(unittest.TestCase):
 
         expected_output = {
             "version": first["version"],
-            "revisions": {
-                k: first["revisions"][k]
-                for k in (IO_REVISION1["id"], IO_REVISION2["id"],)
+            "checkouts": {
+                k: first["checkouts"][k]
+                for k in (IO_CHECKOUT1["id"], IO_CHECKOUT2["id"],)
             },
             "builds": {
                 k: first["builds"][k]
@@ -531,9 +523,9 @@ class ApplyMaskTestCase(unittest.TestCase):
         del second["tests"]
         expected_output = {
             "version": first["version"],
-            "revisions": {
-                k: first["revisions"][k]
-                for k in (IO_REVISION1["id"], IO_REVISION2["id"],)
+            "checkouts": {
+                k: first["checkouts"][k]
+                for k in (IO_CHECKOUT1["id"], IO_CHECKOUT2["id"],)
             },
             "builds": {
                 k: first["builds"][k]
@@ -548,9 +540,9 @@ class ApplyMaskTestCase(unittest.TestCase):
         del second["builds"]
         expected_output = {
             "version": first["version"],
-            "revisions": {
-                k: first["revisions"][k]
-                for k in (IO_REVISION1["id"],)
+            "checkouts": {
+                k: first["checkouts"][k]
+                for k in (IO_CHECKOUT1["id"],)
             },
         }
 
@@ -585,21 +577,21 @@ class RemoveOrphansTestCase(unittest.TestCase):
         """
         input_data = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1,],
+            "checkouts": [IO_CHECKOUT1,],
         })
         expected_output_data = {
             "version": self.version,
-            "revisions": input_data["revisions"].copy()
+            "checkouts": input_data["checkouts"].copy()
         }
         self.assertEqual(remove_orphans(input_data), expected_output_data)
 
         input_data = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1, IO_REVISION2,],
+            "checkouts": [IO_CHECKOUT1, IO_CHECKOUT2,],
         })
         expected_output_data = {
             "version": self.version,
-            "revisions": input_data["revisions"].copy()
+            "checkouts": input_data["checkouts"].copy()
         }
         self.assertEqual(remove_orphans(input_data), expected_output_data)
 
@@ -618,7 +610,7 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -628,9 +620,9 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:2", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
             ],
         })
         self.assertEqual(remove_orphans(input_data), expected_output_data)
@@ -675,9 +667,9 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:2", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
             ],
             "tests": [
                 {"id": "origin:1", "origin": "origin",
@@ -693,9 +685,9 @@ class RemoveOrphansTestCase(unittest.TestCase):
             "version": self.version,
             "builds": [
                 {"id": "origin:1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:2", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
             ],
             "tests": [
                 {"id": "origin:1", "origin": "origin",
@@ -714,22 +706,22 @@ class RemoveOrphansTestCase(unittest.TestCase):
         # Builds
         input_data = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1, IO_REVISION2,],
+            "checkouts": [IO_CHECKOUT1, IO_CHECKOUT2,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
                 {"id": "origin:2-2", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
             ],
         })
 
         expected_output_data = {
             "version": self.version,
-            "revisions": input_data["revisions"].copy(),
+            "checkouts": input_data["checkouts"].copy(),
             "builds": input_data["builds"].copy(),
         }
 
@@ -738,16 +730,16 @@ class RemoveOrphansTestCase(unittest.TestCase):
         # Tests
         input_data = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1, IO_REVISION2,],
+            "checkouts": [IO_CHECKOUT1, IO_CHECKOUT2,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:2-1", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
                 {"id": "origin:2-2", "origin": "origin",
-                 "revision_id": IO_REVISION2["id"]},
+                 "checkout_id": IO_CHECKOUT2["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
@@ -771,7 +763,7 @@ class RemoveOrphansTestCase(unittest.TestCase):
 
         expected_output_data = {
             "version": self.version,
-            "revisions": input_data["revisions"].copy(),
+            "checkouts": input_data["checkouts"].copy(),
             "builds": input_data["builds"].copy(),
             "tests": input_data["tests"].copy(),
         }
@@ -785,16 +777,16 @@ class RemoveOrphansTestCase(unittest.TestCase):
 
         input_data = from_io({
             "version": self.version,
-            "revisions": [IO_REVISION1,],
+            "checkouts": [IO_CHECKOUT1,],
             "builds": [
                 {"id": "origin:1-1", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:1-2", "origin": "origin",
-                 "revision_id": IO_REVISION1["id"]},
+                 "checkout_id": IO_CHECKOUT1["id"]},
                 {"id": "origin:X-1", "origin": "origin",
-                 "revision_id": IO_REVISION3["id"]},
+                 "checkout_id": IO_CHECKOUT3["id"]},
                 {"id": "origin:X-2", "origin": "origin",
-                 "revision_id": IO_REVISION3["id"]},
+                 "checkout_id": IO_CHECKOUT3["id"]},
             ],
             "tests": [
                 {"id": "origin:1-1-1", "origin": "origin",
@@ -820,8 +812,8 @@ class RemoveOrphansTestCase(unittest.TestCase):
 
         expected_output_data = {
             "version": self.version,
-            "revisions": {
-                k: v for k, v in input_data["revisions"].items() if "X" not in k
+            "checkouts": {
+                k: v for k, v in input_data["checkouts"].items() if "X" not in k
             },
             "builds": {
                 k: v for k, v in input_data["builds"].items() if "X" not in k

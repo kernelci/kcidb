@@ -1,20 +1,20 @@
-{# Revision description template #}
+{# Checkout description template #}
 {% import "test_macros.j2" as test_macros %}
 {% import "build_macros.j2" as build_macros %}
 Below is the summary of testing results Kernel CI database has recorded
-for this revision so far. See complete and up-to-date report at:
+for this checkout so far. See complete and up-to-date report at:
 
-    https://staging.kernelci.org:3000/d/revision/revision?orgId=1&var-id={{ revision.id | urlencode }}
+    https://staging.kernelci.org:3000/d/checkout/checkout?orgId=1&var-id={{ checkout.id | urlencode }}
 
 OVERVIEW
 
-      Revision: {{ "❓" if revision.valid is none else
-                   "✅" if revision.valid else
+      Checkout: {{ "❓" if checkout.valid is none else
+                   "✅" if checkout.valid else
                    "❌" }}
-{% if revision.builds_ %}
-        Builds: {{ "❌" if revision.builds_.values() |
+{% if checkout.builds_ %}
+        Builds: {{ "❌" if checkout.builds_.values() |
                            rejectattr("valid") | list else
-                   "✅" if revision.builds_.values() |
+                   "✅" if checkout.builds_.values() |
                            selectattr("valid") | list else
                    "❓" }}
 {% endif %}
@@ -22,7 +22,7 @@ OVERVIEW
 {% set ns.got_tests = False %}
 {% set ns.worst_status_ = None %}
 {% set ns.worst_waived_ = None %}
-{% for build in revision.builds_.values() %}
+{% for build in checkout.builds_.values() %}
     {% for test in build.tests_.values() %}
         {% if not ns.got_tests or
               test.waived_.value * test.status_.value >
@@ -39,59 +39,59 @@ OVERVIEW
                 {{- " " + test_macros.status_name(ns.worst_status_) }}
 {% endif %}
 
-REVISION
+CHECKOUT
 
     Status
-                {{ "❓" if revision.valid is none else
-                   "✅" if revision.valid else
+                {{ "❓" if checkout.valid is none else
+                   "✅" if checkout.valid else
                    "❌" }}
-{% if revision.description %}
-   Description
-                {{ revision.description }}
+{% if checkout.comment %}
+   Comment
+                {{ checkout.comment }}
 {% endif %}
-{% if revision.git_repository_url or revision.git_repository_branch %}
+{% if checkout.git_repository_url or checkout.git_repository_branch %}
     Repo
-    {% if revision.git_repository_url %}
-           URL: {{ revision.git_repository_url }}
+    {% if checkout.git_repository_url %}
+           URL: {{ checkout.git_repository_url }}
     {% endif %}
-    {% if revision.git_repository_branch %}
-        branch: {{ revision.git_repository_branch }}
+    {% if checkout.git_repository_branch %}
+        branch: {{ checkout.git_repository_branch }}
     {% endif %}
 {% endif %}
-{% if revision.git_commit_name or revision.git_commit_hash %}
+{% if checkout.git_commit_name or checkout.git_commit_hash %}
     Commit
-    {% if revision.git_commit_name %}
-          name: {{ revision.git_commit_name }}
+    {% if checkout.git_commit_name %}
+          name: {{ checkout.git_commit_name }}
     {% endif %}
-    {% if revision.git_commit_hash %}
-          hash: {{ revision.git_commit_hash }}
+    {% if checkout.git_commit_hash %}
+          hash: {{ checkout.git_commit_hash }}
     {% endif %}
 {% endif %}
-{% if revision.patch_mboxes %}
+{% if checkout.patchset_files %}
     Patches
-    {% for patch in revision.patch_mboxes %}
-                {{ patch.name }}
+    {% for file in checkout.patchset_files %}
+                {{ file.name }}
     {% endfor %}
 {% endif %}
-    Discovered
-            by: {{ revision.origin }}
-{% if revision.discovery_time %}
-            at: {{ revision.discovery_time }}
+    Started
+            by: {{ checkout.origin }}
+{% if checkout.start_time %}
+            at: {{ checkout.start_time }}
 {% endif %}
 
-{% if revision.builds_ %}
+{% if checkout.builds_ %}
 BUILDS
 
     Status
-                {{ "❌" if revision.builds_.values() |
+                {{ "❌" if checkout.builds_.values() |
                            rejectattr("valid") | list else
-                   "✅" if revision.builds_.values() |
+                   "✅" if checkout.builds_.values() |
                            selectattr("valid") | list else
                    "❓" }}
 
     {% set build_ns = namespace() %}
     {% set build_ns.col = 0 %}
-    {% for build in revision.builds_.values() %}
+    {% for build in checkout.builds_.values() %}
         {{- "    " -}}
         {{- "❓ " if build.valid is none else
             "✅ " if build.valid else
@@ -108,7 +108,7 @@ TESTS
                 {{- test_macros.status_emoji(ns.worst_status_) -}}
                 {{- " " + test_macros.status_name(ns.worst_status_) }}
 
-    {% for build in revision.builds_.values() %}
+    {% for build in checkout.builds_.values() %}
         {% set build_ns.got_tests = False %}
         {% set build_ns.worst_status_ = None %}
         {% set build_ns.worst_waived_ = None %}

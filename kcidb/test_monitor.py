@@ -26,37 +26,37 @@ class MatchOOTestCase(unittest.TestCase):
 
         oo_data = oo.from_io({
             "version": self.version,
-            "revisions": [
+            "checkouts": [
                 {
                     "contacts": [
                         "rdma-dev-team@redhat.com"
                     ],
-                    "discovery_time": "2020-03-02T15:16:15.790000+00:00",
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
                     "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "id": "test:1",
                     "origin": "non_test",
-                    "patch_mboxes": [],
+                    "patchset_files": [],
                     "valid": True,
                 },
                 {
                     "contacts": [
                         "rdma-dev-team@redhat.com"
                     ],
-                    "discovery_time": "2020-03-02T15:16:15.790000+00:00",
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
                     "git_repository_branch": "wip/jgg-for-next",
                     "git_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                     "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                     "misc": {
                         "pipeline_id": 467715
                     },
-                    "id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "id": "test:1",
                     "origin": "test",
-                    "patch_mboxes": [],
+                    "patchset_files": [],
                     "valid": True,
                 },
             ],
@@ -76,7 +76,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "checkout_id": "test:1",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
@@ -95,7 +95,7 @@ class MatchOOTestCase(unittest.TestCase):
                         "pipeline_id": 469720
                     },
                     "output_files": [],
-                    "revision_id": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "checkout_id": "test:1",
                     "start_time": "2020-03-03T17:52:02.370000+00:00",
                     "valid": True
                 },
@@ -103,7 +103,7 @@ class MatchOOTestCase(unittest.TestCase):
             "tests": [
                 {
                     "build_id": "redhat:679936",
-                    "description": "IOMMU boot test",
+                    "comment": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "non_test:1",
                     "origin": "non_test",
@@ -126,7 +126,7 @@ class MatchOOTestCase(unittest.TestCase):
                         }
                     ],
                     "environment": {
-                        "description": "meson-gxl-s905d-p230 in lab-baylibre",
+                        "comment": "meson-gxl-s905d-p230 in lab-baylibre",
                         "misc": {
                             "device": "meson-gxl-s905d-p230",
                             "instance": "meson-gxl-s905d-p230-sea",
@@ -142,7 +142,7 @@ class MatchOOTestCase(unittest.TestCase):
                 },
                 {
                     "build_id": "redhat:679936",
-                    "description": "IOMMU boot test",
+                    "comment": "IOMMU boot test",
                     "duration": 1847.0,
                     "id": "test:1",
                     "origin": "test",
@@ -165,7 +165,7 @@ class MatchOOTestCase(unittest.TestCase):
                         }
                     ],
                     "environment": {
-                        "description": "meson-gxl-s905d-p230 in lab-baylibre",
+                        "comment": "meson-gxl-s905d-p230 in lab-baylibre",
                         "misc": {
                             "device": "meson-gxl-s905d-p230",
                             "instance": "meson-gxl-s905d-p230-sea",

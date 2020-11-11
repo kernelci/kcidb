@@ -6,9 +6,9 @@
         {{- test.path -}}
         {% set empty = False %}
     {% endif %}
-    {% if test.description %}
+    {% if test.comment %}
         {{- "" if empty else " - " -}}
-        {{- test.description -}}
+        {{- test.comment -}}
         {% set empty = False %}
     {% endif %}
     {% if empty %}
