@@ -37,19 +37,19 @@ The I/O data is converted to objects according to the following rules.
 from kcidb_io import schema
 from kcidb.misc import LIGHT_ASSERTS
 from kcidb.oo.misc import Node
-from kcidb.oo.revision import Node as Revision
+from kcidb.oo.checkout import Node as Checkout
 from kcidb.oo.build import Node as Build
 from kcidb.oo.test import Node as Test
 from kcidb.oo.test import NodeEnvironment as TestEnvironment
 
 __all__ = [
-    "Node", "Revision", "Build", "Test", "TestEnvironment",
+    "Node", "Checkout", "Build", "Test", "TestEnvironment",
     "from_io", "is_valid", "to_io", "remove_orphans", "apply_mask",
 ]
 
 # A map of names of I/O data object lists and their OO classes
 NODE_CLASS_MAP = dict(
-    revisions=Revision,
+    checkouts=Checkout,
     builds=Build,
     tests=Test
 )

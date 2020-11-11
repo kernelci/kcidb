@@ -13,12 +13,12 @@ REPO_URL_LIST = [
 ]
 
 
-def match_revision(revision):
-    """Match revisions of interest to stable tree developers"""
+def match_checkout(checkout):
+    """Match checkouts of interest to stable tree developers"""
     recipients = ["Linux Stable maillist <stable@vger.kernel.org>"]
-    if revision.git_repository_url not in REPO_URL_LIST:
+    if checkout.git_repository_url not in REPO_URL_LIST:
         return ()
-    for build in revision.builds_.values():
+    for build in checkout.builds_.values():
         if not build.valid:
             return (Message(recipients, "Builds failed for "),)
         for test in build.tests_.values():

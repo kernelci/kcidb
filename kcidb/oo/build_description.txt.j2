@@ -1,5 +1,5 @@
 {# Build description template #}
-{% import "revision_macros.j2" as revision_macros %}
+{% import "checkout_macros.j2" as checkout_macros %}
 {% import "test_macros.j2" as test_macros %}
 Below is the summary of testing results Kernel CI database has recorded
 for this build so far. See complete and up-to-date report at:
@@ -16,9 +16,9 @@ BUILD
     Description
                 {{ build.description }}
 {% endif %}
-{% if build.revision_ %}
-    Revision
-                {{ revision_macros.summary(build.revision_) }}
+{% if build.checkout_ %}
+    Checkout
+                {{ checkout_macros.summary(build.checkout_) }}
 {% endif %}
 {% if build.architecture %}
     Architecture

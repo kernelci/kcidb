@@ -3,14 +3,14 @@
 from kcidb.monitor.output import NotificationMessage as Message
 
 
-def match_revision(revision):
-    """Match test revisions"""
-    if revision.origin == "test":
+def match_checkout(checkout):
+    """Match test checkouts"""
+    if checkout.origin == "test":
         return (
             Message(["test@kernelci.org"],
-                    "Test revision: ",
-                    "Test revision detected!\n\n",
-                    "revision"),
+                    "Test checkout: ",
+                    "Test checkout detected!\n\n",
+                    "checkout"),
         )
     return ()
 

@@ -107,10 +107,10 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         argv = ["kcidb.query_main", "-p", "project", "-d", "dataset"]
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-        git_commit_hash = "4ff6a2469104218a044ff595a0c1eb469ca7ea01"
         argv = [
             "kcidb.query_main", "-p", "project", "-d", "dataset",
-            "-r", git_commit_hash, "-b", "test:build:1", "-t", "test:test:1",
+            "-c", "test:checkout:1", "-b", "test:build:1",
+            "-t", "test:test:1",
             "--parents", "--children", "--objects-per-report", "10",
             "--indent=0",
         ]
@@ -126,7 +126,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             Client.assert_called_once_with(project_id="project",
                                            dataset_name="dataset")
             client.query_iter.assert_called_once_with(
-                ids=dict(revisions=[{repr(git_commit_hash)}],
+                ids=dict(checkouts=["test:checkout:1"],
                          builds=["test:build:1"],
                          tests=["test:test:1"]),
                 parents=True,
@@ -151,7 +151,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     def test_validate_main(self):
         """Check kcidb-validate works"""
         self.assertExecutes('', "kcidb.validate_main")
-        self.assertExecutes('{"version":{"major":3,"minor":0}}',
+        self.assertExecutes('{"version":{"major":4,"minor":0}}',
                             "kcidb.validate_main")
         self.assertExecutes('{', "kcidb.validate_main",
                             status=1, stderr_re=".*JSONParseError.*")
@@ -194,79 +194,76 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', "kcidb.count_main",
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = json.dumps(dict(version=dict(major=3, minor=0)))
+        empty = json.dumps(dict(version=dict(major=4, minor=0)))
         self.assertExecutes(empty, "kcidb.count_main", stdout_re="0\n")
         self.assertExecutes(empty + empty, "kcidb.count_main",
                             stdout_re="0\n0\n")
 
-        one_revision = json.dumps(dict(
-            version=dict(major=3, minor=0),
-            revisions=[
-                dict(id="c003f145ae96b769858ee5501189c582a97c6742",
-                     origin="test")
-            ]
+        one_checkout = json.dumps(dict(
+            version=dict(major=4, minor=0),
+            checkouts=[dict(id="test:1", origin="test")]
         ))
-        self.assertExecutes(one_revision, "kcidb.count_main", stdout_re="1\n")
-        self.assertExecutes(one_revision + one_revision,
+        self.assertExecutes(one_checkout, "kcidb.count_main", stdout_re="1\n")
+        self.assertExecutes(one_checkout + one_checkout,
                             "kcidb.count_main", stdout_re="1\n1\n")
 
     def test_summarize_main(self):
         """Check kcidb-summarize works"""
-        self.assertExecutes('', "kcidb.summarize_main", "revisions")
-        self.assertExecutes('{', "kcidb.summarize_main", "revisions",
+        self.assertExecutes('', "kcidb.summarize_main", "checkouts")
+        self.assertExecutes('{', "kcidb.summarize_main", "checkouts",
                             status=1, stderr_re=".*JSONParseError.*")
-        self.assertExecutes('{}', "kcidb.summarize_main", "revisions",
+        self.assertExecutes('{}', "kcidb.summarize_main", "checkouts",
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = json.dumps(dict(version=dict(major=3, minor=0)))
-        self.assertExecutes(empty, "kcidb.summarize_main", "revisions")
-        self.assertExecutes(empty + empty, "kcidb.summarize_main", "revisions")
+        empty = json.dumps(dict(version=dict(major=4, minor=0)))
+        self.assertExecutes(empty, "kcidb.summarize_main", "checkouts")
+        self.assertExecutes(empty + empty, "kcidb.summarize_main", "checkouts")
 
         git_commit_hash = "c003f145ae96b769858ee5501189c582a97c6742"
-        one_revision = json.dumps(dict(
-            version=dict(major=3, minor=0),
-            revisions=[
-                dict(id=git_commit_hash,
+        one_checkout = json.dumps(dict(
+            version=dict(major=4, minor=0),
+            checkouts=[
+                dict(id="test:1",
                      git_commit_hash=git_commit_hash,
                      origin="test")
             ]
         ))
-        self.assertExecutes(one_revision, "kcidb.summarize_main", "revisions",
+        self.assertExecutes(one_checkout, "kcidb.summarize_main", "checkouts",
                             stdout_re="c003f145ae96\n")
-        self.assertExecutes(one_revision + one_revision,
-                            "kcidb.summarize_main", "revisions",
+        self.assertExecutes(one_checkout + one_checkout,
+                            "kcidb.summarize_main", "checkouts",
                             stdout_re="c003f145ae96\nc003f145ae96\n")
 
     def test_describe_main(self):
         """Check kcidb-describe works"""
-        self.assertExecutes('', "kcidb.describe_main", "revisions")
-        self.assertExecutes('{', "kcidb.describe_main", "revisions",
+        self.assertExecutes('', "kcidb.describe_main", "checkouts")
+        self.assertExecutes('{', "kcidb.describe_main", "checkouts",
                             status=1, stderr_re=".*JSONParseError.*")
-        self.assertExecutes('{}', "kcidb.describe_main", "revisions",
+        self.assertExecutes('{}', "kcidb.describe_main", "checkouts",
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = json.dumps(dict(version=dict(major=3, minor=0)))
-        self.assertExecutes(empty, "kcidb.describe_main", "revisions")
-        self.assertExecutes(empty + empty, "kcidb.describe_main", "revisions")
+        empty = json.dumps(dict(version=dict(major=4, minor=0)))
+        self.assertExecutes(empty, "kcidb.describe_main", "checkouts")
+        self.assertExecutes(empty + empty, "kcidb.describe_main", "checkouts")
 
         git_commit_hash = "c003f145ae96b769858ee5501189c582a97c6742"
-        one_revision = json.dumps(dict(
-            version=dict(major=3, minor=0),
-            revisions=[
-                dict(id=git_commit_hash,
+        one_checkout = json.dumps(dict(
+            version=dict(major=4, minor=0),
+            checkouts=[
+                dict(id="test:1",
                      git_commit_hash=git_commit_hash,
                      origin="test")
             ]
         ))
-        self.assertExecutes(one_revision, "kcidb.describe_main", "revisions",
+        self.assertExecutes(one_checkout, "kcidb.describe_main", "checkouts",
                             stdout_re="Below is the summary.*\x00")
-        self.assertExecutes(one_revision + one_revision,
-                            "kcidb.describe_main", "revisions",
+        self.assertExecutes(one_checkout + one_checkout,
+                            "kcidb.describe_main", "checkouts",
                             stdout_re="Below .*\x00Below .*\x00")
 
     def test_merge_main(self):
         """Check kcidb-merge works"""
-        empty = json.dumps(dict(version=dict(major=3, minor=0))) + "\n"
+        empty = json.dumps(dict(version=dict(major=4, minor=0))) + "\n"
 
         self.assertExecutes('', "kcidb.merge_main", "--indent=0",
                             stdout_re=re.escape(empty))
@@ -279,36 +276,36 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes(empty + empty, "kcidb.merge_main", "--indent=0",
                             stdout_re=re.escape(empty))
 
-        hash_a = "c003f145ae96b769858ee5501189c582a97c6742"
         report_a = dict(
-            version=dict(major=3, minor=0),
-            revisions=[
-                dict(id=hash_a, origin="test")
+            version=dict(major=4, minor=0),
+            checkouts=[
+                dict(id="test:checkout:1", origin="test")
             ],
             builds=[
-                dict(id="test:build:1", origin="text", revision_id=hash_a)
+                dict(id="test:build:1", origin="text",
+                     checkout_id="test:checkout:1")
             ],
             tests=[
                 dict(id="test:test:1", origin="text", build_id="test:build:1")
             ]
         )
 
-        hash_b = "4ff6a2469104218a044ff595a0c1eb469ca7ea01"
         report_b = dict(
-            version=dict(major=3, minor=0),
-            revisions=[
-                dict(id=hash_b, origin="test")
+            version=dict(major=4, minor=0),
+            checkouts=[
+                dict(id="test:checkout:1", origin="test")
             ],
             builds=[
-                dict(id="test:build:2", origin="text", revision_id=hash_b)
+                dict(id="test:build:2", origin="text",
+                     checkout_id="test:checkout:1")
             ],
             tests=[
                 dict(id="test:test:2", origin="text", build_id="test:build:2")
             ]
         )
         merged_report = dict(
-            version=dict(major=3, minor=0),
-            revisions=report_a["revisions"] + report_b["revisions"],
+            version=dict(major=4, minor=0),
+            checkouts=report_a["checkouts"] + report_b["checkouts"],
             builds=report_a["builds"] + report_b["builds"],
             tests=report_a["tests"] + report_b["tests"],
         )
@@ -326,31 +323,31 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', "kcidb.notify_main",
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = json.dumps(dict(version=dict(major=3, minor=0)))
+        empty = json.dumps(dict(version=dict(major=4, minor=0)))
         self.assertExecutes(empty, "kcidb.notify_main")
         self.assertExecutes(empty + empty, "kcidb.notify_main")
 
         git_commit_hash = "4ff6a2469104218a044ff595a0c1eb469ca7ea01"
         build_fail = json.dumps(dict(
-            version=dict(major=3, minor=0),
-            revisions=[
-                dict(id=git_commit_hash,
+            version=dict(major=4, minor=0),
+            checkouts=[
+                dict(id="test:checkout:1",
                      git_commit_hash=git_commit_hash,
                      origin="test")
             ],
             builds=[
                 dict(id="test:build:1",
                      origin="test",
-                     revision_id=git_commit_hash,
+                     checkout_id="test:checkout:1",
                      valid=False)
             ]
         ))
 
         self.assertExecutes(build_fail, "kcidb.notify_main",
-                            stdout_re="Subject: Test revision: .*\x00"
+                            stdout_re="Subject: Test checkout: .*\x00"
                                       "Subject: Test build: .*\x00")
         self.assertExecutes(build_fail + build_fail, "kcidb.notify_main",
-                            stdout_re="Subject: Test revision: .*\x00"
+                            stdout_re="Subject: Test checkout: .*\x00"
                                       "Subject: Test build: .*\x00"
-                                      "Subject: Test revision: .*\x00"
+                                      "Subject: Test checkout: .*\x00"
                                       "Subject: Test build: .*\x00")

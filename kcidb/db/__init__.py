@@ -446,10 +446,10 @@ class Client:
     def complement(self, data):
         """
         Given I/O data, return its complement. I.e. the same data, but with
-        all objects from the database it references. E.g. for each revision
+        all objects from the database it references. E.g. for each checkout
         load all its builds, for each build load all its tests. And vice
         versa: for each test load its build, and for each build load its
-        revision.
+        checkout.
 
         Args:
             data:   The JSON data to complement from the database.
@@ -564,11 +564,11 @@ class QueryArgumentParser(SplitOutputArgumentParser):
         super().__init__(*args, **kwargs)
 
         self.add_argument(
-            '-r', '--revision-id',
+            '-c', '--checkout-id',
             metavar="ID",
             default=[],
-            help='ID of a revision to match',
-            dest="revision_ids",
+            help='ID of a checkout to match',
+            dest="checkout_ids",
             action='append',
         )
         self.add_argument(
@@ -594,7 +594,7 @@ class QueryArgumentParser(SplitOutputArgumentParser):
             action='store_true'
         )
         self.add_argument(
-            '-c', '--children',
+            '--children',
             help='Match children of matching objects',
             action='store_true'
         )
@@ -642,7 +642,7 @@ def query_main():
     args = parser.parse_args()
     client = Client(args.dataset, project_id=args.project)
     query_iter = client.query_iter(
-        ids=dict(revisions=args.revision_ids,
+        ids=dict(checkouts=args.checkout_ids,
                  builds=args.build_ids,
                  tests=args.test_ids),
         parents=args.parents,
