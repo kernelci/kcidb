@@ -121,13 +121,15 @@ class Client:
         ).result()))[0]
 
     @staticmethod
-    def _unpack_node(node):
+    def _unpack_node(node, drop_null=True):
         """
         Unpack a retrieved data node (and all its children) to
         the JSON-compatible and schema-complying representation.
 
         Args:
-            node:   The node to unpack.
+            node:       The node to unpack.
+            drop_null:  Drop nodes with NULL values, if true.
+                        Keep them otherwise.
 
         Returns:
             The unpacked node.
@@ -142,7 +144,8 @@ class Client:
         elif isinstance(node, dict):
             for key, value in list(node.items()):
                 if value is None:
-                    del node[key]
+                    if drop_null:
+                        del node[key]
                 elif key == "misc":
                     node[key] = json.loads(value)
                 else:
