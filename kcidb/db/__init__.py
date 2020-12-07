@@ -3,7 +3,6 @@
 import decimal
 import json
 import sys
-import re
 import logging
 import textwrap
 from datetime import datetime
@@ -40,8 +39,6 @@ class IncompatibleSchema(Exception):
 
 class Client:
     """Kernel CI report database client"""
-
-    _LIKE_PATTERN_ESCAPE_RE = re.compile(r"([%_\\])")
 
     def __init__(self, dataset_name, project_id=None):
         """
@@ -218,21 +215,8 @@ class Client:
         except StopIteration:
             return io.new()
 
-    @staticmethod
-    def escape_like_pattern(string):
-        """
-        Escape a string for use as a literal in a LIKE pattern.
-
-        Args:
-            string: The string to escape.
-
-        Returns:
-            The escaped string.
-        """
-        return Client._LIKE_PATTERN_ESCAPE_RE.sub(r"\\\1", string)
-
     # We can live with this for now, pylint: disable=too-many-arguments
-    def query_iter(self, ids=None, patterns=None,
+    def query_iter(self, ids=None,
                    children=False, parents=False,
                    objects_per_report=0):
         """
@@ -243,9 +227,6 @@ class Client:
             ids:                A dictionary of object list names, and lists
                                 of IDs of objects to match. None means empty
                                 dictionary.
-            patterns:           A dictionary of object list names, and lists
-                                of LIKE patterns, for IDs of objects to match.
-                                None means empty dictionary.
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -271,13 +252,6 @@ class Client:
                    all(isinstance(e, str) for e in v)
                    for k, v in ids.items())
 
-        assert patterns is None or isinstance(patterns, dict)
-        if patterns is None:
-            patterns = dict()
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in patterns.items())
-
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
 
@@ -289,21 +263,12 @@ class Client:
         # statement and the list of its parameters, returning IDs of the
         # objects to fetch.
         obj_list_queries = {
-            # JOIN selecting objects with IDs matching the patterns
             obj_list_name: [
-                f"SELECT id FROM UNNEST(?) AS id\n" \
-                f"UNION DISTINCT\n" \
-                f"SELECT {obj_list_name}.id AS id " \
-                f"FROM {obj_list_name} " \
-                f"INNER JOIN UNNEST(?) AS id_pattern " \
-                f"ON {obj_list_name}.id LIKE id_pattern\n",
+                "SELECT id FROM UNNEST(?) AS id\n",
                 [
                     bigquery.ArrayQueryParameter(
                         None, "STRING", ids.get(obj_list_name, [])
                     ),
-                    bigquery.ArrayQueryParameter(
-                        None, "STRING", patterns.get(obj_list_name, [])
-                    )
                 ]
             ]
             for obj_list_name in io.schema.LATEST.tree if obj_list_name
@@ -387,16 +352,13 @@ class Client:
             assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
             yield data
 
-    def query(self, ids=None, patterns=None, children=False, parents=False):
+    def query(self, ids=None, children=False, parents=False):
         """
         Match and fetch objects from the database.
 
         Args:
             ids:        A dictionary of object list names, and lists of IDs of
                         objects to match. None means empty dictionary.
-            patterns:   A dictionary of object list names, and lists of LIKE
-                        patterns, for IDs of objects to match. None means
-                        empty dictionary.
             children:   True if children of matched objects should be matched
                         as well.
             parents:    True if parents of matched objects should be matched
@@ -411,7 +373,7 @@ class Client:
             the latest I/O schema.
         """
         try:
-            return next(self.query_iter(ids=ids, patterns=patterns,
+            return next(self.query_iter(ids=ids,
                                         children=children, parents=parents,
                                         objects_per_report=0))
         except StopIteration:
@@ -627,31 +589,6 @@ class QueryArgumentParser(SplitOutputArgumentParser):
         )
 
         self.add_argument(
-            '-R', '--revision-id-like',
-            metavar="ID_PATTERN",
-            default=[],
-            help='LIKE pattern for IDs of revisions to match',
-            dest="revision_id_patterns",
-            action='append',
-        )
-        self.add_argument(
-            '-B', '--build-id-like',
-            metavar="ID_PATTERN",
-            default=[],
-            help='LIKE pattern for IDs of builds to match',
-            dest="build_id_patterns",
-            action='append',
-        )
-        self.add_argument(
-            '-T', '--test-id-like',
-            metavar="ID_PATTERN",
-            default=[],
-            help='LIKE pattern for IDs of tests to match',
-            dest="test_id_patterns",
-            action='append',
-        )
-
-        self.add_argument(
             '--parents',
             help='Match parents of matching objects',
             action='store_true'
@@ -708,9 +645,6 @@ def query_main():
         ids=dict(revisions=args.revision_ids,
                  builds=args.build_ids,
                  tests=args.test_ids),
-        patterns=dict(revisions=args.revision_id_patterns,
-                      builds=args.build_id_patterns,
-                      tests=args.test_id_patterns),
         parents=args.parents,
         children=args.children,
         objects_per_report=args.objects_per_report
