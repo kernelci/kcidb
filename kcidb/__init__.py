@@ -107,7 +107,7 @@ class Client:
         return self.mq_publisher.publish_iter(data_iter, done_cb=done_cb)
 
     # We can live with this for now, pylint: disable=too-many-arguments
-    def query_iter(self, ids=None, patterns=None,
+    def query_iter(self, ids=None,
                    children=False, parents=False,
                    objects_per_report=0):
         """
@@ -117,9 +117,6 @@ class Client:
             ids:                A dictionary of object list names, and lists
                                 of IDs of objects to match. None means empty
                                 dictionary.
-            patterns:           A dictionary of object list names, and lists
-                                of LIKE patterns, for IDs of objects to match.
-                                None means empty dictionary.
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -145,32 +142,23 @@ class Client:
                    all(isinstance(e, str) for e in v)
                    for k, v in ids.items())
 
-        assert patterns is None or isinstance(patterns, dict)
-        if patterns is None:
-            patterns = dict()
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in patterns.items())
-
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
 
         if not self.db_client:
             raise NotImplementedError
 
-        return self.db_client.query_iter(ids, patterns, children, parents,
-                                         objects_per_report)
+        return self.db_client.query_iter(ids=ids,
+                                         children=children, parents=parents,
+                                         objects_per_report=objects_per_report)
 
-    def query(self, ids=None, patterns=None, children=False, parents=False):
+    def query(self, ids=None, children=False, parents=False):
         """
         Match and fetch report objects.
 
         Args:
             ids:        A dictionary of object list names, and lists of IDs of
                         objects to match. None means empty dictionary.
-            patterns:   A dictionary of object list names, and lists of LIKE
-                        patterns, for IDs of objects to match. None means
-                        empty dictionary.
             children:   True if children of matched objects should be matched
                         as well.
             parents:    True if parents of matched objects should be matched
@@ -192,15 +180,9 @@ class Client:
                    all(isinstance(e, str) for e in v)
                    for k, v in ids.items())
 
-        assert patterns is None or isinstance(patterns, dict)
-        if patterns is None:
-            patterns = dict()
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in patterns.items())
-
         if self.db_client:
-            data = self.db_client.query(ids, patterns, children, parents)
+            data = self.db_client.query(ids=ids,
+                                        children=children, parents=parents)
         else:
             raise NotImplementedError
 
@@ -250,9 +232,6 @@ def query_main():
         ids=dict(revisions=args.revision_ids,
                  builds=args.build_ids,
                  tests=args.test_ids),
-        patterns=dict(revisions=args.revision_id_patterns,
-                      builds=args.build_id_patterns,
-                      tests=args.test_id_patterns),
         parents=args.parents,
         children=args.children,
         objects_per_report=args.objects_per_report

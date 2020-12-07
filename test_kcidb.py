@@ -111,7 +111,6 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         argv = [
             "kcidb.query_main", "-p", "project", "-d", "dataset",
             "-r", git_commit_hash, "-b", "test:build:1", "-t", "test:test:1",
-            "-R", "4ff6%", "-B", "test:build:%", "-T", "test:test:%",
             "--parents", "--children", "--objects-per-report", "10",
             "--indent=0",
         ]
@@ -130,9 +129,6 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                 ids=dict(revisions=[{repr(git_commit_hash)}],
                          builds=["test:build:1"],
                          tests=["test:test:1"]),
-                patterns=dict(revisions=["4ff6%"],
-                              builds=["test:build:%"],
-                              tests=["test:test:%"]),
                 parents=True,
                 children=True,
                 objects_per_report=10
