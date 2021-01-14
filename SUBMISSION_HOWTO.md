@@ -42,10 +42,10 @@ among other submitters. We'll use `submitter` in examples below.
 
 Pick a KCIDB [release][releases]. Latest would normally be best.
 
-Let's say you picked v7. Run this:
+Let's say you picked v8. Run this:
 
 ```bash
-pip3 install --user 'git+https://git@github.com/kernelci/kcidb.git@v7'
+pip3 install --user 'git+https://git@github.com/kernelci/kcidb.git@v8'
 ```
 
 See [README.md](README.md) for alternatives, and if you know your Python, feel
