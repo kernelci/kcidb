@@ -96,7 +96,7 @@ podman:
   home: https://github.com/containers/libpod/tree/master/test
 redhat_acpi_table:
   title: Red Hat's test for retrieving ACPI tables
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/acpi/acpitable
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/acpi/acpitable
 redhat_amtu:
   title: Red Hat's Abstract Machine Test Utility
   description: |
@@ -104,166 +104,166 @@ redhat_amtu:
     that checks whether the underlying protection mechanisms of the
     hardware are being enforced. These checks are a requirement of the
     Controlled Access Protection Profile (CAPP) FPT_AMT.1.
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/misc/amtu
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/misc/amtu
 redhat_apache_mod_ssl:
   title: Red Hat's Apache mod_ssl smoke tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/packages/httpd/mod_ssl-smoke
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/packages/httpd/mod_ssl-smoke
 redhat_autofs_connectathon:
   title: Red Hat's version of AutoFS connectathon test suite
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/autofs/connectathon
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/autofs/connectathon
 redhat_block_fs_fio:
   title: Red Hat's Storage block filesystem fio tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/block/fs_fio
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/storage/block/fs_fio
 redhat_block_mq_sche:
   title: Red Hat's Storage block queue scheduler tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/block/mq_sche
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/storage/block/mq_sche
 redhat_bridge:
   title: Red Hat's Ethernet bridge tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/bridge/sanity_check
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/bridge/sanity_check
 redhat_cifs_connectathon:
   title: Red Hat version of LTP's NFS Connectathon modified to test CIFS
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/filesystems/cifs/connectathon
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/filesystems/cifs/connectathon
 redhat_cpu_die_layout:
   title: Red Hat's test for correct information on CPU die layout
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/cpu/die
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/cpu/die
 redhat_cpufreq_driver:
   title: Red Hat's test for correct cpufreq scaling driver
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/cpu/driver
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/cpu/driver
 redhat_cpufreq_governor:
   title: Red Hat's cpufreq governor tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/power-management/cpufreq/cpufreq_governor
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/power-management/cpufreq/cpufreq_governor
 redhat_cpufreq_misc:
   title: Red Hat's miscellaneous cpufreq tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/power-management/cpufreq/sys_cpufreq
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/power-management/cpufreq/sys_cpufreq
 redhat_cpu_idle_power:
   title: Red Hat's CPU idle power usage tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/cpu/idle
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/cpu/idle
 redhat_cpupower:
   title: Red Hat's tests for cpupower tool
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/power-management/cpupower/sanity
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/power-management/cpupower/sanity
 redhat_dm:
   title: Red Hat's Device Mapper (DM) tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/dm/common
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/storage/dm/common
 redhat_ethernet:
   title: Red Hat's Ethernet driver sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/driver/sanity
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/driver/sanity
 redhat_ftrace:
   title: Red Hat's function tracer tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/trace/ftrace/tracer
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/trace/ftrace/tracer
 redhat_geneve:
   title: Red Hat's GENEVE sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/tunnel/geneve/basic
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/tunnel/geneve/basic
 redhat_gre:
   title: Red Hat's GRE sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/tunnel/gre/basic
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/tunnel/gre/basic
 redhat_i2cdetect:
   title: Red Hat's i2cdetect tool sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/packages/i2c-tools/sanity/i2cdetect-smoke
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/packages/i2c-tools/sanity/i2cdetect-smoke
 redhat_igmp:
   title: Red Hat's IGMP sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/igmp/conformance
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/igmp/conformance
 redhat_iommu_boot:
   title: Red Hat's test for booting with various iommu options
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/iommu/boot
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/iommu/boot
 redhat_iotop:
   title: Red Hat's iotop tool sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/packages/iotop/sanity
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/packages/iotop/sanity
 redhat_ipmi_driver_stress:
   title: Red Hat's IPMI driver loading/unloading stress test
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/ipmi/stress/driver
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/ipmi/stress/driver
 redhat_ipmitool_stress:
   title: Red Hat's IPMI tool stress tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/ipmi/stress/ipmitool-loop
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/ipmi/stress/ipmitool-loop
 redhat_ipsec:
   title: Red Hat's IPSec tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/ipsec/ipsec_basic/ipsec_basic_netns
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/ipsec/ipsec_basic/ipsec_basic_netns
 redhat_ipvlan:
   title: Red Hat's IPVLAN sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/vnic/ipvlan/basic
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/vnic/ipvlan/basic
 redhat_iscsi_params:
   title: Red Hat's iSCSI parameter fuzzing test
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/iscsi/params
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/storage/iscsi/params
 redhat_kaslr:
   title: Red Hat's sanity test for Kernel Address Space Layout Randomization (KASLR)
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/memory/function/kaslr
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/memory/function/kaslr
 redhat_kdump:
   title: Red Hat's kdump tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/kdump
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/kdump
 redhat_l2tp:
   title: Red Hat's basic L2TP tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/tunnel/l2tp/basic
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/tunnel/l2tp/basic
 redhat_loopdev:
   title: Red Hat's loop device sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/filesystems/loopdev/sanity
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/filesystems/loopdev/sanity
 redhat_lvm_thinp:
   title: Red Hat's LVM thin provisioning sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/lvm/thinp/sanity
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/storage/lvm/thinp/sanity
 redhat_macsec:
   title: Red Hat's sanity test for MACsec support
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/macsec/sanity_check
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/macsec/sanity_check
 redhat_memfd_create:
   title: Red Hat's test for memfd_create syscall
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/memory/function/memfd_create
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/memory/function/memfd_create
 redhat_module_load_unload:
   title: Red Hat's test for module loading and unloading
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/misc/module-load
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/misc/module-load
 redhat_netfilter:
   title: Red Hat's netfilter tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/firewall/netfilter/target
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/firewall/netfilter/target
 redhat_pciutils:
   title: Red Hat's pciutils sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/pciutils/sanity-smoke
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/pciutils/sanity-smoke
 redhat_perftool:
   title: Red Hat's perf tool test suite
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/packages/perf/internal-testsuite
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/packages/perf/internal-testsuite
 redhat_pmtu:
   title: Red Hat's tests for Path MTU discovery
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/route/pmtu
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/route/pmtu
 redhat_rapl:
   title: Red Hat's tests for Intel's RAPL (Running Average Power Limit) technology
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/power-management/rapl/powercap
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/power-management/rapl/powercap
 redhat_route:
   title: Red Hat's IP routing tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/route/route_func
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/route/route_func
 redhat_scsi_vpd:
   title: Red Hat's SCSI Vital Product Data (VPD) retrieval tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/scsi/vpd
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/storage/scsi/vpd
 redhat_sctp_auth_sockopts:
   title: Red Hat's SCTP authentication socket options tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/sctp/auth/sockopts
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/sctp/auth/sockopts
 redhat_socket_fuzz:
   title: Red Hat's socket function fuzzing tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/socket/fuzz
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/socket/fuzz
 redhat_sound_aloop:
   title: Red Hat's ALSA PCM loopback tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/sound/aloop
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/sound/aloop
 redhat_sound_user-ctl-elem:
   title: Red Hat's ALSA User Control Element (mixer) tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/sound/user-ctl-elem
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/sound/user-ctl-elem
 redhat_suspend_resume:
   title: Red Hat's Suspend/Resume tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/power-management/suspend-resume
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/power-management/suspend-resume
 redhat_swraid_trim:
   title: Red Hat's test for software RAID TRIM support
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/storage/swraid/trim
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/storage/swraid/trim
 redhat_systemtap_tracepoints:
   title: Red Hat's test for operation of SystemTap tracepoints
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/tracepoints/operational
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/tracepoints/operational
 redhat_tcp_keepalive:
   title: Red Hat's tests for TCP Keep-Alive support
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/tcp/tcp_keepalive
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/tcp/tcp_keepalive
 redhat_tuned:
   title: Red Hat's tuned daemon tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/packages/tuned/tune-processes-through-perf
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/packages/tuned/tune-processes-through-perf
 redhat_udp_socket:
   title: Red Hat's tests for UDP socket support
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/udp/udp_socket
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/udp/udp_socket
 redhat_vxlan:
   title: Red Hat's VXLAN sanity tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/networking/tunnel/vxlan/basic
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/networking/tunnel/vxlan/basic
 redhat_watchdog_test:
   title: Red Hat's Watchdog Timer tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/watchdog/hw-generic
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/watchdog/hw-generic
 selinux:
   title: SELinux Regression Test Suite for the Linux Kernel
   home: https://github.com/SELinuxProject/selinux-testsuite
@@ -275,7 +275,7 @@ syzkaller:
   home: https://github.com/google/syzkaller
 usex:
   title: UNIX System Exerciser (USEX)
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/master/standards/usex
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/standards/usex
 xfstests:
   title: Xfstests filesystem testing suite
   home: https://github.com/kdave/xfstests
