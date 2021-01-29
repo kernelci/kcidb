@@ -227,114 +227,117 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 class KCIDBDBClient(kcidb.unittest.TestCase):
     """Test case for the Client class"""
 
-    def test_load(self):
-        """Check all possible I/O fields can be loaded"""
+    # I/O data containing all possible fields
+    COMPREHENSIVE_IO_DATA = {
+        **kcidb_io.new(),
+        "checkouts": [
+            dict(
+                id="origin:1",
+                origin="origin",
+                tree_name="mainline",
+                git_repository_url="https://git.kernel.org/pub/scm/"
+                                   "linux/kernel/git/torvalds/linux.git",
+                git_commit_hash="ef2b753c38bc9c0d1eea84e29a6bb6f9e776d0e3",
+                git_commit_name="v5.8-rc7-98-g7dc6fd0f3b84",
+                git_repository_branch="master",
+                patchset_files=[
+                    dict(name="0001.patch",
+                         url="https://example.com/0001.patch"),
+                    dict(name="0002.patch",
+                         url="https://example.com/0002.patch"),
+                ],
+                patchset_hash="903638c087335b10293663c682b9aa00"
+                              "76f9f7be478a8e7828bc22e12d301b42",
+                message_id="5f9fccd2.1c69fb81.1b2f.6d9c@mx.google.com",
+                comment="v5.8",
+                publishing_time="2020-08-14T23:08:06.967000+00:00",
+                start_time="2020-08-14T23:08:06.967000+00:00",
+                contacts=[
+                    "clang-built-linux@googlegroups.com",
+                    "stable@vger.kernel.org"
+                ],
+                log_url="https://example.com/checkout.log",
+                log_excerpt="error: patch failed: "
+                            "arch/arm64/boot/dts/qcom/sc7180.dtsi:510\n"
+                            "error: arch/arm64/boot/dts/qcom/sc7180.dtsi:"
+                            " patch does not apply\n",
+                valid=True,
+                misc=dict(
+                    foo="bar",
+                    baz=42
+                ),
+            ),
+        ],
+        "builds": [
+            dict(
+                checkout_id="origin:1",
+                id="origin:1",
+                origin="origin",
+                comment="x86_64",
+                start_time="2020-08-14T23:08:06.967000+00:00",
+                duration=600,
+                architecture="x86_64",
+                command="make",
+                compiler="gcc",
+                input_files=[
+                    dict(name="foo.bar",
+                         url="https://example.com/foo.bar"),
+                    dict(name="bar.foo",
+                         url="https://example.com/bar.foo"),
+                ],
+                output_files=[
+                    dict(name="foo.bar",
+                         url="https://example.com/foo.bar"),
+                    dict(name="bar.foo",
+                         url="https://example.com/bar.foo"),
+                ],
+                config_name="fedora",
+                config_url="https://example.com/fedora.config",
+                log_url="https://example.com/build.log",
+                log_excerpt="error: invalid input constraint 'rZ'\n",
+                valid=True,
+                misc=dict(
+                    foo="bar",
+                    baz=42
+                ),
+            ),
+        ],
+        "tests": [
+            dict(
+                build_id="origin:1",
+                id="origin:1",
+                origin="origin",
+                environment=dict(
+                    comment="Lenovo x230",
+                    misc=dict(
+                        foo="bar",
+                        baz=42
+                    ),
+                ),
+                path="ltp",
+                comment="ltp on Lenovo x230",
+                status="PASS",
+                waived=False,
+                start_time="2020-08-14T23:08:07.967000+00:00",
+                duration=600,
+                output_files=[
+                    dict(name="foo.bar",
+                         url="https://example.com/foo.bar"),
+                    dict(name="bar.foo",
+                         url="https://example.com/bar.foo"),
+                ],
+                misc=dict(
+                    foo="bar",
+                    baz=42
+                ),
+            ),
+        ]
+    }
+
+    def test_bigquery_load(self):
+        """Check all possible I/O fields can be loaded into BigQuery"""
         # Calm down, pylint: disable=no-self-use
-        io_data = {
-            **kcidb_io.new(),
-            "checkouts": [
-                dict(
-                    id="origin:1",
-                    origin="origin",
-                    tree_name="mainline",
-                    git_repository_url="https://git.kernel.org/pub/scm/"
-                                       "linux/kernel/git/torvalds/linux.git",
-                    git_commit_hash="ef2b753c38bc9c0d1eea84e29a6bb6f9e776d0e3",
-                    git_commit_name="v5.8-rc7-98-g7dc6fd0f3b84",
-                    git_repository_branch="master",
-                    patchset_files=[
-                        dict(name="0001.patch",
-                             url="https://example.com/0001.patch"),
-                        dict(name="0002.patch",
-                             url="https://example.com/0002.patch"),
-                    ],
-                    patchset_hash="903638c087335b10293663c682b9aa00"
-                                  "76f9f7be478a8e7828bc22e12d301b42",
-                    message_id="5f9fccd2.1c69fb81.1b2f.6d9c@mx.google.com",
-                    comment="v5.8",
-                    publishing_time="2020-08-14T23:08:06.967000+00:00",
-                    start_time="2020-08-14T23:08:06.967000+00:00",
-                    contacts=[
-                        "clang-built-linux@googlegroups.com",
-                        "stable@vger.kernel.org"
-                    ],
-                    log_url="https://example.com/checkout.log",
-                    log_excerpt="error: patch failed: "
-                                "arch/arm64/boot/dts/qcom/sc7180.dtsi:510\n"
-                                "error: arch/arm64/boot/dts/qcom/sc7180.dtsi:"
-                                " patch does not apply\n",
-                    valid=True,
-                    misc=dict(
-                        foo="bar",
-                        baz=42
-                    ),
-                ),
-            ],
-            "builds": [
-                dict(
-                    checkout_id="origin:1",
-                    id="origin:1",
-                    origin="origin",
-                    comment="x86_64",
-                    start_time="2020-08-14T23:08:06.967000+00:00",
-                    duration=600,
-                    architecture="x86_64",
-                    command="make",
-                    compiler="gcc",
-                    input_files=[
-                        dict(name="foo.bar",
-                             url="https://example.com/foo.bar"),
-                        dict(name="bar.foo",
-                             url="https://example.com/bar.foo"),
-                    ],
-                    output_files=[
-                        dict(name="foo.bar",
-                             url="https://example.com/foo.bar"),
-                        dict(name="bar.foo",
-                             url="https://example.com/bar.foo"),
-                    ],
-                    config_name="fedora",
-                    config_url="https://example.com/fedora.config",
-                    log_url="https://example.com/build.log",
-                    log_excerpt="error: invalid input constraint 'rZ'\n",
-                    valid=True,
-                    misc=dict(
-                        foo="bar",
-                        baz=42
-                    ),
-                ),
-            ],
-            "tests": [
-                dict(
-                    build_id="origin:1",
-                    id="origin:1",
-                    origin="origin",
-                    environment=dict(
-                        comment="Lenovo x230",
-                        misc=dict(
-                            foo="bar",
-                            baz=42
-                        ),
-                    ),
-                    path="ltp",
-                    comment="ltp on Lenovo x230",
-                    status="PASS",
-                    waived=False,
-                    start_time="2020-08-14T23:08:07.967000+00:00",
-                    duration=600,
-                    output_files=[
-                        dict(name="foo.bar",
-                             url="https://example.com/foo.bar"),
-                        dict(name="bar.foo",
-                             url="https://example.com/bar.foo"),
-                    ],
-                    misc=dict(
-                        foo="bar",
-                        baz=42
-                    ),
-                ),
-            ]
-        }
+        io_data = KCIDBDBClient.COMPREHENSIVE_IO_DATA
         dataset = Mock()
         dataset.labels = dict(version_major=io_data['version']['major'],
                               version_minor=io_data['version']['minor'])
@@ -344,3 +347,15 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
              patch("google.cloud.bigquery.job.LoadJobConfig"):
             client = kcidb.db.Client("bigquery:dataset")
             client.load(io_data)
+
+    def test_sqlite_load_dump(self):
+        """
+        Check all possible I/O fields can be loaded into and dumped from
+        SQLite.
+        """
+        # Calm down, pylint: disable=no-self-use
+        io_data = KCIDBDBClient.COMPREHENSIVE_IO_DATA
+        client = kcidb.db.Client("sqlite::memory:")
+        client.init()
+        client.load(io_data)
+        self.assertEqual(io_data, client.dump())
