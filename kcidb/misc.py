@@ -65,10 +65,13 @@ def format_exception_stack(exc):
     while True:
         summary = ": ".join(s for s in (type(exc).__name__, str(exc)) if s)
         string += indent(summary, prefix)
-        if exc.__context__:
+        if getattr(exc, "__suppress_context__", False):
+            exc = exc.__cause__
+        else:
+            exc = exc.__context__
+        if exc:
             string += ":\n"
             prefix += "  "
-            exc = exc.__context__
         else:
             break
     return string
