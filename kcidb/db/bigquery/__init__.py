@@ -14,7 +14,6 @@ import kcidb.oo.data
 from kcidb.db.bigquery import schema
 from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db.misc import Driver as AbstractDriver
-from kcidb.bigquery import validate_json_obj_list
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
@@ -510,7 +509,7 @@ class Driver(AbstractDriver):
             if obj_list_name in data:
                 obj_list = Driver._pack_node(data[obj_list_name])
                 if not LIGHT_ASSERTS:
-                    validate_json_obj_list(table_schema, obj_list)
+                    schema.validate_json_obj_list(table_schema, obj_list)
                 job_config = bigquery.job.LoadJobConfig(
                     autodetect=False,
                     schema=schema.TABLE_MAP[obj_list_name])
