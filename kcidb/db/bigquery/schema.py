@@ -248,6 +248,15 @@ TABLE_MAP = dict(
             description="A human-readable comment regarding the test run"
         ),
         Field(
+            "log_url", "STRING",
+            description="The URL of the main test output/log file.",
+        ),
+        Field(
+            "log_excerpt", "STRING",
+            description="A part of the main test output/log file most "
+                        "relevant to its outcome.",
+        ),
+        Field(
             "status", "STRING",
             description="The test status, one of the following. "
                         "\"ERROR\" - the test is faulty, "
@@ -480,6 +489,8 @@ OO_QUERIES = dict(
          "   ANY_VALUE(start_time) AS start_time,\n"
          "   ANY_VALUE(duration) AS duration,\n"
          "   ANY_VALUE(output_files) AS output_files,\n"
+         "   ANY_VALUE(log_url) AS log_url,\n"
+         "   ANY_VALUE(log_excerpt) AS log_excerpt,\n"
          "   ANY_VALUE(comment) AS comment,\n"
          "   ANY_VALUE(misc) AS misc\n"
          "FROM tests\n"
