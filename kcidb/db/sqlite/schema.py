@@ -174,6 +174,8 @@ TABLES = dict(
             "environment.misc": JSONColumn(),
             "path": TextColumn(),
             "comment": TextColumn(),
+            "log_url": TextColumn(),
+            "log_excerpt": TextColumn(),
             "status": TextColumn(),
             "waived": BoolColumn(),
             "start_time": TextColumn(),
@@ -291,6 +293,8 @@ OO_QUERIES = dict(
                   "   path,\n"
                   "   \"environment.comment\" AS environment_comment,\n"
                   "   \"environment.misc\" AS environment_misc,\n"
+                  "   log_url,\n"
+                  "   log_excerpt,\n"
                   "   status,\n"
                   "   waived,\n"
                   "   start_time,\n"
@@ -307,6 +311,8 @@ OO_QUERIES = dict(
             path=TextColumn(),
             environment_comment=TextColumn(),
             environment_misc=JSONColumn(),
+            log_url=TextColumn(),
+            log_excerpt=TextColumn(),
             status=TextColumn(),
             waived=BoolColumn(),
             start_time=TextColumn(),
