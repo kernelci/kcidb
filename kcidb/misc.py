@@ -86,7 +86,7 @@ def log_and_print_excepthook(type, value, tb):
         value:  Exception instance.
         tb:     Exception traceback object.
     """
-    # "type" and "tb" are OK, pylint: disable=invalid-name,redefined-builtin
+    # "tb" is OK, pylint: disable=invalid-name
     lines = traceback.format_exception(type, value, tb)
     LOGGER.debug("%s", "".join(lines).rstrip())
     print(format_exception_stack(value), file=sys.stderr)

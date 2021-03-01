@@ -19,7 +19,7 @@ from kcidb.monitor.misc import is_valid_firestore_id
 from kcidb.monitor.output import Notification
 
 # Because we like the "id" name
-# pylint: disable=invalid-name,redefined-builtin
+# pylint: disable=invalid-name
 
 
 class Client:

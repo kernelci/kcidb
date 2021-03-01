@@ -333,7 +333,7 @@ def apply_mask(base, mask):
 class Object:
     """An object-oriented representation of a database object"""
 
-    # Calm down, pylint: disable=redefined-builtin,invalid-name
+    # Calm down, pylint: disable=invalid-name
 
     def __init__(self, client, type, data):
         """
