@@ -7,6 +7,7 @@ import re
 import textwrap
 from abc import ABC, abstractmethod
 import jsonschema
+import kcidb_io as io
 from kcidb.misc import LIGHT_ASSERTS
 
 # We'll get to it, pylint: disable=too-many-lines
@@ -158,10 +159,14 @@ class Schema:
         assert all(
             isinstance(name, str) and
             isinstance(info, dict) and
-            "json_schema" in info and
-            isinstance(info["json_schema"], dict) and
+            "field_json_schemas" in info and
+            isinstance(info["field_json_schemas"], dict) and
+            "required_fields" in info and
+            isinstance(info["required_fields"], set) and
             "id_fields" in info and
             isinstance(info["id_fields"], tuple) and
+            (set(info["id_fields"]) ==
+             set(info["id_fields"]) & set(info["field_json_schemas"])) and
             all(isinstance(f, str) for f in info["id_fields"]) and
             ("children" not in info or (
                 isinstance(info["children"], dict) and
@@ -184,12 +189,23 @@ class Schema:
             properties={},
         )
         for name, info in types.items():
-            self.types[name] = Type(name, info["json_schema"],
-                                    info["id_fields"])
-            self.json_schema["properties"][name] = dict(
-                type="array",
-                items=info["json_schema"]
+            json_schema = dict(
+                type="object",
+                properties={
+                    name: (
+                        json_schema if name in info["required_fields"]
+                        else dict(anyOf=[dict(type="null"), json_schema])
+                    )
+                    for name, json_schema in
+                    info["field_json_schemas"].items()
+                },
+                required=list(info["field_json_schemas"]),
+                additionalProperties=False,
             )
+            self.json_schema["properties"][name] = dict(
+                type="array", items=json_schema
+            )
+            self.types[name] = Type(name, json_schema, info["id_fields"])
 
         # Create and register relations
         self.relations = []
@@ -242,31 +258,102 @@ class Schema:
             return False
 
 
+# Checkout properties from the latest I/O schema
+_CHECKOUT = \
+    io.schema.LATEST.json['properties']['checkouts']['items']['properties']
+# Build properties from the latest I/O schema
+_BUILD = \
+    io.schema.LATEST.json['properties']['builds']['items']['properties']
+# Test properties from the latest I/O schema
+_TEST = \
+    io.schema.LATEST.json['properties']['tests']['items']['properties']
+
 # The schema of the raw object-oriented data
 # TODO Fill in actual object schemas
 SCHEMA = Schema(dict(
     revision=dict(
-        json_schema=dict(type="object"),
+        field_json_schemas=dict(
+            git_commit_hash=_CHECKOUT['git_commit_hash'],
+            patchset_hash=_CHECKOUT['patchset_hash'],
+            patchset_files=_CHECKOUT['patchset_files'],
+            git_commit_name=_CHECKOUT['git_commit_name'],
+            contacts=_CHECKOUT['contacts'],
+        ),
+        required_fields=set(),
         id_fields=("git_commit_hash", "patchset_hash"),
         children=dict(
             checkout=("git_commit_hash", "patchset_hash",)
         ),
     ),
     checkout=dict(
-        json_schema=dict(type="object"),
+        field_json_schemas=dict(
+            id=_CHECKOUT['id'],
+            git_commit_hash=_CHECKOUT['git_commit_hash'],
+            patchset_hash=_CHECKOUT['patchset_hash'],
+            origin=_CHECKOUT['origin'],
+            git_repository_url=_CHECKOUT['git_repository_url'],
+            git_repository_branch=_CHECKOUT['git_repository_branch'],
+            tree_name=_CHECKOUT['tree_name'],
+            message_id=_CHECKOUT['message_id'],
+            publishing_time=_CHECKOUT['publishing_time'],
+            start_time=_CHECKOUT['start_time'],
+            log_url=_CHECKOUT['log_url'],
+            log_excerpt=_CHECKOUT['log_excerpt'],
+            comment=_CHECKOUT['comment'],
+            valid=_CHECKOUT['valid'],
+            misc=_CHECKOUT['misc'],
+        ),
+        required_fields={'id', 'origin'},
         id_fields=("id",),
         children=dict(
             build=("checkout_id",)
         ),
     ),
     build=dict(
-        json_schema=dict(type="object"),
+        field_json_schemas=dict(
+            id=_BUILD['id'],
+            checkout_id=_BUILD['checkout_id'],
+            origin=_BUILD['origin'],
+            start_time=_BUILD['start_time'],
+            duration=_BUILD['duration'],
+            architecture=_BUILD['architecture'],
+            command=_BUILD['command'],
+            compiler=_BUILD['compiler'],
+            input_files=_BUILD['input_files'],
+            output_files=_BUILD['output_files'],
+            config_name=_BUILD['config_name'],
+            config_url=_BUILD['config_url'],
+            log_url=_BUILD['log_url'],
+            log_excerpt=_BUILD['log_excerpt'],
+            comment=_BUILD['comment'],
+            valid=_BUILD['valid'],
+            misc=_BUILD['misc'],
+        ),
+        required_fields={'id', 'origin', 'checkout_id'},
         id_fields=("id",),
         children=dict(
             test=("build_id",),
         ),
     ),
     test=dict(
+        field_json_schemas=dict(
+            id=_TEST['id'],
+            build_id=_TEST['build_id'],
+            origin=_TEST['origin'],
+            path=_TEST['path'],
+            environment_comment=_TEST['environment']['properties']['comment'],
+            environment_misc=_TEST['environment']['properties']['misc'],
+            status=_TEST['status'],
+            waived=_TEST['waived'],
+            start_time=_TEST['start_time'],
+            duration=_TEST['duration'],
+            output_files=_TEST['output_files'],
+            log_url=_TEST['log_url'],
+            log_excerpt=_TEST['log_excerpt'],
+            comment=_TEST['comment'],
+            misc=_TEST['misc'],
+        ),
+        required_fields={'id', 'origin', 'build_id'},
         json_schema=dict(type="object"),
         id_fields=("id",),
     ),
