@@ -47,7 +47,7 @@ class NotificationMessage:
         assert NOTIFICATION_MESSAGE_SUMMARY_RE.fullmatch(summary)
         assert len(summary.encode()) <= 256
         assert isinstance(description, str)
-        assert len(id.encode()) <= 4096
+        assert len(description.encode()) <= 4096
         assert isinstance(id, str)
         assert len(id.encode()) <= 256
 
