@@ -133,7 +133,6 @@ class Node:
 
     def __getattr__(self, _):
         # Emulate missing JSON properties
-        # pylint: disable=fixme
         # TODO: Instead, make all known properties attributes, and assign None
         #       to missing ones. Otherwise typos will be uncaught.
         #       Requires I/O schema introspection.

@@ -173,7 +173,6 @@ def is_valid(oo_data):
     if set(oo_data.keys()) > allowed_keys:
         return False
 
-    # pylint: disable=fixme
     # TODO Validate tree node types and object links
     return schema.is_valid_latest(_to_io(oo_data))
 
