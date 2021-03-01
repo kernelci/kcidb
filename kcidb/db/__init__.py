@@ -479,14 +479,19 @@ def oo_query_main():
         "Kernel CI report database"
     parser = OutputArgumentParser(description=description)
     parser.add_argument(
-        'request_string',
+        'request_strings',
+        nargs='*',
+        default=[],
         metavar='REQUEST',
         help='Object request. See documentation with kcidb-db-oo-query-help.'
     )
     args = parser.parse_args()
     client = Client(args.database)
+    request_list = []
+    for request_string in args.request_strings:
+        request_list += kcidb.oo.data.Request.parse(request_string)
     kcidb.misc.json_dump(
-        client.oo_query(kcidb.oo.data.Request.parse(args.request_string)),
+        client.oo_query(request_list),
         sys.stdout, indent=args.indent, seq=args.seq
     )
 
