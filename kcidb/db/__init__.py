@@ -2,6 +2,7 @@
 
 import sys
 import logging
+import argparse
 import kcidb_io as io
 import kcidb.oo.data
 import kcidb.misc
@@ -455,22 +456,6 @@ def query_main():
     )
 
 
-def oo_query_help_main():
-    """Execute the kcidb-db-oo-query-help command-line tool"""
-    sys.excepthook = kcidb.misc.log_and_print_excepthook
-    description = \
-        "kcidb-db-oo-query-help - Output documentation on OO data " \
-        "request format"
-    parser = kcidb.misc.ArgumentParser(description=description)
-    parser.parse_args()
-    print(
-        kcidb.oo.data.Request.STRING_DOC +
-        "\n" +
-        "NOTE: Specifying object ID lists separately is not supported using\n"
-        "      command-line tools. Only inline ID lists are supported.\n"
-    )
-
-
 def oo_query_main():
     """Execute the kcidb-db-oo-query command-line tool"""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
@@ -483,7 +468,38 @@ def oo_query_main():
         nargs='*',
         default=[],
         metavar='REQUEST',
-        help='Object request. See documentation with kcidb-db-oo-query-help.'
+        help='Object request. See documentation with --request-help.'
+    )
+
+    class RequestHelpAction(argparse.Action):
+        """Argparse action outputting request string help and exiting."""
+        def __init__(self,
+                     option_strings,
+                     dest=argparse.SUPPRESS,
+                     default=argparse.SUPPRESS,
+                     help=None):
+            super().__init__(
+                option_strings=option_strings,
+                dest=dest,
+                default=default,
+                nargs=0,
+                help=help)
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            print(
+                kcidb.oo.data.Request.STRING_DOC +
+                "\n" +
+                "NOTE: Specifying object ID lists separately is not "
+                "supported using\n"
+                "      command-line tools. "
+                "Only inline ID lists are supported.\n"
+            )
+            parser.exit()
+
+    parser.add_argument(
+        '--request-help',
+        action=RequestHelpAction,
+        help='Print request string documentation and exit.'
     )
     args = parser.parse_args()
     client = Client(args.database)
