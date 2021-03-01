@@ -4,8 +4,6 @@ Kernel CI report OO data - miscellaneous definitions
 
 import enum
 import re
-import os
-import jinja2
 
 
 @enum.unique
@@ -40,18 +38,6 @@ class Waived(enum.IntEnum):
     # Unwaived
     FALSE = 3
 
-
-# Jinja2 environment for node summary and description templates
-# Loads templates from the directory of kcidb.oo package.
-TEMPLATE_ENV = jinja2.Environment(
-    trim_blocks=True,
-    keep_trailing_newline=True,
-    lstrip_blocks=True,
-    undefined=jinja2.StrictUndefined,
-    loader=jinja2.FileSystemLoader(
-        os.path.dirname(os.path.realpath(__file__))
-    )
-)
 
 # A regular expression matching valid node summaries
 SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")

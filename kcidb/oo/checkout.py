@@ -3,6 +3,7 @@ Kernel CI report OO data - checkout definitions
 """
 
 from kcidb.oo import misc
+from kcidb.templates import ENV as TEMPLATE_ENV
 
 
 class Node(misc.Node):
@@ -11,10 +12,10 @@ class Node(misc.Node):
     _NAME = "checkout"
 
     _SUMMARY_TEMPLATE = \
-        misc.TEMPLATE_ENV.get_template("checkout_summary.txt.j2")
+        TEMPLATE_ENV.get_template("checkout_summary.txt.j2")
 
     _DESCRIPTION_TEMPLATE = \
-        misc.TEMPLATE_ENV.get_template("checkout_description.txt.j2")
+        TEMPLATE_ENV.get_template("checkout_description.txt.j2")
 
     def __init__(self, data, attrs=None):
         """
