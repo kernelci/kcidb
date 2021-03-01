@@ -57,7 +57,6 @@ TEMPLATE_ENV = jinja2.Environment(
 SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
 
-# pylint: disable=too-few-public-methods
 class Node:
     """Object-oriented data node"""
 

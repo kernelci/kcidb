@@ -17,7 +17,6 @@ NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
 
 
-# pylint: disable=too-few-public-methods
 class NotificationMessage:
     """
     Message for a notification about a report object state.
@@ -58,7 +57,6 @@ class NotificationMessage:
         self.id = id
 
 
-# pylint: disable=too-few-public-methods
 class Notification:
     """
     Notification about a report object state.
