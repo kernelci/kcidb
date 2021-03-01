@@ -16,7 +16,6 @@ from kcidb.misc import LIGHT_ASSERTS
 class Relation:
     """A parent/child relation between object types"""
 
-    # It's OK, pylint: disable=too-few-public-methods
     def __init__(self, parent, child, ref_fields):
         """
         Initialize a relation.
@@ -482,7 +481,7 @@ _REQUEST_STRING_RE = re.compile(
 class Request:
     """A specification of a branch of objects to query from a data source"""
 
-    # No, it's OK, pylint: disable=too-many-arguments,too-few-public-methods
+    # No, it's OK, pylint: disable=too-many-arguments
     def __init__(self, base, child, obj_type, obj_id_list, load):
         """
         Initialize an object branch request.
