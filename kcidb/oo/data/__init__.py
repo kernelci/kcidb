@@ -295,7 +295,6 @@ SCHEMA = Schema(dict(
             git_repository_branch=_CHECKOUT['git_repository_branch'],
             tree_name=_CHECKOUT['tree_name'],
             message_id=_CHECKOUT['message_id'],
-            publishing_time=_CHECKOUT['publishing_time'],
             start_time=_CHECKOUT['start_time'],
             log_url=_CHECKOUT['log_url'],
             log_excerpt=_CHECKOUT['log_excerpt'],
