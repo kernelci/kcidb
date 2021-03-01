@@ -101,12 +101,6 @@ TABLE_MAP = dict(
                         "subject of the message with the applied patchset."
         ),
         Field(
-            "publishing_time", "TIMESTAMP",
-            description="The time the checked out source code was made "
-                        "public. E.g. the timestamp on a patch message, "
-                        "a commit, or a tag.",
-        ),
-        Field(
             "start_time", "TIMESTAMP",
             description="The time the checkout was started.",
         ),
@@ -448,7 +442,6 @@ OO_QUERIES = dict(
              "git_repository_branch,\n"
              "   ANY_VALUE(tree_name) AS tree_name,\n"
              "   ANY_VALUE(message_id) AS message_id,\n"
-             "   ANY_VALUE(publishing_time) AS publishing_time,\n"
              "   ANY_VALUE(start_time) AS start_time,\n"
              "   ANY_VALUE(log_url) AS log_url,\n"
              "   ANY_VALUE(log_excerpt) AS log_excerpt,\n"

@@ -250,7 +250,6 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
                               "76f9f7be478a8e7828bc22e12d301b42",
                 message_id="5f9fccd2.1c69fb81.1b2f.6d9c@mx.google.com",
                 comment="v5.8",
-                publishing_time="2020-08-14T23:08:06.967000+00:00",
                 start_time="2020-08-14T23:08:06.967000+00:00",
                 contacts=[
                     "clang-built-linux@googlegroups.com",

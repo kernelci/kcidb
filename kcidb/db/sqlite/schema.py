@@ -134,7 +134,6 @@ TABLES = dict(
             "patchset_hash": TextColumn(),
             "message_id": TextColumn(),
             "comment": TextColumn(),
-            "publishing_time": TextColumn(),
             "start_time": TextColumn(),
             "contacts": JSONColumn(),
             "log_url": TextColumn(),
@@ -217,7 +216,6 @@ OO_QUERIES = dict(
                   "   git_repository_branch,\n"
                   "   tree_name,\n"
                   "   message_id,\n"
-                  "   publishing_time,\n"
                   "   start_time,\n"
                   "   log_url,\n"
                   "   log_excerpt,\n"
@@ -235,7 +233,6 @@ OO_QUERIES = dict(
             git_repository_branch=TextColumn(),
             tree_name=TextColumn(),
             message_id=TextColumn(),
-            publishing_time=TextColumn(),
             start_time=TextColumn(),
             log_url=TextColumn(),
             log_excerpt=TextColumn(),
