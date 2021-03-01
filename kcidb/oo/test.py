@@ -4,6 +4,7 @@ Kernel CI report OO data - test run definitions
 
 import json
 from kcidb.oo import misc
+from kcidb.templates import ENV as TEMPLATE_ENV
 
 
 class NodeEnvironment(misc.Node):
@@ -34,10 +35,10 @@ class Node(misc.Node):
     _NAME = "test"
 
     _SUMMARY_TEMPLATE = \
-        misc.TEMPLATE_ENV.get_template("test_summary.txt.j2")
+        TEMPLATE_ENV.get_template("test_summary.txt.j2")
 
     _DESCRIPTION_TEMPLATE = \
-        misc.TEMPLATE_ENV.get_template("test_description.txt.j2")
+        TEMPLATE_ENV.get_template("test_description.txt.j2")
 
     def __init__(self, data, attrs=None):
         """
