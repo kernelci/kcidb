@@ -10,21 +10,31 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
         """Check request parsing works"""
         schema = kcidb.oo.data.Schema(dict(
             revision=dict(
-                json_schema=dict(type="object"),
+                field_json_schemas=dict(
+                    git_commit_hash=dict(type="string"),
+                    patchset_hash=dict(type="string"),
+                ),
+                required_fields=set(),
                 id_fields=("git_commit_hash", "patchset_hash"),
                 children=dict(
                     checkout=("git_commit_hash", "patchset_hash",)
                 ),
             ),
             checkout=dict(
-                json_schema=dict(type="object"),
+                field_json_schemas=dict(
+                    id=dict(type="string"),
+                ),
+                required_fields=set(),
                 id_fields=("id",),
                 children=dict(
                     build=("checkout_id",)
                 ),
             ),
             build=dict(
-                json_schema=dict(type="object"),
+                field_json_schemas=dict(
+                    id=dict(type="string"),
+                ),
+                required_fields=set(),
                 id_fields=("id",),
                 children=dict(
                     test=("build_id",),
@@ -32,7 +42,10 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
                 ),
             ),
             test_environment=dict(
-                json_schema=dict(type="object"),
+                field_json_schemas=dict(
+                    id=dict(type="string"),
+                ),
+                required_fields=set(),
                 id_fields=("id",),
                 children=dict(
                     test=("environment_id",),
@@ -40,14 +53,21 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
                 ),
             ),
             build_test_environment=dict(
-                json_schema=dict(type="object"),
+                field_json_schemas=dict(
+                    build_id=dict(type="string"),
+                    environment_id=dict(type="string"),
+                ),
+                required_fields=set(),
                 id_fields=("build_id", "environment_id"),
                 children=dict(
                     test=("build_id", "environment_id"),
                 ),
             ),
             test=dict(
-                json_schema=dict(type="object"),
+                field_json_schemas=dict(
+                    id=dict(type="string"),
+                ),
+                required_fields=set(),
                 id_fields=("id",),
             ),
         ))
