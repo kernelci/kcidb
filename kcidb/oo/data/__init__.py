@@ -209,7 +209,6 @@ class Schema:
         # Create and register relations
         self.relations = []
         for name, info in types.items():
-            # We like our "type", pylint: disable=redefined-builtin
             type = self.types[name]
             for child_name, ref_fields in info.get("children", {}).items():
                 try:
@@ -874,7 +873,7 @@ class Request:
         id_list = []
         pos = 0
         while True:
-            # We like our "id", pylint: disable=redefined-builtin,invalid-name
+            # We like our "id", pylint: disable=invalid-name
             # Parse next ID
             id, pos = Request._parse_id(string, pos)
             id_list.append(id)

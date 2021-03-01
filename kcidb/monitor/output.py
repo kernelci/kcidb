@@ -8,7 +8,7 @@ from kcidb import oo
 from kcidb.monitor.misc import is_valid_firestore_id
 
 # We like the "id" name
-# pylint: disable=invalid-name,redefined-builtin
+# pylint: disable=invalid-name
 
 # A regex matching permitted notification message summary strings
 NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")

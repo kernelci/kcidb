@@ -16,7 +16,6 @@ class Constraint(Enum):
 class Column:
     """A column description"""
 
-    # Calm down, pylint: disable=redefined-builtin
     def __init__(self, type, constraint=None, pack=None, unpack=None):
         """
         Initialize the column description.
@@ -58,7 +57,6 @@ class Column:
 class BoolColumn(Column):
     """A boolean column"""
 
-    # Calm down, pylint: disable=redefined-builtin
     def __init__(self, constraint=None):
         """
         Initialize the column description.
@@ -78,7 +76,6 @@ class BoolColumn(Column):
 class TextColumn(Column):
     """A text column"""
 
-    # Calm down, pylint: disable=redefined-builtin
     def __init__(self, constraint=None, pack=None, unpack=None):
         """
         Initialize the column description.
