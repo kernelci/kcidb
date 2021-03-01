@@ -25,7 +25,7 @@ __all__ = [
     "count_main",
 ]
 
-# pylint: disable=invalid-name,fixme
+# pylint: disable=invalid-name
 # TODO Remove once users switched to kcidb_io.schema
 # Compatibility alias
 io_schema = io.schema

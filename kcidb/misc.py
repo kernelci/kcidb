@@ -43,7 +43,6 @@ def logging_setup(level):
     """
     assert isinstance(level, int)
     logging.getLogger().setLevel(level)
-    # We'll do it later, pylint: disable=fixme
     # TODO Consider separate arguments for controlling the below
     logging.getLogger("urllib3").setLevel(LOGGING_LEVEL_MAP["NONE"])
     logging.getLogger("google").setLevel(LOGGING_LEVEL_MAP["NONE"])
