@@ -6,9 +6,11 @@ objects, but without the object-oriented interface.
 import re
 import textwrap
 from abc import ABC, abstractmethod
+import jinja2
 import jsonschema
 import kcidb_io as io
 from kcidb.misc import LIGHT_ASSERTS
+from kcidb.templates import ENV as TEMPLATE_ENV
 
 # We'll get to it, pylint: disable=too-many-lines
 
@@ -40,20 +42,34 @@ class Relation:
 class Type:
     """An object type"""
 
-    def __init__(self, name, json_schema, id_fields):
+    # It's OK, pylint: disable=too-many-instance-attributes,too-many-arguments
+
+    def __init__(self, name, json_schema, id_fields,
+                 summary_template, description_template):
         """
         Initialize an object type.
 
         Args:
-            name:           The type name.
-            json_schema:    The JSON schema describing the raw object data.
-            id_fields:      A tuple containing the names of object fields
-                            identifying it globally.
+            name:                   The type name.
+            json_schema:            The JSON schema describing the raw object
+                                    data.
+            id_fields:              A tuple containing the names of object
+                                    fields identifying it globally.
+            summary_template:       A Jinja2 Template object producing a
+                                    plain-text summary of an object of this
+                                    type, with the object exposed as the
+                                    type-named variable.
+            description_template:   A Jinja2 Template object producing a
+                                    plain-text summary of an object of this
+                                    type, with the object exposed as the
+                                    type-named variable.
         """
         assert isinstance(name, str)
         assert isinstance(json_schema, dict)
         assert isinstance(id_fields, tuple) and \
                all(isinstance(f, str) for f in id_fields)
+        assert isinstance(summary_template, jinja2.Template)
+        assert isinstance(description_template, jinja2.Template)
 
         # The name of this type
         self.name = name
@@ -67,6 +83,10 @@ class Type:
         self.parents = {}
         # A map of child type names and their relations
         self.children = {}
+        # A summary template
+        self.summary_template = summary_template
+        # A description template
+        self.description_template = description_template
 
     def add_relation(self, relation):
         """
@@ -152,6 +172,19 @@ class Schema:
                                               fields,
                         * "id_fields" - a tuple of names of the object fields
                                         identifying it globally,
+                        * "summary_template" - a jinja2.Template instance
+                                               formatting a plain-text summary
+                                               of an object of this type, the
+                                               object provided in the template
+                                               environment under the name of
+                                               the type.
+                        * "description_template" - a jinja2.Template instance
+                                                   formatting a plain-text
+                                                   description of an object of
+                                                   this type, the object
+                                                   provided in the template
+                                                   environment under the name
+                                                   of the type.
                         * "children" - the optional dictionary of names of
                                        child types and tuples containing
                                        names of fields with values of parent's
@@ -171,6 +204,10 @@ class Schema:
             (set(info["id_fields"]) ==
              set(info["id_fields"]) & set(info["field_json_schemas"])) and
             all(isinstance(f, str) for f in info["id_fields"]) and
+            "summary_template" in info and
+            isinstance(info["summary_template"], jinja2.Template) and
+            "description_template" in info and
+            isinstance(info["description_template"], jinja2.Template) and
             ("children" not in info or (
                 isinstance(info["children"], dict) and
                 all(
@@ -208,7 +245,9 @@ class Schema:
             self.json_schema["properties"][name] = dict(
                 type="array", items=json_schema
             )
-            self.types[name] = Type(name, json_schema, info["id_fields"])
+            self.types[name] = Type(name, json_schema, info["id_fields"],
+                                    info["summary_template"],
+                                    info["description_template"])
 
         # Create and register relations
         self.relations = []
@@ -304,6 +343,12 @@ SCHEMA = Schema(dict(
         children=dict(
             checkout=("git_commit_hash", "patchset_hash",)
         ),
+        summary_template=TEMPLATE_ENV.get_template(
+            "new_revision_summary.txt.j2"
+        ),
+        description_template=TEMPLATE_ENV.get_template(
+            "new_revision_description.txt.j2"
+        ),
     ),
     checkout=dict(
         field_json_schemas=dict(
@@ -326,6 +371,12 @@ SCHEMA = Schema(dict(
         id_fields=("id",),
         children=dict(
             build=("checkout_id",)
+        ),
+        summary_template=TEMPLATE_ENV.get_template(
+            "new_checkout_summary.txt.j2"
+        ),
+        description_template=TEMPLATE_ENV.get_template(
+            "new_checkout_description.txt.j2"
         ),
     ),
     build=dict(
@@ -353,6 +404,12 @@ SCHEMA = Schema(dict(
         children=dict(
             test=("build_id",),
         ),
+        summary_template=TEMPLATE_ENV.get_template(
+            "new_build_summary.txt.j2"
+        ),
+        description_template=TEMPLATE_ENV.get_template(
+            "new_build_description.txt.j2"
+        ),
     ),
     test=dict(
         field_json_schemas=dict(
@@ -374,6 +431,12 @@ SCHEMA = Schema(dict(
         ),
         required_fields={'id', 'origin', 'build_id'},
         id_fields=("id",),
+        summary_template=TEMPLATE_ENV.get_template(
+            "new_test_summary.txt.j2"
+        ),
+        description_template=TEMPLATE_ENV.get_template(
+            "new_test_description.txt.j2"
+        ),
     ),
 ))
 
