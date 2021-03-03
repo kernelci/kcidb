@@ -219,8 +219,7 @@ OO_QUERIES = dict(
                   "   comment,\n"
                   "   valid,\n"
                   "   misc\n"
-                  "FROM checkouts\n"
-                  "GROUP BY id",
+                  "FROM checkouts",
         columns=dict(
             id=TextColumn(),
             git_commit_hash=TextColumn(),
@@ -257,8 +256,7 @@ OO_QUERIES = dict(
                   "   comment,\n"
                   "   valid,\n"
                   "   misc\n"
-                  "FROM builds\n"
-                  "GROUP BY id",
+                  "FROM builds",
         columns=dict(
             id=TextColumn(),
             checkout_id=TextColumn(),
@@ -296,8 +294,7 @@ OO_QUERIES = dict(
                   "   output_files,\n"
                   "   comment,\n"
                   "   misc\n"
-                  "FROM tests\n"
-                  "GROUP BY id",
+                  "FROM tests",
         columns=dict(
             id=TextColumn(),
             build_id=TextColumn(),
