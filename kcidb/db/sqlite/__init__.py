@@ -514,7 +514,9 @@ class Driver(AbstractDriver):
                 column_vals[column_name] = \
                     column_defs[column_name].pack(field_value)
             else:
-                assert isinstance(field_value, dict)
+                assert isinstance(field_value, dict), \
+                    f"Field {pfx + field_name!r} value is not a dict: " \
+                    f"{field_value!r}"
                 Driver._pack_fields(column_vals, column_defs,
                                     pfx + field_name + ".", field_value)
         return column_vals
