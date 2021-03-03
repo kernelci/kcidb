@@ -1,5 +1,6 @@
 """kcdib.orm module tests"""
 
+from jinja2 import Template
 import kcidb
 
 
@@ -8,6 +9,7 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
 
     def test_parse(self):
         """Check pattern parsing works"""
+        empty_template = Template("")
         schema = kcidb.orm.Schema(dict(
             revision=dict(
                 field_json_schemas=dict(
@@ -19,6 +21,8 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
                 children=dict(
                     checkout=("git_commit_hash", "patchset_hash",)
                 ),
+                summary_template=empty_template,
+                description_template=empty_template,
             ),
             checkout=dict(
                 field_json_schemas=dict(
@@ -29,6 +33,8 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
                 children=dict(
                     build=("checkout_id",)
                 ),
+                summary_template=empty_template,
+                description_template=empty_template,
             ),
             build=dict(
                 field_json_schemas=dict(
@@ -40,6 +46,8 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
                     test=("build_id",),
                     build_test_environment=("build_id",)
                 ),
+                summary_template=empty_template,
+                description_template=empty_template,
             ),
             test_environment=dict(
                 field_json_schemas=dict(
@@ -51,6 +59,8 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
                     test=("environment_id",),
                     build_test_environment=("environment_id",),
                 ),
+                summary_template=empty_template,
+                description_template=empty_template,
             ),
             build_test_environment=dict(
                 field_json_schemas=dict(
@@ -62,6 +72,8 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
                 children=dict(
                     test=("build_id", "environment_id"),
                 ),
+                summary_template=empty_template,
+                description_template=empty_template,
             ),
             test=dict(
                 field_json_schemas=dict(
@@ -69,6 +81,8 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
                 ),
                 required_fields=set(),
                 id_fields=("id",),
+                summary_template=empty_template,
+                description_template=empty_template,
             ),
         ))
 

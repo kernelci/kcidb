@@ -1,0 +1,26 @@
+{# Miscellaneous macros #}
+
+{% macro valid_emoji(valid) %}
+    {{- "❓" if valid is none else "✅" if valid else "❌" -}}
+{% endmacro %}
+
+{% macro valid_badge(valid) %}
+    {{- valid_emoji(valid) -}}
+    {{- " UNKNOWN" if valid is none else " PASS" if valid else " FAIL" -}}
+{% endmacro %}
+
+{% macro legend() %}
+
+LEGEND
+
+    💥 ERROR    - Aborted. Test, tested code, or both might be faulty.
+    ❌ FAIL     - Failed. Tested code is likely faulty.
+    ✅ PASS     - Passed. Tested code is likely correct.
+    🆗 DONE     - Finished. Status of tested code is unknown.
+    ⏩ SKIP     - Skipped. Planned, but didn't execute.
+    ❓ UNKNOWN  - In progress, or status unknown.
+
+    🚧 WAIVED   - Waived result. Test is too new or shows known failures.
+
+    ➖ BLANK    - No data, zero.
+{%- endmacro %}

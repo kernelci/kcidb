@@ -1,0 +1,48 @@
+{# Test description template #}
+{% import "new_checkout_macros.j2" as checkout_macros %}
+{% import "new_build_macros.j2" as build_macros %}
+{% import "new_test_macros.j2" as test_macros %}
+Below is the summary of execution results Kernel CI database has recorded for
+this test. See complete report at:
+
+    https://staging.kernelci.org:3000/d/test/test?orgId=1&var-id={{ test.id | urlencode }}
+
+TEST
+
+    Status
+                {{ test_macros.waived_status_badge(test.waived, test.status) }}
+{% if test.path %}
+    Path
+                {{ test.path }}
+{% endif %}
+{% if test.build %}
+    {% if test.build.checkout %}
+    Checkout
+                {{ checkout_macros.summary(test.build.checkout) }}
+    {% endif %}
+    Build
+                {{ build_macros.summary(test.build) }}
+{% endif %}
+    Executed
+            by: {{ test.origin }}
+{% if test.environment_comment %}
+            on: {{ test.environment_comment }}
+{% endif %}
+{% if test.start_time %}
+            at: {{ test.start_time }}
+{% endif %}
+{% if test.duration %}
+            in: {{ test.duration }} seconds
+{% endif %}
+{% if test.output_files %}
+    Output files
+    {% for output_file in test.output_files %}
+                {{ output_file.name }}: {{ output_file.url }}
+    {% endfor %}
+{% endif %}
+{% if test.comment %}
+    Comment
+                {{ test.comment }}
+{% endif %}
+
+{# Force git commit hook to ignore trailing newline #}

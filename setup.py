@@ -49,6 +49,7 @@ setuptools.setup(
         "pyyaml",
         "jinja2",
         "python-dateutil",
+        "cached-property",
         "jq@git+https://github.com/spbnick/jq.py.git@1.1.2.post1",
         "kcidb-io@git+https://github.com/kernelci/kcidb-io.git@847363db6c382d2e811a4ba6da54e4c6cccee54e",  # noqa: E501
     ],
