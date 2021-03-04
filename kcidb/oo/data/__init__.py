@@ -267,7 +267,6 @@ _TEST = \
     io.schema.LATEST.json['properties']['tests']['items']['properties']
 
 # The schema of the raw object-oriented data
-# TODO Fill in actual object schemas
 SCHEMA = Schema(dict(
     revision=dict(
         field_json_schemas=dict(
