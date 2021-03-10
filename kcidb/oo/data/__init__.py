@@ -350,7 +350,6 @@ SCHEMA = Schema(dict(
             misc=_TEST['misc'],
         ),
         required_fields={'id', 'origin', 'build_id'},
-        json_schema=dict(type="object"),
         id_fields=("id",),
     ),
 ))
