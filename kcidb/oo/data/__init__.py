@@ -144,8 +144,12 @@ class Schema:
 
         Args:
             types:  A dictionary of type descriptions. Keys being type names
-                    and values being dictionaries with two entries:
-                        * "json_schema" - a JSON schema for object data,
+                    and values being dictionaries with the following entries:
+                        * "field_json_schemas" - a dictionary of field names
+                                                 and JSON schemas for their
+                                                 values (when present),
+                        * "required_fields" - a set of names of required
+                                              fields,
                         * "id_fields" - a tuple of names of the object fields
                                         identifying it globally,
                         * "children" - the optional dictionary of names of
