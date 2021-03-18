@@ -303,60 +303,36 @@ def count_main():
 def summarize_main():
     """Execute the kcidb-summarize command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-summarize - Output summaries of report objects'
-    parser = misc.ArgumentParser(description=description)
-    parser.add_argument(
-        'obj_list_name',
-        metavar='LIST',
-        choices={n for n in io.schema.LATEST.tree if n},
-        help='Name of the object list to output (%(choices)s)'
-    )
-    parser.add_argument(
-        'ids',
-        metavar='ID',
-        nargs='*',
-        default=[],
-        help='ID of the object to limit output to'
-    )
+    description = 'kcidb-summarize - Read I/O JSON data and ' \
+                  'output summaries of specified objects'
+    parser = oo.ArgumentParser(database="json", description=description)
     args = parser.parse_args()
-    for io_data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        io_data = io.schema.upgrade(io.schema.validate(io_data), copy=False)
-        oo_data = oo.from_io(io_data)
-        obj_map = oo_data.get(args.obj_list_name, {})
-        for obj_id in args.ids or obj_map:
-            if obj_id in obj_map:
-                print(obj_map[obj_id].summarize(), file=sys.stdout)
-                sys.stdout.flush()
+    oo_client = oo.Client(db.Client(args.database))
+    pattern_list = []
+    for pattern_string in args.pattern_strings:
+        pattern_list += orm.Pattern.parse(pattern_string)
+    for objs in oo_client.query(pattern_list).values():
+        for obj in objs:
+            print(obj.summarize())
+            sys.stdout.flush()
 
 
 def describe_main():
     """Execute the kcidb-describe command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-describe - Output descriptions of report objects'
-    parser = misc.ArgumentParser(description=description)
-    parser.add_argument(
-        'obj_list_name',
-        metavar='LIST',
-        choices={n for n in io.schema.LATEST.tree if n},
-        help='Name of the object list to output (%(choices)s)'
-    )
-    parser.add_argument(
-        'ids',
-        metavar='ID',
-        nargs='*',
-        default=[],
-        help='ID of the object to limit output to'
-    )
+    description = 'kcidb-describe - Read I/O JSON data and ' \
+                  'output descriptions of specified objects'
+    parser = oo.ArgumentParser(database="json", description=description)
     args = parser.parse_args()
-    for io_data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        io_data = io.schema.upgrade(io.schema.validate(io_data), copy=False)
-        oo_data = oo.from_io(io_data)
-        obj_map = oo_data.get(args.obj_list_name, {})
-        for obj_id in args.ids or obj_map:
-            if obj_id in obj_map:
-                sys.stdout.write(obj_map[obj_id].describe())
-                sys.stdout.write("\x00")
-                sys.stdout.flush()
+    oo_client = oo.Client(db.Client(args.database))
+    pattern_list = []
+    for pattern_string in args.pattern_strings:
+        pattern_list += orm.Pattern.parse(pattern_string)
+    for objs in oo_client.query(pattern_list).values():
+        for obj in objs:
+            sys.stdout.write(obj.describe())
+            sys.stdout.write("\x00")
+            sys.stdout.flush()
 
 
 def merge_main():
