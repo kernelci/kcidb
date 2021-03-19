@@ -41,7 +41,7 @@ from kcidb.oo.checkout import Node as Checkout
 from kcidb.oo.build import Node as Build
 from kcidb.oo.test import Node as Test
 from kcidb.oo.test import NodeEnvironment as TestEnvironment
-from kcidb.oo.data import Type, SCHEMA, Request, Source
+from kcidb.oo.data import Type, SCHEMA, Pattern, Source
 
 __all__ = [
     "Node", "Checkout", "Build", "Test", "TestEnvironment",
@@ -374,7 +374,7 @@ class Object:
         id = self.get_id()
         if name in self._type.parents:
             response = self._client.query(
-                Request.parse(
+                Pattern.parse(
                     ">" + self._type.name + "%<" + name + "#",
                     [[id]]
                 )
@@ -387,7 +387,7 @@ class Object:
             child_type_name = name[:-1]
             if child_type_name in self._type.children:
                 return self._client.query(
-                    Request.parse(
+                    Pattern.parse(
                         ">" + self._type.name + "%>" + child_type_name + "#",
                         [[id]]
                     )
@@ -409,24 +409,24 @@ class Client:
         assert isinstance(source, Source)
         self.source = source
 
-    def query(self, request_list):
+    def query(self, pattern_list):
         """
-        Retrieve objects specified via a request list.
+        Retrieve objects specified via a pattern list.
 
         Args:
-            request_list:   A list of object branch requests ("Request"
-                            instances) to fulfill.
+            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+                            instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
-        assert isinstance(request_list, list)
-        assert all(isinstance(r, Request) for r in request_list)
+        assert isinstance(pattern_list, list)
+        assert all(isinstance(r, Pattern) for r in pattern_list)
         return {
             obj_type_name: [
                 Object(self, SCHEMA.types[obj_type_name], obj_data)
                 for obj_data in obj_data_list
             ]
             for obj_type_name, obj_data_list in
-            self.source.oo_query(request_list).items()
+            self.source.oo_query(pattern_list).items()
         }

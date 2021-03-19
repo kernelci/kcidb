@@ -338,21 +338,21 @@ class Driver(AbstractDriver):
             yield data
 
     @staticmethod
-    def _oo_request_render(request):
+    def _oo_query_render(pattern):
         """
-        Render a request for raw OO data into a query.
+        Render a pattern matching raw OO data into a query.
 
         Args:
-            request:    The request (instance of kcidb.oo.data.Request) to
+            pattern:    The pattern (instance of kcidb.oo.data.Pattern) to
                         render.
 
         Returns:
             The SQL query string and the query parameters.
         """
-        assert isinstance(request, kcidb.oo.data.Request)
-        obj_type = request.obj_type
+        assert isinstance(pattern, kcidb.oo.data.Pattern)
+        obj_type = pattern.obj_type
         type_query_string = schema.OO_QUERIES[obj_type.name]
-        if request.obj_id_list:
+        if pattern.obj_id_list:
             obj_id_fields = obj_type.id_fields
             query_string = "SELECT obj.* FROM (\n" + \
                 textwrap.indent(type_query_string, " " * 4) + "\n" + \
@@ -371,22 +371,22 @@ class Driver(AbstractDriver):
                                 for c, v in zip(obj_id_fields, obj_id)
                             )
                         )
-                        for obj_id in request.obj_id_list
+                        for obj_id in pattern.obj_id_list
                     ]
                 )
             ]
         else:
             query_string = type_query_string
-            if request.obj_id_list is not None:
+            if pattern.obj_id_list is not None:
                 # Workaround empty array parameters not having element type
                 query_string += " LIMIT 0"
             query_parameters = []
 
-        if request.base:
+        if pattern.base:
             base_query_string, base_query_parameters = \
-                Driver._oo_request_render(request.base)
-            base_obj_type = request.base.obj_type
-            if request.child:
+                Driver._oo_query_render(pattern.base)
+            base_obj_type = pattern.base.obj_type
+            if pattern.child:
                 column_pairs = zip(
                     base_obj_type.children[obj_type.name].ref_fields,
                     base_obj_type.id_fields
@@ -409,33 +409,33 @@ class Driver(AbstractDriver):
 
         return query_string, query_parameters
 
-    def oo_query(self, request_list):
+    def oo_query(self, pattern_list):
         """
         Query raw object-oriented data from the database.
 
         Args:
-            request_list:   A list of object branch requests
-                            ("kcidb.oo.data.Request" instances) to fulfill.
+            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+                            instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
-        assert isinstance(request_list, list)
-        assert all(isinstance(r, kcidb.oo.data.Request) for r in request_list)
+        assert isinstance(pattern_list, list)
+        assert all(isinstance(r, kcidb.oo.data.Pattern) for r in pattern_list)
 
         # Render all queries for each type
         obj_type_queries = {}
         for obj_type_name in kcidb.oo.data.SCHEMA.types:
-            for request in request_list:
-                # TODO: Avoid adding the same requests multiple times
-                while request:
-                    if request.load and \
-                       request.obj_type.name == obj_type_name:
-                        if request.obj_type not in obj_type_queries:
-                            obj_type_queries[request.obj_type] = []
-                        obj_type_queries[request.obj_type]. \
-                            append(Driver._oo_request_render(request))
-                    request = request.base
+            for pattern in pattern_list:
+                # TODO: Avoid adding the same patterns multiple times
+                while pattern:
+                    if pattern.match and \
+                       pattern.obj_type.name == obj_type_name:
+                        if pattern.obj_type not in obj_type_queries:
+                            obj_type_queries[pattern.obj_type] = []
+                        obj_type_queries[pattern.obj_type]. \
+                            append(Driver._oo_query_render(pattern))
+                    pattern = pattern.base
 
         # Execute all the queries
         objs = {}
