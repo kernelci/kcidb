@@ -217,21 +217,21 @@ class Client(kcidb.oo.data.Source):
         except StopIteration:
             return io.new()
 
-    def oo_query(self, request_list):
+    def oo_query(self, pattern_list):
         """
         Query raw object-oriented data from the database.
 
         Args:
-            request_list:   A list of object branch requests
-                            ("kcidb.oo.data.Request" instances) to fulfill.
+            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+                            instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
-        assert isinstance(request_list, list)
-        assert all(isinstance(r, kcidb.oo.data.Request) for r in request_list)
-        return self.driver.oo_query(request_list)
+        assert isinstance(pattern_list, list)
+        assert all(isinstance(r, kcidb.oo.data.Pattern) for r in pattern_list)
+        return self.driver.oo_query(pattern_list)
 
     def load(self, data):
         """
@@ -464,15 +464,16 @@ def oo_query_main():
         "Kernel CI report database"
     parser = OutputArgumentParser(description=description)
     parser.add_argument(
-        'request_strings',
+        'pattern_strings',
         nargs='*',
         default=[],
-        metavar='REQUEST',
-        help='Object request. See documentation with --request-help.'
+        metavar='PATTERN',
+        help='Pattern matching objects to fetch. '
+             'See pattern documentation with --pattern-help.'
     )
 
-    class RequestHelpAction(argparse.Action):
-        """Argparse action outputting request string help and exiting."""
+    class PatternHelpAction(argparse.Action):
+        """Argparse action outputting pattern string help and exiting."""
         def __init__(self,
                      option_strings,
                      dest=argparse.SUPPRESS,
@@ -487,7 +488,7 @@ def oo_query_main():
 
         def __call__(self, parser, namespace, values, option_string=None):
             print(
-                kcidb.oo.data.Request.STRING_DOC +
+                kcidb.oo.data.Pattern.STRING_DOC +
                 "\n" +
                 "NOTE: Specifying object ID lists separately is not "
                 "supported using\n"
@@ -497,17 +498,17 @@ def oo_query_main():
             parser.exit()
 
     parser.add_argument(
-        '--request-help',
-        action=RequestHelpAction,
-        help='Print request string documentation and exit.'
+        '--pattern-help',
+        action=PatternHelpAction,
+        help='Print pattern string documentation and exit.'
     )
     args = parser.parse_args()
     client = Client(args.database)
-    request_list = []
-    for request_string in args.request_strings:
-        request_list += kcidb.oo.data.Request.parse(request_string)
+    pattern_list = []
+    for pattern_string in args.pattern_strings:
+        pattern_list += kcidb.oo.data.Pattern.parse(pattern_string)
     kcidb.misc.json_dump(
-        client.oo_query(request_list),
+        client.oo_query(pattern_list),
         sys.stdout, indent=args.indent, seq=args.seq
     )
 

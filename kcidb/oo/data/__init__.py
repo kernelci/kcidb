@@ -379,91 +379,91 @@ SCHEMA = Schema(dict(
 
 
 # A (verbose) regular expression pattern matching an unquoted ID field
-_REQUEST_STRING_ID_FIELD_UNQUOTED_PATTERN = """
+_PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN = """
     [\x30-\x39\x41-\x5a\x61-\x7a_:/.?%+-]+
 """
 
-_REQUEST_STRING_ID_FIELD_UNQUOTED_RE = re.compile(
-    _REQUEST_STRING_ID_FIELD_UNQUOTED_PATTERN,
+_PATTERN_STRING_ID_FIELD_UNQUOTED_RE = re.compile(
+    _PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN,
     re.ASCII | re.VERBOSE
 )
 
 # A (verbose) regular expression pattern matching characters which can
 # appear unescaped in a quoted ID field
-_REQUEST_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN = """
+_PATTERN_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN = """
     # Anything printable except doublequote/backslash
     [\x5d-\x7e\x20-\x21\x23-\x5b]
 """
 
 # A (verbose) regular expression pattern matching characters which must be
 # backslash-escaped when appearing in a quoted ID field
-_REQUEST_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN = """
+_PATTERN_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN = """
     # Doublequote/backslash
     ["\\\\]
 """
 
 # A (verbose) regular expression pattern matching a quoted ID field
-_REQUEST_STRING_ID_FIELD_QUOTED_PATTERN = f"""
+_PATTERN_STRING_ID_FIELD_QUOTED_PATTERN = f"""
     "
         (?:
-            {_REQUEST_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN} |
-            \\\\ {_REQUEST_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN}
+            {_PATTERN_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN} |
+            \\\\ {_PATTERN_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN}
         )*
     "
 """
 
 # A (verbose) regular expression pattern matching an ID field
-_REQUEST_STRING_ID_FIELD_PATTERN = f"""
+_PATTERN_STRING_ID_FIELD_PATTERN = f"""
     (?:
-        {_REQUEST_STRING_ID_FIELD_UNQUOTED_PATTERN} |
-        {_REQUEST_STRING_ID_FIELD_QUOTED_PATTERN}
+        {_PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN} |
+        {_PATTERN_STRING_ID_FIELD_QUOTED_PATTERN}
     )
 """
 
 # A (verbose) regular expression pattern matching an ID (ID field list)
-_REQUEST_STRING_ID_PATTERN = f"""
-    {_REQUEST_STRING_ID_FIELD_PATTERN}
+_PATTERN_STRING_ID_PATTERN = f"""
+    {_PATTERN_STRING_ID_FIELD_PATTERN}
     (?:
         \\s*
         ,
         \\s*
-        {_REQUEST_STRING_ID_FIELD_PATTERN}
+        {_PATTERN_STRING_ID_FIELD_PATTERN}
     )*
 """
 
 # A (verbose) regular expression pattern matching an ID list
-_REQUEST_STRING_ID_LIST_PATTERN = f"""
-    {_REQUEST_STRING_ID_PATTERN}
+_PATTERN_STRING_ID_LIST_PATTERN = f"""
+    {_PATTERN_STRING_ID_PATTERN}
     (?:
         \\s*
         ;
         \\s*
-        {_REQUEST_STRING_ID_PATTERN}
+        {_PATTERN_STRING_ID_PATTERN}
     )*
 """
 
 # A (verbose) regular expression pattern matching an ID list spec
-_REQUEST_STRING_SPEC_ID_LIST_PATTERN = f"""
+_PATTERN_STRING_SPEC_ID_LIST_PATTERN = f"""
     \\[
         \\s*
-        {_REQUEST_STRING_ID_LIST_PATTERN}
+        {_PATTERN_STRING_ID_LIST_PATTERN}
         \\s*
     \\]
 """
 
 # A (verbose) regular expression pattern matching a spec
-_REQUEST_STRING_SPEC_PATTERN = f"""
+_PATTERN_STRING_SPEC_PATTERN = f"""
     (?:
         # ID list placeholder
         % |
         # Inline ID list
-        {_REQUEST_STRING_SPEC_ID_LIST_PATTERN}
+        {_PATTERN_STRING_SPEC_ID_LIST_PATTERN}
     )
 """
 
-# A (verbose) regular expression pattern matching a "request" part of the
-# request string. Matching group names correspond to component ABNF rules.
-_REQUEST_STRING_PATTERN = f"""
+# A (verbose) regular expression pattern matching a "pattern" part of the
+# pattern string. Matching group names correspond to component ABNF rules.
+_PATTERN_STRING_PATTERN = f"""
     \\s*
     # Relation
     (?P<relation>
@@ -480,47 +480,47 @@ _REQUEST_STRING_PATTERN = f"""
     \\s*
     # ID list specification
     (?P<spec>
-        {_REQUEST_STRING_SPEC_PATTERN}
+        {_PATTERN_STRING_SPEC_PATTERN}
     )?
     \\s*
-    # Loading scope
-    (?P<load>
+    # Matching scope
+    (?P<match>
         [#$]
     )?
     \\s*
 """
 
-# A regular expression matching a "request" part of the request string
+# A regular expression matching a "pattern" part of the pattern string
 # Matching group names correspond to component ABNF rules.
-_REQUEST_STRING_RE = re.compile(
-    _REQUEST_STRING_PATTERN,
+_PATTERN_STRING_RE = re.compile(
+    _PATTERN_STRING_PATTERN,
     re.ASCII | re.VERBOSE
 )
 
 
-class Request:
-    """A specification of a branch of objects to query from a data source"""
+class Pattern:
+    """A pattern matching objects in a data source"""
 
     # No, it's OK, pylint: disable=too-many-arguments
-    def __init__(self, base, child, obj_type, obj_id_list, load):
+    def __init__(self, base, child, obj_type, obj_id_list, match):
         """
-        Initialize an object branch request.
+        Initialize an object pattern.
 
         Args:
-            base:           The request for objects this request is to be
-                            based on, or None, meaning the request is based on
+            base:           The pattern for objects this pattern is to be
+                            based on, or None, meaning the pattern is based on
                             the root object.
-            child:          True if this is a request for a base's child type,
+            child:          True if this is a pattern for a base's child type,
                             False if it's for a parent type.
-            obj_type:       The type (kcidb.oo.data.Type) of requested objects.
+            obj_type:       The type (kcidb.oo.data.Type) of objects referred
+                            to by this pattern.
             obj_id_list:    The list of IDs of the objects to limit the
-                            request to, or None to not limit the objects by
+                            pattern to, or None to not limit the objects by
                             IDs.
-            load:           True, if the objects should be loaded and
-                            returned. False, if they should only be used as a
-                            reference.
+            match:          True if the objects referenced by this pattern
+                            should be matched, false if not.
         """
-        assert base is None or isinstance(base, Request)
+        assert base is None or isinstance(base, Pattern)
         assert isinstance(child, bool)
         assert isinstance(obj_type, Type)
         obj_id_fields = obj_type.id_fields
@@ -531,7 +531,7 @@ class Request:
                     all(isinstance(part, (str, type(None))) for part in obj_id)
                     for obj_id in obj_id_list
                )
-        assert isinstance(load, bool)
+        assert isinstance(match, bool)
         assert base is not None or child
         assert base is None or (
             (
@@ -548,21 +548,21 @@ class Request:
         self.child = child
         self.obj_type = obj_type
         self.obj_id_list = None if obj_id_list is None else obj_id_list.copy()
-        self.load = load
+        self.match = match
 
     def __eq__(self, other):
         return \
-            isinstance(other, Request) and \
+            isinstance(other, Pattern) and \
             self.base == other.base and \
             self.child == other.child and \
             self.obj_type == other.obj_type and \
             self.obj_id_list == other.obj_id_list and \
-            self.load == other.load
+            self.match == other.match
 
     @staticmethod
     def _format_id_field(id_field):
         """
-        Format an ID field for a string representation of a request.
+        Format an ID field for a string representation of a pattern.
 
         Args:
             id_field:   The ID field to format.
@@ -571,11 +571,11 @@ class Request:
             The formatted (quoted or unquoted) ID field.
         """
         # If we can leave the field unquoted
-        if re.fullmatch(id_field, _REQUEST_STRING_ID_FIELD_UNQUOTED_PATTERN):
+        if re.fullmatch(id_field, _PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN):
             return id_field
         part_re = re.compile(f"""
-            ({_REQUEST_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN}*) |
-            ({_REQUEST_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN})
+            ({_PATTERN_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN}*) |
+            ({_PATTERN_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN})
         """, re.ASCII | re.VERBOSE)
         parts = []
         pos = 0
@@ -589,7 +589,7 @@ class Request:
                 parts += ["\\", esc]
             elif pos < len(id_field):
                 raise Exception(
-                    f"ID field cannot be represented in a request string: "
+                    f"ID field cannot be represented in a pattern string: "
                     f"{id_field}"
                 )
             else:
@@ -599,7 +599,7 @@ class Request:
     @staticmethod
     def _format_id_list_spec(obj_id_list):
         """
-        Format an ID list spec for a string representation of a request.
+        Format an ID list spec for a string representation of a pattern.
 
         Args:
             obj_id_list:    The list of IDs to format as a spec,
@@ -613,7 +613,7 @@ class Request:
             return ""
         return "[" + "; ".join(
             ", ".join(
-                Request._format_id_field(obj_id_field)
+                Pattern._format_id_field(obj_id_field)
                 for obj_id_field in obj_id
             )
             for obj_id in obj_id_list
@@ -625,163 +625,165 @@ class Request:
             string += repr(self.base) + " "
         string += "> " if self.child else "< "
         string += self.obj_type.name
-        string += Request._format_id_list_spec(self.obj_id_list)
-        if self.load:
+        string += Pattern._format_id_list_spec(self.obj_id_list)
+        if self.match:
             string += "#"
         return string
 
     @staticmethod
-    def _expand_parents(schema, base_list, obj_type_expr, obj_id_list, load):
+    def _expand_parents(schema, base_list, obj_type_expr, obj_id_list, match):
         """
-        Expand a single level of parents into a list of requests, for a parsed
-        request specification.
+        Expand a single level of parents into a list of patterns, for a parsed
+        pattern specification.
 
         Args:
             schema:         An object type schema to use.
-            base_list:      The list of requests to base created requests on.
-                            Empty list means requests shouldn't be based on
+            base_list:      The list of patterns to base created patterns on.
+                            Empty list means patterns shouldn't be based on
                             anything (based on the "root" type).
             obj_type_expr:  Object type expression, one of:
                             "*" - all parent types,
                             or a name of the specific parent type.
-            obj_id_list:    List of object IDs to limit the request to,
-                            or None to not limit the request.
-            load:           True, if expanded requests should be marked for
-                            loading, False if not.
+            obj_id_list:    List of object IDs to limit the pattern to,
+                            or None to not limit the pattern.
+            match:          True, if expanded patterns should be marked for
+                            matching, False if not.
 
         Returns:
-            A list of requests expanded from the specification, referencing
+            A list of patterns expanded from the specification, referencing
             the supplied bases.
         """
         assert isinstance(schema, Schema)
         assert isinstance(base_list, list)
-        assert all(isinstance(base, Request) for base in base_list)
+        assert all(isinstance(base, Pattern) for base in base_list)
         assert isinstance(obj_type_expr, str)
         assert obj_id_list is None or \
             (isinstance(obj_id_list, list) and
              all(isinstance(obj_id, tuple) and
                  all(isinstance(part, str) for part in obj_id)
                  for obj_id in obj_id_list))
-        assert isinstance(load, bool)
+        assert isinstance(match, bool)
 
-        request_list = []
+        pattern_list = []
         # For each base
         for base in base_list:
-            base_request_list = []
+            base_pattern_list = []
             # For each base's parent relation
             for obj_type_name, relation in base.obj_type.parents.items():
                 if obj_type_expr in ("*", obj_type_name):
-                    base_request_list.append(
-                        Request(base, False, relation.parent,
-                                obj_id_list, load)
+                    base_pattern_list.append(
+                        Pattern(base, False, relation.parent,
+                                obj_id_list, match)
                     )
             # If couldn't find any parents
-            if not base_request_list:
+            if not base_pattern_list:
                 if obj_type_expr == "*":
-                    base_request_list.append(base)
+                    base_pattern_list.append(base)
                 else:
                     raise Exception(
                         f"Cannot find parent type {obj_type_expr!r}"
                     )
-            request_list += base_request_list
-        return request_list
+            pattern_list += base_pattern_list
+        return pattern_list
 
     @staticmethod
-    def _expand_children(schema, base_list, obj_type_expr, obj_id_list, load):
+    def _expand_children(schema, base_list, obj_type_expr, obj_id_list, match):
         """
-        Expand a single level of children into a list of requests, for a parsed
-        request specification.
+        Expand a single level of children into a list of patterns, for a parsed
+        pattern specification.
 
         Args:
             schema:         An object type schema to use.
-            base_list:      The list of requests to base created requests on.
-                            Empty list means requests shouldn't be based on
+            base_list:      The list of patterns to base created patterns on.
+                            Empty list means patterns shouldn't be based on
                             anything (based on the "root" type).
             obj_type_expr:  Object type expression, one of:
                             "*" - all children types,
                             or a name of the specific child type.
-            obj_id_list:    List of object IDs to limit the request to,
-                            or None to not limit the request.
-            load:           True, if expanded requests should be marked for
-                            loading, False if not.
+            obj_id_list:    List of object IDs to limit the pattern to,
+                            or None to not limit the pattern.
+            match:          True, if expanded patterns should be marked for
+                            matching, False if not.
 
         Returns:
-            A list of requests expanded from the specification, referencing
+            A list of patterns expanded from the specification, referencing
             the supplied bases.
         """
         assert isinstance(schema, Schema)
         assert isinstance(base_list, list)
-        assert all(isinstance(base, Request) for base in base_list)
+        assert all(isinstance(base, Pattern) for base in base_list)
         assert isinstance(obj_type_expr, str)
         assert obj_id_list is None or \
             (isinstance(obj_id_list, list) and
              all(isinstance(obj_id, tuple) and
                  all(isinstance(part, (str, type(None))) for part in obj_id)
                  for obj_id in obj_id_list))
-        assert isinstance(load, bool)
+        assert isinstance(match, bool)
 
-        request_list = []
+        pattern_list = []
         # If we are based on some objects
         if base_list:
             # For each base
             for base in base_list:
-                # Start with an empty per-base request list
-                base_request_list = []
+                # Start with an empty per-base pattern list
+                base_pattern_list = []
                 # For each base's child relation
                 for obj_type_name, relation in base.obj_type.children.items():
                     if obj_type_expr in ("*", obj_type_name):
-                        base_request_list.append(
-                            Request(base, True, relation.child,
-                                    obj_id_list, load)
+                        base_pattern_list.append(
+                            Pattern(base, True, relation.child,
+                                    obj_id_list, match)
                         )
                 # If couldn't find any children
-                if not base_request_list:
+                if not base_pattern_list:
                     if obj_type_expr == "*":
-                        base_request_list.append(base)
+                        base_pattern_list.append(base)
                     else:
                         raise Exception(
                             f"Cannot find child type {obj_type_expr!r}"
                         )
-                request_list += base_request_list
+                pattern_list += base_pattern_list
         # Else we're not based on anything (based on root)
         else:
             for obj_type_name, obj_type in schema.types.items():
                 if obj_type_expr in ("*", obj_type_name):
-                    request_list.append(
-                        Request(None, True, obj_type, obj_id_list, load)
+                    pattern_list.append(
+                        Pattern(None, True, obj_type, obj_id_list, match)
                     )
-            if obj_type_expr != "*" and not request_list:
+            if obj_type_expr != "*" and not pattern_list:
                 raise Exception(
                     f"Cannot find type {obj_type_expr!r}"
                 )
-        return request_list
+        return pattern_list
 
     @staticmethod
-    def _expand(schema, base_list, child, obj_type_expr, obj_id_list, load):
+    def _expand(schema, base_list, child, obj_type_expr, obj_id_list,
+                match_spec):
         """
-        Expand a parsed request specification into a list of requests.
+        Expand a parsed pattern specification into a list of patterns.
 
         Args:
             schema:         An object type schema to use.
-            base_list:      The list of requests to base created requests
-                            on. Empty list means requests shouldn't be
+            base_list:      The list of patterns to base created patterns
+                            on. Empty list means patterns shouldn't be
                             based on anything (based on the "root" object).
-            child:          True if the created requests are for children
+            child:          True if the created patterns are for children
                             of the specified bases. False for parents.
             obj_type_expr:  Object type expression, one of:
                             "*" - all children/parents,
                             or a name of the specific type.
-            obj_id_list:    List of object IDs to limit the request to,
-                            or None to not limit the request.
-            load:           True, if expanded requests should be marked
-                            for loading, False if not.
+            obj_id_list:    List of object IDs to limit the pattern to,
+                            or None to not limit the pattern.
+            match_spec:     The matching specification string ("#", or "$"),
+                            or None, if expanded patterns shouldn't be marked
+                            for matching.
 
         Returns:
-            A list of requests expanded from the specification, referencing
+            A list of patterns expanded from the specification, referencing
             the supplied bases.
         """
         assert isinstance(base_list, list)
-        assert all(isinstance(base, Request) for base in base_list)
+        assert all(isinstance(base, Pattern) for base in base_list)
         assert isinstance(child, bool)
         assert isinstance(obj_type_expr, str)
         assert obj_id_list is None or \
@@ -789,38 +791,38 @@ class Request:
              all(isinstance(obj_id, tuple) and
                  all(isinstance(part, (str, type(None))) for part in obj_id)
                  for obj_id in obj_id_list))
-        assert load in (None, "#", "$")
+        assert match_spec in (None, "#", "$")
 
-        # Start with an empty request list
-        request_list = []
+        # Start with an empty pattern list
+        pattern_list = []
 
         # While we can expand
         while True:
             if child:
-                request_list = Request._expand_children(
+                pattern_list = Pattern._expand_children(
                     schema, base_list, obj_type_expr,
-                    obj_id_list, load == "#")
+                    obj_id_list, match_spec == "#")
             else:
-                request_list = Request._expand_parents(
+                pattern_list = Pattern._expand_parents(
                     schema, base_list, obj_type_expr,
-                    obj_id_list, load == "#")
+                    obj_id_list, match_spec == "#")
             # If we are done expanding
-            if not obj_type_expr == "*" or request_list == base_list:
+            if not obj_type_expr == "*" or pattern_list == base_list:
                 break
             # Rebase for next expansion step
-            base_list = request_list
+            base_list = pattern_list
 
-        # If asked to load only the furthest children/objects
-        if load == "$":
-            for request in request_list:
-                request.load = True
+        # If asked to match only the furthest children/objects
+        if match_spec == "$":
+            for pattern in pattern_list:
+                pattern.match = True
 
-        return request_list
+        return pattern_list
 
     @staticmethod
     def _parse_id(string, pos):
         """
-        Parse an ID string from a request.
+        Parse an ID string from a pattern.
 
         Args:
             string: The ID string to parse.
@@ -833,7 +835,7 @@ class Request:
             A tuple containing parsed ID fields, and the stopping position at
             the end of whitespace following the ID.
         """
-        assert LIGHT_ASSERTS or re.match(_REQUEST_STRING_ID_PATTERN,
+        assert LIGHT_ASSERTS or re.match(_PATTERN_STRING_ID_PATTERN,
                                          string[pos:],
                                          re.ASCII | re.VERBOSE)
         id_fields = []
@@ -856,7 +858,7 @@ class Request:
                 id_field = "".join(id_field_chars)
             # Else it's an unquoted field
             else:
-                match = _REQUEST_STRING_ID_FIELD_UNQUOTED_RE.match(
+                match = _PATTERN_STRING_ID_FIELD_UNQUOTED_RE.match(
                             string, pos)
                 pos = match.end()
                 id_field = match.group(0)
@@ -879,7 +881,7 @@ class Request:
     @staticmethod
     def _parse_id_list(string):
         """
-        Parse an ID list from a request string, stopping at a closing bracket.
+        Parse an ID list from a pattern string, stopping at a closing bracket.
 
         Args:
             string: The ID list string to parse.
@@ -888,7 +890,7 @@ class Request:
         Returns:
             A list containing ID field tuples parsed from the string.
         """
-        assert LIGHT_ASSERTS or re.fullmatch(_REQUEST_STRING_ID_LIST_PATTERN,
+        assert LIGHT_ASSERTS or re.fullmatch(_PATTERN_STRING_ID_LIST_PATTERN,
                                              string, re.ASCII | re.VERBOSE)
         # NOTE: Not handling failures here, we're expecting a valid string
         id_list = []
@@ -896,7 +898,7 @@ class Request:
         while True:
             # We like our "id", pylint: disable=invalid-name
             # Parse next ID
-            id, pos = Request._parse_id(string, pos)
+            id, pos = Pattern._parse_id(string, pos)
             id_list.append(id)
             # Stop, if we ran out of IDs
             if pos >= len(string) or string[pos] != ';':
@@ -911,22 +913,22 @@ class Request:
     @staticmethod
     def _parse_spec(string, obj_id_list_list):
         """
-        Parse an optional ID list specification from a request string,
+        Parse an optional ID list specification from a pattern string,
         possibly consuming an element from the supplied object ID list list.
 
         Args:
             string:             The ID list specification string to parse,
-                                or None, meaning the request had no ID list
+                                or None, meaning the pattern had no ID list
                                 specification.
             obj_id_list_list:   The list of object ID lists to retrieve ID
                                 lists for placeholders from, or None, meaning
-                                no list was supplied with the request string.
+                                no list was supplied with the pattern string.
                                 Not modified.
 
         Returns:
             Two items:
                 * the retrieved object ID list, or None, if no specification
-                  was provided with the request;
+                  was provided with the pattern;
                 * the list of object ID lists, possibly with the first element
                   removed, if it was consumed by a placeholder.
 
@@ -937,7 +939,7 @@ class Request:
         assert string is None or (
             isinstance(string, str) and (
                 LIGHT_ASSERTS or
-                re.fullmatch(_REQUEST_STRING_SPEC_PATTERN,
+                re.fullmatch(_PATTERN_STRING_SPEC_PATTERN,
                              string, re.ASCII | re.VERBOSE)
             )
         )
@@ -955,13 +957,13 @@ class Request:
             except IndexError:
                 raise Exception("Not enough ID lists specified") from None
         # Parse the ID list inside brackets
-        return Request._parse_id_list(string[1:-1].strip()), obj_id_list_list
+        return Pattern._parse_id_list(string[1:-1].strip()), obj_id_list_list
 
     STRING_DOC = textwrap.dedent("""\
-        The request string is a series of request specifications, each
+        The pattern string is a series of pattern specifications, each
         consisting of a relation character, followed by object type
         specification, followed by the optional ID list specification,
-        followed by the optional loading specification. It could be described
+        followed by the optional matching specification. It could be described
         using ABNF:
 
         whitespace = %x09-0d / %x20 ; Whitespace characters
@@ -994,77 +996,77 @@ class Request:
         spec = "%" /        ; ID list placeholder.
                             ; Consumes one ID list from the
                             ; separately-supplied list of ID lists to limit
-                            ; objects of the types traversed by this request
+                            ; objects of the types traversed by this pattern
                             ; specification. Each object type gets the same ID
                             ; list. Not allowed, if the list of ID lists isn't
                             ; supplied.
                "[" *whitespace id_list *whitespace "]"
                             ; Inline ID list
-        load = "#" /        ; Load and return objects of all types traversed
-                            ; by this request specification.
-               "$"          ; Load and return objects of only the furthest
-                            ; types traversed by this request specification.
-        request = *whitespace relation *whitespace type
-                  [*whitespace spec] [*whitespace load]
-        request_string = 1*request *whitespace
+        match = "#" /       ; Match objects of all types traversed by this
+                            ; pattern specification.
+                "$"         ; Match objects of only the furthest types
+                            ; traversed by this pattern specification.
+        pattern = *whitespace relation *whitespace type
+                  [*whitespace spec] [*whitespace match]
+        pattern_string = 1*pattern *whitespace
 
         Examples:
-            >build%#            Load builds with IDs from the first of a
+            >build%#            Match builds with IDs from the first of a
                                 separately-specified list of ID lists (if
                                 supplied).
             >build%$            The same.
             >build[redhat:1077837]
-                                Load a build with ID "redhat:1077837".
-            >checkout%>build#   Load builds of checkouts with IDs from
+                                Match a build with ID "redhat:1077837".
+            >checkout%>build#   Match builds of checkouts with IDs from
                                 the first element of separately-specified list
                                 of ID lists (if supplied).
-            >test%<build#       Load builds of tests with IDs from the first
+            >test%<build#       Match builds of tests with IDs from the first
                                 element of separately-specified list of ID
                                 lists (if supplied).
             >test[redhat:1077834_0; redhat:1077834_1]<build#
-                                Load builds of tests with IDs
+                                Match builds of tests with IDs
                                 "redhat:1077834_0" and "redhat:1077834_1".
-            >test%<*#           Load tests with IDs from the first element of
+            >test%<*#           Match tests with IDs from the first element of
                                 separately-specified list of ID lists (if
                                 supplied), and all their parents.
-            >test%<*$           Load only the furthest (the ultimate) parents
+            >test%<*$           Match only the furthest (the ultimate) parents
                                 of tests with IDs from the optional ID list
                                 list, or tests themselves, if they have no
                                 parent types.
-            >revision%#>*#      Load revisions with IDs from the optional ID
+            >revision%#>*#      Match revisions with IDs from the optional ID
                                 list list, and all their children, if any.
             >revision[c763deac7ff, 932e2d61add]#>*#
-                                Load the revision with ID
+                                Match the revision with ID
                                 (c763deac7ff, 932e2d61add),
                                 and all its children, if any.
-            >test%<*$>*#        Load the root objects containing tests with
+            >test%<*$>*#        Match the root objects containing tests with
                                 the IDs from the optional ID list list, along
                                 with all their children.
-            >*#                 Load everything in the database.
-            >*$                 Load objects of all childless types.
+            >*#                 Match everything in the database.
+            >*$                 Match objects of all childless types.
     """)
 
     @staticmethod
     def parse(string, obj_id_list_list=None, schema=None):
         """
-        Parse a request string and its parameter IDs into a chain of Request
-        objects. See kcidb.oo.data.Request.STRING_DOC for documentation on
-        request strings.
+        Parse a pattern string and its parameter IDs into a chain of Pattern
+        objects. See kcidb.oo.data.Pattern.STRING_DOC for documentation on
+        pattern strings.
 
         Args:
-            string:             The request string.
+            string:             The pattern string.
             obj_id_list_list:   A list of ID lists to use to filter the
-                                requested objects with, in the order specified
-                                in the request string. Each ID is a tuple
-                                with ID column value strings. If not
+                                referenced objects with, in the order
+                                specified in the pattern string. Each ID is a
+                                tuple with ID column value strings. If not
                                 specified, or specified as None, ID list
-                                placeholders are not allowed in the request
+                                placeholders are not allowed in the pattern
                                 string.
             schema:             An object type schema to use, or None to use
                                 kcidb.oo.data.SCHEMA.
 
         Returns:
-            A list of trailing request objects parsed from the request string.
+            A list of trailing pattern objects parsed from the pattern string.
         """
         assert isinstance(string, str)
         assert obj_id_list_list is None or (
@@ -1079,50 +1081,50 @@ class Request:
         if schema is None:
             schema = SCHEMA
 
-        request_list = []
+        pattern_list = []
         pos = 0
         while pos < len(string):
-            match = _REQUEST_STRING_RE.match(string, pos)
+            match = _PATTERN_STRING_RE.match(string, pos)
             if not match:
-                raise Exception(f"Invalid request string {string!r} "
+                raise Exception(f"Invalid pattern string {string!r} "
                                 f"at position {pos}: {string[pos:]!r}")
-            relation, obj_type_expr, spec, load = \
-                match.group("relation", "type", "spec", "load")
-            obj_id_list, obj_id_list_list = Request._parse_spec(
+            relation, obj_type_expr, spec, match_spec = \
+                match.group("relation", "type", "spec", "match")
+            obj_id_list, obj_id_list_list = Pattern._parse_spec(
                 spec, obj_id_list_list
             )
             try:
-                request_list = Request._expand(
-                    schema, request_list, relation == ">",
-                    obj_type_expr, obj_id_list, load
+                pattern_list = Pattern._expand(
+                    schema, pattern_list, relation == ">",
+                    obj_type_expr, obj_id_list, match_spec
                 )
             except Exception as exc:
                 raise Exception(
-                    f"Failed expanding request specification "
+                    f"Failed expanding pattern specification "
                     f"at position {pos}: {string[pos:]!r}"
                 ) from exc
             pos = match.end()
         if obj_id_list_list:
             raise Exception(
-                f"Too many ID lists specified for request {string!r}"
+                f"Too many ID lists specified for pattern {string!r}"
             )
-        return request_list
+        return pattern_list
 
 
 class Source(ABC):
     """An abstract source of raw object-oriented (OO) data"""
 
     @abstractmethod
-    def oo_query(self, request_list):
+    def oo_query(self, pattern_list):
         """
-        Retrieve raw data for objects specified via a request list.
+        Retrieve raw data for objects specified via a pattern list.
 
         Args:
-            request_list:   A list of object branch requests ("Request"
-                            instances) to fulfill.
+            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+                            instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             raw data of the corresponding type.
         """
-        assert isinstance(request_list, list)
-        assert all(isinstance(r, Request) for r in request_list)
+        assert isinstance(pattern_list, list)
+        assert all(isinstance(r, Pattern) for r in pattern_list)

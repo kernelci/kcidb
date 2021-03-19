@@ -3,11 +3,11 @@
 import kcidb
 
 
-class KCIDBOODataRequest(kcidb.unittest.TestCase):
-    """Test case for the Request class"""
+class KCIDBOODataPattern(kcidb.unittest.TestCase):
+    """Test case for the Pattern class"""
 
     def test_parse(self):
-        """Check request parsing works"""
+        """Check pattern parsing works"""
         schema = kcidb.oo.data.Schema(dict(
             revision=dict(
                 field_json_schemas=dict(
@@ -73,42 +73,42 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
         ))
 
         def parse(string, obj_id_list_list=None):
-            return kcidb.oo.data.Request.parse(string, obj_id_list_list,
+            return kcidb.oo.data.Pattern.parse(string, obj_id_list_list,
                                                schema=schema)
 
-        def request(base, child, obj_type_name, obj_id_list, load):
-            return kcidb.oo.data.Request(base, child,
+        def pattern(base, child, obj_type_name, obj_id_list, match):
+            return kcidb.oo.data.Pattern(base, child,
                                          schema.types[obj_type_name],
-                                         obj_id_list, load)
+                                         obj_id_list, match)
 
         self.assertEqual(parse(""), [])
         self.assertEqual(parse("<*"), [])
         self.assertEqual(parse(">revision"),
-                         [request(None, True, "revision", None, False)])
+                         [pattern(None, True, "revision", None, False)])
         self.assertEqual(parse(">checkout"),
-                         [request(None, True, "checkout", None, False)])
+                         [pattern(None, True, "checkout", None, False)])
         self.assertEqual(parse(">build"),
-                         [request(None, True, "build", None, False)])
+                         [pattern(None, True, "build", None, False)])
         self.assertEqual(parse(">build_test_environment"),
-                         [request(None, True, "build_test_environment",
+                         [pattern(None, True, "build_test_environment",
                                   None, False)])
         self.assertEqual(parse(">test_environment"),
-                         [request(None, True, "test_environment",
+                         [pattern(None, True, "test_environment",
                                   None, False)])
         self.assertEqual(parse(">test"),
-                         [request(None, True, "test", None, False)])
+                         [pattern(None, True, "test", None, False)])
         self.assertEqual(parse(">revision#"),
-                         [request(None, True, "revision", None, True)])
+                         [pattern(None, True, "revision", None, True)])
         self.assertEqual(parse(">revision$"),
-                         [request(None, True, "revision", None, True)])
+                         [pattern(None, True, "revision", None, True)])
         self.assertEqual(parse(">revision%", [[("abc", "def")]]),
-                         [request(None, True, "revision",
+                         [pattern(None, True, "revision",
                                   [("abc", "def")], False)])
         self.assertEqual(
             parse(">revision%>checkout>build#", [[("abc", "def")]]),
-            [request(
-                request(
-                    request(None, True, "revision", [("abc", "def")], False),
+            [pattern(
+                pattern(
+                    pattern(None, True, "revision", [("abc", "def")], False),
                     True, "checkout", None, False
                 ),
                 True, "build", None, True
@@ -116,9 +116,9 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
         self.assertEqual(
             parse(">revision%>checkout%>build#",
                   [[("abc", "def")], [("123",)]]),
-            [request(
-                request(
-                    request(None, True, "revision", [("abc", "def")], False),
+            [pattern(
+                pattern(
+                    pattern(None, True, "revision", [("abc", "def")], False),
                     True, "checkout", [("123",)], False
                 ),
                 True, "build", None, True
@@ -126,13 +126,13 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
         self.assertEqual(
             parse(">build>*#"),
             [
-                request(
-                    request(None, True, "build", None, False),
+                pattern(
+                    pattern(None, True, "build", None, False),
                     True, "test", None, True
                 ),
-                request(
-                    request(
-                        request(None, True, "build", None, False),
+                pattern(
+                    pattern(
+                        pattern(None, True, "build", None, False),
                         True, "build_test_environment", None, True
                     ),
                     True, "test", None, True
@@ -142,9 +142,9 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
         self.assertEqual(
             parse(">build%<*$", [[("abc",)]]),
             [
-                request(
-                    request(
-                        request(None, True, "build", [("abc",)], False),
+                pattern(
+                    pattern(
+                        pattern(None, True, "build", [("abc",)], False),
                         False, "checkout", None, False
                     ),
                     False, "revision", None, True
@@ -152,12 +152,12 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
             ]
         )
 
-        build_to_build_request = \
-            request(
-                request(
-                    request(
-                        request(
-                            request(None, True, "build", [("abc",)], False),
+        build_to_build_pattern = \
+            pattern(
+                pattern(
+                    pattern(
+                        pattern(
+                            pattern(None, True, "build", [("abc",)], False),
                             False, "checkout", None, False
                         ),
                         False, "revision", None, True
@@ -169,13 +169,13 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
         self.assertEqual(
             parse(">build%<*$>*#", [[("abc",)]]),
             [
-                request(
-                    build_to_build_request,
+                pattern(
+                    build_to_build_pattern,
                     True, "test", None, True
                 ),
-                request(
-                    request(
-                        build_to_build_request,
+                pattern(
+                    pattern(
+                        build_to_build_pattern,
                         True, "build_test_environment", None, True
                     ),
                     True, "test", None, True
@@ -184,43 +184,43 @@ class KCIDBOODataRequest(kcidb.unittest.TestCase):
         )
 
         self.assertEqual(parse(">revision[abc,def]"),
-                         [request(None, True, "revision",
+                         [pattern(None, True, "revision",
                                   [("abc", "def")], False)])
         self.assertEqual(parse(">checkout[123]"),
-                         [request(None, True, "checkout",
+                         [pattern(None, True, "checkout",
                                   [("123",)], False)])
         self.assertEqual(
             parse(">revision[abc, def]>checkout[123]>build#"),
-            [request(
-                request(
-                    request(None, True, "revision", [("abc", "def")], False),
+            [pattern(
+                pattern(
+                    pattern(None, True, "revision", [("abc", "def")], False),
                     True, "checkout", [("123",)], False
                 ),
                 True, "build", None, True
             )])
         self.assertEqual(parse(">revision[abc,def; ghi, jkl]"),
-                         [request(None, True, "revision",
+                         [pattern(None, True, "revision",
                                   [("abc", "def"), ("ghi", "jkl")], False)])
         self.assertEqual(parse('>checkout["123"]'),
-                         [request(None, True, "checkout",
+                         [pattern(None, True, "checkout",
                                   [("123",)], False)])
         self.assertEqual(parse('>checkout["1 2 3"]'),
-                         [request(None, True, "checkout",
+                         [pattern(None, True, "checkout",
                                   [("1 2 3",)], False)])
         self.assertEqual(parse('>checkout["1,2;3"]'),
-                         [request(None, True, "checkout",
+                         [pattern(None, True, "checkout",
                                   [("1,2;3",)], False)])
         self.assertEqual(parse('>checkout["1\\"2\\"3"]'),
-                         [request(None, True, "checkout",
+                         [pattern(None, True, "checkout",
                                   [("1\"2\"3",)], False)])
         self.assertEqual(parse('>checkout["1\\\\2\\\\3"]'),
-                         [request(None, True, "checkout",
+                         [pattern(None, True, "checkout",
                                   [("1\\2\\3",)], False)])
         self.assertEqual(parse('>revision["abc","def"; "ghi", "jkl"]'),
-                         [request(None, True, "revision",
+                         [pattern(None, True, "revision",
                                   [("abc", "def"), ("ghi", "jkl")], False)])
         self.assertEqual(
             parse(' > revision [ "abc" , "def" ; "ghi" , "jkl" ] '),
-            [request(None, True, "revision",
+            [pattern(None, True, "revision",
                      [("abc", "def"), ("ghi", "jkl")], False)]
         )
