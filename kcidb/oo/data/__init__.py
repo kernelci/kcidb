@@ -259,6 +259,25 @@ class Schema:
         except jsonschema.exceptions.ValidationError:
             return False
 
+    def format_dot(self):
+        """
+        Format the directed graph of object type relations in the schema using
+        the DOT language. The returned value could be visualized with e.g.
+        "dot -Tx11".
+
+        Returns:
+            The string containing the DOT representation of object type
+            relations in the schema.
+        """
+        return "".join(
+            ["digraph {\n"] +
+            [
+                f"{r.parent.name} -> {r.child.name}\n"
+                for r in self.relations
+            ] +
+            ["}\n"]
+        )
+
 
 # Checkout properties from the latest I/O schema
 _CHECKOUT = \
