@@ -315,7 +315,7 @@ class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
 
     def __init__(self, *args, **kwargs):
         """
-        Initialize the parser, adding split-report output arguments.
+        Initialize the parser, adding JSON output arguments.
 
         Args:
             args:   Positional arguments to initialize ArgumentParser with.
