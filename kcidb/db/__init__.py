@@ -6,7 +6,7 @@ import kcidb_io as io
 import kcidb.orm
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS
-from kcidb.db import bigquery, sqlite, null
+from kcidb.db import bigquery, sqlite, json, null
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class IncompatibleSchema(Exception):
 DRIVER_TYPES = dict(
     bigquery=bigquery.Driver,
     sqlite=sqlite.Driver,
+    json=json.Driver,
     null=null.Driver,
 )
 
