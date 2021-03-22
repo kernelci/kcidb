@@ -276,7 +276,7 @@ class Client(kcidb.orm.Source):
         return self.query(ids=ids, children=True, parents=True)
 
 
-def argparse_add_db_args(parser):
+def argparse_add_args(parser):
     """
     Add common database arguments to an argument parser.
 
@@ -304,7 +304,7 @@ class ArgumentParser(kcidb.misc.ArgumentParser):
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        argparse_add_db_args(self)
+        argparse_add_args(self)
 
 
 class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
@@ -322,7 +322,7 @@ class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        argparse_add_db_args(self)
+        argparse_add_args(self)
 
 
 class SplitOutputArgumentParser(kcidb.misc.SplitOutputArgumentParser):
@@ -340,7 +340,7 @@ class SplitOutputArgumentParser(kcidb.misc.SplitOutputArgumentParser):
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        argparse_add_db_args(self)
+        argparse_add_args(self)
 
 
 # No, it's OK, pylint: disable=too-many-ancestors
