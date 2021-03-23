@@ -2,7 +2,6 @@
 
 import sys
 import logging
-import argparse
 import kcidb_io as io
 import kcidb.orm
 import kcidb.misc
@@ -453,63 +452,6 @@ def query_main():
     )
     kcidb.misc.json_dump_stream(
         query_iter, sys.stdout, indent=args.indent, seq=args.seq
-    )
-
-
-def oo_query_main():
-    """Execute the kcidb-db-oo-query command-line tool"""
-    sys.excepthook = kcidb.misc.log_and_print_excepthook
-    description = \
-        "kcidb-db-oo-query - Query object-oriented data from " \
-        "Kernel CI report database"
-    parser = OutputArgumentParser(description=description)
-    parser.add_argument(
-        'pattern_strings',
-        nargs='*',
-        default=[],
-        metavar='PATTERN',
-        help='Pattern matching objects to fetch. '
-             'See pattern documentation with --pattern-help.'
-    )
-
-    class PatternHelpAction(argparse.Action):
-        """Argparse action outputting pattern string help and exiting."""
-        def __init__(self,
-                     option_strings,
-                     dest=argparse.SUPPRESS,
-                     default=argparse.SUPPRESS,
-                     help=None):
-            super().__init__(
-                option_strings=option_strings,
-                dest=dest,
-                default=default,
-                nargs=0,
-                help=help)
-
-        def __call__(self, parser, namespace, values, option_string=None):
-            print(
-                kcidb.orm.Pattern.STRING_DOC +
-                "\n" +
-                "NOTE: Specifying object ID lists separately is not "
-                "supported using\n"
-                "      command-line tools. "
-                "Only inline ID lists are supported.\n"
-            )
-            parser.exit()
-
-    parser.add_argument(
-        '--pattern-help',
-        action=PatternHelpAction,
-        help='Print pattern string documentation and exit.'
-    )
-    args = parser.parse_args()
-    client = Client(args.database)
-    pattern_list = []
-    for pattern_string in args.pattern_strings:
-        pattern_list += kcidb.orm.Pattern.parse(pattern_string)
-    kcidb.misc.json_dump(
-        client.oo_query(pattern_list),
-        sys.stdout, indent=args.indent, seq=args.seq
     )
 
 

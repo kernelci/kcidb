@@ -34,10 +34,12 @@ The I/O data is converted to objects according to the following rules.
            values, which can be sorted by severity.
 """
 
+import sys
 from abc import ABC, abstractmethod
 from functools import reduce
 from cached_property import cached_property
 from kcidb_io import schema
+import kcidb.db
 from kcidb.misc import LIGHT_ASSERTS
 from kcidb.oo.misc import Node, SUMMARY_RE
 from kcidb.oo.checkout import Node as Checkout
@@ -783,3 +785,58 @@ class Client:
             for obj_type_name, obj_data_list in
             self.source.oo_query(pattern_list).items()
         }
+
+
+class ArgumentParser(kcidb.misc.ArgumentParser):
+    """
+    Command-line argument parser with common OO arguments added.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding common OO arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        kcidb.db.argparse_add_args(self)
+        kcidb.orm.argparse_add_args(self)
+
+
+class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
+    """
+    Command-line argument parser for tools outputting JSON,
+    with common OO arguments added.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding JSON output arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        kcidb.db.argparse_add_args(self)
+        kcidb.orm.argparse_add_args(self)
+
+
+def query_main():
+    """Execute the kcidb-oo-query command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = \
+        "kcidb-oo-query - Query object-oriented data from " \
+        "Kernel CI report database"
+    parser = OutputArgumentParser(description=description)
+    args = parser.parse_args()
+    db_client = kcidb.db.Client(args.database)
+    pattern_list = []
+    for pattern_string in args.pattern_strings:
+        pattern_list += kcidb.orm.Pattern.parse(pattern_string)
+    kcidb.misc.json_dump(
+        db_client.oo_query(pattern_list),
+        sys.stdout, indent=args.indent, seq=args.seq
+    )

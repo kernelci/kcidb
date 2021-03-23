@@ -78,7 +78,6 @@ setuptools.setup(
             "kcidb-db-load = kcidb.db:load_main",
             "kcidb-db-dump = kcidb.db:dump_main",
             "kcidb-db-query = kcidb.db:query_main",
-            "kcidb-db-oo-query = kcidb.db:oo_query_main",
             "kcidb-db-complement = kcidb.db:complement_main",
             "kcidb-mq-publisher-init = kcidb.mq:publisher_init_main",
             "kcidb-mq-publisher-cleanup = kcidb.mq:publisher_cleanup_main",
@@ -86,6 +85,7 @@ setuptools.setup(
             "kcidb-mq-subscriber-init = kcidb.mq:subscriber_init_main",
             "kcidb-mq-subscriber-cleanup = kcidb.mq:subscriber_cleanup_main",
             "kcidb-mq-subscriber-pull = kcidb.mq:subscriber_pull_main",
+            "kcidb-oo-query = kcidb.oo:query_main",
             "kcidb-tests-validate = kcidb.tests:validate_main",
             "kcidb-monitor-spool-wipe = kcidb.monitor.spool:wipe_main",
         ]
