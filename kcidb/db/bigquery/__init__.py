@@ -10,7 +10,7 @@ from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest
 from google.api_core.exceptions import NotFound
 import kcidb_io as io
-import kcidb.oo.data
+import kcidb.orm
 from kcidb.db.bigquery import schema
 from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db.misc import Driver as AbstractDriver
@@ -343,13 +343,13 @@ class Driver(AbstractDriver):
         Render a pattern matching raw OO data into a query.
 
         Args:
-            pattern:    The pattern (instance of kcidb.oo.data.Pattern) to
+            pattern:    The pattern (instance of kcidb.orm.Pattern) to
                         render.
 
         Returns:
             The SQL query string and the query parameters.
         """
-        assert isinstance(pattern, kcidb.oo.data.Pattern)
+        assert isinstance(pattern, kcidb.orm.Pattern)
         obj_type = pattern.obj_type
         type_query_string = schema.OO_QUERIES[obj_type.name]
         if pattern.obj_id_list:
@@ -414,18 +414,18 @@ class Driver(AbstractDriver):
         Query raw object-oriented data from the database.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
         assert isinstance(pattern_list, list)
-        assert all(isinstance(r, kcidb.oo.data.Pattern) for r in pattern_list)
+        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_list)
 
         # Render all queries for each type
         obj_type_queries = {}
-        for obj_type_name in kcidb.oo.data.SCHEMA.types:
+        for obj_type_name in kcidb.orm.SCHEMA.types:
             for pattern in pattern_list:
                 # TODO: Avoid adding the same patterns multiple times
                 while pattern:
@@ -465,7 +465,7 @@ class Driver(AbstractDriver):
                 for row in job.result()
             ]
 
-        assert LIGHT_ASSERTS or kcidb.oo.data.SCHEMA.is_valid(objs)
+        assert LIGHT_ASSERTS or kcidb.orm.SCHEMA.is_valid(objs)
         return objs
 
     @staticmethod

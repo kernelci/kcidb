@@ -4,7 +4,7 @@ import sys
 import logging
 import argparse
 import kcidb_io as io
-import kcidb.oo.data
+import kcidb.orm
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db import bigquery, sqlite, null
@@ -38,7 +38,7 @@ DRIVER_TYPES = dict(
 )
 
 
-class Client(kcidb.oo.data.Source):
+class Client(kcidb.orm.Source):
     """Kernel CI report database client"""
 
     def __init__(self, database):
@@ -222,7 +222,7 @@ class Client(kcidb.oo.data.Source):
         Query raw object-oriented data from the database.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
@@ -230,7 +230,7 @@ class Client(kcidb.oo.data.Source):
         """
         assert LIGHT_ASSERTS or self.is_initialized()
         assert isinstance(pattern_list, list)
-        assert all(isinstance(r, kcidb.oo.data.Pattern) for r in pattern_list)
+        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_list)
         return self.driver.oo_query(pattern_list)
 
     def load(self, data):
@@ -488,7 +488,7 @@ def oo_query_main():
 
         def __call__(self, parser, namespace, values, option_string=None):
             print(
-                kcidb.oo.data.Pattern.STRING_DOC +
+                kcidb.orm.Pattern.STRING_DOC +
                 "\n" +
                 "NOTE: Specifying object ID lists separately is not "
                 "supported using\n"
@@ -506,7 +506,7 @@ def oo_query_main():
     client = Client(args.database)
     pattern_list = []
     for pattern_string in args.pattern_strings:
-        pattern_list += kcidb.oo.data.Pattern.parse(pattern_string)
+        pattern_list += kcidb.orm.Pattern.parse(pattern_string)
     kcidb.misc.json_dump(
         client.oo_query(pattern_list),
         sys.stdout, indent=args.indent, seq=args.seq

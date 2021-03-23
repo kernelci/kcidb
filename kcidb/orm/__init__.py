@@ -1,6 +1,6 @@
 """
-Kernel CI report raw object-oriented (OO) data - report data organized
-into objects, but without the object-oriented interface.
+Kernel CI report object-relational mapping (ORM) - report data organized into
+objects, but without the object-oriented interface.
 """
 
 import re
@@ -512,7 +512,7 @@ class Pattern:
                             the root object.
             child:          True if this is a pattern for a base's child type,
                             False if it's for a parent type.
-            obj_type:       The type (kcidb.oo.data.Type) of objects referred
+            obj_type:       The type (kcidb.orm.Type) of objects referred
                             to by this pattern.
             obj_id_list:    The list of IDs of the objects to limit the
                             pattern to, or None to not limit the objects by
@@ -1050,7 +1050,7 @@ class Pattern:
     def parse(string, obj_id_list_list=None, schema=None):
         """
         Parse a pattern string and its parameter IDs into a chain of Pattern
-        objects. See kcidb.oo.data.Pattern.STRING_DOC for documentation on
+        objects. See kcidb.orm.Pattern.STRING_DOC for documentation on
         pattern strings.
 
         Args:
@@ -1063,7 +1063,7 @@ class Pattern:
                                 placeholders are not allowed in the pattern
                                 string.
             schema:             An object type schema to use, or None to use
-                                kcidb.oo.data.SCHEMA.
+                                kcidb.orm.SCHEMA.
 
         Returns:
             A list of trailing pattern objects parsed from the pattern string.
@@ -1120,7 +1120,7 @@ class Source(ABC):
         Retrieve raw data for objects specified via a pattern list.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved

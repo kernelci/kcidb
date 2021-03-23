@@ -41,7 +41,7 @@ from kcidb.oo.checkout import Node as Checkout
 from kcidb.oo.build import Node as Build
 from kcidb.oo.test import Node as Test
 from kcidb.oo.test import NodeEnvironment as TestEnvironment
-from kcidb.oo.data import Type, SCHEMA, Pattern, Source
+from kcidb.orm import Type, SCHEMA, Pattern, Source
 
 __all__ = [
     "Node", "Checkout", "Build", "Test", "TestEnvironment",
@@ -343,7 +343,7 @@ class Object:
             client:     The object-oriented database client to query for
                         references.
             type:       The type of represented object.
-                        Instance of kcidb.oo.data.Type.
+                        Instance of kcidb.orm.Type.
             data:       The raw data of the object to represent.
         """
         assert isinstance(client, Client)
@@ -404,7 +404,7 @@ class Client:
 
         Args:
             source: Raw object-oriented data source, an instance of
-                    kcidb.oo.data.Source.
+                    kcidb.orm.Source.
         """
         assert isinstance(source, Source)
         self.source = source
@@ -414,7 +414,7 @@ class Client:
         Retrieve objects specified via a pattern list.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
