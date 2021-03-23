@@ -6,11 +6,11 @@ import logging
 import jsonschema
 import jq
 import kcidb_io as io
-from kcidb import db, mq, oo, monitor, tests, unittest, misc
+from kcidb import db, mq, orm, oo, monitor, tests, unittest, misc
 from kcidb.misc import LIGHT_ASSERTS
 
 __all__ = [
-    "db", "mq", "oo", "monitor", "tests", "unittest",
+    "db", "mq", "orm", "oo", "monitor", "tests", "unittest",
     "io_schema",
     "Client",
     "submit_main",

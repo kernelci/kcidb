@@ -1,4 +1,4 @@
-"""kcdib.oo.data module tests"""
+"""kcdib.orm module tests"""
 
 import kcidb
 
@@ -8,7 +8,7 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
 
     def test_parse(self):
         """Check pattern parsing works"""
-        schema = kcidb.oo.data.Schema(dict(
+        schema = kcidb.orm.Schema(dict(
             revision=dict(
                 field_json_schemas=dict(
                     git_commit_hash=dict(type="string"),
@@ -73,13 +73,13 @@ class KCIDBOODataPattern(kcidb.unittest.TestCase):
         ))
 
         def parse(string, obj_id_list_list=None):
-            return kcidb.oo.data.Pattern.parse(string, obj_id_list_list,
-                                               schema=schema)
+            return kcidb.orm.Pattern.parse(string, obj_id_list_list,
+                                           schema=schema)
 
         def pattern(base, child, obj_type_name, obj_id_list, match):
-            return kcidb.oo.data.Pattern(base, child,
-                                         schema.types[obj_type_name],
-                                         obj_id_list, match)
+            return kcidb.orm.Pattern(base, child,
+                                     schema.types[obj_type_name],
+                                     obj_id_list, match)
 
         self.assertEqual(parse(""), [])
         self.assertEqual(parse("<*"), [])

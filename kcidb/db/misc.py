@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 import kcidb_io as io
-import kcidb.oo.data as oo_data
+import kcidb.orm
 from kcidb.misc import LIGHT_ASSERTS
 
 
@@ -115,14 +115,14 @@ class Driver(ABC):
         The database must be initialized.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
         assert isinstance(pattern_list, list)
-        assert all(isinstance(r, oo_data.Pattern) for r in pattern_list)
+        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_list)
 
     @abstractmethod
     def load(self, data):
