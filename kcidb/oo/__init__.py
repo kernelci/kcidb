@@ -792,16 +792,19 @@ class ArgumentParser(kcidb.misc.ArgumentParser):
     Command-line argument parser with common OO arguments added.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, database=None, **kwargs):
         """
         Initialize the parser, adding common OO arguments.
 
         Args:
-            args:   Positional arguments to initialize ArgumentParser with.
-            kwargs: Keyword arguments to initialize ArgumentParser with.
+            args:       Positional arguments to initialize ArgumentParser
+                        with.
+            database:   The default database specification to use, or None to
+                        make database specification required.
+            kwargs:     Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        kcidb.db.argparse_add_args(self)
+        kcidb.db.argparse_add_args(self, database=database)
         kcidb.orm.argparse_add_args(self)
 
 
@@ -811,16 +814,19 @@ class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
     with common OO arguments added.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, database=None, **kwargs):
         """
         Initialize the parser, adding JSON output arguments.
 
         Args:
-            args:   Positional arguments to initialize ArgumentParser with.
-            kwargs: Keyword arguments to initialize ArgumentParser with.
+            args:       Positional arguments to initialize ArgumentParser
+                        with.
+            database:   The default database specification to use, or None to
+                        make database specification required.
+            kwargs:     Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        kcidb.db.argparse_add_args(self)
+        kcidb.db.argparse_add_args(self, database=database)
         kcidb.orm.argparse_add_args(self)
 
 

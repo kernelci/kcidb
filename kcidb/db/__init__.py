@@ -276,17 +276,21 @@ class Client(kcidb.orm.Source):
         return self.query(ids=ids, children=True, parents=True)
 
 
-def argparse_add_args(parser):
+def argparse_add_args(parser, database=None):
     """
     Add common database arguments to an argument parser.
 
     Args:
-        The parser to add arguments to.
+        parser:     The parser to add arguments to.
+        database:   The default database specification to use.
     """
+    assert database is None or isinstance(database, str)
     parser.add_argument(
         '-d', '--database',
-        help='Database specification',
-        required=True
+        help=('Database specification' if database is None
+              else f"Database specification. Default is {database!r}."),
+        default=database,
+        required=(database is None)
     )
 
 
@@ -295,16 +299,19 @@ class ArgumentParser(kcidb.misc.ArgumentParser):
     Command-line argument parser with common database arguments added.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, database=None, **kwargs):
         """
         Initialize the parser, adding common database arguments.
 
         Args:
-            args:   Positional arguments to initialize ArgumentParser with.
-            kwargs: Keyword arguments to initialize ArgumentParser with.
+            args:       Positional arguments to initialize ArgumentParser
+                        with.
+            database:   The default database specification to use, or None to
+                        make database specification required.
+            kwargs:     Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        argparse_add_args(self)
+        argparse_add_args(self, database=database)
 
 
 class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
@@ -313,16 +320,19 @@ class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
     with common database arguments added.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, database=None, **kwargs):
         """
         Initialize the parser, adding JSON output arguments.
 
         Args:
-            args:   Positional arguments to initialize ArgumentParser with.
-            kwargs: Keyword arguments to initialize ArgumentParser with.
+            args:       Positional arguments to initialize ArgumentParser
+                        with.
+            database:   The default database specification to use, or None to
+                        make database specification required.
+            kwargs:     Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        argparse_add_args(self)
+        argparse_add_args(self, database=database)
 
 
 class SplitOutputArgumentParser(kcidb.misc.SplitOutputArgumentParser):
@@ -331,16 +341,19 @@ class SplitOutputArgumentParser(kcidb.misc.SplitOutputArgumentParser):
     with common database arguments added.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, database=None, **kwargs):
         """
         Initialize the parser, adding split-report output arguments.
 
         Args:
-            args:   Positional arguments to initialize ArgumentParser with.
-            kwargs: Keyword arguments to initialize ArgumentParser with.
+            args:       Positional arguments to initialize ArgumentParser
+                        with.
+            database:   The default database specification to use, or None to
+                        make database specification required.
+            kwargs:     Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        argparse_add_args(self)
+        argparse_add_args(self, database=database)
 
 
 # No, it's OK, pylint: disable=too-many-ancestors
@@ -354,8 +367,10 @@ class QueryArgumentParser(SplitOutputArgumentParser):
         Initialize the parser, adding common database query arguments.
 
         Args:
-            args:   Positional arguments to initialize ArgumentParser with.
-            kwargs: Keyword arguments to initialize ArgumentParser with.
+            args:   Positional arguments to initialize the parent
+                    SplitOutputArgumentParser with.
+            kwargs: Keyword arguments to initialize the parent
+                    SplitOutputArgumentParser with.
         """
         super().__init__(*args, **kwargs)
 
