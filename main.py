@@ -45,10 +45,11 @@ SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
 DB_CLIENT = kcidb.db.Client(DATABASE)
+OO_CLIENT = kcidb.oo.Client(DB_CLIENT)
 SPOOL_CLIENT = kcidb.monitor.spool.Client(SPOOL_COLLECTION_PATH)
-LOADED_QUEUE_PUBLISHER = kcidb.mq.IOPublisher(
+UPDATED_QUEUE_PUBLISHER = kcidb.mq.ORMPatternPublisher(
     PROJECT_ID,
-    os.environ["KCIDB_LOADED_QUEUE_TOPIC"]
+    os.environ["KCIDB_UPDATED_QUEUE_TOPIC"]
 )
 
 
@@ -64,8 +65,13 @@ def kcidb_load_message(event, context):
     LOGGER.debug("DATA: %s", json.dumps(data))
     # Store it in the database
     DB_CLIENT.load(data)
-    # Forward the data to the "loaded" MQ topic
-    LOADED_QUEUE_PUBLISHER.publish(data)
+    # Generate patterns matching all affected objects
+    pattern_list = []
+    for pattern in kcidb.orm.Pattern.from_io(data):
+        # TODO Avoid formatting and parsing
+        pattern_list += kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
+    # Publish patterns matching all affected objects
+    UPDATED_QUEUE_PUBLISHER.publish(pattern_list)
 
 
 def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
@@ -178,24 +184,32 @@ def kcidb_load_queue(event, context):
         LOAD_QUEUE_SUBSCRIBER.ack(msg[0])
     LOGGER.debug("ACK'ed %u messages", len(msgs))
 
-    # Forward the loaded data to the "loaded" topic
-    LOADED_QUEUE_PUBLISHER.publish(data)
-    LOGGER.info("Forwarded %u objects", obj_num)
+    # Generate patterns matching all affected objects
+    pattern_list = []
+    for pattern in kcidb.orm.Pattern.from_io(data):
+        # TODO Avoid formatting and parsing
+        pattern_list += kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
+
+    # Publish patterns matching all affected objects
+    UPDATED_QUEUE_PUBLISHER.publish(pattern_list)
+    LOGGER.info("Published updates made by %u loaded objects", obj_num)
 
 
 def kcidb_spool_notifications(event, context):
     """
-    Spool notifications about KCIDB data arriving from a Pub Sub subscription
+    Spool notifications about objects matching patterns arriving from a Pub
+    Sub subscription
     """
     # Get arriving data
-    new_io = kcidb.mq.IOSubscriber.decode_data(
-                        base64.b64decode(event["data"]))
-    LOGGER.debug("DATA: %s", json.dumps(new_io))
-    # Load the arriving data (if stored) and all its parents and children
-    base_io = DB_CLIENT.complement(new_io)
+    pattern_list = kcidb.mq.ORMPatternSubscriber.decode_data(
+        base64.b64decode(event["data"])
+    )
+    LOGGER.debug(
+        "PATTERNS:\n%s",
+        "".join(repr(p) + "\n" for p in pattern_list)
+    )
     # Spool notifications from subscriptions
-    for notification in \
-            kcidb.monitor.match_new_io(base_io, new_io, copy=False):
+    for notification in kcidb.monitor.match(OO_CLIENT.query(pattern_list)):
         if not SELECTED_SUBSCRIPTIONS or \
            notification.subscription in SELECTED_SUBSCRIPTIONS:
             LOGGER.info("POSTING %s", notification.id)
