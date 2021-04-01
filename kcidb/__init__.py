@@ -87,7 +87,7 @@ class Client:
 
         Args:
             data:   The JSON report data to submit.
-                    Must adhere to a version of I/O schema.
+                    Must adhere to the latest version of I/O schema.
 
         Returns:
             Submission ID string.
@@ -96,7 +96,7 @@ class Client:
             `NotImplementedError`, if not supplied with a project ID or an MQ
             topic name at initialization time.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid(data)
+        assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
         if not self.mq_publisher:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
@@ -107,7 +107,7 @@ class Client:
 
         Args:
             data_iter:  An iterator returning the JSON report data to submit.
-                        Each must adhere to a version of I/O schema.
+                        Each must adhere to the latest version of I/O schema.
             done_cb:    A function to call when a report is successfully
                         submitted. Will be called with the submission ID of
                         each report returned by the iterator, in order.
