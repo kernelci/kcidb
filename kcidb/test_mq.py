@@ -10,14 +10,15 @@ import kcidb
 class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 
-    def test_publisher_init_main(self):
-        """Check kcidb-mq-publisher-init works"""
-        argv = ["kcidb.mq.publisher_init_main", "-p", "project", "-t", "topic"]
+    def test_io_publisher_init_main(self):
+        """Check kcidb-mq-io-publisher-init works"""
+        argv = ["kcidb.mq.io_publisher_init_main",
+                "-p", "project", "-t", "topic"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             publisher = Mock()
             publisher.init = Mock()
-            with patch("kcidb.mq.Publisher", return_value=publisher) as \
+            with patch("kcidb.mq.IOPublisher", return_value=publisher) as \
                     Publisher:
                 status = function()
             Publisher.assert_called_once_with("project", "topic")
@@ -26,15 +27,15 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_publisher_cleanup_main(self):
-        """Check kcidb-mq-publisher-cleanup works"""
-        argv = ["kcidb.mq.publisher_cleanup_main",
+    def test_io_publisher_cleanup_main(self):
+        """Check kcidb-mq-io-publisher-cleanup works"""
+        argv = ["kcidb.mq.io_publisher_cleanup_main",
                 "-p", "project", "-t", "topic"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             publisher = Mock()
             publisher.cleanup = Mock()
-            with patch("kcidb.mq.Publisher", return_value=publisher) as \
+            with patch("kcidb.mq.IOPublisher", return_value=publisher) as \
                     Publisher:
                 status = function()
             Publisher.assert_called_once_with("project", "topic")
@@ -43,17 +44,18 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_publisher_publish_main(self):
-        """Check kcidb-mq-publisher-publish works"""
-        argv = ["kcidb.mq.publisher_publish_main",
+    def test_io_publisher_publish_main(self):
+        """Check kcidb-mq-io-publisher-publish works"""
+        argv = ["kcidb.mq.io_publisher_publish_main",
                 "-p", "project", "-t", "topic"]
         empty = kcidb_io.new()
 
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
-            with patch("kcidb.mq.Publisher.__init__",
+            with patch("kcidb.mq.IOPublisher.__init__",
                        return_value=None) as init, \
-                 patch("kcidb.mq.Publisher.future_publish") as future_publish:
+                 patch("kcidb.mq.IOPublisher.future_publish") \
+                 as future_publish:
                 status = function()
                 init.assert_called_once_with("project", "topic")
             return status
@@ -69,9 +71,9 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             future.done = lambda: True
             future.add_done_callback = lambda cb: cb(future)
             future.result = Mock(return_value="id")
-            with patch("kcidb.mq.Publisher.__init__",
+            with patch("kcidb.mq.IOPublisher.__init__",
                        return_value=None) as init, \
-                 patch("kcidb.mq.Publisher.future_publish",
+                 patch("kcidb.mq.IOPublisher.future_publish",
                        return_value=future) as future_publish:
                 status = function()
                 init.assert_called_once_with("project", "topic")
@@ -88,9 +90,9 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             future.done = lambda: True
             future.add_done_callback = lambda cb: cb(future)
             future.result = Mock(return_value="id")
-            with patch("kcidb.mq.Publisher.__init__",
+            with patch("kcidb.mq.IOPublisher.__init__",
                        return_value=None) as init, \
-                 patch("kcidb.mq.Publisher.future_publish",
+                 patch("kcidb.mq.IOPublisher.future_publish",
                        return_value=future) as future_publish:
                 status = function()
                 init.assert_called_once_with("project", "topic")
@@ -103,15 +105,15 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                             driver_source=driver_source,
                             stdout_re="id\nid\n")
 
-    def test_subscriber_init_main(self):
-        """Check kcidb-mq-subscriber-init works"""
-        argv = ["kcidb.mq.subscriber_init_main",
+    def test_io_subscriber_init_main(self):
+        """Check kcidb-mq-io-subscriber-init works"""
+        argv = ["kcidb.mq.io_subscriber_init_main",
                 "-p", "project", "-t", "topic", "-s", "subscription"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             subscriber = Mock()
             subscriber.init = Mock()
-            with patch("kcidb.mq.Subscriber", return_value=subscriber) as \
+            with patch("kcidb.mq.IOSubscriber", return_value=subscriber) as \
                     Subscriber:
                 status = function()
             Subscriber.assert_called_once_with("project", "topic",
@@ -121,15 +123,15 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_subscriber_cleanup_main(self):
-        """Check kcidb-mq-subscriber-cleanup works"""
-        argv = ["kcidb.mq.subscriber_cleanup_main",
+    def test_io_subscriber_cleanup_main(self):
+        """Check kcidb-mq-io-subscriber-cleanup works"""
+        argv = ["kcidb.mq.io_subscriber_cleanup_main",
                 "-p", "project", "-t", "topic", "-s", "subscription"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             subscriber = Mock()
             subscriber.cleanup = Mock()
-            with patch("kcidb.mq.Subscriber", return_value=subscriber) as \
+            with patch("kcidb.mq.IOSubscriber", return_value=subscriber) as \
                     Subscriber:
                 status = function()
             Subscriber.assert_called_once_with("project", "topic",
@@ -139,9 +141,9 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_subscriber_pull_main(self):
-        """Check kcidb-mq-subscriber-pull works"""
-        argv = ["kcidb.mq.subscriber_pull_main",
+    def test_io_subscriber_pull_main(self):
+        """Check kcidb-mq-io-subscriber-pull works"""
+        argv = ["kcidb.mq.io_subscriber_pull_main",
                 "-p", "project", "-t", "topic", "-s", "subscription",
                 "--timeout", "123", "--indent=0"]
         empty = kcidb_io.new()
@@ -150,7 +152,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             subscriber = Mock()
             subscriber.pull = Mock(return_value=[("ID", {repr(empty)})])
             subscriber.ack = Mock()
-            with patch("kcidb.mq.Subscriber", return_value=subscriber) as \
+            with patch("kcidb.mq.IOSubscriber", return_value=subscriber) as \
                     Subscriber:
                 status = function()
             Subscriber.assert_called_once_with("project", "topic",

@@ -1,10 +1,10 @@
-"""Kernel CI report message queue"""
+"""Kernel CI message queue"""
 
 import json
 import logging
 import threading
 import sys
-import jsonschema
+from abc import ABC, abstractmethod
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
 import kcidb_io as io
@@ -16,28 +16,28 @@ from kcidb.misc import LIGHT_ASSERTS
 LOGGER = logging.getLogger(__name__)
 
 
-class Publisher:
-    """Kernel CI message queue publisher"""
+class Publisher(ABC):
+    """Abstract message queue publisher"""
 
     @staticmethod
-    def encode_data(io_data):
+    @abstractmethod
+    def encode_data(data):
         """
-        Encode JSON data, adhering to a version of I/O schema, into message
-        data.
+        Encode published data.
 
         Args:
-            io_data:    JSON data to be encoded, adhering to an I/O schema
-                        version.
+            data:   The data to be encoded.
 
-        Returns
+        Returns:
             The encoded message data.
+
+        Raises:
+            An exception in case data encoding failed.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid(io_data)
-        return json.dumps(io.schema.upgrade(io_data)).encode()
 
     def __init__(self, project_id, topic_name, client=None):
         """
-        Initialize a Kernel CI message queue publisher.
+        Initialize a message queue publisher.
 
         Args:
             project_id:         ID of the Google Cloud project to which the
@@ -75,9 +75,8 @@ class Publisher:
             A "future" representing the publishing result, returning the
             publishing ID string.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid(data)
         return self.client.publish(self.topic_path,
-                                   Publisher.encode_data(data))
+                                   self.encode_data(data))
 
     def publish(self, data):
         """
@@ -90,7 +89,6 @@ class Publisher:
         Returns:
             Publishing ID string.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid(data)
         return self.future_publish(data).result()
 
     def publish_iter(self, data_iter, done_cb=None):
@@ -126,7 +124,7 @@ class Publisher:
                 del futures[0:idx]
 
         try:
-            # Queue submission futures for all supplied reports
+            # Queue submission futures for each supplied data
             for data in data_iter:
                 future = self.future_publish(data)
                 with futures_lock:
@@ -144,14 +142,14 @@ class Publisher:
                 done_cb(future.result())
 
 
-class Subscriber:
-    """Kernel CI message queue subscriber"""
+class Subscriber(ABC):
+    """Abstract message queue subscriber"""
 
     @staticmethod
+    @abstractmethod
     def decode_data(message_data):
         """
-        Decode message data to extract the JSON data adhering to the latest
-        I/O schema.
+        Decode message data to extract the original published data.
 
         Args:
             message_data:   The message data from the message queue
@@ -159,15 +157,16 @@ class Subscriber:
                             decoded.
 
         Returns
-            The decoded JSON data adhering to the latest I/O schema.
+            The decoded data.
+
+        Raises:
+            An exception in case data decoding failed.
         """
-        data = json.loads(message_data.decode())
-        return io.schema.upgrade(io.schema.validate(data), copy=False)
 
     def __init__(self, project_id, topic_name, subscription_name,
                  client=None):
         """
-        Initialize a Kernel CI message queue subscriber.
+        Initialize a message queue subscriber.
 
         Args:
             project_id:         ID of the Google Cloud project to which the
@@ -201,8 +200,7 @@ class Subscriber:
     def pull(self, max_num, timeout=0):
         """
         Pull published data from the message queue, discarding (and logging as
-        errors) invalid JSON and data not matching any of the known schema
-        versions.
+        errors) invalid data.
 
         Args:
             max_num:    Maximum number of data messages to pull and return.
@@ -213,8 +211,7 @@ class Subscriber:
             A list of "messages" - tuples containing the data received within
             the timeout, each with two items:
             * The ID to use when acknowledging the reception of the data.
-            * The JSON data from the message queue, adhering to the latest I/O
-              schema.
+            * The decoded data from the message queue.
         """
         assert isinstance(max_num, int)
         assert isinstance(timeout, (int, float))
@@ -234,14 +231,14 @@ class Subscriber:
         items = []
         for message in messages:
             try:
-                items.append((message.ack_id,
-                              Subscriber.decode_data(message.message.data)))
-            except (json.decoder.JSONDecodeError,
-                    jsonschema.exceptions.ValidationError) as err:
-                LOGGER.error("%s\nDropping invalid message:\n%s",
+                data = self.decode_data(message.message.data)
+            # This is good enough for now, pylint: disable=broad-except
+            except Exception as err:
+                LOGGER.error("%s\nFailed decoding, dropping message:\n%s",
                              misc.format_exception_stack(err),
                              message.message.data)
                 self.ack(message.ack_id)
+            items.append((message.ack_id, data))
         return items
 
     def ack(self, ack_id):
@@ -263,11 +260,60 @@ class Subscriber:
         self.client.modify_ack_deadline(self.subscription_path, [ack_id], 0)
 
 
-def publisher_init_main():
-    """Execute the kcidb-mq-publisher-init command-line tool"""
+class IOPublisher(Publisher):
+    """I/O data queue publisher"""
+
+    @staticmethod
+    def encode_data(data):
+        """
+        Encode JSON data, adhering to the latest version of I/O schema, into
+        message data.
+
+        Args:
+            data:   JSON data to be encoded, adhering to the latest I/O schema
+                    version.
+
+        Returns
+            The encoded message data.
+
+        Raises:
+            An exception in case data encoding failed.
+        """
+        if not LIGHT_ASSERTS:
+            io.schema.validate_latest(data)
+        return json.dumps(data).encode()
+
+
+class IOSubscriber(Subscriber):
+    """I/O data queue subscriber"""
+
+    @staticmethod
+    def decode_data(message_data):
+        """
+        Decode message data to extract the JSON data adhering to the latest
+        I/O schema.
+
+        Args:
+            message_data:   The message data from the message queue
+                            ("data" field of pubsub.types.PubsubMessage) to be
+                            decoded.
+
+        Returns
+            The decoded JSON data adhering to the latest I/O schema.
+
+        Raises:
+            An exception in case data decoding failed.
+        """
+        data = json.loads(message_data.decode())
+        return io.schema.upgrade(io.schema.validate(data), copy=False)
+
+
+def io_publisher_init_main():
+    """Execute the kcidb-mq-io-publisher-init command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-publisher-init - Initialize a Kernel CI report publisher'
+        'kcidb-mq-io-publisher-init - ' \
+        'Initialize a Kernel CI I/O data publisher'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -280,15 +326,16 @@ def publisher_init_main():
         required=True
     )
     args = parser.parse_args()
-    publisher = Publisher(args.project, args.topic)
+    publisher = IOPublisher(args.project, args.topic)
     publisher.init()
 
 
-def publisher_cleanup_main():
-    """Execute the kcidb-mq-publisher-cleanup command-line tool"""
+def io_publisher_cleanup_main():
+    """Execute the kcidb-mq-io-publisher-cleanup command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-publisher-cleanup - Cleanup a Kernel CI report publisher'
+        'kcidb-mq-io-publisher-cleanup - ' \
+        'Cleanup a Kernel CI I/O data publisher'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -301,16 +348,16 @@ def publisher_cleanup_main():
         required=True
     )
     args = parser.parse_args()
-    publisher = Publisher(args.project, args.topic)
+    publisher = IOPublisher(args.project, args.topic)
     publisher.cleanup()
 
 
-def publisher_publish_main():
-    """Execute the kcidb-mq-publisher-publish command-line tool"""
+def io_publisher_publish_main():
+    """Execute the kcidb-mq-io-publisher-publish command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-publisher-publish - ' \
-        'Publish with a Kernel CI report publisher, print publishing IDs'
+        'kcidb-mq-io-publisher-publish - ' \
+        'Publish with a Kernel CI I/O data publisher, print publishing IDs'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -323,7 +370,7 @@ def publisher_publish_main():
         required=True
     )
     args = parser.parse_args()
-    publisher = Publisher(args.project, args.topic)
+    publisher = IOPublisher(args.project, args.topic)
 
     def print_publishing_id(publishing_id):
         print(publishing_id, file=sys.stdout)
@@ -336,11 +383,12 @@ def publisher_publish_main():
     )
 
 
-def subscriber_init_main():
-    """Execute the kcidb-mq-subscriber-init command-line tool"""
+def io_subscriber_init_main():
+    """Execute the kcidb-mq-io-subscriber-init command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-subscriber-init - Initialize a Kernel CI report subscriber'
+        'kcidb-mq-io-subscriber-init - ' \
+        'Initialize a Kernel CI I/O data subscriber'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -358,15 +406,16 @@ def subscriber_init_main():
         required=True
     )
     args = parser.parse_args()
-    subscriber = Subscriber(args.project, args.topic, args.subscription)
+    subscriber = IOSubscriber(args.project, args.topic, args.subscription)
     subscriber.init()
 
 
-def subscriber_cleanup_main():
-    """Execute the kcidb-mq-subscriber-cleanup command-line tool"""
+def io_subscriber_cleanup_main():
+    """Execute the kcidb-mq-io-subscriber-cleanup command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-subscriber-cleanup - Cleanup a Kernel CI report subscriber'
+        'kcidb-mq-io-subscriber-cleanup - ' \
+        'Cleanup a Kernel CI I/O data subscriber'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -384,15 +433,16 @@ def subscriber_cleanup_main():
         required=True
     )
     args = parser.parse_args()
-    subscriber = Subscriber(args.project, args.topic, args.subscription)
+    subscriber = IOSubscriber(args.project, args.topic, args.subscription)
     subscriber.cleanup()
 
 
-def subscriber_pull_main():
-    """Execute the kcidb-mq-subscriber-pull command-line tool"""
+def io_subscriber_pull_main():
+    """Execute the kcidb-mq-io-subscriber-pull command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-subscriber-pull - Pull with a Kernel CI report subscriber'
+        'kcidb-mq-io-subscriber-pull - ' \
+        'Pull with a Kernel CI I/O data subscriber'
     parser = misc.OutputArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -413,13 +463,13 @@ def subscriber_pull_main():
         '--timeout',
         metavar="SECONDS",
         type=float,
-        help='Wait the specified number of SECONDS for a report message, '
+        help='Wait the specified number of SECONDS for a message, '
              'or forever, if zero',
         default=0,
         required=False
     )
     args = parser.parse_args()
-    subscriber = Subscriber(args.project, args.topic, args.subscription)
+    subscriber = IOSubscriber(args.project, args.topic, args.subscription)
     items = subscriber.pull(1, timeout=args.timeout)
     if items:
         ack_id, data = items[0]

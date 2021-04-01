@@ -17,7 +17,7 @@ kcidb.misc.logging_setup(
 )
 LOGGER = logging.getLogger()
 
-LOAD_QUEUE_SUBSCRIBER = kcidb.mq.Subscriber(
+LOAD_QUEUE_SUBSCRIBER = kcidb.mq.IOSubscriber(
     PROJECT_ID,
     os.environ["KCIDB_LOAD_QUEUE_TOPIC"],
     os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"]
@@ -46,7 +46,7 @@ SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
 DB_CLIENT = kcidb.db.Client(DATABASE)
 SPOOL_CLIENT = kcidb.monitor.spool.Client(SPOOL_COLLECTION_PATH)
-LOADED_QUEUE_PUBLISHER = kcidb.mq.Publisher(
+LOADED_QUEUE_PUBLISHER = kcidb.mq.IOPublisher(
     PROJECT_ID,
     os.environ["KCIDB_LOADED_QUEUE_TOPIC"]
 )
@@ -60,7 +60,7 @@ def kcidb_load_message(event, context):
     subscription into the database.
     """
     # Get new data
-    data = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
+    data = kcidb.mq.IOSubscriber.decode_data(base64.b64decode(event["data"]))
     LOGGER.debug("DATA: %s", json.dumps(data))
     # Store it in the database
     DB_CLIENT.load(data)
@@ -188,7 +188,8 @@ def kcidb_spool_notifications(event, context):
     Spool notifications about KCIDB data arriving from a Pub Sub subscription
     """
     # Get arriving data
-    new_io = kcidb.mq.Subscriber.decode_data(base64.b64decode(event["data"]))
+    new_io = kcidb.mq.IOSubscriber.decode_data(
+                        base64.b64decode(event["data"]))
     LOGGER.debug("DATA: %s", json.dumps(new_io))
     # Load the arriving data (if stored) and all its parents and children
     base_io = DB_CLIENT.complement(new_io)
