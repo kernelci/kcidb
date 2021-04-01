@@ -18,7 +18,6 @@ LOGGER = logging.getLogger(__name__)
 
 class Publisher:
     """Kernel CI message queue publisher"""
-    # pylint: disable=no-member
 
     @staticmethod
     def encode_data(io_data):
@@ -147,7 +146,6 @@ class Publisher:
 
 class Subscriber:
     """Kernel CI message queue subscriber"""
-    # pylint: disable=no-member
 
     @staticmethod
     def decode_data(message_data):
