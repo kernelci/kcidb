@@ -26,9 +26,9 @@ LOAD_QUEUE_MSG_MAX = int(os.environ["KCIDB_LOAD_QUEUE_MSG_MAX"])
 LOAD_QUEUE_OBJ_MAX = int(os.environ["KCIDB_LOAD_QUEUE_OBJ_MAX"])
 LOAD_QUEUE_TIMEOUT_SEC = float(os.environ["KCIDB_LOAD_QUEUE_TIMEOUT_SEC"])
 
-DATASET = os.environ["KCIDB_DATASET"]
-DATASET_LOAD_PERIOD = datetime.timedelta(
-    seconds=int(os.environ["KCIDB_DATASET_LOAD_PERIOD_SEC"])
+DATABASE = os.environ["KCIDB_DATABASE"]
+DATABASE_LOAD_PERIOD = datetime.timedelta(
+    seconds=int(os.environ["KCIDB_DATABASE_LOAD_PERIOD_SEC"])
 )
 
 SELECTED_SUBSCRIPTIONS = \
@@ -44,7 +44,7 @@ SMTP_PASSWORD = kcidb.misc.get_secret(PROJECT_ID, SMTP_PASSWORD_SECRET)
 SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
-DB_CLIENT = kcidb.db.Client(DATASET)
+DB_CLIENT = kcidb.db.Client(DATABASE)
 SPOOL_CLIENT = kcidb.monitor.spool.Client(SPOOL_COLLECTION_PATH)
 LOADED_QUEUE_PUBLISHER = kcidb.mq.Publisher(
     PROJECT_ID,
@@ -141,13 +141,13 @@ def kcidb_load_queue(event, context):
     """
     Load multiple KCIDB data messages from the LOAD_QUEUE_SUBSCRIBER queue
     into the database, if it stayed unmodified for at least
-    DATASET_LOAD_PERIOD.
+    DATABASE_LOAD_PERIOD.
     """
     # Do nothing, if updated recently
     now = datetime.datetime.now(datetime.timezone.utc)
     last_modified = DB_CLIENT.get_last_modified()
     LOGGER.debug("Now: %s, Last modified: %s", now, last_modified)
-    if last_modified and now - last_modified < DATASET_LOAD_PERIOD:
+    if last_modified and now - last_modified < DATABASE_LOAD_PERIOD:
         LOGGER.info("Database too fresh, exiting")
         return
 
