@@ -78,8 +78,8 @@ class Client:
             if not self.db_client.is_initialized():
                 raise DatabaseNotInitialized()
         self.mq_publisher = \
-            mq.Publisher(project_id, topic_name) if project_id and topic_name \
-            else None
+            mq.IOPublisher(project_id, topic_name) \
+            if project_id and topic_name else None
 
     def submit(self, data):
         """
