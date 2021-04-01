@@ -442,6 +442,12 @@ SCHEMA = Schema(dict(
     ),
 ))
 
+assert all(k.endswith("s") for k in io.schema.LATEST.tree if k), \
+    "Not all I/O object list names end with 's'"
+
+assert set(SCHEMA.types) >= \
+    set(k[:-1] for k in io.schema.LATEST.tree if k), \
+    "OO types are not a superset of I/O types"
 
 # A (verbose) regular expression pattern matching an unquoted ID field
 _PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN = """
@@ -1172,6 +1178,44 @@ class Pattern:
         if obj_id_list_list:
             raise Exception(
                 f"Too many ID lists specified for pattern {string!r}"
+            )
+        return pattern_list
+
+    @staticmethod
+    def from_io(io_data, schema=None):
+        """
+        Create a pattern list matching all objects in the supplied I/O data.
+
+        Args:
+            io_data:    The I/O data to create the pattern list from.
+                        Must adhere to the latest schema version.
+            schema:     An object type schema to use, or None to use
+                        kcidb.orm.SCHEMA.
+
+        Returns:
+            A list of Pattern objects matching the objects in the supplied I/O
+            data.
+        """
+        assert LIGHT_ASSERTS or io.schema.is_valid_latest(io_data)
+        assert schema is None or isinstance(schema, Schema)
+        if schema is None:
+            schema = SCHEMA
+        # Assert all I/O object lists are represented in the OO schema
+        assert set(schema.types) >= \
+            set(k[:-1] for k in io.schema.LATEST.tree if k), \
+            "Specified OO types are not a superset of I/O types"
+        pattern_list = []
+        # Assume each I/O object is identified by a required "id" field
+        for obj_list_name in io.schema.LATEST.tree:
+            if not obj_list_name:
+                continue
+            assert obj_list_name.endswith("s")
+            obj_list = io_data.get(obj_list_name, [])
+            if not obj_list:
+                continue
+            pattern_list.append(
+                Pattern(None, True, obj_list_name[:-1],
+                        [o["id"] for o in obj_list], True)
             )
         return pattern_list
 
