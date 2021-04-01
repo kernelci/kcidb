@@ -36,7 +36,7 @@ class Publisher:
         assert LIGHT_ASSERTS or io.schema.is_valid(io_data)
         return json.dumps(io.schema.upgrade(io_data)).encode()
 
-    def __init__(self, project_id, topic_name):
+    def __init__(self, project_id, topic_name, client=None):
         """
         Initialize a Kernel CI message queue publisher.
 
@@ -44,8 +44,12 @@ class Publisher:
             project_id:         ID of the Google Cloud project to which the
                                 message queue belongs.
             topic_name:         Name of the message queue topic to publish to.
+            client:             The Google Pub/Sub PublisherClient to use, or
+                                None to create and use one with default
+                                settings.
         """
-        self.client = pubsub.PublisherClient()
+        assert client is None or isinstance(client, pubsub.PublisherClient)
+        self.client = client or pubsub.PublisherClient()
         self.topic_path = self.client.topic_path(project_id, topic_name)
 
     def init(self):
@@ -162,7 +166,8 @@ class Subscriber:
         data = json.loads(message_data.decode())
         return io.schema.upgrade(io.schema.validate(data), copy=False)
 
-    def __init__(self, project_id, topic_name, subscription_name):
+    def __init__(self, project_id, topic_name, subscription_name,
+                 client=None):
         """
         Initialize a Kernel CI message queue subscriber.
 
@@ -172,8 +177,12 @@ class Subscriber:
             topic_name:         Name of the message queue topic to subscribe
                                 to.
             subscription_name:  Name of the subscription to use.
+            client:             The Google Pub/Sub PublisherClient to use, or
+                                None to create and use one with default
+                                settings.
         """
-        self.client = pubsub.SubscriberClient()
+        assert client is None or isinstance(client, pubsub.SubscriberClient)
+        self.client = client or pubsub.SubscriberClient()
         self.subscription_path = \
             self.client.subscription_path(project_id, subscription_name)
         self.topic_path = self.client.topic_path(project_id, topic_name)
