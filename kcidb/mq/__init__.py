@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
 import kcidb_io as io
+import kcidb.orm
 from kcidb import misc
 from kcidb.misc import LIGHT_ASSERTS
 
@@ -306,6 +307,56 @@ class IOSubscriber(Subscriber):
         """
         data = json.loads(message_data.decode())
         return io.schema.upgrade(io.schema.validate(data), copy=False)
+
+
+class ORMPatternPublisher(Publisher):
+    """ORM pattern queue publisher"""
+
+    @staticmethod
+    def encode_data(data):
+        """
+        Encode a list of kcidb.orm.Pattern objects, into message data.
+
+        Args:
+            data:   The list to encode.
+
+        Returns
+            The encoded message data.
+
+        Raises:
+            An exception in case data encoding failed.
+        """
+        assert isinstance(data, list)
+        assert all(isinstance(pattern, kcidb.orm.Pattern)
+                   for pattern in data)
+        return "".join(
+            repr(pattern) + "\n" for pattern in data
+        ).encode()
+
+
+class ORMPatternSubscriber(Subscriber):
+    """ORM pattern queue subscriber"""
+
+    @staticmethod
+    def decode_data(message_data):
+        """
+        Decode message data to extract kcidb.orm.Pattern objects.
+
+        Args:
+            message_data:   The message data from the message queue
+                            ("data" field of pubsub.types.PubsubMessage) to be
+                            decoded.
+
+        Returns
+            The decoded list of kcidb.orm.Pattern objects.
+
+        Raises:
+            An exception in case data decoding failed.
+        """
+        pattern_list = []
+        for line in message_data.decode().splitlines():
+            pattern_list += kcidb.orm.Pattern.parse(line)
+        return pattern_list
 
 
 def io_publisher_init_main():
