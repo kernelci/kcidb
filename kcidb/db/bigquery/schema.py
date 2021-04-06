@@ -155,7 +155,7 @@ TABLE_MAP = dict(
             description="The time the build was started",
         ),
         Field(
-            "duration", "NUMERIC",
+            "duration", "FLOAT64",
             description="The number of seconds it took to complete the build",
         ),
         Field(
@@ -273,7 +273,7 @@ TABLE_MAP = dict(
             description="The time the test run was started",
         ),
         Field(
-            "duration", "NUMERIC",
+            "duration", "FLOAT64",
             description="The number of seconds it took to run the test",
         ),
         Field(
@@ -317,7 +317,7 @@ def validate_json_value(field, value):
     if field.field_type == "STRING":
         if not isinstance(value, str):
             raise JSONInvalidError(f"Value is not a string: {value!r}")
-    elif field.field_type == "NUMERIC":
+    elif field.field_type == "FLOAT64":
         if not isinstance(value, (int, float)):
             raise JSONInvalidError(f"Value is not numeric: {value!r}")
     elif field.field_type == "TIMESTAMP":
