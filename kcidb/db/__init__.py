@@ -425,6 +425,9 @@ class Client:
         Returns:
             The packed node.
         """
+        if isinstance(node, float):
+            # Round to max 9 digits after decimal point for BigQuery's NUMERIC
+            node = round(node, 9)
         if isinstance(node, list):
             node = node.copy()
             for index, value in enumerate(node):
