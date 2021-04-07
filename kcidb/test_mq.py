@@ -10,10 +10,10 @@ import kcidb
 class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 
-    def test_io_publisher_init_main(self):
-        """Check kcidb-mq-io-publisher-init works"""
-        argv = ["kcidb.mq.io_publisher_init_main",
-                "-p", "project", "-t", "topic"]
+    def test_io_publisher_main_init(self):
+        """Check kcidb-mq-io-publisher init works"""
+        argv = ["kcidb.mq.io_publisher_main",
+                "-p", "project", "-t", "topic", "init"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             publisher = Mock()
@@ -27,10 +27,10 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_io_publisher_cleanup_main(self):
-        """Check kcidb-mq-io-publisher-cleanup works"""
-        argv = ["kcidb.mq.io_publisher_cleanup_main",
-                "-p", "project", "-t", "topic"]
+    def test_io_publisher_main_cleanup(self):
+        """Check kcidb-mq-io-publisher cleanup works"""
+        argv = ["kcidb.mq.io_publisher_main",
+                "-p", "project", "-t", "topic", "cleanup"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             publisher = Mock()
@@ -44,10 +44,10 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_io_publisher_publish_main(self):
-        """Check kcidb-mq-io-publisher-publish works"""
-        argv = ["kcidb.mq.io_publisher_publish_main",
-                "-p", "project", "-t", "topic"]
+    def test_io_publisher_main_publish(self):
+        """Check kcidb-mq-io-publisher publish works"""
+        argv = ["kcidb.mq.io_publisher_main",
+                "-p", "project", "-t", "topic", "publish"]
         empty = kcidb_io.new()
 
         driver_source = textwrap.dedent("""
@@ -105,10 +105,10 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                             driver_source=driver_source,
                             stdout_re="id\nid\n")
 
-    def test_io_subscriber_init_main(self):
-        """Check kcidb-mq-io-subscriber-init works"""
-        argv = ["kcidb.mq.io_subscriber_init_main",
-                "-p", "project", "-t", "topic", "-s", "subscription"]
+    def test_io_subscriber_main_init(self):
+        """Check kcidb-mq-io-subscriber init works"""
+        argv = ["kcidb.mq.io_subscriber_main",
+                "-p", "project", "-t", "topic", "-s", "subscription", "init"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             subscriber = Mock()
@@ -123,10 +123,11 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_io_subscriber_cleanup_main(self):
-        """Check kcidb-mq-io-subscriber-cleanup works"""
-        argv = ["kcidb.mq.io_subscriber_cleanup_main",
-                "-p", "project", "-t", "topic", "-s", "subscription"]
+    def test_io_subscriber_main_cleanup(self):
+        """Check kcidb-mq-io-subscriber cleanup works"""
+        argv = ["kcidb.mq.io_subscriber_main",
+                "-p", "project", "-t", "topic", "-s", "subscription",
+                "cleanup"]
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
             subscriber = Mock()
@@ -141,11 +142,11 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
-    def test_io_subscriber_pull_main(self):
-        """Check kcidb-mq-io-subscriber-pull works"""
-        argv = ["kcidb.mq.io_subscriber_pull_main",
+    def test_io_subscriber_main_pull(self):
+        """Check kcidb-mq-io-subscriber pull works"""
+        argv = ["kcidb.mq.io_subscriber_main",
                 "-p", "project", "-t", "topic", "-s", "subscription",
-                "--timeout", "123", "--indent=0"]
+                "pull", "--timeout", "123", "--indent=0"]
         empty = kcidb_io.new()
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
