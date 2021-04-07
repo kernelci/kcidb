@@ -560,3 +560,59 @@ def io_subscriber_main():
             misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
             sys.stdout.flush()
             subscriber.ack(ack_id)
+
+
+def pattern_publisher_main():
+    """Execute the kcidb-mq-pattern-publisher command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
+    description = \
+        'kcidb-mq-pattern-publisher - ' \
+        'Kernel CI ORM pattern publisher management tool'
+    parser = PublisherArgumentParser("ORM patterns", description=description)
+    parser.subparsers["publish"].add_argument(
+        '--pattern-help',
+        action=kcidb.orm.PatternHelpAction,
+        help='Print pattern string documentation and exit.'
+    )
+    args = parser.parse_args()
+    publisher = ORMPatternPublisher(args.project, args.topic)
+    if args.command == "init":
+        publisher.init()
+    elif args.command == "cleanup":
+        publisher.cleanup()
+    elif args.command == "publish":
+        pattern_list = []
+        for line_idx, line in enumerate(sys.stdin):
+            try:
+                pattern_list += kcidb.orm.Pattern.parse(line)
+            except Exception as exc:
+                raise Exception(
+                    f"Failed parsing ORM pattern on line {line_idx + 1}: "
+                    f"{line!r}"
+                ) from exc
+        print(publisher.publish(pattern_list))
+
+
+def pattern_subscriber_main():
+    """Execute the kcidb-mq-pattern-subscriber command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
+    description = \
+        'kcidb-mq-pattern-subscriber - ' \
+        'Kernel CI ORM pattern subscriber management tool'
+    parser = SubscriberArgumentParser("ORM patterns", description=description)
+    args = parser.parse_args()
+    subscriber = ORMPatternSubscriber(args.project, args.topic,
+                                      args.subscription)
+    if args.command == "init":
+        subscriber.init()
+    elif args.command == "cleanup":
+        subscriber.cleanup()
+    elif args.command == "pull":
+        items = subscriber.pull(1, timeout=args.timeout)
+        if items:
+            ack_id, data = items[0]
+            sys.stdout.write("".join(
+                repr(pattern) + "\n" for pattern in data
+            ))
+            sys.stdout.flush()
+            subscriber.ack(ack_id)
