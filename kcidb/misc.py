@@ -156,6 +156,30 @@ def non_negative_int(string):
     return int(string)
 
 
+def argparse_output_add_args(parser):
+    """
+    Add JSON output arguments to a command-line argument parser.
+
+    Args:
+        parser: The parser to add arguments to.
+    """
+    parser.add_argument(
+        '--indent',
+        metavar="NUMBER",
+        type=non_negative_int,
+        help='Pretty-print JSON using NUMBER of spaces for indenting. '
+             'Print single-line if zero. Default is 4.',
+        default=4,
+        required=False
+    )
+    parser.add_argument(
+        '--seq',
+        help='Prefix JSON output with the RS character, to match '
+             'RFC 7464 and "application/json-seq" media type.',
+        action='store_true'
+    )
+
+
 class OutputArgumentParser(ArgumentParser):
     """
     Command-line argument parser for tools outputting JSON.
@@ -163,28 +187,14 @@ class OutputArgumentParser(ArgumentParser):
 
     def __init__(self, *args, **kwargs):
         """
-        Initialize the parser, adding report output arguments.
+        Initialize the parser, adding JSON output arguments.
 
         Args:
             args:   Positional arguments to initialize ArgumentParser with.
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
-        self.add_argument(
-            '--indent',
-            metavar="NUMBER",
-            type=non_negative_int,
-            help='Pretty-print JSON using NUMBER of spaces for indenting. '
-                 'Print single-line if zero. Default is 4.',
-            default=4,
-            required=False
-        )
-        self.add_argument(
-            '--seq',
-            help='Prefix JSON output with the RS character, to match '
-                 'RFC 7464 and "application/json-seq" media type.',
-            action='store_true'
-        )
+        argparse_output_add_args(self)
 
 
 class SplitOutputArgumentParser(OutputArgumentParser):

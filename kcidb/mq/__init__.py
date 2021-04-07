@@ -4,6 +4,7 @@ import json
 import logging
 import threading
 import sys
+import argparse
 from abc import ABC, abstractmethod
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
@@ -359,12 +360,12 @@ class ORMPatternSubscriber(Subscriber):
         return pattern_list
 
 
-def io_publisher_init_main():
-    """Execute the kcidb-mq-io-publisher-init command-line tool"""
+def io_publisher_main():
+    """Execute the kcidb-mq-io-publisher command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-io-publisher-init - ' \
-        'Initialize a Kernel CI I/O data publisher'
+        'kcidb-mq-io-publisher - ' \
+        'Kernel CI I/O data publisher management tool'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -373,20 +374,50 @@ def io_publisher_init_main():
     )
     parser.add_argument(
         '-t', '--topic',
-        help='Name of the message queue topic to create',
+        help='Name of the message queue topic',
         required=True
+    )
+    subparsers = parser.add_subparsers(dest="command",
+                                       title="Available commands",
+                                       metavar="COMMAND",
+                                       parser_class=argparse.ArgumentParser)
+    subparsers.required = True
+    description = "Initialize I/O data publisher setup"
+    subparsers.add_parser(
+        name="init", help=description, description=description
+    )
+    description = "Publish I/O data, print publishing IDs"
+    subparsers.add_parser(
+        name="publish", help=description, description=description
+    )
+    description = "Cleanup I/O publisher setup"
+    subparsers.add_parser(
+        name="cleanup", help=description, description=description
     )
     args = parser.parse_args()
+
     publisher = IOPublisher(args.project, args.topic)
-    publisher.init()
+    if args.command == "init":
+        publisher.init()
+    elif args.command == "cleanup":
+        publisher.cleanup()
+    elif args.command == "publish":
+        def print_publishing_id(publishing_id):
+            print(publishing_id, file=sys.stdout)
+            sys.stdout.flush()
+        publisher.publish_iter(
+            (io.schema.upgrade(io.schema.validate(data), copy=False)
+             for data in misc.json_load_stream_fd(sys.stdin.fileno())),
+            done_cb=print_publishing_id
+        )
 
 
-def io_publisher_cleanup_main():
-    """Execute the kcidb-mq-io-publisher-cleanup command-line tool"""
+def io_subscriber_main():
+    """Execute the kcidb-mq-io-subscriber command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-mq-io-publisher-cleanup - ' \
-        'Cleanup a Kernel CI I/O data publisher'
+        'kcidb-mq-io-subscriber - ' \
+        'Kernel CI I/O data subscriber management tool'
     parser = misc.ArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
@@ -395,135 +426,55 @@ def io_publisher_cleanup_main():
     )
     parser.add_argument(
         '-t', '--topic',
-        help='Name of the message queue topic to remove',
-        required=True
-    )
-    args = parser.parse_args()
-    publisher = IOPublisher(args.project, args.topic)
-    publisher.cleanup()
-
-
-def io_publisher_publish_main():
-    """Execute the kcidb-mq-io-publisher-publish command-line tool"""
-    sys.excepthook = misc.log_and_print_excepthook
-    description = \
-        'kcidb-mq-io-publisher-publish - ' \
-        'Publish with a Kernel CI I/O data publisher, print publishing IDs'
-    parser = misc.ArgumentParser(description=description)
-    parser.add_argument(
-        '-p', '--project',
-        help='ID of the Google Cloud project with the message queue',
-        required=True
-    )
-    parser.add_argument(
-        '-t', '--topic',
-        help='Name of the message queue topic to publish to',
-        required=True
-    )
-    args = parser.parse_args()
-    publisher = IOPublisher(args.project, args.topic)
-
-    def print_publishing_id(publishing_id):
-        print(publishing_id, file=sys.stdout)
-        sys.stdout.flush()
-
-    publisher.publish_iter(
-        (io.schema.upgrade(io.schema.validate(data), copy=False)
-         for data in misc.json_load_stream_fd(sys.stdin.fileno())),
-        done_cb=print_publishing_id
-    )
-
-
-def io_subscriber_init_main():
-    """Execute the kcidb-mq-io-subscriber-init command-line tool"""
-    sys.excepthook = misc.log_and_print_excepthook
-    description = \
-        'kcidb-mq-io-subscriber-init - ' \
-        'Initialize a Kernel CI I/O data subscriber'
-    parser = misc.ArgumentParser(description=description)
-    parser.add_argument(
-        '-p', '--project',
-        help='ID of the Google Cloud project with the message queue',
-        required=True
-    )
-    parser.add_argument(
-        '-t', '--topic',
-        help='Name of the subscription\'s message queue topic',
+        help='Name of the message queue topic',
         required=True
     )
     parser.add_argument(
         '-s', '--subscription',
-        help='Name of the subscription to create',
+        help='Name of the subscription',
         required=True
     )
-    args = parser.parse_args()
-    subscriber = IOSubscriber(args.project, args.topic, args.subscription)
-    subscriber.init()
+    subparsers = parser.add_subparsers(dest="command",
+                                       title="Available commands",
+                                       metavar="COMMAND",
+                                       parser_class=argparse.ArgumentParser)
+    subparsers.required = True
 
+    description = "Initialize I/O data subscriber setup"
+    subparsers.add_parser(
+        name="init", help=description, description=description
+    )
 
-def io_subscriber_cleanup_main():
-    """Execute the kcidb-mq-io-subscriber-cleanup command-line tool"""
-    sys.excepthook = misc.log_and_print_excepthook
-    description = \
-        'kcidb-mq-io-subscriber-cleanup - ' \
-        'Cleanup a Kernel CI I/O data subscriber'
-    parser = misc.ArgumentParser(description=description)
-    parser.add_argument(
-        '-p', '--project',
-        help='ID of the Google Cloud project with the message queue',
-        required=True
+    description = "Pull I/O data with a subscriber"
+    pull_parser = subparsers.add_parser(
+        name="pull", help=description, description=description
     )
-    parser.add_argument(
-        '-t', '--topic',
-        help='Name of the subscription\'s message queue topic',
-        required=True
-    )
-    parser.add_argument(
-        '-s', '--subscription',
-        help='Name of the subscription to remove',
-        required=True
-    )
-    args = parser.parse_args()
-    subscriber = IOSubscriber(args.project, args.topic, args.subscription)
-    subscriber.cleanup()
-
-
-def io_subscriber_pull_main():
-    """Execute the kcidb-mq-io-subscriber-pull command-line tool"""
-    sys.excepthook = misc.log_and_print_excepthook
-    description = \
-        'kcidb-mq-io-subscriber-pull - ' \
-        'Pull with a Kernel CI I/O data subscriber'
-    parser = misc.OutputArgumentParser(description=description)
-    parser.add_argument(
-        '-p', '--project',
-        help='ID of the Google Cloud project with the message queue',
-        required=True
-    )
-    parser.add_argument(
-        '-t', '--topic',
-        help='Name of the subscription\'s message queue topic',
-        required=True
-    )
-    parser.add_argument(
-        '-s', '--subscription',
-        help='Name of the subscription to pull from',
-        required=True
-    )
-    parser.add_argument(
+    pull_parser.add_argument(
         '--timeout',
         metavar="SECONDS",
         type=float,
         help='Wait the specified number of SECONDS for a message, '
-             'or forever, if zero',
+             'or forever, if zero. Default is zero.',
         default=0,
         required=False
     )
+    misc.argparse_output_add_args(pull_parser)
+
+    description = "Cleanup I/O data subscriber setup"
+    subparsers.add_parser(
+        name="cleanup", help=description, description=description
+    )
     args = parser.parse_args()
+
     subscriber = IOSubscriber(args.project, args.topic, args.subscription)
-    items = subscriber.pull(1, timeout=args.timeout)
-    if items:
-        ack_id, data = items[0]
-        misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
-        sys.stdout.flush()
-        subscriber.ack(ack_id)
+    if args.command == "init":
+        subscriber.init()
+    elif args.command == "cleanup":
+        subscriber.cleanup()
+    elif args.command == "pull":
+        items = subscriber.pull(1, timeout=args.timeout)
+        if items:
+            ack_id, data = items[0]
+            misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
+            sys.stdout.flush()
+            subscriber.ack(ack_id)
