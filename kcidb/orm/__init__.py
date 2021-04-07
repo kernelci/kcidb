@@ -694,8 +694,8 @@ class Pattern:
     def __repr__(self):
         string = ""
         if self.base is not None:
-            string += repr(self.base) + " "
-        string += "> " if self.child else "< "
+            string += repr(self.base)
+        string += ">" if self.child else "<"
         string += self.obj_type.name
         string += Pattern._format_id_list_spec(self.obj_id_list)
         if self.match:
