@@ -598,6 +598,7 @@ class Pattern:
         assert obj_id_list is None or \
                isinstance(obj_id_list, list) and \
                all(
+                    isinstance(obj_id, tuple) and
                     len(obj_id) == len(obj_id_fields) and
                     all(isinstance(part, (str, type(None))) for part in obj_id)
                     for obj_id in obj_id_list
