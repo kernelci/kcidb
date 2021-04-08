@@ -346,10 +346,10 @@ SCHEMA = Schema(dict(
             checkout=("git_commit_hash", "patchset_hash",)
         ),
         summary_template=TEMPLATE_ENV.get_template(
-            "new_revision_summary.txt.j2"
+            "revision_summary.txt.j2"
         ),
         description_template=TEMPLATE_ENV.get_template(
-            "new_revision_description.txt.j2"
+            "revision_description.txt.j2"
         ),
     ),
     checkout=dict(
@@ -375,10 +375,10 @@ SCHEMA = Schema(dict(
             build=("checkout_id",)
         ),
         summary_template=TEMPLATE_ENV.get_template(
-            "new_checkout_summary.txt.j2"
+            "checkout_summary.txt.j2"
         ),
         description_template=TEMPLATE_ENV.get_template(
-            "new_checkout_description.txt.j2"
+            "checkout_description.txt.j2"
         ),
     ),
     build=dict(
@@ -407,10 +407,10 @@ SCHEMA = Schema(dict(
             test=("build_id",),
         ),
         summary_template=TEMPLATE_ENV.get_template(
-            "new_build_summary.txt.j2"
+            "build_summary.txt.j2"
         ),
         description_template=TEMPLATE_ENV.get_template(
-            "new_build_description.txt.j2"
+            "build_description.txt.j2"
         ),
     ),
     test=dict(
@@ -434,10 +434,10 @@ SCHEMA = Schema(dict(
         required_fields={'id', 'origin', 'build_id'},
         id_fields=("id",),
         summary_template=TEMPLATE_ENV.get_template(
-            "new_test_summary.txt.j2"
+            "test_summary.txt.j2"
         ),
         description_template=TEMPLATE_ENV.get_template(
-            "new_test_description.txt.j2"
+            "test_description.txt.j2"
         ),
     ),
 ))
