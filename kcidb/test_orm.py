@@ -1,6 +1,7 @@
 """kcdib.orm module tests"""
 
 from jinja2 import Template
+import kcidb_io
 import kcidb
 
 
@@ -82,20 +83,29 @@ SCHEMA = kcidb.orm.Schema(dict(
 ))
 
 
+def parse(string, obj_id_list_list=None):
+    """Parse a pattern string using test schema"""
+    return kcidb.orm.Pattern.parse(string, obj_id_list_list,
+                                   schema=SCHEMA)
+
+
+def pattern(base, child, obj_type_name, obj_id_list, match):
+    """Create a pattern with test schema"""
+    return kcidb.orm.Pattern(base, child,
+                             SCHEMA.types[obj_type_name],
+                             obj_id_list, match)
+
+
+def from_io(io_data):
+    """Create a pattern from I/O with test schema"""
+    return kcidb.orm.Pattern.from_io(io_data, schema=SCHEMA)
+
+
 class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
     """Test case for the Pattern class"""
 
     def test_parse(self):
         """Check pattern parsing works"""
-        def parse(string, obj_id_list_list=None):
-            return kcidb.orm.Pattern.parse(string, obj_id_list_list,
-                                           schema=SCHEMA)
-
-        def pattern(base, child, obj_type_name, obj_id_list, match):
-            return kcidb.orm.Pattern(base, child,
-                                     SCHEMA.types[obj_type_name],
-                                     obj_id_list, match)
-
         self.assertEqual(parse(""), [])
         self.assertEqual(parse("<*"), [])
         self.assertEqual(parse(">revision"),
@@ -239,3 +249,130 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             [pattern(None, True, "revision",
                      [("abc", "def"), ("ghi", "jkl")], False)]
         )
+
+    def test_from_io(self):
+        """
+        Check Pattern.from_io() works correctly.
+        """
+        io_data = kcidb_io.new()
+        self.assertEqual(from_io(io_data), [])
+
+        io_data = {
+            "checkouts": [
+            ],
+            "builds": [
+            ],
+            "tests": [
+            ],
+            **kcidb_io.new()
+        }
+        self.assertEqual(from_io(io_data), [])
+
+        io_data = {
+            "checkouts": [
+                {
+                    "git_commit_hash":
+                    "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "id": "origin:1",
+                    "origin": "origin",
+                },
+            ],
+            **kcidb_io.new()
+        }
+        self.assertEqual(from_io(io_data), [
+            pattern(None, True, "checkout", [("origin:1",)], True)
+        ])
+
+        io_data = {
+            "checkouts": [
+                {
+                    "git_commit_hash":
+                    "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "id": "origin:1",
+                    "origin": "origin",
+                },
+                {
+                    "git_commit_hash":
+                    "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "id": "origin:2",
+                    "origin": "origin",
+                },
+                {
+                    "git_commit_hash":
+                    "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "id": "origin:3",
+                    "origin": "origin",
+                },
+            ],
+            **kcidb_io.new()
+        }
+        self.assertEqual(from_io(io_data), [
+            pattern(
+                None, True, "checkout",
+                [("origin:1",), ("origin:2",), ("origin:3",)], True
+            )
+        ])
+
+        io_data = {
+            "builds": [
+                {
+                    "checkout_id": "origin:1",
+                    "id": "origin:2",
+                    "origin": "origin",
+                },
+            ],
+            **kcidb_io.new()
+        }
+        self.assertEqual(from_io(io_data), [
+            pattern(None, True, "build", [("origin:2",)], True)
+        ])
+
+        io_data = {
+            "tests": [
+                {
+                    "build_id": "origin:2",
+                    "id": "origin:3",
+                    "origin": "origin",
+                },
+            ],
+            **kcidb_io.new()
+        }
+        self.assertEqual(from_io(io_data), [
+            pattern(None, True, "test", [("origin:3",)], True)
+        ])
+
+        io_data = {
+            "checkouts": [
+                {
+                    "git_commit_hash":
+                    "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "id": "origin:1",
+                    "origin": "origin",
+                },
+            ],
+            "builds": [
+                {
+                    "checkout_id": "origin:1",
+                    "id": "origin:2",
+                    "origin": "origin",
+                },
+            ],
+            "tests": [
+                {
+                    "build_id": "origin:2",
+                    "id": "origin:3",
+                    "origin": "origin",
+                },
+            ],
+            **kcidb_io.new()
+        }
+        self.assertEqual(from_io(io_data), [
+            pattern(None, True, "checkout", [("origin:1",)], True),
+            pattern(None, True, "build", [("origin:2",)], True),
+            pattern(None, True, "test", [("origin:3",)], True),
+        ])
