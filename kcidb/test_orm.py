@@ -4,95 +4,96 @@ from jinja2 import Template
 import kcidb
 
 
+EMPTY_TEMPLATE = Template("")
+SCHEMA = kcidb.orm.Schema(dict(
+    revision=dict(
+        field_json_schemas=dict(
+            git_commit_hash=dict(type="string"),
+            patchset_hash=dict(type="string"),
+        ),
+        required_fields=set(),
+        id_fields=("git_commit_hash", "patchset_hash"),
+        children=dict(
+            checkout=("git_commit_hash", "patchset_hash",)
+        ),
+        summary_template=EMPTY_TEMPLATE,
+        description_template=EMPTY_TEMPLATE,
+    ),
+    checkout=dict(
+        field_json_schemas=dict(
+            id=dict(type="string"),
+        ),
+        required_fields=set(),
+        id_fields=("id",),
+        children=dict(
+            build=("checkout_id",)
+        ),
+        summary_template=EMPTY_TEMPLATE,
+        description_template=EMPTY_TEMPLATE,
+    ),
+    build=dict(
+        field_json_schemas=dict(
+            id=dict(type="string"),
+        ),
+        required_fields=set(),
+        id_fields=("id",),
+        children=dict(
+            test=("build_id",),
+            build_test_environment=("build_id",)
+        ),
+        summary_template=EMPTY_TEMPLATE,
+        description_template=EMPTY_TEMPLATE,
+    ),
+    test_environment=dict(
+        field_json_schemas=dict(
+            id=dict(type="string"),
+        ),
+        required_fields=set(),
+        id_fields=("id",),
+        children=dict(
+            test=("environment_id",),
+            build_test_environment=("environment_id",),
+        ),
+        summary_template=EMPTY_TEMPLATE,
+        description_template=EMPTY_TEMPLATE,
+    ),
+    build_test_environment=dict(
+        field_json_schemas=dict(
+            build_id=dict(type="string"),
+            environment_id=dict(type="string"),
+        ),
+        required_fields=set(),
+        id_fields=("build_id", "environment_id"),
+        children=dict(
+            test=("build_id", "environment_id"),
+        ),
+        summary_template=EMPTY_TEMPLATE,
+        description_template=EMPTY_TEMPLATE,
+    ),
+    test=dict(
+        field_json_schemas=dict(
+            id=dict(type="string"),
+        ),
+        required_fields=set(),
+        id_fields=("id",),
+        summary_template=EMPTY_TEMPLATE,
+        description_template=EMPTY_TEMPLATE,
+    ),
+))
+
+
 class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
     """Test case for the Pattern class"""
 
     def test_parse(self):
         """Check pattern parsing works"""
-        empty_template = Template("")
-        schema = kcidb.orm.Schema(dict(
-            revision=dict(
-                field_json_schemas=dict(
-                    git_commit_hash=dict(type="string"),
-                    patchset_hash=dict(type="string"),
-                ),
-                required_fields=set(),
-                id_fields=("git_commit_hash", "patchset_hash"),
-                children=dict(
-                    checkout=("git_commit_hash", "patchset_hash",)
-                ),
-                summary_template=empty_template,
-                description_template=empty_template,
-            ),
-            checkout=dict(
-                field_json_schemas=dict(
-                    id=dict(type="string"),
-                ),
-                required_fields=set(),
-                id_fields=("id",),
-                children=dict(
-                    build=("checkout_id",)
-                ),
-                summary_template=empty_template,
-                description_template=empty_template,
-            ),
-            build=dict(
-                field_json_schemas=dict(
-                    id=dict(type="string"),
-                ),
-                required_fields=set(),
-                id_fields=("id",),
-                children=dict(
-                    test=("build_id",),
-                    build_test_environment=("build_id",)
-                ),
-                summary_template=empty_template,
-                description_template=empty_template,
-            ),
-            test_environment=dict(
-                field_json_schemas=dict(
-                    id=dict(type="string"),
-                ),
-                required_fields=set(),
-                id_fields=("id",),
-                children=dict(
-                    test=("environment_id",),
-                    build_test_environment=("environment_id",),
-                ),
-                summary_template=empty_template,
-                description_template=empty_template,
-            ),
-            build_test_environment=dict(
-                field_json_schemas=dict(
-                    build_id=dict(type="string"),
-                    environment_id=dict(type="string"),
-                ),
-                required_fields=set(),
-                id_fields=("build_id", "environment_id"),
-                children=dict(
-                    test=("build_id", "environment_id"),
-                ),
-                summary_template=empty_template,
-                description_template=empty_template,
-            ),
-            test=dict(
-                field_json_schemas=dict(
-                    id=dict(type="string"),
-                ),
-                required_fields=set(),
-                id_fields=("id",),
-                summary_template=empty_template,
-                description_template=empty_template,
-            ),
-        ))
-
         def parse(string, obj_id_list_list=None):
             return kcidb.orm.Pattern.parse(string, obj_id_list_list,
-                                           schema=schema)
+                                           schema=SCHEMA)
 
         def pattern(base, child, obj_type_name, obj_id_list, match):
             return kcidb.orm.Pattern(base, child,
-                                     schema.types[obj_type_name],
+                                     SCHEMA.types[obj_type_name],
                                      obj_id_list, match)
 
         self.assertEqual(parse(""), [])
