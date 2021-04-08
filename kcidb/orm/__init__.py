@@ -1215,8 +1215,8 @@ class Pattern:
             if not obj_list:
                 continue
             pattern_list.append(
-                Pattern(None, True, obj_list_name[:-1],
-                        [o["id"] for o in obj_list], True)
+                Pattern(None, True, schema.types[obj_list_name[:-1]],
+                        [(o["id"],) for o in obj_list], True)
             )
         return pattern_list
 
