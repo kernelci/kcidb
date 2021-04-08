@@ -4,7 +4,7 @@ from jinja2 import Template
 import kcidb
 
 
-class KCIDBOODataPattern(kcidb.unittest.TestCase):
+class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
     """Test case for the Pattern class"""
 
     def test_parse(self):
