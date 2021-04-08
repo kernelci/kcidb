@@ -10,29 +10,23 @@ this test. See complete report at:
 TEST
 
     Status
-                {{ test_macros.waived_emoji(test.waived_) -}}
-                {{- test_macros.status_emoji(test.status_) -}}
-                {{- " " + test_macros.status_name(test.status_) }}
+                {{ test_macros.waived_status_badge(test.waived, test.status) }}
 {% if test.path %}
     Path
                 {{ test.path }}
 {% endif %}
-{% if test.comment %}
-    Comment
-                {{ test.comment }}
-{% endif %}
-{% if test.build_ %}
-    {% if test.build_.checkout_ %}
+{% if test.build %}
+    {% if test.build.checkout %}
     Checkout
-                {{ checkout_macros.summary(test.build_.checkout_) }}
+                {{ checkout_macros.summary(test.build.checkout) }}
     {% endif %}
     Build
-                {{ build_macros.summary(test.build_) }}
+                {{ build_macros.summary(test.build) }}
 {% endif %}
     Executed
             by: {{ test.origin }}
-{% if test.environment and test.environment.comment %}
-            on: {{ test.environment.comment }}
+{% if test.environment_comment %}
+            on: {{ test.environment_comment }}
 {% endif %}
 {% if test.start_time %}
             at: {{ test.start_time }}
@@ -46,5 +40,9 @@ TEST
                 {{ output_file.name }}: {{ output_file.url }}
     {% endfor %}
 {% endif %}
+{% if test.comment %}
+    Comment
+                {{ test.comment }}
+{% endif %}
 
-{# The above newline is intentional #}
+{# Force git commit hook to ignore trailing newline #}

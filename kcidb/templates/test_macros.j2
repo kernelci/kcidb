@@ -1,36 +1,84 @@
-{# Test template macros #}
+{# Test macros #}
+
+{% macro status_emoji(status) %}
+    {{- "💥" if status == "ERROR" else
+        "❌" if status == "FAIL" else
+        "✅" if status == "PASS" else
+        "🆗" if status == "DONE" else
+        "⏩" if status == "SKIP" else
+        "❓" -}}
+{% endmacro %}
+
+{% macro waived_emoji(waived) %}
+    {{- "🚧" if waived is true else
+        "" if waived is false else
+        "❓" -}}
+{% endmacro %}
+
+{% macro status_name(status) %}
+    {{- "UNKNOWN" if status is none else status -}}
+{% endmacro %}
+
+{% macro status_badge(status) %}
+    {{- status_emoji(status) + " " + status_name(status) -}}
+{% endmacro %}
+
+{% macro waived_status_emoji(waived, status) %}
+    {{- waived_emoji(waived) + status_emoji(status) -}}
+{% endmacro %}
+
+{% macro waived_status_badge(waived, status) %}
+    {{- waived_status_emoji(waived, status) + " " + status_name(status) -}}
+{% endmacro %}
 
 {% macro summary(test) %}
-    {% set empty = True %}
-    {% if test.path %}
-        {{- test.path -}}
-        {% set empty = False %}
-    {% endif %}
-    {% if test.comment %}
-        {{- "" if empty else " - " -}}
-        {{- test.comment -}}
-        {% set empty = False %}
-    {% endif %}
-    {% if empty %}
-        {{- test.id -}}
-    {% endif %}
+    {{- [test.path, test.comment] | reject("none") |
+        join(" - ") | default(test.id, true) -}}
 {% endmacro %}
 
-{% macro waived_emoji(waived_) %}
-    {{- "🚧" if waived_.name == "TRUE" else
-        "" if waived_.name == "FALSE" else
-        "❓" -}}
-{% endmacro %}
-
-{% macro status_emoji(status_) %}
-    {{- "💥" if status_.name == "ERROR" else
-        "❌" if status_.name == "FAIL" else
-        "✅" if status_.name == "PASS" else
-        "🆗" if status_.name == "DONE" else
-        "⏩" if status_.name == "SKIP" else
-        "❓" -}}
-{% endmacro %}
-
-{% macro status_name(status_) %}
-    {{- "" if status_.name == "NONE" else status_.name -}}
+{% macro container_summary(container, max_list_len) %}
+    {% if container.tests %}
+        {{- "\nTESTS" }}
+        {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
+        {{- "\n    Status" }}
+            {{- "\n      " -}}
+            {% for waived, status_nodes in waived_status_nodes.items() %}
+                {% for status, nodes in status_nodes.items() %}
+                    {% if nodes %}
+                        {{- "  " + waived_status_emoji(waived, status) +
+                            " " + nodes | length | string -}}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+            {{- "" }}
+        {% set errored_nodes = waived_status_nodes[false]["ERROR"] %}
+        {% if errored_nodes %}
+            {{- "    Errors" }}
+            {% for node in errored_nodes[:max_list_len] %}
+                {{- "        " +
+                    waived_status_emoji(node.waived, node.status) +
+                    " " + node.path
+                }}
+            {% endfor %}
+            {% if errored_nodes | length > max_list_len %}
+                {{- "        ..." }}
+            {% endif %}
+        {% endif %}
+        {% set failed_nodes = waived_status_nodes[false]["FAIL"] %}
+        {% if failed_nodes %}
+            {{- "    Failures" }}
+            {% for node in failed_nodes[:max_list_len] %}
+                {{- "        " +
+                    waived_status_emoji(node.waived, node.status) +
+                    " " + node.path | default("?", true)
+                }}
+            {% endfor %}
+            {% if failed_nodes | length > max_list_len %}
+                {{- "        ..." }}
+            {% endif %}
+        {% endif %}
+        {{- "    By\n        " -}}
+            {{- container.tests | map(attribute="origin") |
+                unique | sort | join(", ") }}
+    {% endif %}
 {% endmacro %}

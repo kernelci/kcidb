@@ -1,24 +1,29 @@
 {# Build description template #}
 {% import "checkout_macros.j2" as checkout_macros %}
 {% import "test_macros.j2" as test_macros %}
+{% import "misc_macros.j2" as misc_macros %}
+{# Maximum length of a list of things (builds/tests/etc.) #}
+{% set max_list_len = 5 %}
 Below is the summary of testing results Kernel CI database has recorded
 for this build so far. See complete and up-to-date report at:
 
     https://staging.kernelci.org:3000/d/build/build?orgId=1&var-id={{ build.id | urlencode }}
 
+OVERVIEW
+
+         Build: {{ misc_macros.valid_badge(build.valid) }}
+{% if build.tests %}
+         Tests: {{ test_macros.waived_status_badge(build.tests_root.waived,
+                                                   build.tests_root.status) }}
+{% endif %}
+
 BUILD
 
     Status
-                {{ "❓" if build.valid is none else
-                   "✅" if build.valid else
-                   "❌" }}
-{% if build.description %}
-    Description
-                {{ build.description }}
-{% endif %}
-{% if build.checkout_ %}
+                {{ misc_macros.valid_badge(build.valid) }}
+{% if build.checkout %}
     Checkout
-                {{ checkout_macros.summary(build.checkout_) }}
+                {{ checkout_macros.summary(build.checkout) }}
 {% endif %}
 {% if build.architecture %}
     Architecture
@@ -63,32 +68,17 @@ BUILD
 {% if build.log_url %}
            log: {{ build.log_url }}
 {% endif %}
-
-{% set ns = namespace() %}
-{% set ns.got_tests = False %}
-{% set ns.worst_status_ = None %}
-{% set ns.worst_waived_ = None %}
-{% for test in build.tests_.values() %}
-    {% if not ns.got_tests or
-          test.waived_.value * test.status_.value >
-            ns.worst_waived_.value * ns.worst_status_.value %}
-        {% set ns.worst_status_ = test.status_ %}
-        {% set ns.worst_waived_ = test.waived_ %}
-    {% endif %}
-    {% set ns.got_tests = True %}
-{% endfor %}
-{% if ns.got_tests %}
-TESTS
-
-    Status
-                {{ test_macros.waived_emoji(ns.worst_waived_) -}}
-                {{- test_macros.status_emoji(ns.worst_status_) -}}
-                {{- " " + test_macros.status_name(ns.worst_status_) }}
-
-    {% for test in build.tests_.values() %}
-        {{- "    " + test_macros.waived_emoji(test.waived_) -}}
-        {{- test_macros.status_emoji(test.status_) -}}
-        {{- " " + test_macros.summary(test) }}
-    {% endfor %}
-
+{% if build.comment %}
+    Comment
+                {{ build.comment }}
 {% endif %}
+{# #}
+{{- test_macros.container_summary(build, max_list_len) -}}
+{# #}
+
+See complete and up-to-date report at:
+
+    https://staging.kernelci.org:3000/d/build/build?orgId=1&var-id={{ build.id | urlencode }}
+{{ misc_macros.legend() }}
+
+{# Force git commit hook to ignore trailing newline #}

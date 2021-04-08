@@ -1,34 +1,27 @@
 {# Checkout template macros #}
 
 {% macro summary(checkout) %}
-    {% set empty = True %}
-    {% if checkout.git_repository_url %}
-        {{- "" if empty else " " -}}
-        {{- checkout.git_repository_url.split("/")[-1] -}}
-        {% set empty = False %}
-    {% endif %}
-    {% if checkout.git_repository_branch %}
-        {{- "" if empty else ":" -}}
-        {{- checkout.git_repository_branch -}}
-        {% set empty = False %}
-    {% endif %}
-    {% if checkout.git_commit_name %}
-        {{- "" if empty else "@" -}}
-        {{- checkout.git_commit_name -}}
-        {% set empty = False %}
-    {% elif checkout.git_commit_hash %}
-        {{- "" if empty else "@" -}}
-        {{- checkout.git_commit_hash[:12] -}}
-        {% set empty = False %}
-    {% endif %}
-    {% if checkout.patchset_files %}
-        {{- "" if empty else " +" -}}
-        {{- checkout.patchset_files | length -}}{{- "P" -}}
-        {% set empty = False %}
-    {% endif %}
-    {% if checkout.comment %}
-        {{- "" if empty else " " -}}
-        {{- checkout.comment -}}
-        {% set empty = False %}
-    {% endif %}
+    {% set location =
+            none
+            if checkout.git_repository_url is none
+            else ([checkout.git_repository_url.split("/")[-1],
+                   checkout.git_repository_branch] |
+                  reject("none") | join(":")) %}
+    {% set commit = (none
+                     if checkout.revision.git_commit_hash is none
+                     else checkout.revision.git_commit_hash[:12])
+                    if checkout.revision.git_commit_name is none
+                    else checkout.revision.git_commit_name %}
+    {% set location_commit = [location, commit] | reject("none") |
+                             join("@") | default(none, true) %}
+    {% set patches =
+            ("+" + (checkout.revision.patchset_files | length | string) + "P")
+            if checkout.revision.patchset_files
+            else none %}
+    {% set location_commit_patches =
+        none
+        if location_commit is none
+        else ([location_commit, patches] | reject("none") | join("")) %}
+    {{- [location_commit_patches, checkout.comment] |
+        reject("none") | join(" ") -}}
 {% endmacro %}
