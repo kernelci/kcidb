@@ -1,4 +1,4 @@
-"""Kernel CI report database - null driver"""
+"""Kernel CI report database - JSON-initialized in-memory database driver"""
 
 import sys
 import textwrap
