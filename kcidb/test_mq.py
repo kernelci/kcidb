@@ -256,20 +256,20 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                         Pattern(
                             Pattern(
                                 Pattern(None, True, SCHEMA.types["checkout"],
-                                        [("kernelci:1",)], False),
-                                False, SCHEMA.types["revision"], None, False
+                                        [("kernelci:1",)]),
+                                False, SCHEMA.types["revision"], None
                             ),
-                            True, SCHEMA.types["checkout"], None, False
+                            True, SCHEMA.types["checkout"], None
                         ),
-                        True, SCHEMA.types["build"], None, True
+                        True, SCHEMA.types["build"], None
                     ),
                     Pattern(
                         Pattern(
                             Pattern(None, True, SCHEMA.types["test"],
-                                    [("kernelci:1",)], False),
-                            False, SCHEMA.types["build"], None, False
+                                    [("kernelci:1",)]),
+                            False, SCHEMA.types["build"], None
                         ),
-                        True, SCHEMA.types["test"], None, True
+                        True, SCHEMA.types["test"], None
                     )
                 ])
             return status
@@ -331,20 +331,20 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                     Pattern(
                         Pattern(
                             Pattern(None, True, SCHEMA.types["checkout"],
-                                    [("kernelci:1",)], False),
-                            False, SCHEMA.types["revision"], None, False
+                                    [("kernelci:1",)]),
+                            False, SCHEMA.types["revision"], None
                         ),
-                        True, SCHEMA.types["checkout"], None, False
+                        True, SCHEMA.types["checkout"], None
                     ),
-                    True, SCHEMA.types["build"], None, True
+                    True, SCHEMA.types["build"], None
                 ),
                 Pattern(
                     Pattern(
                         Pattern(None, True, SCHEMA.types["test"],
-                                [("kernelci:1",)], False),
-                        False, SCHEMA.types["build"], None, False
+                                [("kernelci:1",)]),
+                        False, SCHEMA.types["build"], None
                     ),
-                    True, SCHEMA.types["test"], None, True
+                    True, SCHEMA.types["test"], None
                 )
             ])])
             subscriber.ack = Mock()
