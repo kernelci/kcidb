@@ -573,7 +573,7 @@ class Pattern:
     """A pattern matching objects in a data source"""
 
     # No, it's OK, pylint: disable=too-many-arguments
-    def __init__(self, base, child, obj_type, obj_id_list, match):
+    def __init__(self, base, child, obj_type, obj_id_list):
         """
         Initialize an object pattern.
 
@@ -588,8 +588,6 @@ class Pattern:
             obj_id_list:    The list of IDs of the objects to limit the
                             pattern to, or None to not limit the objects by
                             IDs.
-            match:          True if the objects referenced by this pattern
-                            should be matched, false if not.
         """
         assert base is None or isinstance(base, Pattern)
         assert isinstance(child, bool)
@@ -603,7 +601,6 @@ class Pattern:
                     all(isinstance(part, (str, type(None))) for part in obj_id)
                     for obj_id in obj_id_list
                )
-        assert isinstance(match, bool)
         assert base is not None or child
         assert base is None or (
             (
@@ -620,7 +617,6 @@ class Pattern:
         self.child = child
         self.obj_type = obj_type
         self.obj_id_list = None if obj_id_list is None else obj_id_list.copy()
-        self.match = match
 
     def __eq__(self, other):
         return \
@@ -628,8 +624,7 @@ class Pattern:
             self.base == other.base and \
             self.child == other.child and \
             self.obj_type == other.obj_type and \
-            self.obj_id_list == other.obj_id_list and \
-            self.match == other.match
+            self.obj_id_list == other.obj_id_list
 
     @staticmethod
     def _format_id_field(id_field):
@@ -691,154 +686,148 @@ class Pattern:
             for obj_id in obj_id_list
         ) + "]"
 
-    def __repr__(self):
+    def __repr__(self, final=True):
         string = ""
         if self.base is not None:
-            string += repr(self.base)
+            string += self.base.__repr__(final=False)
         string += ">" if self.child else "<"
         string += self.obj_type.name
         string += Pattern._format_id_list_spec(self.obj_id_list)
-        if self.match:
+        if final:
             string += "#"
         return string
 
     @staticmethod
-    def _expand_parents(schema, base_list, obj_type_expr, obj_id_list, match):
+    def _validate_obj_id_list(obj_type, obj_id_list):
         """
-        Expand a single level of parents into a list of patterns, for a parsed
-        pattern specification.
+        Validate a list of object IDs against a type.
 
         Args:
-            schema:         An object type schema to use.
-            base_list:      The list of patterns to base created patterns on.
-                            Empty list means patterns shouldn't be based on
-                            anything (based on the "root" type).
-            obj_type_expr:  Object type expression, one of:
-                            "*" - all parent types,
-                            or a name of the specific parent type.
-            obj_id_list:    List of object IDs to limit the pattern to,
-                            or None to not limit the pattern.
-            match:          True, if expanded patterns should be marked for
-                            matching, False if not.
+            obj_type:       The type to validate the ID list against.
+            obj_id_list:    The ID list to validate, or None for no list.
 
         Returns:
-            A list of patterns expanded from the specification, referencing
-            the supplied bases.
+            The validated ID list, or None if supplied with None.
+
+        Raises:
+            Exception if the ID list is invalid for the type.
         """
-        assert isinstance(schema, Schema)
-        assert isinstance(base_list, list)
-        assert all(isinstance(base, Pattern) for base in base_list)
-        assert isinstance(obj_type_expr, str)
+        assert isinstance(obj_type, Type)
         assert obj_id_list is None or \
             (isinstance(obj_id_list, list) and
              all(isinstance(obj_id, tuple) and
-                 all(isinstance(part, str) for part in obj_id)
+                 all(isinstance(part, (str, type(None))) for part in obj_id)
                  for obj_id in obj_id_list))
-        assert isinstance(match, bool)
-
-        pattern_list = []
-        # For each base
-        for base in base_list:
-            base_pattern_list = []
-            # For each base's parent relation
-            for obj_type_name, relation in base.obj_type.parents.items():
-                if obj_type_expr in ("*", obj_type_name):
-                    base_pattern_list.append(
-                        Pattern(base, False, relation.parent,
-                                obj_id_list, match)
-                    )
-            # If couldn't find any parents
-            if not base_pattern_list:
-                if obj_type_expr == "*":
-                    base_pattern_list.append(base)
-                else:
-                    raise Exception(
-                        f"Cannot find parent type {obj_type_expr!r}"
-                    )
-            pattern_list += base_pattern_list
-        return pattern_list
+        for obj_id in obj_id_list or []:
+            if len(obj_id) != len(obj_type.id_fields):
+                raise Exception(
+                    f"Invalid number of ID fields "
+                    f"({len(obj_id)}) for {obj_type.name!r}. "
+                    f"Expecting {len(obj_type.id_fields)} "
+                    f"fields: {obj_id!r}"
+                )
+        return obj_id_list
 
     @staticmethod
-    def _expand_children(schema, base_list, obj_type_expr, obj_id_list, match):
+    def _expand_relation(schema, base_list,
+                         child, obj_type_expr, obj_id_list):
         """
-        Expand a single level of children into a list of patterns, for a parsed
-        pattern specification.
+        Expand a single level of parent/child relation into a list of
+        patterns, for a parsed pattern specification.
 
         Args:
             schema:         An object type schema to use.
             base_list:      The list of patterns to base created patterns on.
                             Empty list means patterns shouldn't be based on
                             anything (based on the "root" type).
+            child:          True, if expanding children of the specified
+                            bases. False, if parents.
             obj_type_expr:  Object type expression, one of:
                             "*" - all children types,
                             or a name of the specific child type.
             obj_id_list:    List of object IDs to limit the pattern to,
                             or None to not limit the pattern.
-            match:          True, if expanded patterns should be marked for
-                            matching, False if not.
 
         Returns:
-            A list of patterns expanded from the specification, referencing
-            the supplied bases.
+            Two values: a list of new patterns expanded from the
+            specification, referencing the supplied bases, and a list of
+            unused bases (having no relations to substitute for "*").
         """
         assert isinstance(schema, Schema)
         assert isinstance(base_list, list)
         assert all(isinstance(base, Pattern) for base in base_list)
+        assert isinstance(child, bool)
         assert isinstance(obj_type_expr, str)
         assert obj_id_list is None or \
             (isinstance(obj_id_list, list) and
              all(isinstance(obj_id, tuple) and
                  all(isinstance(part, (str, type(None))) for part in obj_id)
                  for obj_id in obj_id_list))
-        assert isinstance(match, bool)
 
-        pattern_list = []
+        new_list = []
+        unused_list = []
         # If we are based on some objects
         if base_list:
             # For each base
             for base in base_list:
-                # Start with an empty per-base pattern list
-                base_pattern_list = []
-                # For each base's child relation
-                for obj_type_name, relation in base.obj_type.children.items():
-                    if obj_type_expr in ("*", obj_type_name):
-                        base_pattern_list.append(
-                            Pattern(base, True, relation.child,
-                                    obj_id_list, match)
+                base_new_list = []
+                # For each base's relation of requested type
+                related_types = (
+                    relation.child if child else relation.parent
+                    for relation in (base.obj_type.children if child
+                                     else base.obj_type.parents).values()
+                )
+                for obj_type in related_types:
+                    if obj_type_expr in ("*", obj_type.name):
+                        base_new_list.append(
+                            Pattern(
+                                base, child, obj_type,
+                                Pattern._validate_obj_id_list(obj_type,
+                                                              obj_id_list)
+                            )
                         )
-                # If couldn't find any children
-                if not base_pattern_list:
+                # If we have expanded to something
+                if base_new_list:
+                    new_list += base_new_list
+                else:
                     if obj_type_expr == "*":
-                        base_pattern_list.append(base)
+                        unused_list.append(base)
                     else:
                         raise Exception(
-                            f"Cannot find child type {obj_type_expr!r}"
+                            f"Cannot find {'child' if child else 'parent'} "
+                            f"type {obj_type_expr!r}"
                         )
-                pattern_list += base_pattern_list
-        # Else we're not based on anything (based on root)
-        else:
+        # Else we're based on "root", and if children were requested
+        elif child:
             for obj_type_name, obj_type in schema.types.items():
                 if obj_type_expr in ("*", obj_type_name):
-                    pattern_list.append(
-                        Pattern(None, True, obj_type, obj_id_list, match)
+                    new_list.append(
+                        Pattern(
+                            None, child, obj_type,
+                            Pattern._validate_obj_id_list(obj_type,
+                                                          obj_id_list)
+                        )
                     )
-            if obj_type_expr != "*" and not pattern_list:
+            # If we have expanded to nothing
+            if not new_list and obj_type_expr != "*":
                 raise Exception(
                     f"Cannot find type {obj_type_expr!r}"
                 )
-        return pattern_list
+        return new_list, unused_list
 
     @staticmethod
-    def _expand(schema, base_list, child, obj_type_expr, obj_id_list,
-                match_spec):
+    def _expand(schema, base_list, match_list, child, obj_type_expr,
+                obj_id_list, match_spec):
         """
-        Expand a parsed pattern specification into a list of patterns.
+        Expand a parsed pattern specification into a list of referenced
+        patterns, and a list of matching patterns.
 
         Args:
             schema:         An object type schema to use.
             base_list:      The list of patterns to base created patterns
                             on. Empty list means patterns shouldn't be
                             based on anything (based on the "root" object).
+            match_list:     A list to have matching patterns added, if any.
             child:          True if the created patterns are for children
                             of the specified bases. False for parents.
             obj_type_expr:  Object type expression, one of:
@@ -851,11 +840,11 @@ class Pattern:
                             for matching.
 
         Returns:
-            A list of patterns expanded from the specification, referencing
-            the supplied bases.
+            The list of patterns referenced by the specification.
         """
         assert isinstance(base_list, list)
         assert all(isinstance(base, Pattern) for base in base_list)
+        assert isinstance(match_list, list)
         assert isinstance(child, bool)
         assert isinstance(obj_type_expr, str)
         assert obj_id_list is None or \
@@ -865,31 +854,25 @@ class Pattern:
                  for obj_id in obj_id_list))
         assert match_spec in (None, "#", "$")
 
-        # Start with an empty pattern list
-        pattern_list = []
-
-        # While we can expand
+        ref_list = []
         while True:
-            if child:
-                pattern_list = Pattern._expand_children(
-                    schema, base_list, obj_type_expr,
-                    obj_id_list, match_spec == "#")
+            base_list, unused_list = Pattern._expand_relation(
+                schema, base_list, child, obj_type_expr, obj_id_list)
+            if obj_type_expr == "*":
+                ref_list += unused_list
+                if match_spec == "$":
+                    match_list += unused_list
+                if not base_list:
+                    break
+                if match_spec == "#":
+                    match_list += base_list
             else:
-                pattern_list = Pattern._expand_parents(
-                    schema, base_list, obj_type_expr,
-                    obj_id_list, match_spec == "#")
-            # If we are done expanding
-            if not obj_type_expr == "*" or pattern_list == base_list:
+                ref_list += base_list
+                if match_spec is not None:
+                    match_list += base_list
                 break
-            # Rebase for next expansion step
-            base_list = pattern_list
 
-        # If asked to match only the furthest children/objects
-        if match_spec == "$":
-            for pattern in pattern_list:
-                pattern.match = True
-
-        return pattern_list
+        return ref_list
 
     @staticmethod
     def _parse_id(string, pos):
@@ -1039,12 +1022,17 @@ class Pattern:
         using ABNF:
 
         whitespace = %x09-0d / %x20 ; Whitespace characters
-        relation = ">" /    ; Children of all directly-preceding types,
-                            ; or root types, if there's nothing on the left.
-                   "<"      ; Parents of all directly-preceding types
-        type = name /       ; A parent/child type with specified name
-               "*"          ; Furthest parents/children of the types on the
-                            ; left, or types themselves which have none.
+        relation = ">" /    ; Traverse children of the types referenced by
+                            ; the pattern on the left, or of the "root type",
+                            ; if there is no pattern on the left.
+                   "<"      ; Traverse parents of the types referenced by the
+                            ; pattern on the left.
+        type = name /       ; Traverse and reference the immediate
+                            ; parent/child type with specified name.
+               "*"          ; Traverse all parents/children recursively.
+                            ; Reference the furthest traversed type, and the
+                            ; bases (types referenced by the pattern on the
+                            ; left), which have no specified relations.
         name_char = %x30-39 / %x61-7a / "_"
                             ; Lower-case letters, numbers, underscore
         name = 1*name_char  ; Type name
@@ -1076,18 +1064,18 @@ class Pattern:
                             ; Inline ID list
         match = "#" /       ; Match objects of all types traversed by this
                             ; pattern specification.
-                "$"         ; Match objects of only the furthest types
-                            ; traversed by this pattern specification.
+                "$"         ; Match objects referenced by this pattern
+                            ; specification.
         pattern = *whitespace relation *whitespace type
                   [*whitespace spec] [*whitespace match]
         pattern_string = 1*pattern *whitespace
 
         Examples:
-            >build%#            Match builds with IDs from the first of a
+            >build%#            Match builds with IDs from the first item of a
                                 separately-specified list of ID lists (if
                                 supplied).
             >build%$            The same.
-            >build[redhat:1077837]
+            >build[redhat:1077837]#
                                 Match a build with ID "redhat:1077837".
             >checkout%>build#   Match builds of checkouts with IDs from
                                 the first element of separately-specified list
@@ -1098,19 +1086,19 @@ class Pattern:
             >test[redhat:1077834_0; redhat:1077834_1]<build#
                                 Match builds of tests with IDs
                                 "redhat:1077834_0" and "redhat:1077834_1".
-            >test%<*#           Match tests with IDs from the first element of
-                                separately-specified list of ID lists (if
-                                supplied), and all their parents.
+            >test%<*#           Match all parents of tests with IDs from the
+                                first element of separately-specified list of
+                                ID lists (if supplied), but not the tests
+                                themselves.
             >test%<*$           Match only the furthest (the ultimate) parents
                                 of tests with IDs from the optional ID list
-                                list, or tests themselves, if they have no
-                                parent types.
+                                list, including tests themselves, if they have
+                                no parent types.
             >revision%#>*#      Match revisions with IDs from the optional ID
                                 list list, and all their children, if any.
             >revision[c763deac7ff, 932e2d61add]#>*#
-                                Match the revision with ID
-                                (c763deac7ff, 932e2d61add),
-                                and all its children, if any.
+                                Match the revision with ID (c763deac7ff,
+                                932e2d61add), and all its children, if any.
             >test%<*$>*#        Match the root objects containing tests with
                                 the IDs from the optional ID list list, along
                                 with all their children.
@@ -1121,7 +1109,7 @@ class Pattern:
     @staticmethod
     def parse(string, obj_id_list_list=None, schema=None):
         """
-        Parse a pattern string and its parameter IDs into a chain of Pattern
+        Parse a pattern string and its parameter IDs into a tree of Pattern
         objects. See kcidb.orm.Pattern.STRING_DOC for documentation on
         pattern strings.
 
@@ -1153,7 +1141,8 @@ class Pattern:
         if schema is None:
             schema = SCHEMA
 
-        pattern_list = []
+        base_list = []
+        match_list = []
         pos = 0
         while pos < len(string):
             match = _PATTERN_STRING_RE.match(string, pos)
@@ -1166,8 +1155,8 @@ class Pattern:
                 spec, obj_id_list_list
             )
             try:
-                pattern_list = Pattern._expand(
-                    schema, pattern_list, relation == ">",
+                base_list = Pattern._expand(
+                    schema, base_list, match_list, relation == ">",
                     obj_type_expr, obj_id_list, match_spec
                 )
             except Exception as exc:
@@ -1180,7 +1169,7 @@ class Pattern:
             raise Exception(
                 f"Too many ID lists specified for pattern {string!r}"
             )
-        return pattern_list
+        return match_list
 
     @staticmethod
     def from_io(io_data, schema=None):
@@ -1216,7 +1205,7 @@ class Pattern:
                 continue
             pattern_list.append(
                 Pattern(None, True, schema.types[obj_list_name[:-1]],
-                        [(o["id"],) for o in obj_list], True)
+                        [(o["id"],) for o in obj_list])
             )
         return pattern_list
 

@@ -425,17 +425,14 @@ class Driver(AbstractDriver):
 
         # Render all queries for each type
         obj_type_queries = {}
-        for obj_type_name in kcidb.orm.SCHEMA.types:
+        for obj_type in kcidb.orm.SCHEMA.types.values():
             for pattern in pattern_list:
                 # TODO: Avoid adding the same patterns multiple times
-                while pattern:
-                    if pattern.match and \
-                       pattern.obj_type.name == obj_type_name:
-                        if pattern.obj_type not in obj_type_queries:
-                            obj_type_queries[pattern.obj_type] = []
-                        obj_type_queries[pattern.obj_type]. \
-                            append(Driver._oo_query_render(pattern))
-                    pattern = pattern.base
+                if pattern.obj_type == obj_type:
+                    if obj_type not in obj_type_queries:
+                        obj_type_queries[obj_type] = []
+                    obj_type_queries[obj_type]. \
+                        append(Driver._oo_query_render(pattern))
 
         # Execute all the queries
         objs = {}
