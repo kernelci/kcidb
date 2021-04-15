@@ -5,6 +5,7 @@ objects, but without the object-oriented interface.
 
 import re
 import textwrap
+import logging
 import argparse
 from abc import ABC, abstractmethod
 import jinja2
@@ -15,6 +16,10 @@ from kcidb.misc import LIGHT_ASSERTS
 from kcidb.templates import ENV as TEMPLATE_ENV
 
 # We'll get to it, pylint: disable=too-many-lines
+
+
+# Module's logger
+LOGGER = logging.getLogger(__name__)
 
 
 class Relation:
@@ -1237,6 +1242,77 @@ class Source(ABC):
         """
         assert isinstance(pattern_set, set)
         assert all(isinstance(r, Pattern) for r in pattern_set)
+
+
+class Cache(Source):
+    """A cache source of object-oriented data"""
+
+    def __init__(self, source):
+        """
+        Initialize the cache source.
+
+        Args:
+            source: The source to request uncached objects from.
+        """
+        assert isinstance(source, Source)
+        self.source = source
+        self.type_id_objs = {type_name: {} for type_name in SCHEMA.types}
+        self.pattern_responses = {}
+
+    def oo_query(self, pattern_set):
+        """
+        Retrieve raw data for objects specified via a pattern set.
+
+        Args:
+            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+                            instances) matching objects to fetch.
+        Returns:
+            A dictionary of object type names and lists containing retrieved
+            raw data of the corresponding type.
+        """
+        assert isinstance(pattern_set, set)
+        assert all(isinstance(r, Pattern) for r in pattern_set)
+
+        # Start with an empty response
+        response_type_id_objs = {}
+
+        # For each pattern
+        for pattern in pattern_set:
+            # Try to get the response from the cache
+            try:
+                pattern_response = self.pattern_responses[pattern]
+                LOGGER.debug("Fetched from cache: %s", repr(pattern))
+            # If not found
+            except KeyError:
+                # Query
+                pattern_response = self.source.oo_query({pattern})
+                # Merge the response and the cache
+                for type_name, objs in pattern_response.items():
+                    get_id = SCHEMA.types[type_name].get_id
+                    id_objs = self.type_id_objs[type_name]
+                    for idx, obj in enumerate(objs):
+                        # We like our "id", pylint: disable=invalid-name
+                        id = get_id(obj)
+                        obj = id_objs.get(id, obj)
+                        objs[idx] = obj
+                        id_objs[id] = obj
+                # Add pattern response to the cache
+                self.pattern_responses[pattern] = pattern_response
+            # Merge into the overall response
+            for type_name, objs in pattern_response.items():
+                get_id = SCHEMA.types[type_name].get_id
+                id_objs = response_type_id_objs.get(type_name, {})
+                for obj in objs:
+                    id_objs[get_id(obj)] = obj
+                response_type_id_objs[type_name] = id_objs
+
+        # Return merged and validated response
+        response = {
+            type_name: list(id_objs.values())
+            for type_name, id_objs in response_type_id_objs.items()
+        }
+        assert LIGHT_ASSERTS or SCHEMA.is_valid(response)
+        return response
 
 
 class PatternHelpAction(argparse.Action):
