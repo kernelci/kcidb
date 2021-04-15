@@ -256,7 +256,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                         Pattern(
                             Pattern(
                                 Pattern(None, True, SCHEMA.types["checkout"],
-                                        [("kernelci:1",)]),
+                                        {("kernelci:1",)}),
                                 False, SCHEMA.types["revision"], None
                             ),
                             True, SCHEMA.types["checkout"], None
@@ -266,7 +266,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                     Pattern(
                         Pattern(
                             Pattern(None, True, SCHEMA.types["test"],
-                                    [("kernelci:1",)]),
+                                    {("kernelci:1",)}),
                             False, SCHEMA.types["build"], None
                         ),
                         True, SCHEMA.types["test"], None
@@ -331,7 +331,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                     Pattern(
                         Pattern(
                             Pattern(None, True, SCHEMA.types["checkout"],
-                                    [("kernelci:1",)]),
+                                    {("kernelci:1",)}),
                             False, SCHEMA.types["revision"], None
                         ),
                         True, SCHEMA.types["checkout"], None
@@ -341,7 +341,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                 Pattern(
                     Pattern(
                         Pattern(None, True, SCHEMA.types["test"],
-                                [("kernelci:1",)]),
+                                {("kernelci:1",)}),
                         False, SCHEMA.types["build"], None
                     ),
                     True, SCHEMA.types["test"], None
