@@ -5,6 +5,7 @@ objects, but without the object-oriented interface.
 
 import re
 import textwrap
+import logging
 import argparse
 from abc import ABC, abstractmethod
 import jinja2
@@ -15,6 +16,10 @@ from kcidb.misc import LIGHT_ASSERTS
 from kcidb.templates import ENV as TEMPLATE_ENV
 
 # We'll get to it, pylint: disable=too-many-lines
+
+
+# Module's logger
+LOGGER = logging.getLogger(__name__)
 
 
 class Relation:
@@ -1266,6 +1271,186 @@ class Source(ABC):
         """
         assert isinstance(pattern_set, set)
         assert all(isinstance(r, Pattern) for r in pattern_set)
+
+
+class Cache(Source):
+    """A cache source of object-oriented data"""
+
+    def __init__(self, source):
+        """
+        Initialize the cache source.
+
+        Args:
+            source: The source to request uncached objects from.
+        """
+        assert isinstance(source, Source)
+        self.source = source
+        self.type_id_objs = {type_name: {} for type_name in SCHEMA.types}
+        self.pattern_responses = {}
+
+    def _merge_pattern_response(self, pattern, response):
+        """
+        Process a response to a single-pattern query fetched from the
+        underlying source, merging it with the cache.
+
+        Args:
+            pattern:    The pattern the response was retrieved for.
+            response:   The retrieved response. May be modified.
+
+        Returns:
+            The merged response.
+        """
+        # Let's get it working first, refactor later,
+        # pylint: disable=too-many-locals,too-many-branches
+        assert isinstance(pattern, Pattern)
+        assert LIGHT_ASSERTS or SCHEMA.is_valid(response)
+        assert len(response) <= 1
+        if not response:
+            response[pattern.obj_type.name] = []
+        type_name, objs = tuple(response.items())[0]
+        assert type_name == pattern.obj_type.name
+
+        # Merge the response and the cache
+        get_id = SCHEMA.types[type_name].get_id
+        get_parent_id = SCHEMA.types[type_name].get_parent_id
+        id_objs = self.type_id_objs[type_name]
+        base_pattern = pattern.base
+        base_type = None if base_pattern is None else base_pattern.obj_type
+        cached = set()
+        # For each object in the response
+        for obj in objs:
+            # Deduplicate or cache the object
+            # We like our "id", pylint: disable=invalid-name
+            id = get_id(obj)
+            if id in id_objs:
+                obj = id_objs[id]
+                LOGGER.debug("Deduplicated %r %r", type_name, id)
+            else:
+                id_objs[id] = obj
+                LOGGER.debug("Cached %r %r", type_name, id)
+            # If we've got all children of an object
+            if base_pattern is not None and \
+               pattern.child and pattern.obj_id_set is None:
+                # Put the fact in the cache
+                parent_child_pattern = Pattern(
+                    Pattern(None, True, base_type,
+                            {get_parent_id(base_type.name, obj)}),
+                    True, pattern.obj_type
+                )
+                if parent_child_pattern in cached:
+                    r = self.pattern_responses[parent_child_pattern]
+                    r[type_name].append(obj)
+                elif parent_child_pattern not in self.pattern_responses:
+                    self.pattern_responses[parent_child_pattern] = {
+                        type_name: [obj]
+                    }
+                    cached.add(parent_child_pattern)
+
+        # If we've just loaded all children of the parent pattern
+        if pattern.child and base_pattern in self.pattern_responses and \
+           pattern.obj_id_set is None:
+            parent_get_id = SCHEMA.types[base_type.name].get_id
+            parent_response = self.pattern_responses[base_pattern]
+            # For each cached parent object
+            for parent_obj in parent_response[base_type.name]:
+                # Create pattern for its children
+                parent_child_pattern = Pattern(
+                    Pattern(None, True, base_type,
+                            {parent_get_id(parent_obj)}),
+                    True, pattern.obj_type
+                )
+                # If we don't have its children cached
+                if parent_child_pattern not in self.pattern_responses:
+                    # Store the fact that it has none
+                    self.pattern_responses[parent_child_pattern] = {
+                        type_name: []
+                    }
+                    cached.add(parent_child_pattern)
+
+        # For every parent-child relation of this pattern's type
+        for child_relation in pattern.obj_type.children.values():
+            # If we had a query for all this-type children of our pattern
+            sub_pattern = Pattern(pattern, True, child_relation.child)
+            if sub_pattern in self.pattern_responses:
+                # For each object in our response
+                for obj in objs:
+                    # Create pattern for its children of this type
+                    parent_child_pattern = Pattern(
+                        Pattern(None, True, pattern.obj_type, {get_id(obj)}),
+                        True, child_relation.child
+                    )
+                    # If we don't have its children cached
+                    if parent_child_pattern not in self.pattern_responses:
+                        # Store the fact that it has none
+                        self.pattern_responses[parent_child_pattern] = {
+                            child_relation.child.name: []
+                        }
+                        cached.add(parent_child_pattern)
+
+        # Add pattern response to the cache
+        self.pattern_responses[pattern] = response
+        cached.add(pattern)
+        # Log cached patterns
+        LOGGER.debug("Cached patterns %r", cached)
+        if LOGGER.getEffectiveLevel() <= logging.DEBUG:
+            LOGGER.debug(
+                "Cache now has %s",
+                ", ".join(
+                    tuple(
+                        f"{len(id_objs)} {type_name}s"
+                        for type_name, id_objs in self.type_id_objs.items()
+                        if id_objs
+                    ) +
+                    (f"{len(self.pattern_responses)} patterns", )
+                )
+            )
+        return response
+
+    def oo_query(self, pattern_set):
+        """
+        Retrieve raw data for objects specified via a pattern set.
+
+        Args:
+            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+                            instances) matching objects to fetch.
+        Returns:
+            A dictionary of object type names and lists containing retrieved
+            raw data of the corresponding type.
+        """
+        assert isinstance(pattern_set, set)
+        assert all(isinstance(r, Pattern) for r in pattern_set)
+
+        # Start with an empty response
+        response_type_id_objs = {}
+
+        # For each pattern
+        for pattern in pattern_set:
+            # Try to get the response from the cache
+            try:
+                pattern_response = self.pattern_responses[pattern]
+                LOGGER.debug("Fetched from the cache: %r", pattern)
+            # If not found
+            except KeyError:
+                # Query the source and merge the response into the cache
+                pattern_response = self._merge_pattern_response(
+                    pattern, self.source.oo_query({pattern})
+                )
+                LOGGER.debug("Merged into the cache: %r", pattern)
+            # Merge into the overall response
+            for type_name, objs in pattern_response.items():
+                get_id = SCHEMA.types[type_name].get_id
+                id_objs = response_type_id_objs.get(type_name, {})
+                for obj in objs:
+                    id_objs[get_id(obj)] = obj
+                response_type_id_objs[type_name] = id_objs
+
+        # Return merged and validated response
+        response = {
+            type_name: list(id_objs.values())
+            for type_name, id_objs in response_type_id_objs.items()
+        }
+        assert LIGHT_ASSERTS or SCHEMA.is_valid(response)
+        return response
 
 
 class PatternHelpAction(argparse.Action):
