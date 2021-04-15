@@ -626,6 +626,10 @@ class Pattern:
             self.obj_type == other.obj_type and \
             self.obj_id_list == other.obj_id_list
 
+    def __hash__(self):
+        return hash((self.base, self.child, self.obj_type,
+                     tuple(sorted(self.obj_id_list))))
+
     @staticmethod
     def _format_id_field(id_field):
         """
