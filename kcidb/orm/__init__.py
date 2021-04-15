@@ -573,7 +573,7 @@ class Pattern:
     """A pattern matching objects in a data source"""
 
     # No, it's OK, pylint: disable=too-many-arguments
-    def __init__(self, base, child, obj_type, obj_id_set):
+    def __init__(self, base, child, obj_type, obj_id_set=None):
         """
         Initialize an object pattern.
 
@@ -587,10 +587,10 @@ class Pattern:
                             to by this pattern.
             obj_id_set:     The set/frozenset of IDs of the objects to limit
                             the pattern to, or None to not limit the objects
-                            by IDs. Sets will be converted to frozensets. Each
-                            ID is a tuple of strings with the number of
-                            elements corresponding to the number of ID fields
-                            of the object type.
+                            by IDs. Default is None. Sets will be converted to
+                            frozensets. Each ID is a tuple of strings with the
+                            number of elements corresponding to the number of
+                            ID fields of the object type.
         """
         assert base is None or isinstance(base, Pattern)
         assert isinstance(child, bool)

@@ -257,19 +257,19 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                             Pattern(
                                 Pattern(None, True, SCHEMA.types["checkout"],
                                         {("kernelci:1",)}),
-                                False, SCHEMA.types["revision"], None
+                                False, SCHEMA.types["revision"]
                             ),
-                            True, SCHEMA.types["checkout"], None
+                            True, SCHEMA.types["checkout"]
                         ),
-                        True, SCHEMA.types["build"], None
+                        True, SCHEMA.types["build"]
                     ),
                     Pattern(
                         Pattern(
                             Pattern(None, True, SCHEMA.types["test"],
                                     {("kernelci:1",)}),
-                            False, SCHEMA.types["build"], None
+                            False, SCHEMA.types["build"]
                         ),
-                        True, SCHEMA.types["test"], None
+                        True, SCHEMA.types["test"]
                     )
                 ])
             return status
@@ -332,19 +332,19 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                         Pattern(
                             Pattern(None, True, SCHEMA.types["checkout"],
                                     {("kernelci:1",)}),
-                            False, SCHEMA.types["revision"], None
+                            False, SCHEMA.types["revision"]
                         ),
-                        True, SCHEMA.types["checkout"], None
+                        True, SCHEMA.types["checkout"]
                     ),
-                    True, SCHEMA.types["build"], None
+                    True, SCHEMA.types["build"]
                 ),
                 Pattern(
                     Pattern(
                         Pattern(None, True, SCHEMA.types["test"],
                                 {("kernelci:1",)}),
-                        False, SCHEMA.types["build"], None
+                        False, SCHEMA.types["build"]
                     ),
-                    True, SCHEMA.types["test"], None
+                    True, SCHEMA.types["test"]
                 )
             ])])
             subscriber.ack = Mock()
