@@ -188,6 +188,27 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             ]
         )
         self.assertEqual(
+            parse(">build#>*#"),
+            [
+                pattern(None, True, "build", None),
+                pattern(
+                    pattern(None, True, "build", None),
+                    True, "test", None
+                ),
+                pattern(
+                    pattern(None, True, "build", None),
+                    True, "build_test_environment", None
+                ),
+                pattern(
+                    pattern(
+                        pattern(None, True, "build", None),
+                        True, "build_test_environment", None
+                    ),
+                    True, "test", None
+                )
+            ]
+        )
+        self.assertEqual(
             parse(">build%<*$", [{("abc",)}]),
             [
                 pattern(
