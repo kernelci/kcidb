@@ -352,7 +352,7 @@ class Driver(AbstractDriver):
         assert isinstance(pattern, kcidb.orm.Pattern)
         obj_type = pattern.obj_type
         type_query_string = schema.OO_QUERIES[obj_type.name]
-        if pattern.obj_id_list:
+        if pattern.obj_id_set:
             obj_id_fields = obj_type.id_fields
             query_string = "SELECT obj.* FROM (\n" + \
                 textwrap.indent(type_query_string, " " * 4) + "\n" + \
@@ -371,13 +371,13 @@ class Driver(AbstractDriver):
                                 for c, v in zip(obj_id_fields, obj_id)
                             )
                         )
-                        for obj_id in pattern.obj_id_list
+                        for obj_id in pattern.obj_id_set
                     ]
                 )
             ]
         else:
             query_string = type_query_string
-            if pattern.obj_id_list is not None:
+            if pattern.obj_id_set is not None:
                 # Workaround empty array parameters not having element type
                 query_string += " LIMIT 0"
             query_parameters = []

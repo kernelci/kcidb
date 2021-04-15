@@ -59,8 +59,7 @@ class Object:
         if name in self._type.parents:
             response = self._client.query(
                 Pattern.parse(
-                    ">" + self._type.name + "%<" + name + "#",
-                    [[id]]
+                    ">" + self._type.name + "%<" + name + "#", [{id}]
                 )
             )
             try:
@@ -73,7 +72,7 @@ class Object:
                 return self._client.query(
                     Pattern.parse(
                         ">" + self._type.name + "%>" + child_type_name + "#",
-                        [[id]]
+                        [{id}]
                     )
                 )[child_type_name]
         raise AttributeError(f"Attribute {name!r} not found")
