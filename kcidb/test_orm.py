@@ -89,7 +89,7 @@ def parse(string, obj_id_set_list=None):
                                    schema=SCHEMA)
 
 
-def pattern(base, child, obj_type_name, obj_id_set):
+def pattern(base, child, obj_type_name, obj_id_set=None):
     """Create a pattern with test schema"""
     return kcidb.orm.Pattern(base, child,
                              SCHEMA.types[obj_type_name], obj_id_set)
@@ -111,37 +111,35 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
         self.assertEqual(parse("<*#"), [])
         self.assertEqual(parse(">revision"), [])
         self.assertEqual(parse(">revision$"),
-                         [pattern(None, True, "revision", None)])
+                         [pattern(None, True, "revision")])
         self.assertEqual(parse(">revision#"),
-                         [pattern(None, True, "revision", None)])
+                         [pattern(None, True, "revision")])
         self.assertEqual(parse(">checkout"), [])
         self.assertEqual(parse(">checkout$"),
-                         [pattern(None, True, "checkout", None)])
+                         [pattern(None, True, "checkout")])
         self.assertEqual(parse(">checkout#"),
-                         [pattern(None, True, "checkout", None)])
+                         [pattern(None, True, "checkout")])
         self.assertEqual(parse(">build"), [])
         self.assertEqual(parse(">build$"),
-                         [pattern(None, True, "build", None)])
+                         [pattern(None, True, "build")])
         self.assertEqual(parse(">build#"),
-                         [pattern(None, True, "build", None)])
+                         [pattern(None, True, "build")])
         self.assertEqual(parse(">build_test_environment"), [])
         self.assertEqual(parse(">build_test_environment$"),
-                         [pattern(None, True, "build_test_environment",
-                                  None)])
+                         [pattern(None, True, "build_test_environment")])
         self.assertEqual(parse(">build_test_environment#"),
-                         [pattern(None, True, "build_test_environment",
-                                  None)])
+                         [pattern(None, True, "build_test_environment")])
         self.assertEqual(parse(">test_environment"),
                          [])
         self.assertEqual(parse(">test_environment$"),
-                         [pattern(None, True, "test_environment", None)])
+                         [pattern(None, True, "test_environment")])
         self.assertEqual(parse(">test_environment#"),
-                         [pattern(None, True, "test_environment", None)])
+                         [pattern(None, True, "test_environment")])
         self.assertEqual(parse(">test"), [])
         self.assertEqual(parse(">test$"),
-                         [pattern(None, True, "test", None)])
+                         [pattern(None, True, "test")])
         self.assertEqual(parse(">test#"),
-                         [pattern(None, True, "test", None)])
+                         [pattern(None, True, "test")])
 
         self.assertEqual(parse(">revision%", [{("abc", "def")}]), [])
         self.assertEqual(parse(">revision%$", [{("abc", "def")}]),
@@ -153,9 +151,9 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             [pattern(
                 pattern(
                     pattern(None, True, "revision", {("abc", "def")}),
-                    True, "checkout", None
+                    True, "checkout"
                 ),
-                True, "build", None
+                True, "build"
             )])
         self.assertEqual(
             parse(">revision%>checkout%>build#",
@@ -165,46 +163,46 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     pattern(None, True, "revision", {("abc", "def")}),
                     True, "checkout", {("123",)}
                 ),
-                True, "build", None
+                True, "build"
             )])
         self.assertEqual(
             parse(">build>*#"),
             [
                 pattern(
-                    pattern(None, True, "build", None),
-                    True, "test", None
+                    pattern(None, True, "build"),
+                    True, "test"
                 ),
                 pattern(
-                    pattern(None, True, "build", None),
-                    True, "build_test_environment", None
+                    pattern(None, True, "build"),
+                    True, "build_test_environment"
                 ),
                 pattern(
                     pattern(
-                        pattern(None, True, "build", None),
-                        True, "build_test_environment", None
+                        pattern(None, True, "build"),
+                        True, "build_test_environment"
                     ),
-                    True, "test", None
+                    True, "test"
                 )
             ]
         )
         self.assertEqual(
             parse(">build#>*#"),
             [
-                pattern(None, True, "build", None),
+                pattern(None, True, "build"),
                 pattern(
-                    pattern(None, True, "build", None),
-                    True, "test", None
+                    pattern(None, True, "build"),
+                    True, "test"
                 ),
                 pattern(
-                    pattern(None, True, "build", None),
-                    True, "build_test_environment", None
+                    pattern(None, True, "build"),
+                    True, "build_test_environment"
                 ),
                 pattern(
                     pattern(
-                        pattern(None, True, "build", None),
-                        True, "build_test_environment", None
+                        pattern(None, True, "build"),
+                        True, "build_test_environment"
                     ),
-                    True, "test", None
+                    True, "test"
                 )
             ]
         )
@@ -214,9 +212,9 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                 pattern(
                     pattern(
                         pattern(None, True, "build", {("abc",)}),
-                        False, "checkout", None
+                        False, "checkout"
                     ),
-                    False, "revision", None
+                    False, "revision"
                 )
             ]
         )
@@ -224,14 +222,14 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
         revision_pattern = pattern(
             pattern(
                 pattern(None, True, "build", {("abc",)}),
-                False, "checkout", None
+                False, "checkout"
             ),
-            False, "revision", None
+            False, "revision"
         )
-        checkout_pattern = pattern(revision_pattern, True, "checkout", None)
-        build_pattern = pattern(checkout_pattern, True, "build", None)
+        checkout_pattern = pattern(revision_pattern, True, "checkout")
+        build_pattern = pattern(checkout_pattern, True, "build")
         build_test_environment_pattern = pattern(
-            build_pattern, True, "build_test_environment", None
+            build_pattern, True, "build_test_environment"
         )
         self.assertEqual(
             parse(">build%<*$>*#", [{("abc",)}]),
@@ -239,10 +237,10 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                 revision_pattern,
                 checkout_pattern,
                 build_pattern,
-                pattern(build_pattern, True, "test", None),
+                pattern(build_pattern, True, "test"),
                 build_test_environment_pattern,
                 pattern(
-                    build_test_environment_pattern, True, "test", None
+                    build_test_environment_pattern, True, "test"
                 ),
             ]
         )
@@ -260,7 +258,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     pattern(None, True, "revision", {("abc", "def")}),
                     True, "checkout", {("123",)}
                 ),
-                True, "build", None
+                True, "build"
             )])
         self.assertEqual(parse(">revision[abc,def; ghi, jkl]#"),
                          [pattern(None, True, "revision",
@@ -291,7 +289,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             [
                 pattern(
                     pattern(None, True, "checkout", {("123",)}),
-                    True, "build", None
+                    True, "build"
                 )
             ]
         )
@@ -301,7 +299,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             [
                 pattern(
                     pattern(None, True, "checkout", {("123",)}),
-                    True, "build", None
+                    True, "build"
                 )
             ]
         )
