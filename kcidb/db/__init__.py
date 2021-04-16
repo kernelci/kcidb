@@ -217,21 +217,21 @@ class Client(kcidb.orm.Source):
         except StopIteration:
             return io.new()
 
-    def oo_query(self, pattern_list):
+    def oo_query(self, pattern_set):
         """
         Query raw object-oriented data from the database.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
-        assert isinstance(pattern_list, list)
-        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_list)
-        return self.driver.oo_query(pattern_list)
+        assert isinstance(pattern_set, set)
+        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_set)
+        return self.driver.oo_query(pattern_set)
 
     def load(self, data):
         """
