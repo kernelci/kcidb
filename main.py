@@ -69,7 +69,7 @@ def kcidb_load_message(event, context):
     pattern_set = set()
     for pattern in kcidb.orm.Pattern.from_io(data):
         # TODO Avoid formatting and parsing
-        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
+        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
     # Publish patterns matching all affected objects
     UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
 
@@ -188,7 +188,7 @@ def kcidb_load_queue(event, context):
     pattern_set = set()
     for pattern in kcidb.orm.Pattern.from_io(data):
         # TODO Avoid formatting and parsing
-        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
+        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
 
     # Publish patterns matching all affected objects
     UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
