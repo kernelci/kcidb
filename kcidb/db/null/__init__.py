@@ -96,12 +96,12 @@ class Driver(AbstractDriver):
         """
         yield io.new()
 
-    def oo_query(self, pattern_list):
+    def oo_query(self, pattern_set):
         """
         Query raw object-oriented data from the database.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.oo.data.Pattern"
+            pattern_set:    A set of patterns ("kcidb.oo.data.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved

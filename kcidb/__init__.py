@@ -306,10 +306,10 @@ def summarize_main():
     parser = oo.ArgumentParser(database="json", description=description)
     args = parser.parse_args()
     oo_client = oo.Client(db.Client(args.database))
-    pattern_list = []
+    pattern_set = set()
     for pattern_string in args.pattern_strings:
-        pattern_list += orm.Pattern.parse(pattern_string)
-    for objs in oo_client.query(pattern_list).values():
+        pattern_set |= orm.Pattern.parse(pattern_string)
+    for objs in oo_client.query(pattern_set).values():
         for obj in objs:
             print(obj.summarize())
             sys.stdout.flush()
@@ -323,10 +323,10 @@ def describe_main():
     parser = oo.ArgumentParser(database="json", description=description)
     args = parser.parse_args()
     oo_client = oo.Client(db.Client(args.database))
-    pattern_list = []
+    pattern_set = set()
     for pattern_string in args.pattern_strings:
-        pattern_list += orm.Pattern.parse(pattern_string)
-    for objs in oo_client.query(pattern_list).values():
+        pattern_set |= orm.Pattern.parse(pattern_string)
+    for objs in oo_client.query(pattern_set).values():
         for obj in objs:
             sys.stdout.write(obj.describe())
             sys.stdout.write("\x00")
@@ -356,10 +356,10 @@ def notify_main():
     parser = oo.ArgumentParser(database="json", description=description)
     args = parser.parse_args()
     oo_client = oo.Client(db.Client(args.database))
-    pattern_list = []
+    pattern_set = set()
     for pattern_string in args.pattern_strings:
-        pattern_list += orm.Pattern.parse(pattern_string)
-    for notification in monitor.match(oo_client.query(pattern_list)):
+        pattern_set |= orm.Pattern.parse(pattern_string)
+    for notification in monitor.match(oo_client.query(pattern_set)):
         sys.stdout.write(
             notification.render().
             as_string(policy=email.policy.SMTPUTF8)

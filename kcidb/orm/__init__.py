@@ -736,7 +736,7 @@ class Pattern:
         return obj_id_set
 
     @staticmethod
-    def _expand_relation(schema, base_list,
+    def _expand_relation(schema, base_set,
                          child, obj_type_expr, obj_id_set):
         """
         Expand a single level of parent/child relation into a list of
@@ -744,8 +744,8 @@ class Pattern:
 
         Args:
             schema:         An object type schema to use.
-            base_list:      The list of patterns to base created patterns on.
-                            Empty list means patterns shouldn't be based on
+            base_set:       The set of patterns to base created patterns on.
+                            Empty set means patterns shouldn't be based on
                             anything (based on the "root" type).
             child:          True, if expanding children of the specified
                             bases. False, if parents.
@@ -756,13 +756,13 @@ class Pattern:
                             pattern to, or None to not limit the pattern.
 
         Returns:
-            Two values: a list of new patterns expanded from the
-            specification, referencing the supplied bases, and a list of
+            Two values: a set of new patterns expanded from the
+            specification, referencing the supplied bases, and a set of
             unused bases (having no relations to substitute for "*").
         """
         assert isinstance(schema, Schema)
-        assert isinstance(base_list, list)
-        assert all(isinstance(base, Pattern) for base in base_list)
+        assert isinstance(base_set, set)
+        assert all(isinstance(base, Pattern) for base in base_set)
         assert isinstance(child, bool)
         assert isinstance(obj_type_expr, str)
         assert obj_id_set is None or \
@@ -771,13 +771,13 @@ class Pattern:
                  all(isinstance(part, (str, type(None))) for part in obj_id)
                  for obj_id in obj_id_set))
 
-        new_list = []
-        unused_list = []
+        new_set = set()
+        unused_set = set()
         # If we are based on some objects
-        if base_list:
+        if base_set:
             # For each base
-            for base in base_list:
-                base_new_list = []
+            for base in base_set:
+                base_new_set = set()
                 # For each base's relation of requested type
                 related_types = (
                     relation.child if child else relation.parent
@@ -786,7 +786,7 @@ class Pattern:
                 )
                 for obj_type in related_types:
                     if obj_type_expr in ("*", obj_type.name):
-                        base_new_list.append(
+                        base_new_set.add(
                             Pattern(
                                 base, child, obj_type,
                                 Pattern._validate_obj_id_set(obj_type,
@@ -794,11 +794,11 @@ class Pattern:
                             )
                         )
                 # If we have expanded to something
-                if base_new_list:
-                    new_list += base_new_list
+                if base_new_set:
+                    new_set |= base_new_set
                 else:
                     if obj_type_expr == "*":
-                        unused_list.append(base)
+                        unused_set.add(base)
                     else:
                         raise Exception(
                             f"Cannot find {'child' if child else 'parent'} "
@@ -808,7 +808,7 @@ class Pattern:
         elif child:
             for obj_type_name, obj_type in schema.types.items():
                 if obj_type_expr in ("*", obj_type_name):
-                    new_list.append(
+                    new_set.add(
                         Pattern(
                             None, child, obj_type,
                             Pattern._validate_obj_id_set(obj_type,
@@ -816,14 +816,14 @@ class Pattern:
                         )
                     )
             # If we have expanded to nothing
-            if not new_list and obj_type_expr != "*":
+            if not new_set and obj_type_expr != "*":
                 raise Exception(
                     f"Cannot find type {obj_type_expr!r}"
                 )
-        return new_list, unused_list
+        return new_set, unused_set
 
     @staticmethod
-    def _expand(schema, base_list, match_list, child, obj_type_expr,
+    def _expand(schema, base_set, match_set, child, obj_type_expr,
                 obj_id_set, match_spec):
         """
         Expand a parsed pattern specification into a list of referenced
@@ -831,10 +831,11 @@ class Pattern:
 
         Args:
             schema:         An object type schema to use.
-            base_list:      The list of patterns to base created patterns
-                            on. Empty list means patterns shouldn't be
+            base_set:       The set of patterns to base created patterns
+                            on. Empty set means patterns shouldn't be
                             based on anything (based on the "root" object).
-            match_list:     A list to have matching patterns added, if any.
+            match_set:      The set to have matching patterns added to,
+                            if any.
             child:          True if the created patterns are for children
                             of the specified bases. False for parents.
             obj_type_expr:  Object type expression, one of:
@@ -847,11 +848,11 @@ class Pattern:
                             for matching.
 
         Returns:
-            The list of patterns referenced by the specification.
+            The set of patterns referenced by the specification.
         """
-        assert isinstance(base_list, list)
-        assert all(isinstance(base, Pattern) for base in base_list)
-        assert isinstance(match_list, list)
+        assert isinstance(base_set, set)
+        assert all(isinstance(base, Pattern) for base in base_set)
+        assert isinstance(match_set, set)
         assert isinstance(child, bool)
         assert isinstance(obj_type_expr, str)
         assert obj_id_set is None or \
@@ -861,25 +862,25 @@ class Pattern:
                  for obj_id in obj_id_set))
         assert match_spec in (None, "#", "$")
 
-        ref_list = []
+        ref_set = set()
         while True:
-            base_list, unused_list = Pattern._expand_relation(
-                schema, base_list, child, obj_type_expr, obj_id_set)
+            base_set, unused_set = Pattern._expand_relation(
+                schema, base_set, child, obj_type_expr, obj_id_set)
             if obj_type_expr == "*":
-                ref_list += unused_list
+                ref_set |= unused_set
                 if match_spec == "$":
-                    match_list += unused_list
-                if not base_list:
+                    match_set |= unused_set
+                if not base_set:
                     break
                 if match_spec == "#":
-                    match_list += base_list
+                    match_set |= base_set
             else:
-                ref_list += base_list
+                ref_set |= base_set
                 if match_spec is not None:
-                    match_list += base_list
+                    match_set |= base_set
                 break
 
-        return ref_list
+        return ref_set
 
     @staticmethod
     def _parse_id(string, pos):
@@ -1134,7 +1135,8 @@ class Pattern:
                                 kcidb.orm.SCHEMA.
 
         Returns:
-            A list of trailing pattern objects parsed from the pattern string.
+            A set of leaf Pattern objects selecting the ORM objects matched by
+            the pattern string.
         """
         assert isinstance(string, str)
         assert obj_id_set_list is None or (
@@ -1149,8 +1151,8 @@ class Pattern:
         if schema is None:
             schema = SCHEMA
 
-        base_list = []
-        match_list = []
+        base_set = set()
+        match_set = set()
         pos = 0
         while pos < len(string):
             match = _PATTERN_STRING_RE.match(string, pos)
@@ -1163,8 +1165,8 @@ class Pattern:
                 spec, obj_id_set_list
             )
             try:
-                base_list = Pattern._expand(
-                    schema, base_list, match_list, relation == ">",
+                base_set = Pattern._expand(
+                    schema, base_set, match_set, relation == ">",
                     obj_type_expr, obj_id_set, match_spec
                 )
             except Exception as exc:
@@ -1175,14 +1177,14 @@ class Pattern:
             pos = match.end()
         if obj_id_set_list:
             raise Exception(
-                f"Too many ID lists specified for pattern {string!r}"
+                f"Too many ID sets specified for pattern {string!r}"
             )
-        return match_list
+        return match_set
 
     @staticmethod
     def from_io(io_data, schema=None):
         """
-        Create a pattern list matching all objects in the supplied I/O data.
+        Create a pattern set matching all objects in the supplied I/O data.
 
         Args:
             io_data:    The I/O data to create the pattern list from.
@@ -1191,7 +1193,7 @@ class Pattern:
                         kcidb.orm.SCHEMA.
 
         Returns:
-            A list of Pattern objects matching the objects in the supplied I/O
+            A set of Pattern objects matching the objects in the supplied I/O
             data.
         """
         assert LIGHT_ASSERTS or io.schema.is_valid_latest(io_data)
@@ -1202,7 +1204,7 @@ class Pattern:
         assert set(schema.types) >= \
             set(k[:-1] for k in io.schema.LATEST.tree if k), \
             "Specified OO types are not a superset of I/O types"
-        pattern_list = []
+        pattern_set = set()
         # Assume each I/O object is identified by a required "id" field
         for obj_list_name in io.schema.LATEST.tree:
             if not obj_list_name:
@@ -1211,30 +1213,30 @@ class Pattern:
             obj_list = io_data.get(obj_list_name, [])
             if not obj_list:
                 continue
-            pattern_list.append(
+            pattern_set.add(
                 Pattern(None, True, schema.types[obj_list_name[:-1]],
                         {(o["id"],) for o in obj_list})
             )
-        return pattern_list
+        return pattern_set
 
 
 class Source(ABC):
     """An abstract source of raw object-oriented (OO) data"""
 
     @abstractmethod
-    def oo_query(self, pattern_list):
+    def oo_query(self, pattern_set):
         """
-        Retrieve raw data for objects specified via a pattern list.
+        Retrieve raw data for objects specified via a pattern set.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             raw data of the corresponding type.
         """
-        assert isinstance(pattern_list, list)
-        assert all(isinstance(r, Pattern) for r in pattern_list)
+        assert isinstance(pattern_set, set)
+        assert all(isinstance(r, Pattern) for r in pattern_set)
 
 
 class PatternHelpAction(argparse.Action):

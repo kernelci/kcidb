@@ -66,12 +66,12 @@ def kcidb_load_message(event, context):
     # Store it in the database
     DB_CLIENT.load(data)
     # Generate patterns matching all affected objects
-    pattern_list = []
+    pattern_set = set()
     for pattern in kcidb.orm.Pattern.from_io(data):
         # TODO Avoid formatting and parsing
-        pattern_list += kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
+        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
     # Publish patterns matching all affected objects
-    UPDATED_QUEUE_PUBLISHER.publish(pattern_list)
+    UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
 
 
 def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
@@ -185,13 +185,13 @@ def kcidb_load_queue(event, context):
     LOGGER.debug("ACK'ed %u messages", len(msgs))
 
     # Generate patterns matching all affected objects
-    pattern_list = []
+    pattern_set = set()
     for pattern in kcidb.orm.Pattern.from_io(data):
         # TODO Avoid formatting and parsing
-        pattern_list += kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
+        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#\n")
 
     # Publish patterns matching all affected objects
-    UPDATED_QUEUE_PUBLISHER.publish(pattern_list)
+    UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
     LOGGER.info("Published updates made by %u loaded objects", obj_num)
 
 
@@ -201,15 +201,15 @@ def kcidb_spool_notifications(event, context):
     Sub subscription
     """
     # Get arriving data
-    pattern_list = kcidb.mq.ORMPatternSubscriber.decode_data(
+    pattern_set = kcidb.mq.ORMPatternSubscriber.decode_data(
         base64.b64decode(event["data"])
     )
     LOGGER.debug(
         "PATTERNS:\n%s",
-        "".join(repr(p) + "\n" for p in pattern_list)
+        "".join(repr(p) + "\n" for p in pattern_set)
     )
     # Spool notifications from subscriptions
-    for notification in kcidb.monitor.match(OO_CLIENT.query(pattern_list)):
+    for notification in kcidb.monitor.match(OO_CLIENT.query(pattern_set)):
         if not SELECTED_SUBSCRIPTIONS or \
            notification.subscription in SELECTED_SUBSCRIPTIONS:
             LOGGER.info("POSTING %s", notification.id)
