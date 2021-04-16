@@ -316,10 +316,10 @@ class ORMPatternPublisher(Publisher):
     @staticmethod
     def encode_data(data):
         """
-        Encode a list of kcidb.orm.Pattern objects, into message data.
+        Encode a set of kcidb.orm.Pattern objects, into message data.
 
         Args:
-            data:   The list to encode.
+            data:   The set to encode.
 
         Returns
             The encoded message data.
@@ -327,7 +327,7 @@ class ORMPatternPublisher(Publisher):
         Raises:
             An exception in case data encoding failed.
         """
-        assert isinstance(data, list)
+        assert isinstance(data, set)
         assert all(isinstance(pattern, kcidb.orm.Pattern)
                    for pattern in data)
         return "".join(
@@ -349,15 +349,15 @@ class ORMPatternSubscriber(Subscriber):
                             decoded.
 
         Returns
-            The decoded list of kcidb.orm.Pattern objects.
+            The decoded set of kcidb.orm.Pattern objects.
 
         Raises:
             An exception in case data decoding failed.
         """
-        pattern_list = []
+        pattern_set = set()
         for line in message_data.decode().splitlines():
-            pattern_list += kcidb.orm.Pattern.parse(line)
-        return pattern_list
+            pattern_set |= kcidb.orm.Pattern.parse(line)
+        return pattern_set
 
 
 def argparse_add_args(parser):
@@ -581,16 +581,16 @@ def pattern_publisher_main():
     elif args.command == "cleanup":
         publisher.cleanup()
     elif args.command == "publish":
-        pattern_list = []
+        pattern_set = set()
         for line_idx, line in enumerate(sys.stdin):
             try:
-                pattern_list += kcidb.orm.Pattern.parse(line)
+                pattern_set |= kcidb.orm.Pattern.parse(line)
             except Exception as exc:
                 raise Exception(
                     f"Failed parsing ORM pattern on line {line_idx + 1}: "
                     f"{line!r}"
                 ) from exc
-        print(publisher.publish(pattern_list))
+        print(publisher.publish(pattern_set))
 
 
 def pattern_subscriber_main():

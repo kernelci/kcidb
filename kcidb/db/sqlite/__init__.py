@@ -416,24 +416,24 @@ class Driver(AbstractDriver):
 
         return query_string, query_parameters
 
-    def oo_query(self, pattern_list):
+    def oo_query(self, pattern_set):
         """
         Query raw object-oriented data from the database.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
-        assert isinstance(pattern_list, list)
-        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_list)
+        assert isinstance(pattern_set, set)
+        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_set)
 
         # Render all queries for each type
         obj_type_queries = {}
         for obj_type in kcidb.orm.SCHEMA.types.values():
-            for pattern in pattern_list:
+            for pattern in pattern_set:
                 # TODO: Avoid adding the same patterns multiple times
                 if pattern.obj_type == obj_type:
                     if obj_type not in obj_type_queries:

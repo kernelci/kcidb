@@ -435,19 +435,19 @@ class Client:
         assert isinstance(source, Source)
         self.source = source
 
-    def query(self, pattern_list):
+    def query(self, pattern_set):
         """
         Retrieve objects specified via a pattern list.
 
         Args:
-            pattern_list:   A list of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
-        assert isinstance(pattern_list, list)
-        assert all(isinstance(r, Pattern) for r in pattern_list)
+        assert isinstance(pattern_set, set)
+        assert all(isinstance(r, Pattern) for r in pattern_set)
         return {
             obj_type_name: [
                 CLASSES[obj_type_name](
@@ -456,7 +456,7 @@ class Client:
                 for obj_data in obj_data_list
             ]
             for obj_type_name, obj_data_list in
-            self.source.oo_query(pattern_list).items()
+            self.source.oo_query(pattern_set).items()
         }
 
 
@@ -512,10 +512,10 @@ def query_main():
     parser = OutputArgumentParser(description=description)
     args = parser.parse_args()
     db_client = kcidb.db.Client(args.database)
-    pattern_list = []
+    pattern_set = set()
     for pattern_string in args.pattern_strings:
-        pattern_list += kcidb.orm.Pattern.parse(pattern_string)
+        pattern_set |= kcidb.orm.Pattern.parse(pattern_string)
     kcidb.misc.json_dump(
-        db_client.oo_query(pattern_list),
+        db_client.oo_query(pattern_set),
         sys.stdout, indent=args.indent, seq=args.seq
     )

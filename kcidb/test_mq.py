@@ -231,7 +231,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                        return_value=future) as future_publish:
                 status = function()
                 init.assert_called_once_with("project", "topic")
-                future_publish.assert_called_once_with([])
+                future_publish.assert_called_once_with(set())
             return status
         """)
         self.assertExecutes("", *argv,
@@ -251,7 +251,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                        return_value=future) as future_publish:
                 status = function()
                 init.assert_called_once_with("project", "topic")
-                future_publish.assert_called_once_with([
+                future_publish.assert_called_once_with({
                     Pattern(
                         Pattern(
                             Pattern(
@@ -271,7 +271,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                         ),
                         True, SCHEMA.types["test"]
                     )
-                ])
+                })
             return status
         """)
         self.assertExecutes(">checkout[kernelci:1]<revision>checkout>build#\n"
@@ -326,7 +326,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             from unittest.mock import patch, Mock
             from kcidb.orm import Pattern, SCHEMA
             subscriber = Mock()
-            subscriber.pull = Mock(return_value=[("ID", [
+            subscriber.pull = Mock(return_value=[("ID", {
                 Pattern(
                     Pattern(
                         Pattern(
@@ -346,7 +346,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                     ),
                     True, SCHEMA.types["test"]
                 )
-            ])])
+            })])
             subscriber.ack = Mock()
             with patch("kcidb.mq.ORMPatternSubscriber",
                        return_value=subscriber) as Subscriber:
@@ -362,5 +362,8 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             stdout_re=re.escape(
                 ">checkout[kernelci:1]<revision>checkout>build#\n"
                 ">test[kernelci:1]<build>test#\n"
+            ) + "|" + re.escape(
+                ">test[kernelci:1]<build>test#\n"
+                ">checkout[kernelci:1]<revision>checkout>build#\n"
             )
         )
