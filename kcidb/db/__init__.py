@@ -231,6 +231,7 @@ class Client(kcidb.orm.Source):
         assert LIGHT_ASSERTS or self.is_initialized()
         assert isinstance(pattern_set, set)
         assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_set)
+        LOGGER.debug("OO Query: %r", pattern_set)
         return self.driver.oo_query(pattern_set)
 
     def load(self, data):
