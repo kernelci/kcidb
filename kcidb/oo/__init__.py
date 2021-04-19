@@ -424,16 +424,20 @@ assert set(CLASSES) == set(SCHEMA.types)
 class Client:
     """Object-oriented data client"""
 
-    def __init__(self, source):
+    def __init__(self, source, sort=False):
         """
         Initialize the client.
 
         Args:
             source: Raw object-oriented data source, an instance of
                     kcidb.orm.Source.
+            sort:   If True, sort data fetched from the source (useful for
+                    tests). If False, do not sort.
         """
         assert isinstance(source, Source)
+        assert isinstance(sort, bool)
         self.source = source
+        self.sort = sort
 
     def query(self, pattern_set):
         """
@@ -448,7 +452,7 @@ class Client:
         """
         assert isinstance(pattern_set, set)
         assert all(isinstance(r, Pattern) for r in pattern_set)
-        return {
+        data = {
             obj_type_name: [
                 CLASSES[obj_type_name](
                     self, SCHEMA.types[obj_type_name], obj_data
@@ -458,6 +462,13 @@ class Client:
             for obj_type_name, obj_data_list in
             self.source.oo_query(pattern_set).items()
         }
+        if self.sort:
+            data = {
+                type_name: sorted(objs, key=lambda obj: obj.get_id())
+                for type_name, objs in
+                sorted(data.items(), key=lambda item: item[0])
+            }
+        return data
 
 
 class ArgumentParser(kcidb.misc.ArgumentParser):
