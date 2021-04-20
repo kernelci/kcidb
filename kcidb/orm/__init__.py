@@ -594,6 +594,7 @@ _PATTERN_STRING_RE = re.compile(
 )
 
 
+# TODO: Make Pattern immutable
 class Pattern:
     """A pattern matching objects in a data source"""
 
@@ -646,6 +647,9 @@ class Pattern:
         self.obj_type = obj_type
         self.obj_id_set = \
             None if obj_id_set is None else frozenset(obj_id_set)
+        self._hash = hash(
+            (self.base, self.child, self.obj_type, self.obj_id_set)
+        )
 
     def __eq__(self, other):
         return \
@@ -656,7 +660,7 @@ class Pattern:
             self.obj_id_set == other.obj_id_set
 
     def __hash__(self):
-        return hash((self.base, self.child, self.obj_type, self.obj_id_set))
+        return self._hash
 
     @staticmethod
     def _format_id_field(id_field):
