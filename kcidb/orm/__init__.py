@@ -153,7 +153,7 @@ class Type:
         its data.
 
         Args:
-            data:   The object data to retrieve the IDs from.
+            data:   The object data to retrieve the ID from.
 
         Returns:
             A tuple of values of object fields identifying it globally.
