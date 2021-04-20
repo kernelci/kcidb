@@ -352,7 +352,7 @@ def merge_main():
 def notify_main():
     """Execute the kcidb-notify command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-notify - Generate notifications for new I/O data'
+    description = 'kcidb-notify - Generate notifications for specified objects'
     parser = oo.ArgumentParser(database="json", description=description)
     args = parser.parse_args()
     oo_client = oo.Client(db.Client(args.database))
