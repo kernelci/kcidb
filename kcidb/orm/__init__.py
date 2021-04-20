@@ -161,6 +161,26 @@ class Type:
         assert LIGHT_ASSERTS or self.is_valid(data)
         return tuple(data[field] for field in self.id_fields)
 
+    def get_parent_id(self, parent_type_name, data):
+        """
+        Retrieve a tuple of field values identifying an object's parent of
+        particular type globally, from the object's data.
+
+        Args:
+            parent_type_name:   The name of the type of the parent object to
+                                retrieve the ID of.
+            data:               The object data to retrieve the parent ID
+                                from.
+
+        Returns:
+            A tuple of values of object fields identifying the parent
+            globally.
+        """
+        assert LIGHT_ASSERTS or self.is_valid(data)
+        assert parent_type_name in self.parents
+        return tuple(data[field]
+                     for field in self.parents[parent_type_name].ref_fields)
+
 
 class Schema:
     """A repository of recognized object types"""

@@ -46,6 +46,21 @@ class Object:
         """
         return self._type.get_id(self._data)
 
+    def get_parent_id(self, parent_type_name):
+        """
+        Retrieve a tuple of field values identifying the object's parent of
+        particular type globally.
+
+        Args:
+            parent_type_name:   The name of the type of the parent object to
+                                retrieve the ID of.
+
+        Returns:
+            A tuple of values of the object fields identifying the parent
+            globally.
+        """
+        return self._type.get_parent_id(parent_type_name, self._data)
+
     def __hash__(self):
         return hash(self.get_id())
 
