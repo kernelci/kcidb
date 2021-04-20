@@ -366,3 +366,39 @@ def notify_main():
         )
         sys.stdout.write("\x00")
         sys.stdout.flush()
+
+
+def ingest_main():
+    """Execute the kcidb-ingest command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
+    description = 'kcidb-ingest - Load data into a (new) database and ' \
+        'generate notifications for new and modified objects'
+    parser = db.ArgumentParser(database="sqlite::memory:",
+                               description=description)
+    args = parser.parse_args()
+
+    db_client = db.Client(args.database)
+    if not db_client.is_initialized():
+        db_client.init()
+    oo_client = oo.Client(db_client, sort=True, cache=True)
+
+    # For each JSON object in stdin
+    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+        # Validate and upgrade the data
+        data = io.schema.upgrade(io.schema.validate(data), copy=False)
+        # Load into the database
+        db_client.load(data)
+        # Record patterns matching the loaded objects and all their parents
+        pattern_set = set()
+        for pattern in orm.Pattern.from_io(data):
+            # TODO Avoid formatting and parsing
+            pattern_set |= orm.Pattern.parse(repr(pattern) + "<*#")
+        LOGGER.debug("Notification patterns: %s", repr(pattern_set))
+        # Generate notifications for objects matching the patterns
+        for notification in monitor.match(oo_client.query(pattern_set)):
+            sys.stdout.write(
+                notification.render().
+                as_string(policy=email.policy.SMTPUTF8)
+            )
+            sys.stdout.write("\x00")
+            sys.stdout.flush()
