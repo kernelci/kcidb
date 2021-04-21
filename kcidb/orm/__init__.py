@@ -669,17 +669,18 @@ class Pattern:
             The formatted (quoted or unquoted) ID field.
         """
         # If we can leave the field unquoted
-        if re.fullmatch(id_field, _PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN):
+        if re.fullmatch(_PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN,
+                        id_field, re.ASCII | re.VERBOSE):
             return id_field
         part_re = re.compile(f"""
-            ({_PATTERN_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN}*) |
-            ({_PATTERN_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN})
+            ({_PATTERN_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN}) |
+            ({_PATTERN_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN}*)
         """, re.ASCII | re.VERBOSE)
         parts = []
         pos = 0
         while True:
             match = part_re.match(id_field, pos)
-            unesc, esc = match.group(1, 2)
+            esc, unesc = match.group(1, 2)
             pos = match.end()
             if unesc:
                 parts.append(unesc)
@@ -692,7 +693,7 @@ class Pattern:
                 )
             else:
                 break
-        return "".join(parts)
+        return '"' + "".join(parts) + '"'
 
     @staticmethod
     def _format_id_list_spec(obj_id_set):

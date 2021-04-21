@@ -446,3 +446,50 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             pattern(None, True, "build", {("origin:2",)}),
             pattern(None, True, "test", {("origin:3",)}),
         })
+
+    def test_repr(self):
+        """Check various patterns can be converted to strings"""
+        self.assertEqual(repr(pattern(None, True, "revision")),
+                         ">revision#")
+        self.assertEqual(repr(pattern(None, True, "revision",
+                              {("abc", "def")})),
+                         ">revision[abc, def]#")
+        self.assertEqual(repr(pattern(None, True, "revision",
+                              {("a b c", "def")})),
+                         '>revision["a b c", def]#')
+        self.assertEqual(repr(pattern(None, True, "revision",
+                              {("a b c", " def ")})),
+                         '>revision["a b c", " def "]#')
+        self.assertEqual(repr(pattern(None, True, "revision",
+                              {("", "")})),
+                         '>revision["", ""]#')
+        self.assertEqual(repr(pattern(None, True, "revision",
+                              {("\\", "\"")})),
+                         '>revision["\\\\", "\\""]#')
+
+        self.assertEqual(repr(pattern(None, True, "checkout")),
+                         ">checkout#")
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {("abc",)})),
+                         ">checkout[abc]#")
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {("a b c",)})),
+                         '>checkout["a b c"]#')
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {('"',)})),
+                         '>checkout["\\""]#')
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {('""',)})),
+                         '>checkout["\\"\\""]#')
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {('" "',)})),
+                         '>checkout["\\" \\""]#')
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {(' " " ',)})),
+                         '>checkout[" \\" \\" "]#')
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {('a"b"c',)})),
+                         '>checkout["a\\"b\\"c"]#')
+        self.assertEqual(repr(pattern(None, True, "checkout",
+                              {("",)})),
+                         ">checkout[\"\"]#")
