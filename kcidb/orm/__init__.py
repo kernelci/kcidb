@@ -537,8 +537,10 @@ _PATTERN_STRING_ID_LIST_PATTERN = f"""
 _PATTERN_STRING_SPEC_ID_LIST_PATTERN = f"""
     \\[
         \\s*
-        {_PATTERN_STRING_ID_LIST_PATTERN}
-        \\s*
+        (?:
+            {_PATTERN_STRING_ID_LIST_PATTERN}
+            \\s*
+        )?
     \\]
 """
 
@@ -969,7 +971,7 @@ class Pattern:
     @staticmethod
     def _parse_id_list(string):
         """
-        Parse an ID list from a pattern string, stopping at a closing bracket.
+        Parse an ID list.
 
         Args:
             string: The ID list string to parse.
@@ -1045,8 +1047,10 @@ class Pattern:
                 return obj_id_set_list[0], obj_id_set_list[1:]
             except IndexError:
                 raise Exception("Not enough ID lists specified") from None
-        # Parse the ID list inside brackets
-        return Pattern._parse_id_list(string[1:-1].strip()), obj_id_set_list
+        # Parse the ID list inside brackets, if any
+        brackets_contents = string[1:-1].strip()
+        return (Pattern._parse_id_list(brackets_contents)
+                if brackets_contents else frozenset()), obj_id_set_list
 
     STRING_DOC = textwrap.dedent("""\
         The pattern string is a series of pattern specifications, each
@@ -1094,7 +1098,7 @@ class Pattern:
                             ; specification. Each object type gets the same ID
                             ; list. Not allowed, if the list of ID lists isn't
                             ; supplied.
-               "[" *whitespace id_list *whitespace "]"
+               "[" *whitespace [id_list *whitespace] "]"
                             ; Inline ID list
         match = "#" /       ; Match objects of all types traversed by this
                             ; pattern specification.

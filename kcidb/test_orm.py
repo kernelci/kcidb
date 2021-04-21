@@ -247,6 +247,8 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
 
     def test_parse_id_list(self):
         """Check pattern inline ID list parsing works"""
+        self.assertEqual(parse(">revision[]#"),
+                         {pattern(None, True, "revision", set())})
         self.assertEqual(parse(">revision[abc,def]#"),
                          {pattern(None, True, "revision", {("abc", "def")})})
         self.assertEqual(parse(">checkout[123]#"),
