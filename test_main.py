@@ -10,6 +10,13 @@ import yaml
 class MainTestCase(unittest.TestCase):
     """main.py test case"""
 
+    def test_google_credentials_are_not_specified(self):
+        """Check Google Application credentials are not specified"""
+        self.assertIsNone(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+                          "Tests must run without "
+                          "GOOGLE_APPLICATION_CREDENTIALS "
+                          "environment variable")
+
     @patch('kcidb.misc.get_secret')
     @patch('kcidb.mq.ORMPatternPublisher')
     @patch('kcidb.mq.IOSubscriber')
