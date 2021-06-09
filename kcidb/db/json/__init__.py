@@ -27,15 +27,9 @@ class Driver(SQLiteDriver):
                     data, or None to read standard input.
         """
         assert params is None or isinstance(params, str)
-        if params is None:
-            json_file = sys.stdin
-        else:
-            json_file = open(params, "r")
-        try:
+        with sys.stdin if params is None else open(params, "r") as json_file:
             super().__init__(":memory:")
             self.init()
             for data in kcidb.misc.json_load_stream_fd(json_file.fileno()):
                 data = io.schema.upgrade(io.schema.validate(data), copy=False)
                 self.load(data)
-        finally:
-            json_file.close()
