@@ -439,21 +439,28 @@ assert set(CLASSES) == set(SCHEMA.types)
 class Client:
     """Object-oriented data client"""
 
-    def __init__(self, source, cache=True, sort=False):
+    def __init__(self, source, prefetch=True, cache=True, sort=False):
         """
         Initialize the client.
 
         Args:
-            source: Raw object-oriented data source, an instance of
-                    kcidb.orm.Source.
-            cache:  If True, cache the retrieved data using kcidb.orm.Cache.
-                    If False, do not cache.
-            sort:   If True, sort data fetched from the source (useful for
-                    tests). If False, do not sort.
+            source:     Raw object-oriented data source, an instance of
+                        kcidb.orm.Source.
+            prefetch:   If True, prefetch data using kcidb.orm.Prefetcher.
+                        If False, do not prefetch. Doesn't really make much
+                        sense without caching enabled too.
+            cache:      If True, cache the retrieved data using
+                        kcidb.orm.Cache. If False, do not cache.
+            sort:       If True, sort data fetched from the source (useful for
+                        tests). If False, do not sort.
         """
         assert isinstance(source, Source)
         assert isinstance(sort, bool)
-        self.source = kcidb.orm.Cache(source) if cache else source
+        self.source = source
+        if cache:
+            self.source = kcidb.orm.Cache(self.source)
+        if prefetch:
+            self.source = kcidb.orm.Prefetcher(self.source)
         self.sort = sort
 
     def query(self, pattern_set):
