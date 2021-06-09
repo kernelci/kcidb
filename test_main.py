@@ -11,8 +11,8 @@ class MainTestCase(unittest.TestCase):
     """main.py test case"""
 
     @patch('kcidb.misc.get_secret')
-    @patch('kcidb.mq.Publisher')
-    @patch('kcidb.mq.Subscriber')
+    @patch('kcidb.mq.ORMPatternPublisher')
+    @patch('kcidb.mq.IOSubscriber')
     @patch('kcidb.monitor.spool.Client')
     @patch('kcidb.db.Client')
     @patch('kcidb.oo.Client')
