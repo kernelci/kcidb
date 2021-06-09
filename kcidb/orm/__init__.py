@@ -1273,6 +1273,54 @@ class Source(ABC):
         assert all(isinstance(r, Pattern) for r in pattern_set)
 
 
+class Prefetcher(Source):
+    """A prefetching source of object-oriented data"""
+
+    def __init__(self, source):
+        """
+        Initialize the prefetching source.
+
+        Args:
+            source: The source to request objects from.
+        """
+        assert isinstance(source, Source)
+        self.source = source
+
+    def oo_query(self, pattern_set):
+        """
+        Retrieve raw data for objects specified via a pattern set.
+
+        Args:
+            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+                            instances) matching objects to fetch.
+        Returns:
+            A dictionary of object type names and lists containing retrieved
+            raw data of the corresponding type.
+        """
+        assert isinstance(pattern_set, set)
+        assert all(isinstance(r, Pattern) for r in pattern_set)
+        # First fetch the data we were asked for
+        data = self.source.oo_query(pattern_set)
+        # Generate patterns for all children of fetched root objects
+        prefetch_pattern_set = set()
+        for obj_type_name, objs in data.items():
+            obj_type = SCHEMA.types[obj_type_name]
+            if not obj_type.parents and objs:
+                # TODO Get rid of formatting and parsing
+                prefetch_pattern_set |= Pattern.parse(
+                    Pattern(None, True, obj_type,
+                            {obj_type.get_id(obj) for obj in objs}).
+                    __repr__(final=False) + ">*#"
+                )
+        # Prefetch, if generated any patterns
+        if prefetch_pattern_set:
+            LOGGER.debug("Prefetching %r", prefetch_pattern_set)
+            self.source.oo_query(prefetch_pattern_set)
+
+        # Return the data for the original request
+        return data
+
+
 class Cache(Source):
     """A cache source of object-oriented data"""
 
