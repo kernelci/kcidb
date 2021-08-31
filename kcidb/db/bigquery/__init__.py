@@ -507,9 +507,8 @@ class Driver(AbstractDriver):
                 obj_list = Driver._pack_node(data[obj_list_name])
                 if not LIGHT_ASSERTS:
                     schema.validate_json_obj_list(table_schema, obj_list)
-                job_config = bigquery.job.LoadJobConfig(
-                    autodetect=False,
-                    schema=schema.TABLE_MAP[obj_list_name])
+                job_config = bigquery.job.LoadJobConfig(autodetect=False,
+                                                        schema=table_schema)
                 job = self.client.load_table_from_json(
                     obj_list,
                     self.dataset_ref.table(obj_list_name),
