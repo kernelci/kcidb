@@ -15,7 +15,7 @@
 """Install kcidb using setuptools."""
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding='utf8') as fh:
     LONG_DESCRIPTION = fh.read()
 
 setuptools.setup(
