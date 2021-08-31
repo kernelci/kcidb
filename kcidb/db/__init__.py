@@ -172,7 +172,7 @@ class Client(kcidb.orm.Source):
         """
         assert LIGHT_ASSERTS or self.is_initialized()
         if ids is None:
-            ids = dict()
+            ids = {}
         assert isinstance(ids, dict)
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)

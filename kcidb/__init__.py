@@ -147,7 +147,7 @@ class Client:
         """
         assert ids is None or isinstance(ids, dict)
         if ids is None:
-            ids = dict()
+            ids = {}
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
                    for k, v in ids.items())
@@ -183,7 +183,7 @@ class Client:
         """
         assert ids is None or isinstance(ids, dict)
         if ids is None:
-            ids = dict()
+            ids = {}
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
                    for k, v in ids.items())
