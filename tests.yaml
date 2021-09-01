@@ -126,6 +126,9 @@ redhat_cifs_connectathon:
 redhat_cpu_die_layout:
   title: Red Hat's test for correct information on CPU die layout
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/cpu/die
+redhat_cpu_idle_power:
+  title: Red Hat's CPU idle power usage tests
+  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/cpu/idle
 redhat_cpufreq_driver:
   title: Red Hat's test for correct cpufreq scaling driver
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/cpu/driver
@@ -135,9 +138,6 @@ redhat_cpufreq_governor:
 redhat_cpufreq_misc:
   title: Red Hat's miscellaneous cpufreq tests
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/power-management/cpufreq/sys_cpufreq
-redhat_cpu_idle_power:
-  title: Red Hat's CPU idle power usage tests
-  home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/cpu/idle
 redhat_cpupower:
   title: Red Hat's tests for cpupower tool
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/power-management/cpupower/sanity
