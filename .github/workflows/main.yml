@@ -1,0 +1,89 @@
+name: main
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check_python:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.9]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check setup.py and requirements.txt are consistent
+        run: |
+          # Check both install_requires in setup.py and requirements.txt contain
+          # the same dependencies
+          (
+            set -e -u -o pipefail
+            unique_requires=$({
+              sed -n '/install_requires=/,/],/ s/.*"\([^"]\+\)".*/\1/p' setup.py |
+                sort -u
+              grep -v '^#' requirements.txt |
+                sort -u
+            } | sort | uniq -u)
+            if [ -n "$unique_requires" ]; then
+              echo "Requirements not both in setup.py and requirements.txt:" >&2
+              echo "$unique_requires" >&2
+              false
+            fi
+          )
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip3 install --upgrade '.[dev]'
+      - name: Check python sources with flake8
+        run: "flake8 kcidb *.py"
+      - name: Check python sources with pylint
+        run: "pylint kcidb *.py"
+      - name: Test with pytest
+        run: KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest
+
+  check_auxilary_files:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip3 install --upgrade '.[dev]'
+      - name: Check YAML files with yamllint
+        run: find -name '*.yaml' -or -name '*.yml' | xargs yamllint
+      - name: Check test catalog is ordered alphabetically
+        run: |
+          test_list=$(
+              python3 <(
+                  echo "import sys, yaml"
+                  echo "for k in yaml.safe_load(sys.stdin).keys():"
+                  echo "    print(k)"
+              ) < tests.yaml
+          )
+          test_list_diff=$(diff -u <(echo "$test_list") \
+                                   <(echo "$test_list" | sort)) ||
+              {
+                  echo "Tests out of alphabetic order." >&2
+                  echo "Change the order as below:" >&2
+                  echo "$test_list_diff" >&2
+                  false
+              }
+      - name: Validate test catalog
+        run: kcidb-tests-validate --urls < tests.yaml
