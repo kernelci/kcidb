@@ -1,47 +1,47 @@
 language: python
 dist: xenial
 python:
-    - "3.6"
+  - "3.6"
 install:
-    - pip3 install '.[dev]'
+  - pip3 install '.[dev]'
 script:
-    - |
-        # Check both install_requires in setup.py and requirements.txt contain
-        # the same dependencies
-        (
-          # NOTE: Option change is contained within the subshell to avoid
-          #       breaking the Travis CI wrapper
-          set -e -u -o pipefail
-          unique_requires=$({
-            sed -n '/install_requires=/,/],/ s/.*"\([^"]\+\)".*/\1/p' setup.py |
-              sort -u
-            grep -v '^#' requirements.txt |
-              sort -u
-          } | sort | uniq -u)
-          if [ -n "$unique_requires" ]; then
-            echo "Requirements not both in setup.py and requirements.txt:" >&2
-            echo "$unique_requires" >&2
-            false
-          fi
-        )
-    - "flake8 kcidb *.py"
-    - "pylint kcidb *.py"
-    - find -name '*.yaml' | xargs yamllint
-    - kcidb-tests-validate --urls < tests.yaml
-    - |
-        test_list=$(
-            python3 <(
-                echo "import sys, yaml"
-                echo "for k in yaml.safe_load(sys.stdin).keys():"
-                echo "    print(k)"
-            ) < tests.yaml
-        )
-        test_list_diff=$(diff -u <(echo "$test_list") \
-                                 <(echo "$test_list" | sort)) ||
-            {
-                echo "Tests out of alphabetic order." >&2
-                echo "Change the order as below:" >&2
-                echo "$test_list_diff" >&2
-                false
-            }
-    - KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest
+  - |
+      # Check both install_requires in setup.py and requirements.txt contain
+      # the same dependencies
+      (
+        # NOTE: Option change is contained within the subshell to avoid
+        #       breaking the Travis CI wrapper
+        set -e -u -o pipefail
+        unique_requires=$({
+          sed -n '/install_requires=/,/],/ s/.*"\([^"]\+\)".*/\1/p' setup.py |
+            sort -u
+          grep -v '^#' requirements.txt |
+            sort -u
+        } | sort | uniq -u)
+        if [ -n "$unique_requires" ]; then
+          echo "Requirements not both in setup.py and requirements.txt:" >&2
+          echo "$unique_requires" >&2
+          false
+        fi
+      )
+  - "flake8 kcidb *.py"
+  - "pylint kcidb *.py"
+  - find -name '*.yaml' | xargs yamllint
+  - kcidb-tests-validate --urls < tests.yaml
+  - |
+      test_list=$(
+          python3 <(
+              echo "import sys, yaml"
+              echo "for k in yaml.safe_load(sys.stdin).keys():"
+              echo "    print(k)"
+          ) < tests.yaml
+      )
+      test_list_diff=$(diff -u <(echo "$test_list") \
+                               <(echo "$test_list" | sort)) ||
+          {
+              echo "Tests out of alphabetic order." >&2
+              echo "Change the order as below:" >&2
+              echo "$test_list_diff" >&2
+              false
+          }
+  - KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest
