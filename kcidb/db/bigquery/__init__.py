@@ -60,7 +60,7 @@ class Driver(AbstractDriver):
         self.client = bigquery.Client(project=project_id)
         self.dataset_ref = self.client.dataset(dataset_name)
 
-    def get_schema_version(self):
+    def _get_schema_version(self):
         """
         Get the version of the I/O schema the dataset schema corresponds to.
 
@@ -78,6 +78,28 @@ class Driver(AbstractDriver):
            {"revisions", "builds", "tests"}:
             return io.schema.V1.major, io.schema.V1.minor
         return None, None
+
+    def is_initialized(self):
+        """
+        Check if the database is initialized (not empty).
+
+        Returns:
+            True if the database is initialized, False otherwise.
+        """
+        major, minor = self._get_schema_version()
+        return not (major is None and minor is None)
+
+    def get_schema_version(self):
+        """
+        Get the version of the I/O schema the dataset schema corresponds to.
+        Assumes the database is initialized.
+
+        Returns:
+            Major and minor version numbers.
+        """
+        major, minor = self._get_schema_version()
+        assert not (major is None and minor is None)
+        return major, minor
 
     def init(self):
         """
