@@ -101,7 +101,7 @@ Check it was created successfully:
 
 Initialize the dataset:
 
-    kcidb-db-init -d kernelci03
+    kcidb-db-init -d bigquery:kernelci03
 
 ### Pub/Sub
 
