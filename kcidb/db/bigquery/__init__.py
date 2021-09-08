@@ -7,8 +7,8 @@ import textwrap
 from functools import reduce
 from datetime import datetime
 from google.cloud import bigquery
-from google.api_core.exceptions import BadRequest
-from google.api_core.exceptions import NotFound
+from google.api_core.exceptions import BadRequest as GoogleBadRequest
+from google.api_core.exceptions import NotFound as GoogleNotFound
 import kcidb_io as io
 import kcidb.orm
 from kcidb.db.bigquery import schema
@@ -124,7 +124,7 @@ class Driver(AbstractDriver):
             table_ref = self.dataset_ref.table(table_name)
             try:
                 self.client.delete_table(table_ref)
-            except NotFound:
+            except GoogleNotFound:
                 pass
         dataset = self.client.get_dataset(self.dataset_ref)
         dataset.labels["version_major"] = None
@@ -537,7 +537,7 @@ class Driver(AbstractDriver):
                     job_config=job_config)
                 try:
                     job.result()
-                except BadRequest as exc:
+                except GoogleBadRequest as exc:
                     raise Exception("".join([
                         f"ERROR: {error['message']}\n" for error in job.errors
                     ])) from exc
