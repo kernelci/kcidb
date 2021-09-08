@@ -1,0 +1,1159 @@
+#!/bin/bash
+#
+# Cloud installation management tool.
+# Assumes its location is the top directory of KCIDB source tree.
+# Deploying creates or updates an installation, withdrawing removes it.
+#
+# Conventions:
+#   - *_deploy functions create or update an installation;
+#   - *_withdraw functions delete installation if it exists;
+#   - no output should be produced unless something fails;
+#   - no error/message output on stdout, only stderr.
+
+set -euCo pipefail
+shopt -s extglob
+
+# "true" if verbose output is enabled, "false" otherwise
+declare VERBOSE="false"
+
+# Run a command with stdout redirected to stderr, if verbose output is
+# enabled.
+# Args: command [arg...]
+function verbose() {
+    if "$VERBOSE"; then
+        "$@" >&2
+    fi
+}
+
+# Generate code declaring parameter variables with names and values passed
+# through long-option command-line argument list, and assigning the positional
+# arguments.
+#
+# Args: [param_name...] [-- [param_arg...]]
+#
+# Each parameter name ("param_name") must be a string matching the
+# ^[A-Za-z_][A-Za-z0-9_]*?$ regex, specifying both the name of the option and
+# the name of the local variable. However, all underscores ("_") are replaced
+# with dashes ("-") in option names.
+#
+# Each parameter argument ("param_arg") is a command-line argument specifying
+# long options and/or their values.
+#
+# Output: Code declaring parameter variables and assigning values to them.
+#
+function getopt_vars() {
+    declare -a longopts=()
+    declare -a params=()
+    declare -A params_value=()
+    declare arg
+    declare param
+    declare parsed_args
+
+    # Parse parameter specifications
+    while (($#)); do
+        arg="$1"; shift
+        if [ "$arg" == "--" ]; then
+            break
+        fi
+        if ! [[ $arg =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+            echo "Invalid parameter specification: ${arg@Q}" >&2
+            return 1
+        fi
+        longopts+=("${arg//_/-}:")
+        params+=("$arg")
+    done
+
+    # Parse parameter arguments
+    parsed_args="$(IFS=","
+                   getopt --name getopt_vars --options "" \
+                          --longoptions "${longopts[*]}" \
+                          -- "$@")"
+    eval set -- "$parsed_args"
+    while true; do
+        case "$1" in
+            --?*)
+                param="${1:2}"
+                param="${param//-/_}"
+                params_value[$param]="$2"
+                shift 2
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                echo "Unknown argument: ${1@Q}" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    # Generate code assigning parameters and checking for missing ones
+    for param in "${params[@]}"; do
+        if [[ -v params_value[$param] ]]; then
+            echo "declare $param=${params_value[$param]@Q}"
+        else
+            echo "Required parameter missing: ${param@Q}" >&2
+            return 1
+        fi
+    done
+
+    # Generate code reassigning positional arguments
+    echo "set -- ${@@Q}"
+}
+
+# Execute a command, capturing both stdout and stderr, and only outputting
+# them both to stderr, if the command fails.
+# Args: command [arg...]
+function mute() {
+    declare -r command="$1"; shift
+    declare output
+    declare status
+    # Execute command capturing output and preserving trailing newlines
+    set +e
+    output=$(
+        set -e
+        "$command" "$@" 2>&1 || s="$?"
+        echo -ne '\f'
+        exit "${s:-0}"
+    )
+    status="$?"
+    set -e
+    if ((status)); then
+        echo -n "${output::-1}" >&2
+        return "$status"
+    fi
+}
+
+# Enable Google Cloud services using their short names
+# Args: project [name...]
+function services_enable() {
+    declare -r project="$1"; shift
+    declare -a names=("$@")
+    for ((i = 0; i < ${#names[@]}; i++)); do
+        names[$i]="${names[$i]}.googleapis.com"
+    done
+    mute gcloud services enable --quiet --project="$project" "${names[@]}"
+}
+
+# Deploy to BigQuery
+# Args: project dataset
+function bigquery_deploy() {
+    declare -r project="$1"; shift
+    declare -r dataset="$1"; shift
+    mute bq mk --project_id="$project" --force "$dataset"
+    kcidb-db-init -d "bigquery:${project}.${dataset}" \
+                  --ignore-initialized
+}
+
+# Withdraw from BigQuery
+# Args: project dataset
+function bigquery_withdraw() {
+    declare -r project="$1"; shift
+    declare -r dataset="$1"; shift
+    kcidb-db-cleanup -d "bigquery:${project}.${dataset}" \
+                     --ignore-not-initialized \
+                     --ignore-not-found
+    mute bq rm --project_id="$project" --force "$dataset"
+}
+
+# Deploy to Firestore.
+# Args: project
+function firestore_deploy() {
+    declare -r project="$1"; shift
+    # Create the native database (in the same region as the App Engine app)
+    mute gcloud firestore databases create --quiet \
+                                           --project="$project" \
+                                           --region=us-central
+}
+
+# Withdraw from Firestore.
+# Args: project spool_collection_path
+function firestore_withdraw() {
+    declare -r project="$1"; shift
+    declare -r spool_collection_path="$1"; shift
+    kcidb-monitor-spool-wipe -p "$project" -c "$spool_collection_path"
+}
+
+# Check if the App Engine app exists.
+# Args: project
+# Output: "true" if the app exists, "false" otherwise.
+function app_exists() {
+    declare -r project="$1"; shift
+    declare output
+    if output=$(
+            gcloud app describe --quiet --project="$project" 2>&1
+       ); then
+        echo "true"
+    elif [[ $output == *\ does\ not\ contain\ * ]]; then
+        echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Create the App Engine app, if it doesn't exist.
+# Args: project
+function app_deploy() {
+    declare -r project="$1"; shift
+    exists=$(app_exists "$project")
+    if "$exists"; then
+        return
+    fi
+    mute gcloud app create --quiet --project="$project" --region=us-central
+}
+
+# Check if a secret exists
+# Args: project name
+# Output: "true" if the secret exists, "false" otherwise.
+function secret_exists() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    if output=$(
+            gcloud secrets describe --quiet --project="$project" "$name" 2>&1
+       ); then
+        echo "true"
+    elif [[ $output == *NOT_FOUND* ]]; then
+        echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Deploy a secret
+# Args: project name description file
+function secret_deploy() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare -r description="$1"; shift
+    declare file="$1"; shift
+    declare secret
+    exists=$(secret_exists "$project" "$name")
+
+    if [ -z "$file" ]; then
+        if "$exists"; then
+            return
+        else
+            file="-"
+        fi
+    fi
+
+    {
+        if [ "$file" == "-" ]; then
+            read -p "Enter $description: " -r -s secret
+            echo "" >&2
+            echo -n "$secret"
+        else
+            cat "$file"
+        fi
+    } | {
+        if "$exists"; then
+            mute gcloud secrets versions add --quiet --project="$project" \
+                                             "$name" \
+                                             --data-file=-
+        else
+            mute gcloud secrets create --quiet --project="$project" "$name" \
+                                       --replication-policy automatic \
+                                       --data-file=-
+        fi
+    }
+}
+
+# Delete a secret if it exists
+# Args: project name
+function secret_withdraw() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(secret_exists "$project" "$name")
+    if "$exists"; then
+        mute gcloud secrets delete --quiet --project="$project" "$name"
+    fi
+}
+
+# Deploy secrets
+# Args: project smtp_password_secret smtp_password_file
+function secrets_deploy() {
+    declare -r project="$1"; shift
+    declare -r smtp_password_secret="$1"; shift
+    declare -r smtp_password_file="$1"; shift
+
+    # Deploy SMTP password
+    secret_deploy "$project" "$smtp_password_secret" \
+                  "SMTP password" "$smtp_password_file"
+
+    # Give Cloud Functions access to the SMTP password secret
+    mute gcloud secrets add-iam-policy-binding \
+        --quiet --project="$project" "$smtp_password_secret" \
+        --role roles/secretmanager.secretAccessor \
+        --member "serviceAccount:$project@appspot.gserviceaccount.com"
+}
+
+# Withdraw secrets
+# Args: project
+function secrets_withdraw() {
+    declare -r project="$1"; shift
+    declare -r smtp_password_secret="$1"; shift
+    secret_withdraw "$project" "$smtp_password_secret"
+}
+
+# Check if a Pub/Sub topic exists
+# Args: project name
+# Output: "true" if the topic exists, "false" otherwise.
+function pubsub_topic_exists() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    if output=$(
+            gcloud pubsub topics describe --quiet --project="$project" \
+                                          "$name" 2>&1
+       ); then
+        echo "true"
+    elif [[ $output == *NOT_FOUND* ]]; then
+        echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Create/update a Pub/Sub topic
+# Args: project name [param_arg...]
+function pubsub_topic_deploy() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(pubsub_topic_exists "$project" "$name")
+    if "$exists"; then
+        if (($#)); then
+            mute gcloud pubsub topics update --quiet --project="$project" \
+                                             "$name" "$@"
+        fi
+    else
+        mute gcloud pubsub topics create --quiet --project="$project" \
+                                         "$name" "$@"
+    fi
+}
+
+# Delete a Pub/Sub topic if it exists
+# Args: project name
+function pubsub_topic_withdraw() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(pubsub_topic_exists "$project" "$name")
+    if "$exists"; then
+        mute gcloud pubsub topics delete --quiet --project="$project" "$name"
+    fi
+}
+
+# Delete a Pub/Sub topic's IAM policy binding, if it exists
+# Args: project name member role
+function pubsub_topic_iam_policy_binding_withdraw() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare -r member="$1"; shift
+    declare -r role="$1"; shift
+    declare output
+    if ! output=$(
+            gcloud pubsub topics remove-iam-policy-binding --quiet "$name" \
+                --project="$project" --member="$member" --role="$role" 2>&1
+       ) && [[ $output != *@(\ not\ found!|NOT_FOUND)* ]]; then
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Check if a Pub/Sub subscription exists
+# Args: project name
+# Output: "true" if the subscription exists, "false" otherwise.
+function pubsub_subscription_exists() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    if output=$(
+            gcloud pubsub subscriptions describe --quiet \
+                                                 --project="$project" \
+                                                 "$name" 2>&1
+       ); then
+        echo "true"
+    elif [[ $output == *NOT_FOUND* ]]; then
+        echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Create/update a Pub/Sub subscription
+# Args: project topic name [param_args...]
+function pubsub_subscription_deploy() {
+    declare -r project="$1"; shift
+    declare -r topic="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(pubsub_subscription_exists "$project" "$name")
+    if "$exists"; then
+        if (($#)); then
+            mute gcloud pubsub subscriptions update --quiet \
+                                                    --project="$project" \
+                                                    "$name" "$@"
+        fi
+    else
+        mute gcloud pubsub subscriptions create --quiet \
+                                                --project="$project" \
+                                                --topic="$topic" \
+                                                "$name" "$@"
+    fi
+}
+
+# Delete a Pub/Sub subscription if it exists
+# Args: project name
+function pubsub_subscription_withdraw() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(pubsub_subscription_exists "$project" "$name")
+    if "$exists"; then
+        mute gcloud pubsub subscriptions delete --quiet \
+                                                --project="$project" \
+                                                "$name"
+    fi
+}
+
+# Deploy to Pub/Sub
+# Args: --project=NAME
+#       --trigger-topic=NAME
+#       --new-topic=NAME
+#       --new-load-subscription=NAME
+#       --new-debug-subscription=NAME
+#       --updated-topic=NAME
+#       --updated-debug-subscription=NAME
+function pubsub_deploy() {
+    params="$(getopt_vars project \
+                          trigger_topic \
+                          new_topic \
+                          new_load_subscription \
+                          new_debug_subscription \
+                          updated_topic \
+                          updated_debug_subscription \
+                          -- "$@")"
+    eval "$params"
+    pubsub_topic_deploy "$project" "${trigger_topic}"
+
+    pubsub_topic_deploy "$project" "${new_topic}"
+    pubsub_subscription_deploy "$project" "${new_topic}" \
+                               "${new_load_subscription}" \
+                               --ack-deadline=600 \
+                               --min-retry-delay=10s \
+                               --max-retry-delay=600s
+
+    pubsub_subscription_deploy "$project" "${new_topic}" \
+                               "${new_debug_subscription}"
+
+    pubsub_topic_deploy "$project" "${updated_topic}"
+    pubsub_subscription_deploy "$project" "${updated_topic}" \
+                               "${updated_debug_subscription}"
+}
+
+# Withdraw from Pub/Sub
+# Args: --project=NAME
+#       --trigger-topic=NAME
+#       --new-topic=NAME
+#       --new-load-subscription=NAME
+#       --new-debug-subscription=NAME
+#       --updated-topic=NAME
+#       --updated-debug-subscription=NAME
+function pubsub_withdraw() {
+    params="$(getopt_vars project \
+                          trigger_topic \
+                          new_topic \
+                          new_load_subscription \
+                          new_debug_subscription \
+                          updated_topic \
+                          updated_debug_subscription \
+                          -- "$@")"
+    eval "$params"
+    pubsub_subscription_withdraw "$project" "$updated_debug_subscription"
+    pubsub_topic_withdraw "$project" "$updated_topic"
+    pubsub_subscription_withdraw "$project" "$new_debug_subscription"
+    pubsub_subscription_withdraw "$project" "$new_load_subscription"
+    pubsub_topic_withdraw "$project" "$new_topic"
+    pubsub_topic_withdraw "$project" "$trigger_topic"
+}
+
+# Deploy a Cloud Function
+# Args: project name source [param_arg...]
+function cloud_function_deploy() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare -r source="$1"; shift
+    verbose echo "    Deploying ${name@Q}"
+    mute gcloud functions deploy --quiet --project="$project" \
+                                 --source "$source" "$name" "$@"
+}
+
+# Delete a Cloud Function if it exists
+# Args: project name
+function cloud_function_withdraw() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    verbose echo "    Withdrawing ${name@Q}"
+    if ! output=$(
+            gcloud functions delete --quiet --project="$project" "$name" 2>&1
+       ) && [[ $output != *\ status=\[404\]* ]]; then
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Deploy Cloud Functions
+# Args: --project=NAME --prefix=PREFIX --source=PATH
+#       --trigger-topic=NAME
+#       --log-level=NAME
+#       --new-topic=NAME --new-load-subscription=NAME
+#       --updated-topic=NAME --spool-collection-path=PATH
+#       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
+#       --database=SPEC
+function cloud_functions_deploy() {
+    params="$(getopt_vars project prefix source \
+                          trigger_topic \
+                          log_level \
+                          new_topic new_load_subscription \
+                          updated_topic spool_collection_path \
+                          smtp_to_addrs smtp_password_secret \
+                          database \
+                          -- "$@")"
+    eval "$params"
+    declare -r old_trap=`trap -p RETURN EXIT`
+    # Create empty environment YAML
+    declare env_yaml
+    env_yaml=`mktemp --tmpdir kcidb_cloud_env.XXXXXXXX`
+    # Remove it on function return / shell exit
+    trap "rm ${env_yaml@Q}; ${old_trap:-trap - RETURN EXIT}" RETURN EXIT
+    # Generate environment YAML contents
+    declare -A env=(
+        [KCIDB_LOG_LEVEL]="$log_level"
+        [KCIDB_LOAD_QUEUE_TOPIC]="$new_topic"
+        [KCIDB_LOAD_QUEUE_SUBSCRIPTION]="$new_load_subscription"
+        [KCIDB_LOAD_QUEUE_MSG_MAX]="256"
+        [KCIDB_LOAD_QUEUE_OBJ_MAX]="8192"
+        [KCIDB_LOAD_QUEUE_TIMEOUT_SEC]="30"
+        [KCIDB_DATABASE]="$database"
+        [KCIDB_DATABASE_LOAD_PERIOD_SEC]="180"
+        [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
+        [KCIDB_SELECTED_SUBSCRIPTIONS]="mainline"
+        [KCIDB_SPOOL_COLLECTION_PATH]="$spool_collection_path"
+        [KCIDB_SMTP_HOST]="smtp.gmail.com"
+        [KCIDB_SMTP_PORT]="587"
+        [KCIDB_SMTP_USER]="bot@kernelci.org"
+        [KCIDB_SMTP_PASSWORD_SECRET]="$smtp_password_secret"
+        [KCIDB_SMTP_FROM_ADDR]="bot@kernelci.org"
+    )
+    if [ -n "$smtp_to_addrs" ]; then
+        env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
+    fi
+    # Silly Python and its significant whitespace
+    sed -e 's/^\s\+//' <<<'
+        import sys, yaml
+        args = sys.argv[1::]
+        middle = len(args) >> 1
+        yaml.dump(dict(zip(args[:middle], args[middle:])), stream=sys.stdout)
+    ' | python3 - "${!env[@]}" "${env[@]}" >| "$env_yaml"
+
+    cloud_function_deploy "$project" "${prefix}load_queue" \
+                          "$source" \
+                          --entry-point kcidb_load_queue \
+                          --env-vars-file "$env_yaml" \
+                          --runtime python37 \
+                          --trigger-topic "${trigger_topic}" \
+                          --memory 256MB \
+                          --timeout 540
+
+    cloud_function_deploy "$project" "${prefix}spool_notifications" \
+                          "$source" \
+                          --entry-point kcidb_spool_notifications \
+                          --env-vars-file "$env_yaml" \
+                          --runtime python37 \
+                          --trigger-topic "${updated_topic}" \
+                          --memory 1024MB \
+                          --timeout 540
+
+    declare trigger_event="providers/cloud.firestore/eventTypes/"
+    trigger_event+="document.create"
+    declare trigger_resource="projects/$project/databases/(default)/documents/"
+    trigger_resource+="${spool_collection_path}/{notification_id}"
+    cloud_function_deploy "$project" "${prefix}send_notification" \
+                          "$source" \
+                          --entry-point kcidb_send_notification \
+                          --env-vars-file "$env_yaml" \
+                          --runtime python37 \
+                          --trigger-event "${trigger_event}" \
+                          --trigger-resource "${trigger_resource}" \
+                          --memory 256MB \
+                          --retry \
+                          --timeout 540
+}
+
+# Withdraw Cloud Functions
+# Args: project prefix
+function cloud_functions_withdraw() {
+    declare -r project="$1"; shift
+    declare -r prefix="$1"; shift
+    cloud_function_withdraw "$project" "${prefix}send_notification"
+    cloud_function_withdraw "$project" "${prefix}spool_notifications"
+    cloud_function_withdraw "$project" "${prefix}load_queue"
+}
+
+# Check if a scheduler job exists
+# Args: project name
+# Output: "true" if the subscription exists, "false" otherwise.
+function scheduler_job_exists() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    if output=$(
+            gcloud scheduler jobs describe --quiet --project="$project" \
+                                           "$name" 2>&1
+       ); then
+        echo "true"
+    elif [[ $output == *NOT_FOUND* ]]; then
+        echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Deploy a pubsub scheduler job
+# Args: project name topic schedule message_body
+function scheduler_job_pubsub_deploy() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare -r topic="$1"; shift
+    declare -r schedule="$1"; shift
+    declare -r message_body="$1"; shift
+    exists=$(scheduler_job_exists "$project" "$name")
+    if "$exists"; then
+        if (($#)); then
+            mute gcloud scheduler jobs update pubsub \
+                "${name}" \
+                --quiet \
+                --project="$project" \
+                --topic="$topic" \
+                --schedule="$schedule" \
+                --message-body="$message_body"
+        fi
+    else
+        mute gcloud scheduler jobs create pubsub \
+            "${name}" \
+            --quiet \
+            --project="$project" \
+            --topic="$topic" \
+            --schedule="$schedule" \
+            --message-body="$message_body"
+    fi
+}
+
+# Delete a scheduler job if it exists
+# Args: project name
+function scheduler_job_withdraw() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(scheduler_job_exists "$project" "$name")
+    if "$exists"; then
+        mute gcloud scheduler jobs delete \
+            --quiet --project="$project" "$name"
+    fi
+}
+
+# Deploy to scheduler
+# Args: project prefix trigger_topic
+function scheduler_deploy() {
+    declare -r project="$1"; shift
+    declare -r prefix="$1"; shift
+    declare -r trigger_topic="$1"; shift
+    # Deploy the jobs
+    scheduler_job_pubsub_deploy "$project" "${prefix}trigger" \
+                                "$trigger_topic" '* * * * *' '{}'
+}
+
+# Withdraw from the scheduler
+# Args: project prefix
+function scheduler_withdraw() {
+    declare -r project="$1"; shift
+    declare -r prefix="$1"; shift
+    scheduler_job_withdraw "$project" "${prefix}trigger" \
+                           "$trigger_topic" '* * * * *' '{}'
+}
+
+# Deploy permissions for a submitter
+# Args: project new_topic submitter
+function submitter_deploy() {
+    declare -r project="$1"; shift
+    declare -r new_topic="$1"; shift
+    declare -r submitter="$1"; shift
+    declare member
+    declare role
+
+    member="serviceAccount:$submitter@$project.iam.gserviceaccount.com"
+
+    role="roles/bigquery.dataViewer"
+    mute gcloud projects add-iam-policy-binding "$project" \
+                                                --quiet \
+                                                --member "$member" \
+                                                --role "$role"
+    role="roles/bigquery.jobUser"
+    mute gcloud projects add-iam-policy-binding "$project" \
+                                                --quiet \
+                                                --member "$member" \
+                                                --role "$role"
+    role="roles/pubsub.publisher"
+    mute gcloud pubsub topics add-iam-policy-binding --project="$project" \
+                                                     "$new_topic" \
+                                                     --quiet \
+                                                     --member="$member" \
+                                                     --role="$role"
+}
+
+# Delete a project's IAM policy binding, if it exists
+# Args: project member role
+function iam_policy_binding_withdraw() {
+    declare -r project="$1"; shift
+    declare -r member="$1"; shift
+    declare -r role="$1"; shift
+    declare output
+    if ! output=$(
+            gcloud projects remove-iam-policy-binding \
+                --quiet "$project" --member="$member" --role="$role" 2>&1
+       ) && [[ $output != *\ not\ found!* ]]; then
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Remove permissions for a submitter
+# Args: project new_topic submitter
+function submitter_withdraw() {
+    declare -r project="$1"; shift
+    declare -r new_topic="$1"; shift
+    declare -r submitter="$1"; shift
+    declare member
+    member="serviceAccount:$submitter@$project.iam.gserviceaccount.com"
+
+    iam_policy_binding_withdraw "$project" "$member" \
+                                "roles/bigquery.dataViewer"
+    iam_policy_binding_withdraw "$project" "$member" \
+                                "roles/bigquery.jobUser"
+    pubsub_topic_iam_policy_binding_withdraw "$project" "$new_topic" \
+                                             "$member" \
+                                             "roles/pubsub.publisher"
+}
+
+# Deploy submitter permissions
+# Args: project new_topic [submitter...]
+function submitters_deploy() {
+    declare -r project="$1"; shift
+    declare -r new_topic="$1"; shift
+    declare -r -a submitters="$@"
+    for submitter in "${submitters[@]}"; do
+        submitter_deploy "$project" "$new_topic" "$submitter"
+    done
+}
+
+# Withdraw submitter permissions
+# Args: project new_topic [submitter...]
+function submitters_withdraw() {
+    declare -r project="$1"; shift
+    declare -r new_topic="$1"; shift
+    declare -r -a submitters="$@"
+    for submitter in "${submitters[@]}"; do
+        submitter_withdraw "$project" "$new_topic" "$submitter"
+    done
+}
+
+# Sections of the installation
+declare -A -r SECTIONS=(
+    ["bigquery"]="BigQuery dataset"
+    ["pubsub"]="Pub/Sub topics and subscriptions"
+    ["secrets"]="Secrets"
+    ["firestore"]="Firestore database"
+    ["cloud_functions"]="Cloud Functions"
+    ["scheduler"]="Scheduler jobs"
+    ["submitters"]="Submitter permissions"
+)
+# Maximum length of a section name
+declare SECTIONS_NAME_LEN_MAX=0
+# Maximum length of a section description
+declare SECTIONS_DESCRIPTION_LEN_MAX=0
+# Calculate maximum lengths
+declare SECTIONS_NAME
+for SECTIONS_NAME in "${!SECTIONS[@]}"; do
+    if ((${#SECTIONS_NAME} > SECTIONS_NAME_LEN_MAX)); then
+        SECTIONS_NAME_LEN_MAX="${#SECTIONS_NAME}"
+    fi
+    if ((${#SECTIONS[$SECTIONS_NAME]} > SECTIONS_DESCRIPTION_LEN_MAX)); then
+        SECTIONS_DESCRIPTION_LEN_MAX="${#SECTIONS[$SECTIONS_NAME]}"
+    fi
+done
+unset SECTIONS_NAME
+declare -r SECTIONS_NAME_LEN_MAX
+declare -r SECTIONS_DESCRIPTION_LEN_MAX
+
+# Execute a operation on a section of installation, if its name matches a
+# glob. The operation is defined as a command with arguments. The command name
+# must consist of the section name and the operation verb separated by an
+# underscore.
+#
+# Args: glob command [arg...]
+function sections_run() {
+    declare -r glob="$1"; shift
+    declare -r command="$1"; shift
+    declare -r name="${command%_*}"
+    declare -r verb="${command##*_}"
+    declare -r action="${verb}ing"
+    declare status
+
+    if [ -z "$name" ]; then
+        echo "No section name found in command name ${command@Q}" >&2
+        exit 1
+    fi
+    if ! [[ -v SECTIONS[$name] ]]; then
+        echo "Unknown section name ${name@Q}" >&2
+        exit 1
+    fi
+    if [ -z "$verb" ]; then
+        echo "No operation verb found in command name ${command@Q}" >&2
+        exit 1
+    fi
+
+    if [[ $name != $glob ]]; then
+        return
+    fi
+
+    verbose printf "%s %-${SECTIONS_DESCRIPTION_LEN_MAX}s [%s]\\n" \
+                   "${action^}" "${SECTIONS[$name]}" "$name"
+    set +e
+    (
+        set -e
+        "${command}" "$@"
+    )
+    status="$?"
+    set -e
+    if ((status)); then
+        echo "Failed ${action} ${SECTIONS[$name]} [$name]" >&2
+        return 1
+    fi
+}
+
+# Execute a deploy/withdraw command
+# Args: --command=NAME
+#       --sections=EXTGLOB
+#       --project=NAME
+#       --prefix=STRING
+#       --version=STRING
+#       --smtp-to-addrs=STRING
+#       --smtp-password-file=STRING
+#       --log-level=NAME
+#       --submitters=WORDS
+function execute_command() {
+    params="$(getopt_vars command \
+                          project \
+                          sections \
+                          prefix \
+                          version \
+                          smtp_to_addrs \
+                          smtp_password_file \
+                          log_level \
+                          submitters \
+                          -- "$@")"
+    eval "$params"
+    # Convert submitters from a string of words to an array
+    eval "declare -a submitters=($submitters)"
+
+    declare -r trigger_topic="${prefix}trigger"
+    declare -r new_topic="${prefix}new"
+    declare -r new_load_subscription="${prefix}new_load"
+    declare -r new_debug_subscription="${prefix}new_debug"
+    declare -r updated_topic="${prefix}updated"
+    declare -r updated_debug_subscription="${prefix}updated_debug"
+    declare -r spool_collection_path="${prefix}notifications"
+    declare -r smtp_password_secret="${prefix}smtp_password"
+    declare -r dataset="${prefix}${version}"
+    declare -r database="bigquery:${project}.${dataset}"
+
+    # Make sure requisite services are enabled
+    app_deploy "$project"
+    services_enable "$project" appengine secretmanager cloudfunctions \
+                               cloudbuild cloudscheduler firestore
+
+    if [ "$command" == "deploy" ]; then
+        sections_run "$sections" bigquery_deploy "$project" "$dataset"
+        sections_run "$sections" pubsub_deploy \
+            --project="$project" \
+            --trigger-topic="$trigger_topic" \
+            --new-topic="$new_topic" \
+            --new-load-subscription="$new_load_subscription" \
+            --new-debug-subscription="$new_debug_subscription" \
+            --updated-topic="$updated_topic" \
+            --updated-debug-subscription="$updated_debug_subscription"
+        sections_run "$sections" secrets_deploy \
+            "$project" "$smtp_password_secret" "$smtp_password_file"
+        sections_run "$sections" firestore_deploy "$project"
+        sections_run "$sections" cloud_functions_deploy \
+            --project="$project" \
+            --prefix="$prefix" \
+            --source="$(dirname "$(realpath "$0")")" \
+            --log-level="$log_level" \
+            --trigger-topic="$trigger_topic" \
+            --new-topic="$new_topic" \
+            --new-load-subscription="$new_load_subscription" \
+            --updated-topic="$updated_topic" \
+            --spool-collection-path="$spool_collection_path" \
+            --smtp-to-addrs="$smtp_to_addrs" \
+            --smtp-password-secret="$smtp_password_secret" \
+            --database="$database"
+        sections_run "$sections" scheduler_deploy \
+            "$project" "$prefix" "$trigger_topic"
+        sections_run "$sections" submitters_deploy \
+            "$project" "$new_topic" "${submitters[@]}"
+    else
+        sections_run "$sections" submitters_withdraw \
+            "$project" "$new_topic" "${submitters[@]}"
+        sections_run "$sections" scheduler_withdraw "$project" "$prefix"
+        sections_run "$sections" cloud_functions_withdraw "$project" "$prefix"
+        sections_run "$sections" firestore_withdraw \
+            "$project" "$spool_collection_path"
+        sections_run "$sections" secrets_withdraw \
+            "$project" "$smtp_password_secret"
+        sections_run "$sections" pubsub_withdraw \
+            --project="$project" \
+            --trigger-topic="$trigger_topic" \
+            --new-topic="$new_topic" \
+            --new-load-subscription="$new_load_subscription" \
+            --new-debug-subscription="$new_debug_subscription" \
+            --updated-topic="$updated_topic" \
+            --updated-debug-subscription="$updated_debug_subscription"
+        sections_run "$sections" bigquery_withdraw "$project" "$dataset"
+    fi
+}
+
+# Output usage information
+function usage() {
+    echo "Usage: $(basename "$0") [OPTION...] COMMAND [COMMAND_ARGUMENT...]"
+    echo "Manage KCIDB installation in a Google Cloud project."
+    echo ""
+    echo "Commands:"
+    echo ""
+    echo "    deploy        Deploy an installation to the cloud."
+    echo "    withdraw      Withdraw an installation from the cloud."
+    echo "    list-sections List sections of the installation."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo "              To get command usage message run "
+    echo "              $(basename "$0") COMMAND -h/--help."
+    echo ""
+}
+
+# Output deploy command usage information
+function usage_deploy() {
+    echo "Usage: $(basename "$0") deploy [OPTION...]" \
+         "PROJECT NAMESPACE [VERSION]"
+    echo "Deploy a KCIDB installation to a Google Cloud project."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo "    -v, --verbose"
+    echo "              Output the deployment steps being executed."
+    echo "    -s, --sections=EXTGLOB"
+    echo "              Specify an extended shell glob matching the"
+    echo "              installation sections to limit deployment to."
+    echo "              See output of \"$(basename "$0") list-sections\""
+    echo "              for a list of available sections."
+    echo "    --smtp-to-addrs=ADDRS"
+    echo "              Specify a comma-separated list of addresses"
+    echo "              to override recipients of email notifications."
+    echo "              Specify an empty string to not override."
+    echo "              Default is kernelci-results-staging@groups.io."
+    echo "    --smtp-password-file=FILE"
+    echo "              Specify a file with the SMTP server password,"
+    echo "              or \"-\" to read it from stdin."
+    echo "    --log-level=NAME"
+    echo "              Specify Python log level NAME for Cloud Functions."
+    echo "              Default is INFO."
+    echo "    --submitter=NAME"
+    echo "              Specify a service account to permit submissions for."
+    echo "              Repeat to add more submitters."
+    echo ""
+    echo "Positional arguments:"
+    echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
+    echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
+    echo "    VERSION   Optional version of the dataset, e.g. 4."
+    echo ""
+}
+
+# Output withdraw command usage information
+function usage_withdraw() {
+    echo "Usage: $(basename "$0") withdraw [OPTION...]" \
+         "PROJECT NAMESPACE [VERSION]"
+    echo "Withdraw a KCIDB installation from a Google Cloud project."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo "    -v, --verbose"
+    echo "              Output the withdrawal steps being executed."
+    echo "    -s, --sections=EXTGLOB"
+    echo "              Specify an extended shell glob matching the"
+    echo "              installation sections to limit withdrawal to."
+    echo "              See output of \"$(basename "$0") list-sections\""
+    echo "              for a list of available sections."
+    echo "    --submitter=NAME"
+    echo "              Specify a service account to deny submissions for."
+    echo "              Repeat to add more submitters."
+    echo ""
+    echo "Positional arguments:"
+    echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
+    echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
+    echo "    VERSION   Optional version of the dataset, e.g. 4."
+    echo ""
+}
+
+# Output list-sections command usage information
+function usage_list_sections() {
+    echo "Usage: $(basename "$0") list-sections [OPTION...]"
+    echo "List sections of a KCIDB installation."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo ""
+}
+
+# Execute
+# Args: [argument...]
+function execute() {
+    declare args_expr
+
+    # Make sure getopt compatibility isn't enforced
+    unset GETOPT_COMPATIBLE
+    # Check if getopt is enhanced and supports quoting
+    if getopt --test >/dev/null; [ $? != 4 ]; then
+        echo "Enhanced getopt not found" >&2
+        exit 1
+    fi
+
+    # Parse global command-line arguments
+    args_expr=$(getopt --name $(basename "$0") \
+                       --options "+h" --longoptions "help" \
+                       -- "$@")
+    eval set -- "$args_expr"
+    while true; do
+        case "$1" in
+            -h|--help) usage; exit 0;;
+            --) shift; break;;
+            *) echo "Unknown option: $1" >&2; exit 1;;
+        esac
+    done
+    if (( $# < 1 )); then
+        echo "Command is not specified" >&2
+        usage >&2
+        exit 1
+    fi
+
+    # Parse command and its arguments
+    declare -r command="$1"; shift
+    declare getopt_shortopts="h"
+    declare getopt_longopts="help"
+
+    if [ "$command" == "deploy" ] || [ "$command" == "withdraw" ]; then
+        getopt_shortopts+="vs:"
+        getopt_longopts+=",verbose,sections:,submitter:"
+        if [ "$command" == "deploy" ]; then
+            getopt_longopts+=",smtp-to-addrs:,smtp-password-file:"
+            getopt_longopts+=",log-level:"
+        fi
+    elif [ "$command" == "list-sections" ]; then
+        :
+    else
+        echo "Unknown command: ${command@Q}" >&2
+        usage >&2
+        exit 1
+    fi
+
+    # Parse command-line arguments
+    args_expr=$(getopt --name $(basename "$0") \
+                       --options "$getopt_shortopts" \
+                       --longoptions "$getopt_longopts" \
+                       -- "$@")
+    eval set -- "$args_expr"
+
+    # Read option arguments
+    declare sections="*"
+    declare smtp_to_addrs="kernelci-results-staging@groups.io"
+    declare smtp_password_file=""
+    declare log_level="INFO"
+    declare -a submitters=()
+    while true; do
+        case "$1" in
+            -h|--help) "usage_${command//-/_}"; exit 0;;
+            -v|--verbose) VERBOSE="true"; shift;;
+            -s|--sections) sections="$2"; shift 2;;
+            --smtp-to-addrs) smtp_to_addrs="$2"; shift 2;;
+            --smtp-password-file) smtp_password_file="$2"; shift 2;;
+            --log-level) log_level="$2"; shift 2;;
+            --submitter) submitters+=("$2"); shift 2;;
+            --) shift; break;;
+            *) echo "Unknown option: $1" >&2; exit 1;;
+        esac
+    done
+
+    # Execute list-sections, if requested, and exit
+    if [ "$command" == "list-sections" ]; then
+        declare name
+        for name in "${!SECTIONS[@]}"; do
+            printf "%-${SECTIONS_NAME_LEN_MAX}s %s\\n" \
+                   "$name" "${SECTIONS[$name]}"
+        done
+        exit 0
+    fi
+
+    # Read and normalize positional arguments
+    if (( $# < 3 || $# > 4 )); then
+        echo "Invalid number of positional arguments" >&2
+        "usage_${command}" >&2
+        exit 1
+    fi
+    declare -r project="$1"; shift
+    declare -r namespace="$1"; shift
+    declare version="${1:-}"
+    if [ -n "$version" ]; then
+        if [[ $version =~ ^[0-9]+$ ]]; then
+            version=$(printf %02u "$version")
+        else
+            echo "Invalid version: $version" >&2
+            usage >&2
+            exit 1
+        fi
+    fi
+    declare -r version
+
+    # Execute the command
+    execute_command --command="$command" \
+                    --sections="$sections" \
+                    --project="$project" \
+                    --prefix="${namespace:-}${namespace:+_}kcidb_" \
+                    --version="$version" \
+                    --smtp-to-addrs="$smtp_to_addrs" \
+                    --smtp-password-file="$smtp_password_file" \
+                    --log-level="$log_level" \
+                    --submitters="${submitters[*]@Q}"
+}
+
+execute "$@"
