@@ -10,6 +10,15 @@ class Error(Exception):
     """An abstract error"""
 
 
+class NotFound(Error):
+    """A database doesn't exist"""
+
+    def __init__(self, database):
+        """Initialize the exception."""
+        assert isinstance(database, str)
+        super().__init__(f"Database {database!r} not found")
+
+
 class IncompatibleSchema(Error):
     """Database schema is incompatible with the latest I/O schema"""
 
@@ -28,7 +37,16 @@ class IncompatibleSchema(Error):
 
 
 class Driver(ABC):
-    """An abstract Kernel CI report database driver"""
+    """
+    An abstract Kernel CI report database driver.
+
+    A driver doesn't have to be responsible for creating or removing a
+    database, but if it is, it must do so implicitly, when initializing itself
+    or the database.
+
+    If the driver doesn't handle creating the database, it should raise the
+    NotFound exception when initializing.
+    """
 
     # Calm down, we're abstract, pylint: disable=no-self-use
 
@@ -44,6 +62,9 @@ class Driver(ABC):
         Args:
             params: A string containing parameters for accessing a database.
                     Or None, if not specified.
+
+        Raises:
+            NotFound        - the database does not exist,
         """
         assert params is None or isinstance(params, str)
 
