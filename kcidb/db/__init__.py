@@ -106,13 +106,12 @@ class Client(kcidb.orm.Source):
     def get_last_modified(self):
         """
         Get the time the data in the database was last modified.
+        The database must be initialized (not empty).
 
         Returns:
-            The datetime object representing the last modification time, or
-            None if database was not modified yet.
+            The datetime object representing the last modification time.
         """
-        if not self.is_initialized():
-            return None
+        assert self.is_initialized()
         return self.driver.get_last_modified()
 
     def dump_iter(self, objects_per_report=0):
