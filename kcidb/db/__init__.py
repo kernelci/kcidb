@@ -471,11 +471,17 @@ def init_main():
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = 'kcidb-db-init - Initialize a Kernel CI report database'
     parser = ArgumentParser(description=description)
+    parser.add_argument(
+        '--ignore-initialized',
+        help='Do not fail if the database is already initialized.',
+        action='store_true'
+    )
     args = parser.parse_args()
     client = Client(args.database)
-    if client.is_initialized():
+    if not client.is_initialized():
+        client.init()
+    elif not args.ignore_initialized:
         raise Exception(f"Database {args.database!r} is already initialized")
-    client.init()
 
 
 def cleanup_main():
@@ -483,8 +489,14 @@ def cleanup_main():
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = 'kcidb-db-cleanup - Cleanup a Kernel CI report database'
     parser = ArgumentParser(description=description)
+    parser.add_argument(
+        '--ignore-not-initialized',
+        help='Do not fail if the database is not initialized.',
+        action='store_true'
+    )
     args = parser.parse_args()
     client = Client(args.database)
-    if not client.is_initialized():
+    if client.is_initialized():
+        client.cleanup()
+    elif not args.ignore_not_initialized:
         raise Exception(f"Database {args.database!r} is not initialized")
-    client.cleanup()
