@@ -198,10 +198,6 @@ class Client(kcidb.orm.Source):
         Returns:
             The JSON data from the database adhering to the latest I/O schema
             version.
-
-        Raises:
-            `IncompatibleSchema` if the dataset schema is incompatible with
-            the latest I/O schema.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
         assert ids is None or (
