@@ -6,27 +6,10 @@ import kcidb_io as io
 import kcidb.orm
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS
-from kcidb.db import bigquery, sqlite, json, null
+from kcidb.db import bigquery, sqlite, json, null, misc
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
-
-
-class IncompatibleSchema(Exception):
-    """Database schema is incompatible with the latest I/O schema"""
-
-    def __init__(self, db_major, db_minor):
-        """
-        Initialize the exception.
-
-        Args:
-            db_major:   Database schema major version number
-            db_minor:   Database schema minor version number
-        """
-        super().__init__(f"Database schema {db_major}.{db_minor} "
-                         f"is incompatible with I/O schema "
-                         f"{io.schema.LATEST.major}."
-                         f"{io.schema.LATEST.minor}")
 
 
 # A dictionary of known driver names and types
@@ -78,7 +61,7 @@ class Client(kcidb.orm.Source):
         if self.driver.is_initialized():
             major, minor = self.driver.get_schema_version()
             if major != io.schema.LATEST.major:
-                raise IncompatibleSchema(major, minor)
+                raise misc.IncompatibleSchema(major, minor)
 
     def is_initialized(self):
         """

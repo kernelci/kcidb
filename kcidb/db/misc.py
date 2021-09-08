@@ -6,6 +6,27 @@ import kcidb.orm
 from kcidb.misc import LIGHT_ASSERTS
 
 
+class Error(Exception):
+    """An abstract error"""
+
+
+class IncompatibleSchema(Error):
+    """Database schema is incompatible with the latest I/O schema"""
+
+    def __init__(self, db_major, db_minor):
+        """
+        Initialize the exception.
+
+        Args:
+            db_major:   Database schema major version number
+            db_minor:   Database schema minor version number
+        """
+        super().__init__(f"Database schema {db_major}.{db_minor} "
+                         f"is incompatible with I/O schema "
+                         f"{io.schema.LATEST.major}."
+                         f"{io.schema.LATEST.minor}")
+
+
 class Driver(ABC):
     """An abstract Kernel CI report database driver"""
 
