@@ -59,6 +59,7 @@ class Driver(AbstractDriver):
             dataset_name = params
         self.client = bigquery.Client(project=project_id)
         self.dataset_ref = self.client.dataset(dataset_name)
+        self.dataset = self.client.get_dataset(self.dataset_ref)
 
     def _get_schema_version(self):
         """
@@ -68,11 +69,10 @@ class Driver(AbstractDriver):
             Major and minor version numbers,
             or (None, None) if the database is uninitialized.
         """
-        dataset = self.client.get_dataset(self.dataset_ref)
-        if "version_major" in dataset.labels and \
-           "version_minor" in dataset.labels:
-            return int(dataset.labels["version_major"]), \
-                int(dataset.labels["version_minor"])
+        if "version_major" in self.dataset.labels and \
+           "version_minor" in self.dataset.labels:
+            return int(self.dataset.labels["version_major"]), \
+                int(self.dataset.labels["version_minor"])
         if set(tli.table_id for tli in
                self.client.list_tables(self.dataset_ref)) == \
            {"revisions", "builds", "tests"}:
@@ -110,10 +110,9 @@ class Driver(AbstractDriver):
             table_ref = self.dataset_ref.table(table_name)
             table = bigquery.table.Table(table_ref, schema=table_schema)
             self.client.create_table(table)
-        dataset = self.client.get_dataset(self.dataset_ref)
-        dataset.labels["version_major"] = str(io.schema.LATEST.major)
-        dataset.labels["version_minor"] = str(io.schema.LATEST.minor)
-        self.client.update_dataset(dataset, ["labels"])
+        self.dataset.labels["version_major"] = str(io.schema.LATEST.major)
+        self.dataset.labels["version_minor"] = str(io.schema.LATEST.minor)
+        self.client.update_dataset(self.dataset, ["labels"])
 
     def cleanup(self):
         """
@@ -126,10 +125,9 @@ class Driver(AbstractDriver):
                 self.client.delete_table(table_ref)
             except GoogleNotFound:
                 pass
-        dataset = self.client.get_dataset(self.dataset_ref)
-        dataset.labels["version_major"] = None
-        dataset.labels["version_minor"] = None
-        self.client.update_dataset(dataset, ["labels"])
+        self.dataset.labels["version_major"] = None
+        self.dataset.labels["version_minor"] = None
+        self.client.update_dataset(self.dataset, ["labels"])
 
     def get_last_modified(self):
         """
