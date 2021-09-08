@@ -13,7 +13,7 @@ import kcidb_io as io
 import kcidb.orm
 from kcidb.db.bigquery import schema
 from kcidb.misc import LIGHT_ASSERTS
-from kcidb.db.misc import Driver as AbstractDriver
+from kcidb.db.misc import Driver as AbstractDriver, NotFound
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
@@ -45,6 +45,9 @@ class Driver(AbstractDriver):
             params:         A parameter string describing the database to
                             access. See Driver.PARAMS_DOC for documentation.
                             Cannot be None (must be specified).
+
+        Raises:
+            NotFound        - the database does not exist,
         """
         assert params is None or isinstance(params, str)
         if params is None:
@@ -59,7 +62,10 @@ class Driver(AbstractDriver):
             dataset_name = params
         self.client = bigquery.Client(project=project_id)
         self.dataset_ref = self.client.dataset(dataset_name)
-        self.dataset = self.client.get_dataset(self.dataset_ref)
+        try:
+            self.dataset = self.client.get_dataset(self.dataset_ref)
+        except GoogleNotFound as exc:
+            raise NotFound(params) from exc
 
     def _get_schema_version(self):
         """

@@ -36,8 +36,9 @@ class Client(kcidb.orm.Source):
                             database parameter string.
 
         Raises:
-            `IncompatibleSchema` if the database is not empty and its schema
-            is incompatible with the latest I/O schema.
+            NotFound            - if the database does not exist;
+            IncompatibleSchema  - if the database is not empty and its schema
+                                  is incompatible with the latest I/O schema.
         """
         assert isinstance(database, str)
         try:
@@ -54,6 +55,8 @@ class Client(kcidb.orm.Source):
                             f"specification: {database!r}") from None
         try:
             self.driver = driver_type(driver_params)
+        except misc.NotFound:
+            raise
         except Exception as exc:
             raise Exception(
                 f"Failed connecting to {driver_name!r} database"
