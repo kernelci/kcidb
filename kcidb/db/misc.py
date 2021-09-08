@@ -27,14 +27,22 @@ class Driver(ABC):
         assert params is None or isinstance(params, str)
 
     @abstractmethod
+    def is_initialized(self):
+        """
+        Check if the database is initialized (not empty).
+
+        Returns:
+            True if the database is initialized, False otherwise.
+        """
+
+    @abstractmethod
     def get_schema_version(self):
         """
         Get the version of the I/O schema the database schema corresponds to,
-        if any.
+        if any. Assumes the database is initialized.
 
         Returns:
-            Major and minor version numbers,
-            or (None, None) if the database is uninitialized.
+            Major and minor version numbers.
         """
 
     @abstractmethod

@@ -75,9 +75,10 @@ class Client(kcidb.orm.Source):
             raise Exception(
                 f"Failed connecting to {driver_name!r} database"
             ) from exc
-        major, minor = self.driver.get_schema_version()
-        if major is not None and major != io.schema.LATEST.major:
-            raise IncompatibleSchema(major, minor)
+        if self.driver.is_initialized():
+            major, minor = self.driver.get_schema_version()
+            if major != io.schema.LATEST.major:
+                raise IncompatibleSchema(major, minor)
 
     def is_initialized(self):
         """
@@ -86,7 +87,7 @@ class Client(kcidb.orm.Source):
         Returns:
             True if the database is initialized, False otherwise.
         """
-        return self.driver.get_schema_version()[0] is not None
+        return self.driver.is_initialized()
 
     def init(self):
         """

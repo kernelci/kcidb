@@ -57,24 +57,44 @@ class Driver(AbstractDriver):
         else:
             self.load_prio_db = load_prio_db
 
-    def get_schema_version(self):
+    def _get_schema_version(self):
         """
         Get the version of the I/O schema the dataset schema corresponds to.
 
         Returns:
-            Major and minor version numbers,
-            or (None, None) if the database is uninitialized.
+            Major and minor version numbers, or (0, 0), if the dataset
+            is not initialized.
         """
         with self.conn:
             cursor = self.conn.cursor()
             try:
                 cursor.execute("PRAGMA user_version")
                 version = cursor.fetchone()[0]
-                if version == 0:
-                    return None, None
                 return int(version / 1000), int(version % 1000)
             finally:
                 cursor.close()
+
+    def is_initialized(self):
+        """
+        Check if the database is initialized (not empty).
+
+        Returns:
+            True if the database is initialized, False otherwise.
+        """
+        major, minor = self._get_schema_version()
+        return not (major == 0 and minor == 0)
+
+    def get_schema_version(self):
+        """
+        Get the version of the I/O schema the dataset schema corresponds to.
+        Assumes the database is initialized.
+
+        Returns:
+            Major and minor version numbers.
+        """
+        major, minor = self._get_schema_version()
+        assert not (major == 0 and minor == 0)
+        return major, minor
 
     def init(self):
         """
