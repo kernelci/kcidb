@@ -497,8 +497,18 @@ def cleanup_main():
         help='Do not fail if the database is not initialized.',
         action='store_true'
     )
+    parser.add_argument(
+        '--ignore-not-found',
+        help='Do not fail if the database does not exist.',
+        action='store_true'
+    )
     args = parser.parse_args()
-    client = Client(args.database)
+    try:
+        client = Client(args.database)
+    except misc.NotFound:
+        if args.ignore_not_found:
+            return
+        raise
     if client.is_initialized():
         client.cleanup()
     elif not args.ignore_not_initialized:
