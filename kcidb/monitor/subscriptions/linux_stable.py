@@ -18,6 +18,8 @@ def match_revision(revision):
     """Match revisions of interest to stable tree developers"""
     if not set(revision.repo_branch_checkouts) & REPO_URL_SET:
         return ()
+    if revision.builds_valid is None:
+        return ()
     if not revision.builds_valid:
         return (Message(RECIPIENTS, "Builds failed for "),)
     for test in revision.tests:
