@@ -457,8 +457,10 @@ class Client:
         assert isinstance(source, Source)
         assert isinstance(sort, bool)
         self.source = source
+        self.cache = None
         if cache:
-            self.source = kcidb.orm.Cache(self.source)
+            self.cache = kcidb.orm.Cache(self.source)
+            self.source = self.cache
         if prefetch:
             self.source = kcidb.orm.Prefetcher(self.source)
         self.sort = sort
@@ -493,6 +495,13 @@ class Client:
                 sorted(data.items(), key=lambda item: item[0])
             }
         return data
+
+    def reset_cache(self):
+        """
+        Reset the cache, if enabled. No effect, if the cache was disabled.
+        """
+        if self.cache:
+            self.cache.reset()
 
 
 class ArgumentParser(kcidb.misc.ArgumentParser):

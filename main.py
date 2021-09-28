@@ -200,6 +200,8 @@ def kcidb_spool_notifications(event, context):
     Spool notifications about objects matching patterns arriving from a Pub
     Sub subscription
     """
+    # Reset the ORM cache
+    OO_CLIENT.reset_cache()
     # Get arriving data
     pattern_set = kcidb.mq.ORMPatternSubscriber.decode_data(
         base64.b64decode(event["data"])

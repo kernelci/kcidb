@@ -1333,6 +1333,12 @@ class Cache(Source):
         """
         assert isinstance(source, Source)
         self.source = source
+        self.reset()
+
+    def reset(self):
+        """
+        Reset the cache.
+        """
         self.type_id_objs = {type_name: {} for type_name in SCHEMA.types}
         self.pattern_responses = {}
 
