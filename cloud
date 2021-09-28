@@ -1028,13 +1028,18 @@ function usage_withdraw() {
 
 # Output list-sections command usage information
 function usage_list_sections() {
-    echo "Usage: $(basename "$0") list-sections [OPTION...]"
+    echo "Usage: $(basename "$0") list-sections [OPTION...] [EXTGLOB]"
     echo "List sections of a KCIDB installation."
     echo ""
     echo "Options:"
     echo ""
     echo "    -h, --help"
     echo "              Display this usage message and exit."
+    echo ""
+    echo "Positional arguments:"
+    echo ""
+    echo "    EXTGLOB   Extended shell glob matching the installation"
+    echo "              sections to list. Default is \"*\"."
     echo ""
 }
 
@@ -1118,10 +1123,13 @@ function execute() {
 
     # Execute list-sections, if requested, and exit
     if [ "$command" == "list-sections" ]; then
+        declare glob="${1:-*}"
         declare name
         for name in "${!SECTIONS[@]}"; do
-            printf "%-${SECTIONS_NAME_LEN_MAX}s %s\\n" \
-                   "$name" "${SECTIONS[$name]}"
+            if [[ $name == $glob ]]; then
+                printf "%-${SECTIONS_NAME_LEN_MAX}s %s\\n" \
+                       "$name" "${SECTIONS[$name]}"
+            fi
         done
         exit 0
     fi
