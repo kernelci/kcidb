@@ -5,7 +5,7 @@ Kcidb infrastructure is mostly based on Google Cloud services at the moment:
 
     === Hosts ===  ======================= Google Cloud Project ========================
 
-    ~~ Staging ~~                                                    ~~~~ BigQuery ~~~~~
+    ~ Webserver ~                                                    ~~~~ BigQuery ~~~~~
     kcidb-grafana <-------------------------------------------------  .. kcidb_XX ..
                                                                      :   checkouts  :
     ~~ Client ~~~                                                    :   builds     :
