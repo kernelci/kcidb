@@ -83,15 +83,13 @@ class TestCase(unittest.TestCase):
         result = self.execute(stdin, name, *args, driver_source=driver_source)
         errors = []
         if result.returncode != status:
-            errors.append("Expected exit status {}, got {}".
-                          format(status, result.returncode))
+            errors.append(f"Expected exit status {status}, "
+                          f"got {result.returncode}")
         if not re.fullmatch(stdout_re, result.stdout, re.DOTALL):
-            errors.append("Stdout doesn't match regex {}:\n{}".
-                          format(repr(stdout_re),
-                                 textwrap.indent(result.stdout, "    ")))
+            errors.append(f"Stdout doesn't match regex {stdout_re!r}:\n"
+                          f"{textwrap.indent(result.stdout, '    ')}")
         if not re.fullmatch(stderr_re, result.stderr, re.DOTALL):
-            errors.append("Stderr doesn't match regex {}:\n{}".
-                          format(repr(stderr_re),
-                                 textwrap.indent(result.stderr, "    ")))
+            errors.append(f"Stderr doesn't match regex {stderr_re!r}:\n"
+                          f"{textwrap.indent(result.stderr, '    ')}")
         if errors:
             raise AssertionError("\n".join(errors))
