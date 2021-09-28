@@ -6,19 +6,19 @@ Kcidb infrastructure is mostly based on Google Cloud services at the moment:
     === Hosts ===  ======================= Google Cloud Project ========================
 
     ~~ Staging ~~                                                    ~~~~ BigQuery ~~~~~
-    kcidb-grafana <-------------------------------------------------  . kernelciXX .
-                                                                     :   revisions  :
+    kcidb-grafana <-------------------------------------------------  .. kcidb_XX ..
+                                                                     :   checkouts  :
     ~~ Client ~~~                                                    :   builds     :
     kcidb-query <--------------------------------------------------- :   tests      :
                                                                       ''''''''''''''
                     ~~ Pub/Sub ~~       ~~~~ Cloud Functions ~~~~            ^
-                    kernelci_trigger -------.                                |
+                    kcidb_trigger ----------.                                |
                                             v                                |
-    kcidb-submit -> kernelci_new -----> kcidb_load_queue --------------------'
+    kcidb-submit -> kcidb_new --------> kcidb_load_queue --------------------'
                                             |
                           .-----------------'
                           v                                          ~~~~ Firestore ~~~~
-                    kernelci_loaded --> kcidb_spool_notifications -> notifications
+                    kcidb_updated ----> kcidb_spool_notifications -> notifications
                                                                            |
                                                    .-----------------------'
                                                    |
@@ -29,15 +29,15 @@ Kcidb infrastructure is mostly based on Google Cloud services at the moment:
                                                    `---------------> bot@kernelci.org
 
 BigQuery stores the report dataset and serves it to Grafana dashboards hosted
-on staging.kernelci.org, as well as to any clients invoking `kcidb-query` or
+on kcidb.kernelci.org, as well as to any clients invoking `kcidb-query` or
 using the kcidb library to query the database.
 
 Whenever a client submits reports, either via `kcidb-submit` or the kcidb
 library, they go to a Pub/Sub message queue topic named `kcidb_new`, then to
 the `kcidb_load_queue` "Cloud Function", which loads the data to the BigQuery
-dataset, and then pushes it to `kcidb_loaded` topic. The `kcidb_load_queue`
-function is triggered periodically via messages to `kcidb_trigger` topic,
-pushed there by the Cloud Scheduler service.
+dataset, and then pushes the list of updated objects to `kcidb_updated` topic.
+The `kcidb_load_queue` function is triggered periodically via messages to
+`kcidb_trigger` topic, pushed there by the Cloud Scheduler service.
 
 That topic is watched by `kcidb_spool_notifications` function, which picks up
 the data, generates report notifications, and stores them in a Firestore
@@ -87,161 +87,61 @@ Select the account key for use with Google Cloud API (which kcidb uses):
 
     export GOOGLE_APPLICATION_CREDENTIALS=`pwd`/kernelci-production-admin.json
 
-Install kcidb as described above.
+Clone kcidb repository, checkout the revision you want to deploy, and install
+kcidb as described in [README.md](README.md).
 
-### BigQuery
+### Deploying
 
-Create a BigQuery dataset (`kernelci03` here):
+Use the `cloud` tool located in the root of kcidb repository to deploy the base
+setup. Assuming your current directory is the repository root, this command:
 
-    bq mk kernelci03
+    ./cloud deploy PROJECT NAMESPACE VERSION
 
-Check it was created successfully:
+will create an installation in Google Cloud project `PROJECT`, all object
+names prefixed with `NAMESPACE_`, and BigQuery dataset with name ending with
+the `VERSION` number.
 
-    bq ls
+You can rerun the command any number of times to have the installation
+updated.
 
-Initialize the dataset:
+You will be asked to enter the SMTP user password if the corresponding secret
+is not found. You can use the `--smtp-password-file` option to supply it
+explicitly when creating the secret, or to update the secret on successive
+runs.
 
-    kcidb-db-init -d bigquery:kernelci03
+Use the `--smtp-to-addrs` to specify comma-separated email addresses to send
+reports to, instead of sending them to their intended recipients. The
+recipients are overridden to `kernelci-results-staging@groups.io` by default.
+Specify an empty string to configure sending to actual recipients.
 
-### Pub/Sub
+Use the `--log-level` option to specify the (Python-style) logging level of
+Cloud Functions.
 
-Enable the Pub/Sub API:
+Use the `--submitter` option to specify the name of a service account which
+should be permitted to submit data to KCIDB. Repeat to add more accounts.
 
-    gcloud services enable pubsub.googleapis.com
+Use the `-v/--verbose` option to make the tool report the progress of the
+installation.
 
-Create the `kernelci_trigger` topic used to trigger the execution of
-the `kernelci_load_queue` function:
+Finally, you can use the `-s/--sections` option to specify and extended shell
+glob matching the "sections" of the installation to restrict the deployment
+to. See the output of `cloud list-sections` for a list of available sections.
 
-    gcloud pubsub topics create kcidb_trigger
+### Withdrawing
 
-Create the `kernelci_new` topic:
+Use the `cloud` tool located in the root of kcidb repository to "withdraw"
+(remove) the base setup. Assuming your current directory is the repository
+root, this command:
 
-    kcidb-mq-publisher-init -p kernelci-production -t kernelci_new
+    ./cloud withdraw PROJECT NAMESPACE VERSION
 
-Create the `kernelci_new_load` subscription used by the `kernelci_load_queue`
-function to receive the submissions from the `kernelci_new` topic:
+Will remove the installed objects with names prefixed with `NAMESPACE_`, and
+the BigQuery dataset with name ending with the `VERSION` number from Google
+Cloud project `PROJECT`.
 
-    kcidb-mq-subscriber-init -p kernelci-production \
-                             -t kernelci_new \
-                             -s kernelci_new_load
-
-Set the `kernelci_new_load` ACK deadline to match the maximum runtime of the
-`kernelci_load_queue` function:
-
-    gcloud pubsub subscriptions update kernelci_new_load --ack-deadline=540
-
-Create the `kernelci_loaded` topic:
-
-    kcidb-mq-publisher-init -p kernelci-production -t kernelci_loaded
-
-### Firestore
-
-Create a **native** Firestore database by following [the quickstart
-guide](https://cloud.google.com/firestore/docs/quickstart-servers).
-
-Enable the Firestore API:
-
-    gcloud services enable firestore.googleapis.com
-
-### Secret Manager
-
-Enable the Secret Manager API:
-
-    gcloud services enable secretmanager.googleapis.com
-
-Add the `kcidb_smtp_password` secret containing the GMail password (here
-`PASSWORD`) for bot@kernelci.org:
-
-    echo -n 'PASSWORD' | gcloud secrets create kcidb_smtp_password \
-                                --replication-policy automatic \
-                                --data-file=-
-
-NOTE: For a more secure way specify a file with the secret to the
-      `--data-file` option instead.
-
-### Cloud Functions
-
-Requires all the services above setup first.
-
-Enable the Cloud Functions API:
-
-    gcloud services enable cloudfunctions.googleapis.com
-
-Allow the default Cloud Functions account access to the SMTP password:
-
-    gcloud secrets add-iam-policy-binding kcidb_smtp_password \
-           --role roles/secretmanager.secretAccessor \
-           --member serviceAccount:kernelci-production@appspot.gserviceaccount.com
-
-Download and unpack, or clone the kcidb version being deployed, and change
-into the source directory. E.g.:
-
-    git clone https://github.com/kernelci/kcidb.git
-    cd kcidb
-
-Make sure the functions' environment variables specify the setup correctly,
-amend if not:
-
-    cat main.env.yaml
-
-Deploy the functions (do **not** allow unauthenticated invocations when
-prompted):
-
-    gcloud functions deploy kcidb_load_queue \
-                            --runtime python37 \
-                            --trigger-topic kernelci_trigger \
-                            --env-vars-file main.env.yaml \
-                            --timeout=540
-
-    gcloud functions deploy kcidb_spool_notifications \
-                            --runtime python37 \
-                            --trigger-topic kernelci_loaded \
-                            --env-vars-file main.env.yaml \
-                            --retry \
-                            --timeout=540
-
-    gcloud functions deploy kcidb_send_notification \
-                            --runtime python37 \
-                            --trigger-event providers/cloud.firestore/eventTypes/document.create \
-                            --trigger-resource 'projects/kernelci-production/databases/(default)/documents/notifications/{notification_id}' \
-                            --env-vars-file main.env.yaml \
-                            --retry \
-                            --timeout=540
-
-NOTE: If you get a 403 Access Denied response to the first `gcloud functions
-      deploy` invocation, try again. It might be a Google infrastructure quirk
-      and could work the second time.
-
-If you'd like to deploy a Cloud Function with a name different from its name
-in the `main.py` source file, change the first argument to `gcloud functions
-deploy` to be the name you want, and add the `--entry-point` option specifying
-the actual Python function to execute.
-
-E.g. to deploy the `kcidb_load_queue` function under name
-`playground_kcidb_load_queue` (and using the environment from
-`playground.env.yaml`) execute:
-
-    gcloud functions deploy playground_kcidb_load_queue \
-                            --entry-point kcidb_load_queue \
-                            --runtime python37 \
-                            --trigger-topic kernelci_trigger \
-                            --env-vars-file playground.env.yaml \
-                            --timeout=540
-
-
-### Cloud Scheduler
-
-Enable the Cloud Scheduler API:
-
-    gcloud services enable cloudscheduler.googleapis.com
-
-Create a scheduler job triggering the `kcidb_load_queue` function every
-minute via the `kernelci_trigger` topic:
-
-    gcloud scheduler jobs create pubsub kernelci_trigger \
-                                        --schedule='* * * * *' \
-                                        --topic=kernelci_trigger \
-                                        --message-body='{}'
+You can use the `-v/--verbose` and `-s/--sections` similarly to `cloud deploy`
+command, adding `--submitter` options will remove permissions to submit for
+the specified service accounts.
 
 ### Grafana
 
@@ -259,27 +159,17 @@ Create the service account:
 
     gcloud iam service-accounts create kernelci-production-ci-cki
 
-Grant the account query permissions for the BigQuery database:
-
-    gcloud projects add-iam-policy-binding kernelci-production \
-           --member "serviceAccount:kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com" \
-           --role "roles/bigquery.dataViewer"
-
-    gcloud projects add-iam-policy-binding kernelci-production \
-           --member "serviceAccount:kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com" \
-           --role "roles/bigquery.jobUser"
-
-Grant the account permissions to submit to the `kernelci_new` Pub/Sub topic:
-
-    gcloud pubsub topics add-iam-policy-binding kernelci_new \
-                         --member="serviceAccount:kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com" \
-                         --role=roles/pubsub.publisher
-
 Generate the account key file (`kernelci-production-ci-cki.json` here) for use by
 the CI system:
 
     gcloud iam service-accounts keys create kernelci-production-ci-cki.json \
            --iam-account kernelci-production-ci-cki@kernelci-production.iam.gserviceaccount.com
+
+Grant the account permissions for the BigQuery dataset and the submission
+queue using the "cloud" tool located in the root of the kcidb repository:
+
+    ./cloud deploy kernelci-production "" 0 --section submitters \
+                 --submitter kernelci-production-ci-cki
 
 Upgrading
 ---------
