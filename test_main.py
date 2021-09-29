@@ -1,6 +1,7 @@
 """main.py tests"""
 
 import os
+import subprocess
 import unittest
 from unittest.mock import patch
 from importlib import import_module
@@ -29,9 +30,14 @@ class MainTestCase(unittest.TestCase):
         """Check main.py can be loaded"""
         # Load deployment environment variables
         file_dir = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(file_dir, "main.env.yaml"), "r",
-                  encoding='utf8') as env_file:
-            env = yaml.safe_load(env_file)
+        cloud_path = os.path.join(file_dir, "cloud")
+        env = yaml.safe_load(
+            subprocess.check_output([
+                cloud_path,
+                "env", "kernelci-production", "", "0",
+                "--log-level=DEBUG"
+            ])
+        )
         env["GCP_PROJECT"] = "TEST_PROJECT"
 
         orig_env = dict(os.environ)
