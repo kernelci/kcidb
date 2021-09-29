@@ -754,7 +754,7 @@ function submitter_withdraw() {
 function submitters_deploy() {
     declare -r project="$1"; shift
     declare -r new_topic="$1"; shift
-    declare -r -a submitters="$@"
+    declare -r -a submitters=("$@")
     for submitter in "${submitters[@]}"; do
         submitter_deploy "$project" "$new_topic" "$submitter"
     done
@@ -765,7 +765,7 @@ function submitters_deploy() {
 function submitters_withdraw() {
     declare -r project="$1"; shift
     declare -r new_topic="$1"; shift
-    declare -r -a submitters="$@"
+    declare -r -a submitters=("$@")
     for submitter in "${submitters[@]}"; do
         submitter_withdraw "$project" "$new_topic" "$submitter"
     done
