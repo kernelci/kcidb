@@ -217,7 +217,7 @@ def kcidb_spool_notifications(event, context):
             LOGGER.info("POSTING %s", notification.id)
             SPOOL_CLIENT.post(notification)
         else:
-            LOGGER.info("DROPPING ID %s", notification.id)
+            LOGGER.info("DROPPING %s", notification.id)
 
 
 def kcidb_send_notification(data, context):
