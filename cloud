@@ -506,31 +506,20 @@ function cloud_function_withdraw() {
     fi
 }
 
-# Deploy Cloud Functions
-# Args: --project=NAME --prefix=PREFIX --source=PATH
-#       --trigger-topic=NAME
-#       --log-level=NAME
+# Output deployment environment YAML for Cloud Functions
+# Args: --log-level=NAME
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --database=SPEC
-function cloud_functions_deploy() {
-    params="$(getopt_vars project prefix source \
-                          trigger_topic \
-                          log_level \
+function cloud_functions_env() {
+    params="$(getopt_vars log_level \
                           new_topic new_load_subscription \
                           updated_topic spool_collection_path \
                           smtp_to_addrs smtp_password_secret \
                           database \
                           -- "$@")"
     eval "$params"
-    declare -r old_trap=`trap -p RETURN EXIT`
-    # Create empty environment YAML
-    declare env_yaml
-    env_yaml=`mktemp --tmpdir kcidb_cloud_env.XXXXXXXX`
-    # Remove it on function return / shell exit
-    trap "rm ${env_yaml@Q}; ${old_trap:-trap - RETURN EXIT}" RETURN EXIT
-    # Generate environment YAML contents
     declare -A env=(
         [KCIDB_LOG_LEVEL]="$log_level"
         [KCIDB_LOAD_QUEUE_TOPIC]="$new_topic"
@@ -558,7 +547,43 @@ function cloud_functions_deploy() {
         args = sys.argv[1::]
         middle = len(args) >> 1
         yaml.dump(dict(zip(args[:middle], args[middle:])), stream=sys.stdout)
-    ' | python3 - "${!env[@]}" "${env[@]}" >| "$env_yaml"
+    ' | python3 - "${!env[@]}" "${env[@]}"
+}
+
+# Deploy Cloud Functions
+# Args: --project=NAME --prefix=PREFIX --source=PATH
+#       --trigger-topic=NAME
+#       --log-level=NAME
+#       --new-topic=NAME --new-load-subscription=NAME
+#       --updated-topic=NAME --spool-collection-path=PATH
+#       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
+#       --database=SPEC
+function cloud_functions_deploy() {
+    params="$(getopt_vars project prefix source \
+                          trigger_topic \
+                          log_level \
+                          new_topic new_load_subscription \
+                          updated_topic spool_collection_path \
+                          smtp_to_addrs smtp_password_secret \
+                          database \
+                          -- "$@")"
+    eval "$params"
+    declare -r old_trap=`trap -p RETURN EXIT`
+    # Create empty environment YAML
+    declare env_yaml
+    env_yaml=`mktemp --tmpdir kcidb_cloud_env.XXXXXXXX`
+    # Remove it on function return / shell exit
+    trap "rm ${env_yaml@Q}; ${old_trap:-trap - RETURN EXIT}" RETURN EXIT
+    # Generate environment YAML contents
+    cloud_functions_env --log-level="$log_level" \
+                        --new-topic="$new_topic" \
+                        --new-load-subscription="$new_load_subscription" \
+                        --updated-topic="$updated_topic" \
+                        --spool-collection-path="$spool_collection_path" \
+                        --smtp-to-addrs="$smtp_to_addrs" \
+                        --smtp-password-secret="$smtp_password_secret" \
+                        --database="$database" \
+                        >| "$env_yaml"
 
     cloud_function_deploy "$project" "${prefix}load_queue" \
                           "$source" \
@@ -881,6 +906,19 @@ function execute_command() {
     declare -r dataset="${prefix}${version}"
     declare -r database="bigquery:${project}.${dataset}"
 
+    # Handle "env" command, if specified
+    if [ "$command" == "env" ]; then
+        cloud_functions_env --log-level="$log_level" \
+                            --new-topic="$new_topic" \
+                            --new-load-subscription="$new_load_subscription" \
+                            --updated-topic="$updated_topic" \
+                            --spool-collection-path="$spool_collection_path" \
+                            --smtp-to-addrs="$smtp_to_addrs" \
+                            --smtp-password-secret="$smtp_password_secret" \
+                            --database="$database"
+        return
+    fi
+
     # Make sure requisite services are enabled
     app_deploy "$project"
     services_enable "$project" appengine secretmanager cloudfunctions \
@@ -916,7 +954,7 @@ function execute_command() {
             "$project" "$prefix" "$trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
-    else
+    elif [ "$command" == "withdraw" ]; then
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
@@ -945,6 +983,7 @@ function usage() {
     echo "Commands:"
     echo ""
     echo "    deploy        Deploy an installation to the cloud."
+    echo "    env           Output environment YAML for Cloud Functions."
     echo "    withdraw      Withdraw an installation from the cloud."
     echo "    list-sections List sections of the installation."
     echo ""
@@ -988,6 +1027,33 @@ function usage_deploy() {
     echo "    --submitter=NAME"
     echo "              Specify a service account to permit submissions for."
     echo "              Repeat to add more submitters."
+    echo ""
+    echo "Positional arguments:"
+    echo ""
+    echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
+    echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
+    echo "    VERSION   Optional version of the dataset, e.g. 4."
+    echo ""
+}
+
+# Output env command usage information
+function usage_env() {
+    echo "Usage: $(basename "$0") env [OPTION...]" \
+         "PROJECT NAMESPACE [VERSION]"
+    echo "Output environment YAML used by KCIDB Cloud Functions."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo "    --smtp-to-addrs=ADDRS"
+    echo "              Specify a comma-separated list of addresses"
+    echo "              to override recipients of email notifications."
+    echo "              Specify an empty string to not override."
+    echo "              Default is kernelci-results-staging@groups.io."
+    echo "    --log-level=NAME"
+    echo "              Specify Python log level NAME for Cloud Functions."
+    echo "              Default is INFO."
     echo ""
     echo "Positional arguments:"
     echo ""
@@ -1079,12 +1145,17 @@ function execute() {
     declare getopt_shortopts="h"
     declare getopt_longopts="help"
 
-    if [ "$command" == "deploy" ] || [ "$command" == "withdraw" ]; then
-        getopt_shortopts+="vs:"
-        getopt_longopts+=",verbose,sections:,submitter:"
-        if [ "$command" == "deploy" ]; then
-            getopt_longopts+=",smtp-to-addrs:,smtp-password-file:"
+    if [[ $command == @(deploy|env|withdraw) ]]; then
+        if [[ $command == @(deploy|withdraw) ]]; then
+            getopt_shortopts+="vs:"
+            getopt_longopts+=",verbose,sections:,submitter:"
+        fi
+        if [[ $command == @(deploy|env) ]]; then
+            getopt_longopts+=",smtp-to-addrs:"
             getopt_longopts+=",log-level:"
+        fi
+        if [[ $command == @(deploy) ]]; then
+            getopt_longopts+=",smtp-password-file:"
         fi
     elif [ "$command" == "list-sections" ]; then
         :
