@@ -1213,15 +1213,13 @@ function execute() {
     fi
     declare -r project="$1"; shift
     declare -r namespace="$1"; shift
-    declare version="${1:-}"
-    if [ -n "$version" ]; then
-        if [[ $version =~ ^[0-9]+$ ]]; then
-            version=$(printf %02u "$version")
-        else
-            echo "Invalid version: $version" >&2
-            usage >&2
-            exit 1
-        fi
+    declare version="${1:-0}"
+    if [[ $version =~ ^[0-9]+$ ]]; then
+        version=$(printf %02u "$version")
+    else
+        echo "Invalid version: $version" >&2
+        usage >&2
+        exit 1
     fi
     declare -r version
 
