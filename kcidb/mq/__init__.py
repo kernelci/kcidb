@@ -50,7 +50,15 @@ class Publisher(ABC):
                                 settings.
         """
         assert client is None or isinstance(client, pubsub.PublisherClient)
-        self.client = client or pubsub.PublisherClient()
+        limit_exceeded_behavior = pubsub.types.LimitExceededBehavior.BLOCK
+        self.client = client or pubsub.PublisherClient(
+            publisher_options=pubsub.types.PublisherOptions(
+                enable_message_ordering=False,
+                flow_control=pubsub.types.PublishFlowControl(
+                    limit_exceeded_behavior=limit_exceeded_behavior,
+                ),
+            ),
+        )
         self.topic_path = self.client.topic_path(project_id, topic_name)
 
     def init(self):
