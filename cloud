@@ -1206,7 +1206,7 @@ function execute() {
     fi
 
     # Read and normalize positional arguments
-    if (( $# < 3 || $# > 4 )); then
+    if (( $# < 2 || $# > 3 )); then
         echo "Invalid number of positional arguments" >&2
         "usage_${command}" >&2
         exit 1
