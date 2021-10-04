@@ -1,4 +1,4 @@
-"""Mainline tree subscriptions"""
+"""An example mainline tree subscriptions"""
 
 from kcidb.monitor.output import NotificationMessage as Message
 
