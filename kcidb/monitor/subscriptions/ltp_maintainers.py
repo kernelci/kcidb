@@ -3,7 +3,7 @@
 from kcidb.monitor.output import NotificationMessage as Message
 
 
-def match_revision(revision):
+def _disabled_match_revision(revision):
     """Match revisions of interest to LTP maintainers"""
     recipients = ["LTP Mailing List <ltp@lists.linux.it>"]
     status = revision.tests_root["ltp"].status
