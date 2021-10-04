@@ -7,7 +7,7 @@ REPO_URL = \
 RECIPIENTS = ["Linux Kernel Mailing List <linux-kernel@vger.kernel.org>"]
 
 
-def match_revision(revision):
+def _disabled_match_revision(revision):
     """Match revisions of interest to stable tree developers"""
     if REPO_URL not in revision.repo_branch_checkouts:
         return ()

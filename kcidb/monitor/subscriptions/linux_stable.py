@@ -14,7 +14,7 @@ REPO_URL_SET = {
 RECIPIENTS = ["Linux Stable maillist <stable@vger.kernel.org>"]
 
 
-def match_revision(revision):
+def _disabled_match_revision(revision):
     """Match revisions of interest to stable tree developers"""
     if not set(revision.repo_branch_checkouts) & REPO_URL_SET:
         return ()
