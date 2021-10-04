@@ -1,4 +1,4 @@
-"""LTP maintainer subscription"""
+"""An example LTP maintainer subscription"""
 
 from kcidb.monitor.output import NotificationMessage as Message
 
