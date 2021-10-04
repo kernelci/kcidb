@@ -36,6 +36,7 @@ SELECTED_SUBSCRIPTIONS = \
 
 SPOOL_COLLECTION_PATH = os.environ["KCIDB_SPOOL_COLLECTION_PATH"]
 
+EXTRA_CC = os.environ.get("KCIDB_EXTRA_CC", None)
 SMTP_HOST = os.environ["KCIDB_SMTP_HOST"]
 SMTP_PORT = int(os.environ["KCIDB_SMTP_PORT"])
 SMTP_USER = os.environ["KCIDB_SMTP_USER"]
@@ -233,6 +234,13 @@ def kcidb_send_notification(data, context):
     # Set From address, if specified
     if SMTP_FROM_ADDR:
         message['From'] = SMTP_FROM_ADDR
+    # Add extra CC, if specified
+    if EXTRA_CC:
+        cc_addrs = message["CC"]
+        if cc_addrs:
+            message.replace_header("CC", cc_addrs + ", " + EXTRA_CC)
+        else:
+            message["CC"] = EXTRA_CC
     # Connect to the SMTP server
     smtp = smtplib.SMTP(host=SMTP_HOST, port=SMTP_PORT)
     smtp.ehlo()

@@ -510,12 +510,14 @@ function cloud_function_withdraw() {
 # Args: --log-level=NAME
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
+#       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --database=SPEC
 function cloud_functions_env() {
     params="$(getopt_vars log_level \
                           new_topic new_load_subscription \
                           updated_topic spool_collection_path \
+                          extra_cc \
                           smtp_to_addrs smtp_password_secret \
                           database \
                           -- "$@")"
@@ -538,6 +540,9 @@ function cloud_functions_env() {
         [KCIDB_SMTP_PASSWORD_SECRET]="$smtp_password_secret"
         [KCIDB_SMTP_FROM_ADDR]="bot@kernelci.org"
     )
+    if [ -n "$extra_cc" ]; then
+        env[KCIDB_EXTRA_CC]="$extra_cc"
+    fi
     if [ -n "$smtp_to_addrs" ]; then
         env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
     fi
@@ -556,6 +561,7 @@ function cloud_functions_env() {
 #       --log-level=NAME
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
+#       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --database=SPEC
 function cloud_functions_deploy() {
@@ -564,6 +570,7 @@ function cloud_functions_deploy() {
                           log_level \
                           new_topic new_load_subscription \
                           updated_topic spool_collection_path \
+                          extra_cc \
                           smtp_to_addrs smtp_password_secret \
                           database \
                           -- "$@")"
@@ -580,6 +587,7 @@ function cloud_functions_deploy() {
                         --new-load-subscription="$new_load_subscription" \
                         --updated-topic="$updated_topic" \
                         --spool-collection-path="$spool_collection_path" \
+                        --extra-cc="$extra_cc" \
                         --smtp-to-addrs="$smtp_to_addrs" \
                         --smtp-password-secret="$smtp_password_secret" \
                         --database="$database" \
@@ -876,6 +884,7 @@ function sections_run() {
 #       --project=NAME
 #       --prefix=STRING
 #       --version=STRING
+#       --extra-cc=ADDRS
 #       --smtp-to-addrs=STRING
 #       --smtp-password-file=STRING
 #       --log-level=NAME
@@ -886,6 +895,7 @@ function execute_command() {
                           sections \
                           prefix \
                           version \
+                          extra_cc \
                           smtp_to_addrs \
                           smtp_password_file \
                           log_level \
@@ -913,6 +923,7 @@ function execute_command() {
                             --new-load-subscription="$new_load_subscription" \
                             --updated-topic="$updated_topic" \
                             --spool-collection-path="$spool_collection_path" \
+                            --extra-cc="$extra_cc" \
                             --smtp-to-addrs="$smtp_to_addrs" \
                             --smtp-password-secret="$smtp_password_secret" \
                             --database="$database"
@@ -947,6 +958,7 @@ function execute_command() {
             --new-load-subscription="$new_load_subscription" \
             --updated-topic="$updated_topic" \
             --spool-collection-path="$spool_collection_path" \
+            --extra-cc="$extra_cc" \
             --smtp-to-addrs="$smtp_to_addrs" \
             --smtp-password-secret="$smtp_password_secret" \
             --database="$database"
@@ -1013,6 +1025,8 @@ function usage_deploy() {
     echo "              installation sections to limit deployment to."
     echo "              See output of \"$(basename "$0") list-sections\""
     echo "              for a list of available sections."
+    echo "    --extra-cc=ADDRS"
+    echo "              Add specified addresses to CC of all emails."
     echo "    --smtp-to-addrs=ADDRS"
     echo "              Specify a comma-separated list of addresses"
     echo "              to override recipients of email notifications."
@@ -1046,6 +1060,8 @@ function usage_env() {
     echo ""
     echo "    -h, --help"
     echo "              Display this usage message and exit."
+    echo "    --extra-cc=ADDRS"
+    echo "              Add specified addresses to CC of all emails."
     echo "    --smtp-to-addrs=ADDRS"
     echo "              Specify a comma-separated list of addresses"
     echo "              to override recipients of email notifications."
@@ -1151,7 +1167,7 @@ function execute() {
             getopt_longopts+=",verbose,sections:,submitter:"
         fi
         if [[ $command == @(deploy|env) ]]; then
-            getopt_longopts+=",smtp-to-addrs:"
+            getopt_longopts+=",extra-cc:,smtp-to-addrs:"
             getopt_longopts+=",log-level:"
         fi
         if [[ $command == @(deploy) ]]; then
@@ -1174,6 +1190,7 @@ function execute() {
 
     # Read option arguments
     declare sections="*"
+    declare extra_cc=""
     declare smtp_to_addrs="kernelci-results-staging@groups.io"
     declare smtp_password_file=""
     declare log_level="INFO"
@@ -1183,6 +1200,7 @@ function execute() {
             -h|--help) "usage_${command//-/_}"; exit 0;;
             -v|--verbose) VERBOSE="true"; shift;;
             -s|--sections) sections="$2"; shift 2;;
+            --extra-cc) extra_cc="$2"; shift 2;;
             --smtp-to-addrs) smtp_to_addrs="$2"; shift 2;;
             --smtp-password-file) smtp_password_file="$2"; shift 2;;
             --log-level) log_level="$2"; shift 2;;
@@ -1229,6 +1247,7 @@ function execute() {
                     --project="$project" \
                     --prefix="${namespace:-}${namespace:+_}kcidb_" \
                     --version="$version" \
+                    --extra-cc="$extra_cc" \
                     --smtp-to-addrs="$smtp_to_addrs" \
                     --smtp-password-file="$smtp_password_file" \
                     --log-level="$log_level" \
