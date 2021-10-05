@@ -394,6 +394,8 @@ def ingest_main():
             # TODO Avoid formatting and parsing
             pattern_set |= orm.Pattern.parse(repr(pattern) + "<*#")
         LOGGER.debug("Notification patterns: %r", pattern_set)
+        # Reset the OO cache
+        oo_client.reset_cache()
         # Generate notifications for objects matching the patterns
         for notification in monitor.match(oo_client.query(pattern_set)):
             sys.stdout.write(
