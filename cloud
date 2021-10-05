@@ -1030,8 +1030,6 @@ function usage_deploy() {
     echo "    --smtp-to-addrs=ADDRS"
     echo "              Specify a comma-separated list of addresses"
     echo "              to override recipients of email notifications."
-    echo "              Specify an empty string to not override."
-    echo "              Default is kernelci-results-staging@groups.io."
     echo "    --smtp-password-file=FILE"
     echo "              Specify a file with the SMTP server password,"
     echo "              or \"-\" to read it from stdin."
@@ -1065,8 +1063,6 @@ function usage_env() {
     echo "    --smtp-to-addrs=ADDRS"
     echo "              Specify a comma-separated list of addresses"
     echo "              to override recipients of email notifications."
-    echo "              Specify an empty string to not override."
-    echo "              Default is kernelci-results-staging@groups.io."
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
@@ -1191,7 +1187,7 @@ function execute() {
     # Read option arguments
     declare sections="*"
     declare extra_cc=""
-    declare smtp_to_addrs="kernelci-results-staging@groups.io"
+    declare smtp_to_addrs=""
     declare smtp_password_file=""
     declare log_level="INFO"
     declare -a submitters=()
