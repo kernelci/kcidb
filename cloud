@@ -530,7 +530,7 @@ function cloud_functions_env() {
         [KCIDB_DATABASE]="$database"
         [KCIDB_DATABASE_LOAD_PERIOD_SEC]="180"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
-        [KCIDB_SELECTED_SUBSCRIPTIONS]="mainline"
+        [KCIDB_SELECTED_SUBSCRIPTIONS]=""
         [KCIDB_SPOOL_COLLECTION_PATH]="$spool_collection_path"
         [KCIDB_SMTP_HOST]="smtp.gmail.com"
         [KCIDB_SMTP_PORT]="587"
