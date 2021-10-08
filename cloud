@@ -142,7 +142,7 @@ function bigquery_deploy() {
     declare -r project="$1"; shift
     declare -r dataset="$1"; shift
     mute bq mk --project_id="$project" --force "$dataset"
-    kcidb-db-init -d "bigquery:${project}.${dataset}" \
+    kcidb-db-init -lDEBUG -d "bigquery:${project}.${dataset}" \
                   --ignore-initialized
 }
 
@@ -151,7 +151,7 @@ function bigquery_deploy() {
 function bigquery_withdraw() {
     declare -r project="$1"; shift
     declare -r dataset="$1"; shift
-    kcidb-db-cleanup -d "bigquery:${project}.${dataset}" \
+    kcidb-db-cleanup -lDEBUG -d "bigquery:${project}.${dataset}" \
                      --ignore-not-initialized \
                      --ignore-not-found
     mute bq rm --project_id="$project" --force "$dataset"

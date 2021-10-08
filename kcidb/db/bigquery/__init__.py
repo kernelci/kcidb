@@ -112,10 +112,24 @@ class Driver(AbstractDriver):
         Initialize the database.
         The database must be empty (uninitialized).
         """
+        # Create tables and corresponding views
         for table_name, table_schema in schema.TABLE_MAP.items():
-            table_ref = self.dataset_ref.table(table_name)
+            # Create raw table with duplicate records
+            table_ref = self.dataset_ref.table("_" + table_name)
             table = bigquery.table.Table(table_ref, schema=table_schema)
             self.client.create_table(table)
+            # Create a view deduplicating the table records
+            view_ref = self.dataset_ref.table(table_name)
+            view = bigquery.table.Table(view_ref)
+            view.view_query = \
+                "SELECT " + \
+                ", ".join(
+                    f"ANY_VALUE(`{n}`) AS `{n}`" if n != "id" else f"`{n}`"
+                    for n in (f.name for f in table_schema)
+                ) + \
+                f" FROM `{table_ref}` GROUP BY id"
+            self.client.create_table(view)
+        # Set dataset schema version
         self.dataset.labels["version_major"] = str(io.schema.LATEST.major)
         self.dataset.labels["version_minor"] = str(io.schema.LATEST.minor)
         self.client.update_dataset(self.dataset, ["labels"])
@@ -126,7 +140,12 @@ class Driver(AbstractDriver):
         The database must be initialized (not empty).
         """
         for table_name, _ in schema.TABLE_MAP.items():
-            table_ref = self.dataset_ref.table(table_name)
+            view_ref = self.dataset_ref.table(table_name)
+            try:
+                self.client.delete_table(view_ref)
+            except GoogleNotFound:
+                pass
+            table_ref = self.dataset_ref.table("_" + table_name)
             try:
                 self.client.delete_table(table_ref)
             except GoogleNotFound:
@@ -201,18 +220,10 @@ class Driver(AbstractDriver):
 
         obj_num = 0
         data = io.new()
-        for obj_list_name, fields in schema.TABLE_MAP.items():
+        for obj_list_name in schema.TABLE_MAP:
             job_config = bigquery.job.QueryJobConfig(
                 default_dataset=self.dataset_ref)
-            field_names = [f.name for f in fields]
-            query_string = \
-                "SELECT " + \
-                ", ".join(
-                    f"ANY_VALUE(`{n}`) AS `{n}`" if n != "id" else f"`{n}`"
-                    for n in field_names
-                ) + \
-                f" FROM `{obj_list_name}` GROUP BY id"
-            LOGGER.debug("Query string: %s", query_string)
+            query_string = f"SELECT * FROM `{obj_list_name}`"
             query_job = self.client.query(query_string, job_config=job_config)
             obj_list = None
             for row in query_job:
@@ -263,8 +274,7 @@ class Driver(AbstractDriver):
 
         # A dictionary of object list names and three-element lists,
         # containing a SELECT statement (returning IDs of the objects to
-        # fetch), the list of its parameters, and the list of field names of
-        # the object's table.
+        # fetch), and the list of its parameters.
         obj_list_queries = {
             obj_list_name: [
                 "SELECT id FROM UNNEST(?) AS id\n",
@@ -273,7 +283,6 @@ class Driver(AbstractDriver):
                         None, "STRING", ids.get(obj_list_name, [])
                     ),
                 ],
-                [f.name for f in schema.TABLE_MAP[obj_list_name]]
             ]
             for obj_list_name in io.schema.LATEST.tree if obj_list_name
         }
@@ -326,18 +335,11 @@ class Driver(AbstractDriver):
         obj_num = 0
         data = io.new()
         for obj_list_name, query in obj_list_queries.items():
-            field_names = query[2]
             query_parameters = query[1]
             query_string = \
-                "SELECT " + \
-                ", ".join(
-                    f"ANY_VALUE(`{n}`) AS `{n}`" if n != "id" else f"`{n}`"
-                    for n in field_names
-                ) + "\n" + \
-                f"FROM `{obj_list_name}` INNER JOIN (\n" + \
+                f"SELECT * FROM `{obj_list_name}` INNER JOIN (\n" + \
                 textwrap.indent(query[0], " " * 4) + \
-                ") USING(id)\n" + \
-                "GROUP BY id\n"
+                ") USING(id)\n"
             LOGGER.debug("Query string: %s", query_string)
             LOGGER.debug("Query params: %s", query_parameters)
             job_config = bigquery.job.QueryJobConfig(
@@ -537,7 +539,7 @@ class Driver(AbstractDriver):
                                                         schema=table_schema)
                 job = self.client.load_table_from_json(
                     obj_list,
-                    self.dataset_ref.table(obj_list_name),
+                    self.dataset_ref.table("_" + obj_list_name),
                     job_config=job_config)
                 try:
                     job.result()
