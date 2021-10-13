@@ -4,6 +4,7 @@ google-cloud-bigquery
 google-cloud-pubsub<2.0.0dev
 google-cloud-firestore
 google-cloud-secret-manager<2.0.0dev
+importlib_metadata
 jsonschema[format]
 requests
 pyyaml
