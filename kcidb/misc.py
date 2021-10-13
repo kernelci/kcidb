@@ -8,6 +8,10 @@ import argparse
 import logging
 import json
 from textwrap import indent
+try:  # Python 3.9
+    from importlib import metadata
+except ImportError:  # Python 3.6
+    import importlib_metadata as metadata
 from google.cloud import secretmanager
 import jq
 
@@ -106,6 +110,11 @@ class ArgumentParser(argparse.ArgumentParser):
             kwargs: Keyword arguments to initialize ArgumentParser with.
         """
         super().__init__(*args, **kwargs)
+        self.add_argument(
+            '--version',
+            action='version',
+            version=f"Version {metadata.version('kcidb')}"
+        )
         self.add_argument(
             '-l', '--log-level',
             metavar="LEVEL",

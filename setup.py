@@ -44,6 +44,8 @@ setuptools.setup(
         "google-cloud-pubsub<2.0.0dev",
         "google-cloud-firestore",
         "google-cloud-secret-manager<2.0.0dev",
+        # TODO: remove with minimal requirement of Python 3.8
+        "importlib_metadata",
         "jsonschema[format]",
         "requests",
         "pyyaml",
