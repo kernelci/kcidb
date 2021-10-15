@@ -225,7 +225,8 @@ class Node:
         Initialize a test node.
 
         Args:
-            parent: The parent object of this test node a test container.
+            parent: The parent object of this test node - another Node or a
+                    TestContainer.
             name:   The name of this node in parent's scope, or None for the
                     node corresponding to tests without paths.
         """
