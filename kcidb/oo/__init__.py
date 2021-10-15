@@ -148,6 +148,18 @@ TEST_WAIVED_PRIORITY = {
     None:   3,
 }
 
+# A dictionary of test "waived" values and dictionaries of test "status"
+# values and their combined priorities, defined as a positive integer, with
+# lower values meaning higher priority. Sorted higher priority first.
+TEST_WAIVED_STATUS_PRIORITY = {
+    waived: {
+        status:
+        (waived_priority - 1) * len(TEST_STATUS_PRIORITY) + status_priority
+        for status, status_priority in TEST_STATUS_PRIORITY.items()
+    }
+    for waived, waived_priority in TEST_WAIVED_PRIORITY.items()
+}
+
 
 class BuildContainer(ABC):
     """Abstract build container"""
@@ -245,22 +257,23 @@ class Node:
             )
         ]
 
-    @cached_property
+    @property
+    def waived(self):
+        """The summarized waived value of this test node"""
+        return self.waived_status[0]
+
+    @property
     def status(self):
-        """The summarized status of this test node"""
-        return min(
-            (test.status for test in self.tests),
-            key=lambda status: TEST_STATUS_PRIORITY[status],
-            default=None
-        )
+        """The summarized status value of this test node"""
+        return self.waived_status[1]
 
     @cached_property
-    def waived(self):
-        """The summarized waiving status of this test node"""
+    def waived_status(self):
+        """The summarized waived and status values of this test node"""
         return min(
-            (test.waived for test in self.tests),
-            key=lambda waived: TEST_WAIVED_PRIORITY[waived],
-            default=None
+            ((test.waived, test.status) for test in self.tests),
+            key=lambda ws: TEST_WAIVED_STATUS_PRIORITY[ws[0]][ws[1]],
+            default=(None, None)
         )
 
     @cached_property
