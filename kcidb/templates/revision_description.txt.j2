@@ -37,7 +37,8 @@ REVISION
         {% for repo, branch_checkouts
            in revision.repo_branch_checkouts.items() %}
             {{- "        " +
-                (([repo] + branch_checkouts | list) | join(" ")) }}
+                (([repo] + branch_checkouts | list) |
+                 reject("none") | join(" ")) }}
         {% endfor %}
 {% if revision.patchset_files %}
     {% set patch_count = revision.patchset_files | length %}
