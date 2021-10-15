@@ -593,24 +593,8 @@ function cloud_functions_deploy() {
                         --database="$database" \
                         >| "$env_yaml"
 
-    cloud_function_deploy "$project" "${prefix}load_queue" \
-                          "$source" \
-                          --entry-point kcidb_load_queue \
-                          --env-vars-file "$env_yaml" \
-                          --runtime python37 \
-                          --trigger-topic "${trigger_topic}" \
-                          --memory 256MB \
-                          --timeout 540
-
-    cloud_function_deploy "$project" "${prefix}spool_notifications" \
-                          "$source" \
-                          --entry-point kcidb_spool_notifications \
-                          --env-vars-file "$env_yaml" \
-                          --runtime python37 \
-                          --trigger-topic "${updated_topic}" \
-                          --memory 1024MB \
-                          --timeout 540
-
+    # Deploy functions back-to-front pipeline-wise,
+    # so compatibility is preserved in the process
     declare trigger_event="providers/cloud.firestore/eventTypes/"
     trigger_event+="document.create"
     declare trigger_resource="projects/$project/databases/(default)/documents/"
@@ -624,6 +608,24 @@ function cloud_functions_deploy() {
                           --trigger-resource "${trigger_resource}" \
                           --memory 256MB \
                           --retry \
+                          --timeout 540
+
+    cloud_function_deploy "$project" "${prefix}spool_notifications" \
+                          "$source" \
+                          --entry-point kcidb_spool_notifications \
+                          --env-vars-file "$env_yaml" \
+                          --runtime python37 \
+                          --trigger-topic "${updated_topic}" \
+                          --memory 1024MB \
+                          --timeout 540
+
+    cloud_function_deploy "$project" "${prefix}load_queue" \
+                          "$source" \
+                          --entry-point kcidb_load_queue \
+                          --env-vars-file "$env_yaml" \
+                          --runtime python37 \
+                          --trigger-topic "${trigger_topic}" \
+                          --memory 256MB \
                           --timeout 540
 }
 
