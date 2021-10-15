@@ -13,7 +13,8 @@ def match_revision(revision):
         if revision.builds_valid is not None:
             if not revision.builds_valid:
                 return (Message(RECIPIENTS, "Builds failed for "),)
-            if revision.tests_root.status is not None:
-                if revision.tests_root.status not in ("PASS", "DONE", "SKIP"):
-                    return (Message(RECIPIENTS, "Tests failed for "),)
+            if revision.tests_root.waived is False and \
+               revision.tests_root.status not in \
+               (None, "PASS", "DONE", "SKIP"):
+                return (Message(RECIPIENTS, "Tests failed for "),)
     return ()
