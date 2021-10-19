@@ -20,8 +20,8 @@
             {% set unknown_build_count = unknown_builds | length %}
             {% set build_fmt =
                 "%" +
-                ((8 + container.architecture_valid_builds |
-                  map("default", "", true) | map("length") | max ) | string) +
+                ((8 + (container.architecture_valid_builds |
+                  map("default", "", true) | map("length") | max)) | string) +
                 "s" +
                 (("  %s %" +
                   (invalid_build_count | string | length | string) + "s")
@@ -43,13 +43,13 @@
                 {{- build_fmt | format("?" if architecture is none
                                        else architecture,
                                        "❌" if invalid_build_count else "➖",
-                                       invalid_build_count | string
+                                       (invalid_build_count | string)
                                        if invalid_build_count else "",
                                        "✅" if valid_build_count else "➖",
-                                       valid_build_count | string
+                                       (valid_build_count | string)
                                        if valid_build_count else "",
                                        "❓" if unknown_build_count else "➖",
-                                       unknown_build_count | string
+                                       (unknown_build_count | string)
                                        if unknown_build_count else "") -}}
             {% endmacro %}
             {{- status("",
@@ -77,9 +77,9 @@
             {% set build_summary_counts_items = ns.build_summary_counts |
                         dictsort(by='value', reverse=true) | list %}
             {% for build_summary, count in build_summary_counts_items[:max_list_len] %}
-                {{- "        ❌ " + count | string + "  " + build_summary }}
+                {{- "        ❌ " + (count | string) + "  " + build_summary }}
             {% endfor %}
-            {% if build_summary_counts_items | length > max_list_len %}
+            {% if (build_summary_counts_items | length) > max_list_len %}
                 {{- "        ..." }}
             {% endif %}
         {% endif %}

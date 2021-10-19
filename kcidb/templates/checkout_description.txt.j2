@@ -43,7 +43,7 @@ CHECKOUT
         {% for patchset_file in checkout.revision.patchset_files[:max_list_len] %}
             {{- "        " + patchset_file.url }}
         {% endfor %}
-        {% if checkout.revision.patchset_files | length > max_list_len %}
+        {% if (checkout.revision.patchset_files | length) > max_list_len %}
             {{- "        ..." }}
         {% endif %}
 {% endif %}
