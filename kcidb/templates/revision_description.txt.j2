@@ -37,7 +37,7 @@ REVISION
         {% for repo, branch_checkouts
            in revision.repo_branch_checkouts.items() %}
             {{- "        " +
-                (([repo] + branch_checkouts | list) |
+                (([repo] + (branch_checkouts | list)) |
                  reject("none") | join(" ")) }}
         {% endfor %}
 {% if revision.patchset_files %}
@@ -47,7 +47,7 @@ REVISION
         {% for patchset_file in revision.patchset_files[:max_list_len] %}
             {{- "        " + patchset_file.url }}
         {% endfor %}
-        {% if revision.patchset_files | length > max_list_len %}
+        {% if (revision.patchset_files | length) > max_list_len %}
             {{- "        ..." }}
         {% endif %}
 {% endif %}

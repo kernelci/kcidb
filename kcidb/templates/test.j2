@@ -46,7 +46,7 @@
                 {% for status, nodes in status_nodes.items() %}
                     {% if nodes %}
                         {{- "  " + waived_status_emoji(waived, status) +
-                            " " + nodes | length | string -}}
+                            " " + (nodes | length | string) -}}
                     {% endif %}
                 {% endfor %}
             {% endfor %}
@@ -60,7 +60,7 @@
                     " " + node.path
                 }}
             {% endfor %}
-            {% if errored_nodes | length > max_list_len %}
+            {% if (errored_nodes | length) > max_list_len %}
                 {{- "        ..." }}
             {% endif %}
         {% endif %}
@@ -70,10 +70,10 @@
             {% for node in failed_nodes[:max_list_len] %}
                 {{- "        " +
                     waived_status_emoji(node.waived, node.status) +
-                    " " + node.path | default("?", true)
+                    " " + (node.path | default("?", true))
                 }}
             {% endfor %}
-            {% if failed_nodes | length > max_list_len %}
+            {% if (failed_nodes | length) > max_list_len %}
                 {{- "        ..." }}
             {% endif %}
         {% endif %}
