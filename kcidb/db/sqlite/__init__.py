@@ -19,8 +19,11 @@ LOGGER = logging.getLogger(__name__)
 class Driver(AbstractDriver):
     """Kernel CI SQLite report database driver"""
 
-    PARAMS_DOC = textwrap.dedent("""\
-        Format: <DATABASE>
+    DOC = textwrap.dedent("""\
+        The SQLite driver allows connection to an SQLite file database or
+        an in-memory database.
+
+        Parameters: <DATABASE>
 
         <DATABASE>      A path-like object giving the pathname (absolute or
                         relative to the current working directory) of the
@@ -35,7 +38,7 @@ class Driver(AbstractDriver):
 
         Args:
             params:         A parameter string describing the database to
-                            access. See Driver.PARAMS_DOC for documentation.
+                            access. See Driver.DOC for documentation.
                             Cannot be None (must be specified).
             load_prio_db:   If True, prioritize the database values for the
                             first load. If False - prioritize the loaded data.
@@ -46,7 +49,7 @@ class Driver(AbstractDriver):
         assert params is None or isinstance(params, str)
         if params is None:
             raise Exception("Database parameters must be specified\n\n" +
-                            Driver.PARAMS_DOC)
+                            Driver.DOC)
         # Create the connection
         self.conn = sqlite3.connect(params)
         self.conn.set_trace_callback(

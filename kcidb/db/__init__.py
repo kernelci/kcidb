@@ -2,6 +2,7 @@
 
 import sys
 import logging
+import argparse
 import kcidb_io as io
 import kcidb.orm
 import kcidb.misc
@@ -259,6 +260,50 @@ class Client(kcidb.orm.Source):
         return self.query(ids=ids, children=True, parents=True)
 
 
+class DBHelpAction(argparse.Action):
+    """Argparse action outputting database string help and exiting."""
+    def __init__(self,
+                 option_strings,
+                 dest=argparse.SUPPRESS,
+                 default=argparse.SUPPRESS,
+                 help=None):
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            default=default,
+            nargs=0,
+            help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        print("KCIDB has several database drivers for both actual and "
+              "virtual databases.\n"
+              "You can specify a particular driver to use, and its "
+              "parameters, using the\n"
+              "-d/--database option.\n"
+              "\n"
+              "The format of the option value is <DRIVER>[:<PARAMS>], "
+              "where <DRIVER> is the\n"
+              "name of the driver, and <PARAMS> is a (sometimes optional) "
+              "driver-specific\n"
+              "parameter string.\n"
+              "\n"
+              "For example, \"-d bigquery:kernelci-production.kcidb_01\" "
+              "requests the use of\n"
+              "the \"bigquery\" database driver with the parameter string\n"
+              "\"kernelci-production.kcidb_01\", from which the driver "
+              "extracts the Google\n"
+              "Cloud project \"kernelci-production\" and the dataset "
+              "\"kcidb_01\" to connect to.\n"
+              "\n"
+              "Available drivers and format of their parameter strings "
+              "follow.\n")
+        for name, driver in DRIVER_TYPES.items():
+            print(f"\n{name!r} driver\n" +
+                  "-" * (len(name) + 9) + "\n" +
+                  driver.DOC)
+        parser.exit()
+
+
 def argparse_add_args(parser, database=None):
     """
     Add common database arguments to an argument parser.
@@ -270,10 +315,17 @@ def argparse_add_args(parser, database=None):
     assert database is None or isinstance(database, str)
     parser.add_argument(
         '-d', '--database',
-        help=('Database specification' if database is None
-              else f"Database specification. Default is {database!r}."),
+        help=("Specify DATABASE to use, formatted as <DRIVER>:<PARAMS>. " +
+              "Use --database-help for more details." +
+              ("" if database is None
+               else f"Default is {database!r}.")),
         default=database,
         required=(database is None)
+    )
+    parser.add_argument(
+        '--database-help',
+        action=DBHelpAction,
+        help='Print documentation on database specification strings and exit.'
     )
 
 

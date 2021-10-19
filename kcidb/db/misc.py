@@ -50,9 +50,9 @@ class Driver(ABC):
 
     # Calm down, we're abstract, pylint: disable=no-self-use
 
-    # A (multiline) string documenting the format
-    # of the database parameter string
-    PARAMS_DOC = None
+    # A (multiline) string describing the driver
+    # and documenting the format of its parameters
+    DOC = None
 
     @abstractmethod
     def __init__(self, params):
