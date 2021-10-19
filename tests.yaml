@@ -269,7 +269,7 @@ selinux:
   home: https://github.com/SELinuxProject/selinux-testsuite
 stress-ng:
   title: Stress-ng test suite
-  home: https://kernel.ubuntu.com/~cking/stress-ng/
+  home: https://wiki.ubuntu.com/Kernel/Reference/stress-ng
 syzkaller:
   title: syzkaller fuzzer
   home: https://github.com/google/syzkaller
