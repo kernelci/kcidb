@@ -10,8 +10,12 @@ from kcidb.db.sqlite import Driver as SQLiteDriver
 class Driver(SQLiteDriver):
     """Kernel CI I/O JSON-initialized in-memory database driver"""
 
-    PARAMS_DOC = textwrap.dedent("""\
-        Format: [FILE]
+    DOC = textwrap.dedent("""\
+        The JSON driver allows connection to an in-memory SQLite database
+        initialized with I/O JSON read from standard input or
+        an optionally specified JSON file.
+
+        Parameters: [FILE]
 
         [FILE]  An optional path to a file containing I/O JSON to read as
                 initial database data. If not specified, standard input is

@@ -22,9 +22,12 @@ LOGGER = logging.getLogger(__name__)
 class Driver(AbstractDriver):
     """Kernel CI BigQuery report database driver"""
 
-    PARAMS_DOC = textwrap.dedent("""\
-        Format: <PROJECT_ID>.<DATASET>
-            or: <DATASET>
+    DOC = textwrap.dedent("""\
+        The BigQuery driver allows connection to a Google Cloud project
+        and corresponding BigQuery dataset.
+
+        Parameters: <PROJECT_ID>.<DATASET>
+                or: <DATASET>
 
         <PROJECT_ID>    ID of the Google Cloud project hosting the dataset.
                         If not specified, the project from the credentials
@@ -43,7 +46,7 @@ class Driver(AbstractDriver):
 
         Args:
             params:         A parameter string describing the database to
-                            access. See Driver.PARAMS_DOC for documentation.
+                            access. See Driver.DOC for documentation.
                             Cannot be None (must be specified).
 
         Raises:
@@ -52,7 +55,7 @@ class Driver(AbstractDriver):
         assert params is None or isinstance(params, str)
         if params is None:
             raise Exception("Database parameters must be specified\n\n" +
-                            Driver.PARAMS_DOC)
+                            Driver.DOC)
         try:
             dot_pos = params.index(".")
             project_id = params[:dot_pos]

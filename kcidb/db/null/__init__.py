@@ -9,7 +9,9 @@ from kcidb.db.misc import Driver as AbstractDriver
 class Driver(AbstractDriver):
     """Kernel CI null database driver"""
 
-    PARAMS_DOC = textwrap.dedent("""\
+    DOC = textwrap.dedent("""\
+        The null driver discards any loaded data and returns nothing for
+        any query. This driver does not take parameters.
     """)
 
     # Yes, it's a special driver, pylint: disable=no-self-use
