@@ -25,13 +25,21 @@ class Driver(AbstractDriver):
         if params is not None:
             raise Exception("Database parameters are not accepted")
 
+    def is_initialized(self):
+        """
+        Check if the database is initialized (not empty).
+
+        Returns:
+            True if the database is initialized, False otherwise.
+        """
+        return True
+
     def get_schema_version(self):
         """
         Get the version of the I/O schema the dataset schema corresponds to.
 
         Returns:
-            Major and minor version numbers,
-            or (None, None) if the database is uninitialized.
+            Major and minor version numbers.
         """
         return io.schema.LATEST.major, io.schema.LATEST.minor
 
