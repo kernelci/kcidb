@@ -4,10 +4,6 @@ import pkgutil
 import importlib
 import kcidb.oo
 
-__all__ = [
-    "MATCH_MAP"
-]
-
 
 def _load_match_map():
     """
