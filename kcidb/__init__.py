@@ -4,24 +4,10 @@ import sys
 import email
 import logging
 import kcidb_io as io
-from kcidb import db, mq, orm, oo, monitor, tests, unittest, misc
 from kcidb.misc import LIGHT_ASSERTS
+# Silence flake8 "imported but unused" warning
+from kcidb import db, mq, orm, oo, monitor, tests, unittest, misc # noqa
 
-__all__ = [
-    "db", "mq", "orm", "oo", "monitor", "tests", "unittest",
-    "io_schema",
-    "Client",
-    "submit_main",
-    "query_main",
-    "schema_main",
-    "validate_main",
-    "upgrade_main",
-    "summarize_main",
-    "describe_main",
-    "notify_main",
-    "merge_main",
-    "count_main",
-]
 
 # pylint: disable=invalid-name
 # TODO Remove once users switched to kcidb_io.schema

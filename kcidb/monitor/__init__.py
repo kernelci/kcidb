@@ -1,14 +1,7 @@
 """Kernel CI reporting - monitor"""
 
-from kcidb.monitor import subscriptions, output, spool, misc
-
-__all__ = [
-    "subscriptions",
-    "output",
-    "spool",
-    "misc",
-    "match",
-]
+# Silence flake8 "imported but unused" warning
+from kcidb.monitor import (subscriptions, output, spool, misc) # noqa
 
 
 def match(oo_data, match_map=None):
