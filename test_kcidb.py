@@ -154,6 +154,17 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('', "kcidb.validate_main")
         self.assertExecutes('{"version":{"major":4,"minor":0}}',
                             "kcidb.validate_main")
+        self.assertExecutes('{"version":{"major":3,"minor":0}}',
+                            "kcidb.validate_main", "3")
+        self.assertExecutes('{"version":{"major":2,"minor":0}}',
+                            "kcidb.validate_main", "1",
+                            status=1,
+                            stderr_re=".*ValidationError: 1 was expected.*")
+        self.assertExecutes('{"version":{"major":4,"minor":0}}',
+                            "kcidb.validate_main", "0",
+                            status=1,
+                            stderr_re=".*No version found for major number "
+                            "0\n")
         self.assertExecutes('{', "kcidb.validate_main",
                             status=1, stderr_re=".*JSONParseError.*")
         self.assertExecutes('{}', "kcidb.validate_main",
