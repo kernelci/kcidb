@@ -4,7 +4,7 @@ import sys
 import email
 import logging
 import kcidb_io as io
-from kcidb.misc import LIGHT_ASSERTS
+from kcidb.misc import LIGHT_ASSERTS, non_negative_int
 # Silence flake8 "imported but unused" warning
 from kcidb import db, mq, orm, oo, monitor, tests, unittest, misc # noqa
 
@@ -250,10 +250,27 @@ def validate_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-validate - Validate I/O JSON data'
     parser = misc.ArgumentParser(description=description)
-    parser.parse_args()
+    parser.add_argument(
+        'schema_version',
+        metavar="SCHEMA_VERSION",
+        type=non_negative_int,
+        help='Validate against the schema with the specified major version, '
+        'instead of the latest one.',
+        nargs='?'
+    )
+    args = parser.parse_args()
+
+    version = io.schema.LATEST
+    if args.schema_version is not None:
+        while version and version.major != args.schema_version:
+            version = version.previous
+        if not version:
+            raise Exception(
+                f"No version found for major number {args.schema_version}"
+            )
 
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        io.schema.validate(data)
+        version.validate(data)
 
 
 def upgrade_main():
