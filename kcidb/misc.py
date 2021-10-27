@@ -308,4 +308,6 @@ def get_secret(project_id, secret_id):
     assert isinstance(secret_id, str) and secret_id
     client = secretmanager.SecretManagerServiceClient()
     path = client.secret_version_path(project_id, secret_id, "latest")
-    return client.access_secret_version(path).payload.data.decode()
+    return client.access_secret_version(
+        request={"name": path}
+    ).payload.data.decode()
