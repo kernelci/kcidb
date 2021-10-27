@@ -43,7 +43,7 @@ setuptools.setup(
         "google-cloud-bigquery",
         "google-cloud-pubsub<2.0.0dev",
         "google-cloud-firestore",
-        "google-cloud-secret-manager<2.0.0dev",
+        "google-cloud-secret-manager",
         # TODO: remove with minimal requirement of Python 3.8
         "importlib_metadata",
         "jsonschema[format]",
