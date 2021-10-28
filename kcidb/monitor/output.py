@@ -2,6 +2,8 @@
 
 import re
 import base64
+import textwrap
+import html
 from email.message import EmailMessage
 import kcidb.oo
 from kcidb.monitor.misc import is_valid_firestore_id
@@ -136,9 +138,29 @@ class Notification:
             ready to send, but missing the From header.
         """
         email = EmailMessage()
-        email["Subject"] = self.message.summary + self.obj.summarize()
+        subject = self.message.summary + self.obj.summarize()
+        email["Subject"] = subject
         email["To"] = ", ".join(self.message.recipients)
         email["X-KCIDB-Notification-ID"] = self.id
         email["X-KCIDB-Notification-Message-ID"] = self.message.id
-        email.set_content(self.message.description + self.obj.describe())
+        message = self.message.description + self.obj.describe()
+        email.set_content(message)
+        escaped_subject = html.escape(subject, quote=True)
+        escaped_message = html.escape(message, quote=True)
+        escaped_message = re.sub(
+            r'((http|https|git|ftp)://[^\s]+)',
+            '<a href="\\1">\\1</a>',
+            escaped_message
+        )
+        html_msg = textwrap.dedent("""\
+            <html>
+                <head>
+                    <title>{}</title>
+                </head>
+                <body>
+                    <pre>{}</pre>
+                </body>
+            </html>
+        """).format(escaped_subject, escaped_message)
+        email.add_alternative(html_msg, subtype='html')
         return email

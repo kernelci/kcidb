@@ -198,5 +198,14 @@ class MatchTestCase(unittest.TestCase):
             self.assertEqual(message['X-KCIDB-Notification-Message-ID'],
                              obj_type_name)
             self.assertIn(f"Test {obj_type_name}: ", message['Subject'])
+            text, html = message.get_payload()
+            self.assertEqual('text/plain', text.get_content_type())
+            self.assertEqual('utf-8', text.get_content_charset())
+            content = text.get_payload()
             self.assertIn(f"Test {obj_type_name} detected!\n\n",
-                          message.get_payload())
+                          content)
+            self.assertEqual('text/html', html.get_content_type())
+            self.assertEqual('utf-8', html.get_content_charset())
+            content = html.get_payload()
+            self.assertIn(f"Test {obj_type_name} detected!\n\n",
+                          content)
