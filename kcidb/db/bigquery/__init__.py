@@ -157,6 +157,29 @@ class Driver(AbstractDriver):
         self.dataset.labels["version_minor"] = None
         self.client.update_dataset(self.dataset, ["labels"])
 
+    def _query_create(self, query_string, query_parameters=None):
+        """
+        Creates a Query job configured for a given query string and
+        optional parameters. BigQuery can run the job to query the database.
+
+        Args:
+            query_string:       The SQL query string.
+            query_parameters:   A list containing the optional query parameters
+                                (google.cloud.bigquery.ArrayQueryParameter).
+                                The default is an empty list.
+
+        Returns:
+            The Query job (google.cloud.bigquery.job.QueryJob)
+        """
+        if query_parameters is None:
+            query_parameters = []
+        LOGGER.debug("Query string: %s", query_string)
+        LOGGER.debug("Query params: %s", query_parameters)
+        job_config = bigquery.job.QueryJobConfig(
+                query_parameters=query_parameters,
+                default_dataset=self.dataset_ref)
+        return self.client.query(query_string, job_config=job_config)
+
     def get_last_modified(self):
         """
         Get the time the data in the database was last modified.
@@ -165,12 +188,9 @@ class Driver(AbstractDriver):
         Returns:
             The datetime object representing the last modification time.
         """
-        job_config = bigquery.job.QueryJobConfig(
-            default_dataset=self.dataset_ref)
-        return next(iter(self.client.query(
+        return next(iter(self._query_create(
             "SELECT TIMESTAMP_MILLIS(MAX(last_modified_time)) "
-            "FROM __TABLES__",
-            job_config=job_config
+            "FROM __TABLES__"
         ).result()))[0]
 
     @staticmethod
@@ -224,10 +244,8 @@ class Driver(AbstractDriver):
         obj_num = 0
         data = io.new()
         for obj_list_name in schema.TABLE_MAP:
-            job_config = bigquery.job.QueryJobConfig(
-                default_dataset=self.dataset_ref)
             query_string = f"SELECT * FROM `{obj_list_name}`"
-            query_job = self.client.query(query_string, job_config=job_config)
+            query_job = self._query_create(query_string)
             obj_list = None
             for row in query_job:
                 if obj_list is None:
@@ -343,13 +361,7 @@ class Driver(AbstractDriver):
                 f"SELECT * FROM `{obj_list_name}` INNER JOIN (\n" + \
                 textwrap.indent(query[0], " " * 4) + \
                 ") USING(id)\n"
-            LOGGER.debug("Query string: %s", query_string)
-            LOGGER.debug("Query params: %s", query_parameters)
-            job_config = bigquery.job.QueryJobConfig(
-                query_parameters=query_parameters,
-                default_dataset=self.dataset_ref
-            )
-            query_job = self.client.query(query_string, job_config=job_config)
+            query_job = self._query_create(query_string, query_parameters)
             obj_list = None
             for row in query_job:
                 if obj_list is None:
@@ -483,11 +495,7 @@ class Driver(AbstractDriver):
                 ") AS ids USING(" + ", ".join(obj_type.id_fields) + ")"
             query_parameters = reduce(lambda x, y: x + y,
                                       (q[1] for q in queries))
-            job_config = bigquery.job.QueryJobConfig(
-                query_parameters=query_parameters,
-                default_dataset=self.dataset_ref
-            )
-            job = self.client.query(query_string, job_config=job_config)
+            job = self._query_create(query_string, query_parameters)
             objs[obj_type.name] = [
                 Driver._unpack_node(dict(row.items()), drop_null=False)
                 for row in job.result()
