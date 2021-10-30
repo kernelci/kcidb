@@ -65,13 +65,13 @@ class Publisher(ABC):
         """
         Initialize publishing setup.
         """
-        self.client.create_topic(self.topic_path)
+        self.client.create_topic(name=self.topic_path)
 
     def cleanup(self):
         """
         Cleanup publishing setup.
         """
-        self.client.delete_topic(self.topic_path)
+        self.client.delete_topic(topic=self.topic_path)
 
     def future_publish(self, data):
         """
@@ -85,8 +85,8 @@ class Publisher(ABC):
             A "future" representing the publishing result, returning the
             publishing ID string.
         """
-        return self.client.publish(self.topic_path,
-                                   self.encode_data(data))
+        return self.client.publish(topic=self.topic_path,
+                                   data=self.encode_data(data))
 
     def publish(self, data):
         """
@@ -198,14 +198,14 @@ class Subscriber(ABC):
         """
         Initialize subscription setup.
         """
-        self.client.create_subscription(self.subscription_path,
-                                        self.topic_path)
+        self.client.create_subscription(name=self.subscription_path,
+                                        topic=self.topic_path)
 
     def cleanup(self):
         """
         Cleanup subscription setup.
         """
-        self.client.delete_subscription(self.subscription_path)
+        self.client.delete_subscription(subscription=self.subscription_path)
 
     def pull(self, max_num, timeout=0):
         """
@@ -230,8 +230,10 @@ class Subscriber(ABC):
             try:
                 # Setting *some* timeout, because infinite timeout doesn't
                 # seem to be supported
-                response = self.client.pull(self.subscription_path, max_num,
-                                            timeout=(timeout or 300))
+                response = self.client.pull(
+                        subscription=self.subscription_path,
+                        max_messages=max_num,
+                        timeout=timeout or 300)
                 messages = response.received_messages
             except DeadlineExceeded:
                 pass
@@ -258,7 +260,8 @@ class Subscriber(ABC):
         Args:
             ack_id: The ID received with the data to be acknowledged.
         """
-        self.client.acknowledge(self.subscription_path, [ack_id])
+        self.client.acknowledge(subscription=self.subscription_path,
+                                ack_ids=[ack_id])
 
     def nack(self, ack_id):
         """
@@ -267,7 +270,9 @@ class Subscriber(ABC):
         Args:
             ack_id: The ID received with the data to be marked not received.
         """
-        self.client.modify_ack_deadline(self.subscription_path, [ack_id], 0)
+        self.client.modify_ack_deadline(subscription=self.subscription_path,
+                                        ack_ids=[ack_id],
+                                        ack_deadline_seconds=0)
 
 
 class IOPublisher(Publisher):
