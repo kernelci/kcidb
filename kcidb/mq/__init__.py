@@ -65,7 +65,7 @@ class Publisher(ABC):
         """
         Initialize publishing setup.
         """
-        self.client.create_topic(name=self.topic_path)
+        self.client.create_topic(self.topic_path)
 
     def cleanup(self):
         """

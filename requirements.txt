@@ -1,7 +1,7 @@
 # Pip requirements for Google Cloud Functions.
 # Must match install_requires from setup.py.
 google-cloud-bigquery
-google-cloud-pubsub
+google-cloud-pubsub<2.0.0dev
 google-cloud-firestore
 google-cloud-secret-manager
 importlib_metadata
