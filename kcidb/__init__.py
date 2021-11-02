@@ -259,13 +259,22 @@ def validate_main():
 def upgrade_main():
     """Execute the kcidb-upgrade command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-upgrade - Upgrade I/O JSON data to latest schema'
+    description = 'kcidb-upgrade - Upgrade I/O JSON data to a valid previous schema or latest schema'
     parser = misc.OutputArgumentParser(description=description)
+    parser.add_argument(
+            'target',
+            metavar="TARGET-SCHEMA",
+            nargs='?',
+            type=int,
+            default=4,
+            choices=[1,2,3,4],
+            help='Upgrade to a valid target schema. Default is latest schema.'
+    )
     args = parser.parse_args()
 
     misc.json_dump_stream(
         (
-            io.schema.upgrade(io.schema.validate(data), copy=False)
+            io.schema.upgrade(args.target, io.schema.validate(data), copy=False)
             for data in misc.json_load_stream_fd(sys.stdin.fileno())
         ),
         sys.stdout, indent=args.indent, seq=args.seq
