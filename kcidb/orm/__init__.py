@@ -185,11 +185,13 @@ class Type:
 class Schema:
     """A repository of recognized object types"""
 
-    def __init__(self, types):
+    def __init__(self, json_schema_defs, types):
         """
         Initialize the schema.
 
         Args:
+            json_schema_defs:   A dictionary of JSON schemas shared and
+                                referenced by field schemas.
             types:  A dictionary of type descriptions. Keys being type names
                     and values being dictionaries with the following entries:
                         * "field_json_schemas" - a dictionary of field names
@@ -218,6 +220,7 @@ class Schema:
                                        identifying fields ("id_fields"),
                                        in the same order.
         """
+        assert isinstance(json_schema_defs, dict)
         assert isinstance(types, dict)
         assert all(
             isinstance(name, str) and
@@ -250,11 +253,12 @@ class Schema:
 
         # Create types and build the JSON schema
         self.types = {}
-        self.json_schema = dict(
-            type="object",
-            additionalProperties=False,
-            properties={},
-        )
+        self.json_schema = {
+            "type": "object",
+            "$defs": json_schema_defs,
+            "properties": {},
+            "additionalProperties": False,
+        }
         for name, info in types.items():
             json_schema = dict(
                 type="object",
@@ -270,8 +274,9 @@ class Schema:
                 additionalProperties=False,
             )
             self.json_schema["properties"][name] = dict(
-                type="array", items=json_schema
+                type="array", items=json_schema.copy()
             )
+            json_schema["$defs"] = json_schema_defs
             self.types[name] = Type(name, json_schema, info["id_fields"],
                                     info["summary_template"],
                                     info["description_template"])
@@ -345,127 +350,131 @@ class Schema:
         )
 
 
+# Latest I/O schema shared definitions
+_DEFS = io.schema.LATEST.json['$defs']
 # Checkout properties from the latest I/O schema
-_CHECKOUT = \
-    io.schema.LATEST.json['properties']['checkouts']['items']['properties']
+_CHECKOUT = _DEFS['checkout']['properties']
 # Build properties from the latest I/O schema
-_BUILD = \
-    io.schema.LATEST.json['properties']['builds']['items']['properties']
+_BUILD = _DEFS['build']['properties']
 # Test properties from the latest I/O schema
-_TEST = \
-    io.schema.LATEST.json['properties']['tests']['items']['properties']
+_TEST = _DEFS['test']['properties']
+# Test environment properties from the latest I/O schema
+_TEST_ENVIRONMENT = _TEST['environment']['properties']
 
 # The schema of the raw object-oriented data
-SCHEMA = Schema(dict(
-    revision=dict(
-        field_json_schemas=dict(
-            git_commit_hash=_CHECKOUT['git_commit_hash'],
-            patchset_hash=_CHECKOUT['patchset_hash'],
-            patchset_files=_CHECKOUT['patchset_files'],
-            git_commit_name=_CHECKOUT['git_commit_name'],
-            contacts=_CHECKOUT['contacts'],
+SCHEMA = Schema(
+    _DEFS,
+    dict(
+        revision=dict(
+            field_json_schemas=dict(
+                git_commit_hash=_CHECKOUT['git_commit_hash'],
+                patchset_hash=_CHECKOUT['patchset_hash'],
+                patchset_files=_CHECKOUT['patchset_files'],
+                git_commit_name=_CHECKOUT['git_commit_name'],
+                contacts=_CHECKOUT['contacts'],
+            ),
+            required_fields=set(),
+            id_fields=("git_commit_hash", "patchset_hash"),
+            children=dict(
+                checkout=("git_commit_hash", "patchset_hash",)
+            ),
+            summary_template=TEMPLATE_ENV.get_template(
+                "revision_summary.txt.j2"
+            ),
+            description_template=TEMPLATE_ENV.get_template(
+                "revision_description.txt.j2"
+            ),
         ),
-        required_fields=set(),
-        id_fields=("git_commit_hash", "patchset_hash"),
-        children=dict(
-            checkout=("git_commit_hash", "patchset_hash",)
+        checkout=dict(
+            field_json_schemas=dict(
+                id=_CHECKOUT['id'],
+                git_commit_hash=_CHECKOUT['git_commit_hash'],
+                patchset_hash=_CHECKOUT['patchset_hash'],
+                origin=_CHECKOUT['origin'],
+                git_repository_url=_CHECKOUT['git_repository_url'],
+                git_repository_branch=_CHECKOUT['git_repository_branch'],
+                tree_name=_CHECKOUT['tree_name'],
+                message_id=_CHECKOUT['message_id'],
+                start_time=_CHECKOUT['start_time'],
+                log_url=_CHECKOUT['log_url'],
+                log_excerpt=_CHECKOUT['log_excerpt'],
+                comment=_CHECKOUT['comment'],
+                valid=_CHECKOUT['valid'],
+                misc=_CHECKOUT['misc'],
+            ),
+            required_fields={'id', 'origin'},
+            id_fields=("id",),
+            children=dict(
+                build=("checkout_id",)
+            ),
+            summary_template=TEMPLATE_ENV.get_template(
+                "checkout_summary.txt.j2"
+            ),
+            description_template=TEMPLATE_ENV.get_template(
+                "checkout_description.txt.j2"
+            ),
         ),
-        summary_template=TEMPLATE_ENV.get_template(
-            "revision_summary.txt.j2"
+        build=dict(
+            field_json_schemas=dict(
+                id=_BUILD['id'],
+                checkout_id=_BUILD['checkout_id'],
+                origin=_BUILD['origin'],
+                start_time=_BUILD['start_time'],
+                duration=_BUILD['duration'],
+                architecture=_BUILD['architecture'],
+                command=_BUILD['command'],
+                compiler=_BUILD['compiler'],
+                input_files=_BUILD['input_files'],
+                output_files=_BUILD['output_files'],
+                config_name=_BUILD['config_name'],
+                config_url=_BUILD['config_url'],
+                log_url=_BUILD['log_url'],
+                log_excerpt=_BUILD['log_excerpt'],
+                comment=_BUILD['comment'],
+                valid=_BUILD['valid'],
+                misc=_BUILD['misc'],
+            ),
+            required_fields={'id', 'origin', 'checkout_id'},
+            id_fields=("id",),
+            children=dict(
+                test=("build_id",),
+            ),
+            summary_template=TEMPLATE_ENV.get_template(
+                "build_summary.txt.j2"
+            ),
+            description_template=TEMPLATE_ENV.get_template(
+                "build_description.txt.j2"
+            ),
         ),
-        description_template=TEMPLATE_ENV.get_template(
-            "revision_description.txt.j2"
+        test=dict(
+            field_json_schemas=dict(
+                id=_TEST['id'],
+                build_id=_TEST['build_id'],
+                origin=_TEST['origin'],
+                path=_TEST['path'],
+                environment_comment=_TEST_ENVIRONMENT['comment'],
+                environment_misc=_TEST_ENVIRONMENT['misc'],
+                status=_TEST['status'],
+                waived=_TEST['waived'],
+                start_time=_TEST['start_time'],
+                duration=_TEST['duration'],
+                output_files=_TEST['output_files'],
+                log_url=_TEST['log_url'],
+                log_excerpt=_TEST['log_excerpt'],
+                comment=_TEST['comment'],
+                misc=_TEST['misc'],
+            ),
+            required_fields={'id', 'origin', 'build_id'},
+            id_fields=("id",),
+            summary_template=TEMPLATE_ENV.get_template(
+                "test_summary.txt.j2"
+            ),
+            description_template=TEMPLATE_ENV.get_template(
+                "test_description.txt.j2"
+            ),
         ),
-    ),
-    checkout=dict(
-        field_json_schemas=dict(
-            id=_CHECKOUT['id'],
-            git_commit_hash=_CHECKOUT['git_commit_hash'],
-            patchset_hash=_CHECKOUT['patchset_hash'],
-            origin=_CHECKOUT['origin'],
-            git_repository_url=_CHECKOUT['git_repository_url'],
-            git_repository_branch=_CHECKOUT['git_repository_branch'],
-            tree_name=_CHECKOUT['tree_name'],
-            message_id=_CHECKOUT['message_id'],
-            start_time=_CHECKOUT['start_time'],
-            log_url=_CHECKOUT['log_url'],
-            log_excerpt=_CHECKOUT['log_excerpt'],
-            comment=_CHECKOUT['comment'],
-            valid=_CHECKOUT['valid'],
-            misc=_CHECKOUT['misc'],
-        ),
-        required_fields={'id', 'origin'},
-        id_fields=("id",),
-        children=dict(
-            build=("checkout_id",)
-        ),
-        summary_template=TEMPLATE_ENV.get_template(
-            "checkout_summary.txt.j2"
-        ),
-        description_template=TEMPLATE_ENV.get_template(
-            "checkout_description.txt.j2"
-        ),
-    ),
-    build=dict(
-        field_json_schemas=dict(
-            id=_BUILD['id'],
-            checkout_id=_BUILD['checkout_id'],
-            origin=_BUILD['origin'],
-            start_time=_BUILD['start_time'],
-            duration=_BUILD['duration'],
-            architecture=_BUILD['architecture'],
-            command=_BUILD['command'],
-            compiler=_BUILD['compiler'],
-            input_files=_BUILD['input_files'],
-            output_files=_BUILD['output_files'],
-            config_name=_BUILD['config_name'],
-            config_url=_BUILD['config_url'],
-            log_url=_BUILD['log_url'],
-            log_excerpt=_BUILD['log_excerpt'],
-            comment=_BUILD['comment'],
-            valid=_BUILD['valid'],
-            misc=_BUILD['misc'],
-        ),
-        required_fields={'id', 'origin', 'checkout_id'},
-        id_fields=("id",),
-        children=dict(
-            test=("build_id",),
-        ),
-        summary_template=TEMPLATE_ENV.get_template(
-            "build_summary.txt.j2"
-        ),
-        description_template=TEMPLATE_ENV.get_template(
-            "build_description.txt.j2"
-        ),
-    ),
-    test=dict(
-        field_json_schemas=dict(
-            id=_TEST['id'],
-            build_id=_TEST['build_id'],
-            origin=_TEST['origin'],
-            path=_TEST['path'],
-            environment_comment=_TEST['environment']['properties']['comment'],
-            environment_misc=_TEST['environment']['properties']['misc'],
-            status=_TEST['status'],
-            waived=_TEST['waived'],
-            start_time=_TEST['start_time'],
-            duration=_TEST['duration'],
-            output_files=_TEST['output_files'],
-            log_url=_TEST['log_url'],
-            log_excerpt=_TEST['log_excerpt'],
-            comment=_TEST['comment'],
-            misc=_TEST['misc'],
-        ),
-        required_fields={'id', 'origin', 'build_id'},
-        id_fields=("id",),
-        summary_template=TEMPLATE_ENV.get_template(
-            "test_summary.txt.j2"
-        ),
-        description_template=TEMPLATE_ENV.get_template(
-            "test_description.txt.j2"
-        ),
-    ),
-))
+    )
+)
 
 assert all(k.endswith("s") for k in io.schema.LATEST.tree if k), \
     "Not all I/O object list names end with 's'"
