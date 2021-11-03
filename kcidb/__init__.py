@@ -252,11 +252,26 @@ def query_main():
 def schema_main():
     """Execute the kcidb-schema command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-schema - Output latest I/O JSON schema'
+    description = 'kcidb-schema - Output latest or older I/O JSON schema'
     parser = misc.OutputArgumentParser(description=description)
+    version = io.schema.LATEST
+    parser.add_argument(
+        'schema_version',
+        metavar='SCHEMA_VERSION',
+        type=int,
+        help='Major version number of the schema to output. '
+             f'Default is the latest version (currently {version.major})',
+        nargs='?',
+        default=version.major
+    )
     args = parser.parse_args()
-    misc.json_dump(io.schema.LATEST.json, sys.stdout,
-                   indent=args.indent, seq=args.seq)
+    major = args.schema_version
+    while version and version.major != major:
+        version = version.previous
+    if not version:
+        raise Exception(f"No version found for major number {major}")
+    misc.json_dump(version.json, sys.stdout, indent=args.indent,
+                   seq=args.seq)
 
 
 def validate_main():
