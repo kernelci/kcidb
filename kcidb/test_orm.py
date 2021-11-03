@@ -6,81 +6,84 @@ import kcidb
 
 
 EMPTY_TEMPLATE = Template("")
-SCHEMA = kcidb.orm.Schema(dict(
-    revision=dict(
-        field_json_schemas=dict(
-            git_commit_hash=dict(type="string"),
-            patchset_hash=dict(type="string"),
+SCHEMA = kcidb.orm.Schema(
+    {},
+    dict(
+        revision=dict(
+            field_json_schemas=dict(
+                git_commit_hash=dict(type="string"),
+                patchset_hash=dict(type="string"),
+            ),
+            required_fields=set(),
+            id_fields=("git_commit_hash", "patchset_hash"),
+            children=dict(
+                checkout=("git_commit_hash", "patchset_hash",)
+            ),
+            summary_template=EMPTY_TEMPLATE,
+            description_template=EMPTY_TEMPLATE,
         ),
-        required_fields=set(),
-        id_fields=("git_commit_hash", "patchset_hash"),
-        children=dict(
-            checkout=("git_commit_hash", "patchset_hash",)
+        checkout=dict(
+            field_json_schemas=dict(
+                id=dict(type="string"),
+            ),
+            required_fields=set(),
+            id_fields=("id",),
+            children=dict(
+                build=("checkout_id",)
+            ),
+            summary_template=EMPTY_TEMPLATE,
+            description_template=EMPTY_TEMPLATE,
         ),
-        summary_template=EMPTY_TEMPLATE,
-        description_template=EMPTY_TEMPLATE,
-    ),
-    checkout=dict(
-        field_json_schemas=dict(
-            id=dict(type="string"),
+        build=dict(
+            field_json_schemas=dict(
+                id=dict(type="string"),
+            ),
+            required_fields=set(),
+            id_fields=("id",),
+            children=dict(
+                test=("build_id",),
+                build_test_environment=("build_id",)
+            ),
+            summary_template=EMPTY_TEMPLATE,
+            description_template=EMPTY_TEMPLATE,
         ),
-        required_fields=set(),
-        id_fields=("id",),
-        children=dict(
-            build=("checkout_id",)
+        test_environment=dict(
+            field_json_schemas=dict(
+                id=dict(type="string"),
+            ),
+            required_fields=set(),
+            id_fields=("id",),
+            children=dict(
+                test=("environment_id",),
+                build_test_environment=("environment_id",),
+            ),
+            summary_template=EMPTY_TEMPLATE,
+            description_template=EMPTY_TEMPLATE,
         ),
-        summary_template=EMPTY_TEMPLATE,
-        description_template=EMPTY_TEMPLATE,
-    ),
-    build=dict(
-        field_json_schemas=dict(
-            id=dict(type="string"),
+        build_test_environment=dict(
+            field_json_schemas=dict(
+                build_id=dict(type="string"),
+                environment_id=dict(type="string"),
+            ),
+            required_fields=set(),
+            id_fields=("build_id", "environment_id"),
+            children=dict(
+                test=("build_id", "environment_id"),
+            ),
+            summary_template=EMPTY_TEMPLATE,
+            description_template=EMPTY_TEMPLATE,
         ),
-        required_fields=set(),
-        id_fields=("id",),
-        children=dict(
-            test=("build_id",),
-            build_test_environment=("build_id",)
+        test=dict(
+            field_json_schemas=dict(
+                id=dict(type="string"),
+            ),
+            required_fields=set(),
+            id_fields=("id",),
+            summary_template=EMPTY_TEMPLATE,
+            description_template=EMPTY_TEMPLATE,
         ),
-        summary_template=EMPTY_TEMPLATE,
-        description_template=EMPTY_TEMPLATE,
-    ),
-    test_environment=dict(
-        field_json_schemas=dict(
-            id=dict(type="string"),
-        ),
-        required_fields=set(),
-        id_fields=("id",),
-        children=dict(
-            test=("environment_id",),
-            build_test_environment=("environment_id",),
-        ),
-        summary_template=EMPTY_TEMPLATE,
-        description_template=EMPTY_TEMPLATE,
-    ),
-    build_test_environment=dict(
-        field_json_schemas=dict(
-            build_id=dict(type="string"),
-            environment_id=dict(type="string"),
-        ),
-        required_fields=set(),
-        id_fields=("build_id", "environment_id"),
-        children=dict(
-            test=("build_id", "environment_id"),
-        ),
-        summary_template=EMPTY_TEMPLATE,
-        description_template=EMPTY_TEMPLATE,
-    ),
-    test=dict(
-        field_json_schemas=dict(
-            id=dict(type="string"),
-        ),
-        required_fields=set(),
-        id_fields=("id",),
-        summary_template=EMPTY_TEMPLATE,
-        description_template=EMPTY_TEMPLATE,
-    ),
-))
+    )
+)
 
 
 def parse(string, obj_id_set_list=None):

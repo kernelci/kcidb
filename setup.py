@@ -53,7 +53,7 @@ setuptools.setup(
         "python-dateutil",
         "cached-property",
         "jq@git+https://github.com/spbnick/jq.py.git@1.1.2.post1",
-        "kcidb-io@git+https://github.com/kernelci/kcidb-io.git@v3_pre1",
+        "kcidb-io@git+https://github.com/kernelci/kcidb-io.git@v3_pre2",
     ],
     extras_require=dict(
         dev=[
