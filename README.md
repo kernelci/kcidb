@@ -1,3 +1,7 @@
+<img src="https://kernelci.org/image/kernelci-horizontal-color.png"
+     alt="KernelCI project logo"
+     width="40%" />
+
 KCIDB
 =====
 
