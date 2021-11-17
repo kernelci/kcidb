@@ -159,7 +159,7 @@ def non_negative_int(string):
         argparse.ArgumentTypeError: the string wasn't representing a
         non-negative integer.
     """
-    if not re.match("^[0-9]+$", string):
+    if not re.fullmatch("[0-9]+", string):
         raise argparse.ArgumentTypeError(
             f'{repr(string)} is not a positive integer, nor zero'
         )
