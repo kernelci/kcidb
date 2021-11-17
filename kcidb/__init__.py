@@ -4,7 +4,7 @@ import sys
 import email
 import logging
 import kcidb_io as io
-from kcidb.misc import LIGHT_ASSERTS, non_negative_int
+from kcidb.misc import LIGHT_ASSERTS
 # Silence flake8 "imported but unused" warning
 from kcidb import db, mq, orm, oo, monitor, tests, unittest, misc # noqa
 
@@ -240,23 +240,9 @@ def schema_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-schema - Output latest or older I/O JSON schema'
     parser = misc.OutputArgumentParser(description=description)
-    version = io.schema.LATEST
-    parser.add_argument(
-        'schema_version',
-        metavar='SCHEMA_VERSION',
-        type=int,
-        help='Major version number of the schema to output. '
-             f'Default is the latest version (currently {version.major})',
-        nargs='?',
-        default=version.major
-    )
+    misc.argparse_schema_add_args(parser, "output")
     args = parser.parse_args()
-    major = args.schema_version
-    while version and version.major != major:
-        version = version.previous
-    if not version:
-        raise Exception(f"No version found for major number {major}")
-    misc.json_dump(version.json, sys.stdout, indent=args.indent,
+    misc.json_dump(args.schema_version.json, sys.stdout, indent=args.indent,
                    seq=args.seq)
 
 
@@ -265,27 +251,10 @@ def validate_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-validate - Validate I/O JSON data'
     parser = misc.ArgumentParser(description=description)
-    parser.add_argument(
-        'schema_version',
-        metavar="SCHEMA_VERSION",
-        type=non_negative_int,
-        help='Validate against the schema with the specified major version, '
-        'instead of the latest one.',
-        nargs='?'
-    )
+    misc.argparse_schema_add_args(parser, "validate against")
     args = parser.parse_args()
-
-    version = io.schema.LATEST
-    if args.schema_version is not None:
-        while version and version.major != args.schema_version:
-            version = version.previous
-        if not version:
-            raise Exception(
-                f"No version found for major number {args.schema_version}"
-            )
-
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        version.validate(data)
+        args.schema_version.validate(data)
 
 
 def upgrade_main():
