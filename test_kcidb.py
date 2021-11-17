@@ -147,7 +147,25 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_schema_main(self):
         """Check kcidb-schema works"""
-        self.assertExecutes("", "kcidb.schema_main", stdout_re="\\{.*")
+        self.assertExecutes(
+                "", "kcidb.schema_main",
+                stdout_re=f'.*"const": {kcidb_io.schema.LATEST.major},.*'
+        )
+        self.assertExecutes(
+                "", "kcidb.schema_main",
+                str(kcidb_io.schema.LATEST.major - 1),
+                stdout_re=f'.*"const": {kcidb_io.schema.LATEST.major - 1},.*'
+        )
+        self.assertExecutes("",
+                            "kcidb.schema_main", "0",
+                            status=2,
+                            stderr_re=".*Invalid major version number: '0'\n")
+        self.assertExecutes('{"version":{"major":4,"minor":0}}',
+                            "kcidb.schema_main",
+                            str(kcidb_io.schema.LATEST.major + 1),
+                            status=2,
+                            stderr_re=".*No schema version found for major "
+                            f"number {kcidb_io.schema.LATEST.major + 1}\n")
 
     def test_validate_main(self):
         """Check kcidb-validate works"""
@@ -162,9 +180,14 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             stderr_re=".*ValidationError: 1 was expected.*")
         self.assertExecutes('{"version":{"major":4,"minor":0}}',
                             "kcidb.validate_main", "0",
-                            status=1,
-                            stderr_re=".*No version found for major number "
-                            "0\n")
+                            status=2,
+                            stderr_re=".*Invalid major version number: '0'\n")
+        self.assertExecutes('{"version":{"major":4,"minor":0}}',
+                            "kcidb.validate_main",
+                            str(kcidb_io.schema.LATEST.major + 1),
+                            status=2,
+                            stderr_re=".*No schema version found for major "
+                            f"number {kcidb_io.schema.LATEST.major + 1}\n")
         self.assertExecutes('{', "kcidb.validate_main",
                             status=1, stderr_re=".*JSONParseError.*")
         self.assertExecutes('{}', "kcidb.validate_main",

@@ -14,6 +14,7 @@ except ImportError:  # Python 3.6
     import importlib_metadata as metadata
 from google.cloud import secretmanager
 import jq
+import kcidb_io as io
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
@@ -229,6 +230,58 @@ class SplitOutputArgumentParser(OutputArgumentParser):
             default=0,
             required=False
         )
+
+
+def argparse_schema_add_args(parser, version_verb):
+    """
+    Add schema selection arguments to a command-line argument parser.
+
+    Args:
+        parser:         The parser to add arguments to.
+        version_verb:   The verb to apply to the schema in the version
+                        argument description.
+    """
+    def schema_version(string):
+        """
+        Lookup a schema version object using a major version number string.
+        Matches the argparse type function interface.
+
+        Args:
+            string: The string representing the major version number of the
+                    schema to lookup.
+
+        Returns:
+            The looked up schema version object.
+
+        Raises:
+            ValueError if the string was not representing a positive integer
+            number, or the schema with the supplied major version number was
+            not found.
+        """
+        if not re.fullmatch("0*[1-9][0-9]*", string):
+            raise argparse.ArgumentTypeError(
+                f"Invalid major version number: {string!r}"
+            )
+        major = int(string)
+        version = io.schema.LATEST
+        while version and version.major != major:
+            version = version.previous
+        if version is None:
+            raise argparse.ArgumentTypeError(
+                f"No schema version found for major number {major}"
+            )
+        return version
+
+    parser.add_argument(
+        'schema_version',
+        metavar="SCHEMA_VERSION",
+        type=schema_version,
+        help=f"{version_verb.capitalize()} the schema with the specified "
+        f"major version. Default is the latest schema version "
+        f"(currently {io.schema.LATEST.major}).",
+        nargs='?',
+        default=io.schema.LATEST
+    )
 
 
 def json_load_stream_fd(stream_fd, chunk_size=4*1024*1024):
