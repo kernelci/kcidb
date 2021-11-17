@@ -262,11 +262,11 @@ def upgrade_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-upgrade - Upgrade I/O JSON data to latest schema'
     parser = misc.OutputArgumentParser(description=description)
+    misc.argparse_schema_add_args(parser, "upgrade")
     args = parser.parse_args()
-
     misc.json_dump_stream(
         (
-            io.schema.upgrade(io.schema.validate(data), copy=False)
+            args.schema_version.upgrade(io.schema.validate(data), copy=False)
             for data in misc.json_load_stream_fd(sys.stdin.fileno())
         ),
         sys.stdout, indent=args.indent, seq=args.seq

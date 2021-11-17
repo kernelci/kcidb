@@ -221,6 +221,25 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             stdout_re=re.escape(latest_version +
                                                 latest_version))
 
+        self.assertExecutes(latest_version,
+                            "kcidb.upgrade_main", "0",
+                            status=2,
+                            stderr_re=".*Invalid major version number: '0'\n")
+        self.assertExecutes(latest_version,
+                            "kcidb.upgrade_main",
+                            str(kcidb_io.schema.LATEST.major + 1),
+                            status=2,
+                            stderr_re=".*No schema version found for major "
+                            f"number {kcidb_io.schema.LATEST.major + 1}\n")
+
+        self.assertExecutes(latest_version,
+                            "kcidb.upgrade_main", str(major - 1),
+                            status=1, stderr_re=".*ValidationError.*")
+
+        self.assertExecutes(latest_version, "kcidb.upgrade_main",
+                            "--indent=0", str(major),
+                            stdout_re=re.escape(latest_version))
+
     def test_count_main(self):
         """Check kcidb-count works"""
         self.assertExecutes('', "kcidb.count_main")
