@@ -1,7 +1,11 @@
-How to submit reports with KCIDB
-================================
-
-Here's what you need to do.
+---
+title: "Submitter guide"
+date: 2021-11-18
+draft: false
+weight: 20
+description: "How to submit build and test reports with KCIDB"
+---
+Here's what you need to do to submit your reports.
 
 1. Get submission credentials and parameters.
 2. Install KCIDB.
@@ -65,8 +69,8 @@ Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
 
     export PATH="$PATH":~/.local/bin
 
-See [README.md](README.md) for alternatives, and if you know your Python, feel
-free to do it your way!
+See [Installation](../installation) for alternatives, and if you know your
+Python, feel free to do it your way!
 
 To test your installation, authentication, and the parameters you received
 execute an empty query on the database:
