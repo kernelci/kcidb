@@ -27,15 +27,28 @@ like this:
 export GOOGLE_APPLICATION_CREDENTIALS=~/.kcidb-credentials.json
 ```
 
-You will also need to specify some or all of the following to the
-tools/library (using current production parameters from here on):
+We will also need to agree on the "origin" string identifying your system
+among other submitters. We'll use `submitter` in examples below.
+
+Finally you will need to specify some or all of the following to the
+tools/library:
+
+* Google Cloud project: `kernelci-production`
+* Submission queue topic: `playground_kernelci_new`
+* Dataset name: `playground_kernelci04`
+
+The above refers to the special "playground" setup we have, where you can
+freely experiment with your submissions, without worrying about any negative
+effects on the system or other submitters. This setup has a [separate
+dashboard](https://kcidb.kernelci.org/d/home/home?orgId=1&refresh=30m&var-origin=All&var-git_repository_url=All&var-dataset=playground_kernelci04)
+as well. We'll use playground parameters in the examples below.
+
+Once you feel comfortable and ready, we'll add extra permissions for your
+account, and you can start using the production parameters:
 
 * Google Cloud project: `kernelci-production`
 * Submission queue topic: `kernelci_new`
 * Dataset name: `kernelci04`
-
-Finally, we'll need to agree on the "origin" string identifying your system
-among other submitters. We'll use `submitter` in examples below.
 
 2\. Install KCIDB
 -----------------
@@ -59,7 +72,7 @@ To test your installation, authentication, and the parameters you received
 execute an empty query on the database:
 
 ```console
-$ kcidb-query -d kernelci04
+$ kcidb-query -d playground_kernelci04
 {
     "builds": [],
     "checkouts": [],
@@ -75,7 +88,7 @@ and submit an empty report:
 
 ```console
 $ echo '{"version":{"major":3,"minor":0}}' |
-        kcidb-submit -p kernelci-production -t kernelci_new
+        kcidb-submit -p kernelci-production -t playground_kernelci_new
 ```
 
 Both should execute without errors and finish with zero exit status.
@@ -150,7 +163,7 @@ checkout with one build and one test:
 
 If you're curious, you can query the complete objects above with this command:
 
-    kcidb-query -d kernelci04 -t redhat:114353810 --parents
+    kcidb-query -d playground_kernelci04 -t redhat:114353810 --parents
 
 #### Object IDs
 
@@ -314,7 +327,8 @@ As soon as you have your report data pass validation (e.g. with the
 If you're using shell, and e.g. have your data in file `report.json`, pipe it
 to the `kcidb-submit` tool like this:
 
-    kcidb-submit -p kernelci-production -t kernelci_new < report.json
+    kcidb-submit -p kernelci-production \
+                 -t playground_kernelci_new < report.json
 
 If you're using Python 3, and e.g. have variable `report` holding standard
 JSON representation of your report, you can submit it like this:
@@ -323,7 +337,7 @@ JSON representation of your report, you can submit it like this:
 import kcidb
 
 client = kcidb.Client(project_id="kernelci-production",
-                      topic_name="kernelci_new")
+                      topic_name="playground_kernelci_new")
 client.submit(report)
 ```
 
@@ -332,11 +346,11 @@ you should be able to find it in our [dashboard][dashboard], or query using
 the `kcidb-query` command-line tool. For example, if you want to retrieve a
 checkout object you submitted with ID `origin:23223`, execute:
 
-    kcidb-query -d kernelci04 -c origin:23223
+    kcidb-query -d playground_kernelci04 -c origin:23223
 
 If you want to retrieve all its builds and tests as well, execute:
 
-    kcidb-query -d kernelci04 -c origin:23223 --children
+    kcidb-query -d playground_kernelci04 -c origin:23223 --children
 
 See the output of `kcidb-query --help` for usage information, including how to
 retrieve builds, tests, and how to retrieve object parents.
