@@ -171,58 +171,6 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes(json.dumps(empty) + json.dumps(empty), *argv,
                             driver_source=driver_source)
 
-    def test_complement_main(self):
-        """Check kcidb-db-complement works"""
-        driver_source = textwrap.dedent("""
-            from unittest.mock import patch
-            with patch("kcidb.db.Client"):
-                return function()
-        """)
-        argv = ["kcidb.db.complement_main", "-d", "bigquery:project.dataset",
-                "--indent=0"]
-
-        self.assertExecutes("", *argv, driver_source=driver_source)
-        self.assertExecutes('{', *argv, driver_source=driver_source,
-                            status=1, stderr_re=".*JSONParseError.*")
-        self.assertExecutes('{}', *argv, driver_source=driver_source,
-                            status=1, stderr_re=".*ValidationError.*")
-
-        report_a = {**kcidb_io.new(),
-                    "checkouts": [dict(id="test:checkout:1", origin="test")]}
-        report_b = {**kcidb_io.new(),
-                    "checkouts": [dict(id="test:checkout:2", origin="test")]}
-
-        driver_source = textwrap.dedent(f"""
-            from unittest.mock import patch, Mock
-            client = Mock()
-            client.complement = Mock(return_value={repr(report_b)})
-            with patch("kcidb.db.Client", return_value=client) as Client:
-                status = function()
-            Client.assert_called_once_with("bigquery:project.dataset")
-            client.complement.assert_called_once_with({repr(report_a)})
-            return status
-        """)
-        self.assertExecutes(json.dumps(report_a), *argv,
-                            driver_source=driver_source,
-                            stdout_re=re.escape(json.dumps(report_b) + "\n"))
-
-        driver_source = textwrap.dedent(f"""
-            from unittest.mock import patch, Mock, call
-            client = Mock()
-            client.complement = Mock(side_effect={repr((report_b, report_a))})
-            with patch("kcidb.db.Client", return_value=client) as Client:
-                status = function()
-            Client.assert_called_once_with("bigquery:project.dataset")
-            assert client.complement.call_count == 2
-            client.complement.assert_has_calls([call({repr(report_a)}),
-                                                call({repr(report_b)})])
-            return status
-        """)
-        self.assertExecutes(json.dumps(report_a) + json.dumps(report_b), *argv,
-                            driver_source=driver_source,
-                            stdout_re=re.escape(json.dumps(report_b) + "\n" +
-                                                json.dumps(report_a) + "\n"))
-
 
 class KCIDBDBClient(kcidb.unittest.TestCase):
     """Test case for the Client class"""
