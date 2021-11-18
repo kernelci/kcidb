@@ -8,8 +8,7 @@ KCIDB
 KCIDB is a package for submitting and querying Linux Kernel CI reports, coming
 from independent CI systems, and for maintaining the service behind that.
 
-See the collected results on
-[our dashboard](https://staging.kernelci.org:3000/).
+See the collected results on [our dashboard](https://kcidb.kernelci.org/).
 Write to [kernelci@groups.io](mailto:kernelci@groups.io) if you want to start
 submitting results from your CI system, or if you want to receive automatic
 notifications of arriving results.
