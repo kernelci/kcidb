@@ -78,7 +78,7 @@ $ kcidb-query -d playground_kernelci04
     "checkouts": [],
     "tests": [],
     "version": {
-        "major": 3,
+        "major": 4,
         "minor": 0
     }
 }
@@ -87,7 +87,7 @@ $ kcidb-query -d playground_kernelci04
 and submit an empty report:
 
 ```console
-$ echo '{"version":{"major":3,"minor":0}}' |
+$ echo '{"version":{"major":4,"minor":0}}' |
         kcidb-submit -p kernelci-production -t playground_kernelci_new
 ```
 
@@ -107,7 +107,7 @@ Here's a minimal report, containing no data:
 ```json
 {
     "version": {
-        "major": 3,
+        "major": 4,
         "minor": 0
     }
 }
@@ -155,7 +155,7 @@ checkout with one build and one test:
         }
     ],
     "version": {
-        "major": 3,
+        "major": 4,
         "minor": 0
     }
 }
@@ -200,9 +200,26 @@ shortest possible `git://` URL.
 Example: `"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"`
 
 ##### `git_commit_hash`
-The full commit hash of the checked out base code.
+The full commit hash of the checked out base code. Note that until a checkout
+has the `git_commit_hash` property it may not appear in reports or on the
+dashboard.
 
 Example: `"db14560cba31b9fdf8454d097e5cb9e488c621fd"`
+
+##### `patchset_hash`
+The full hash of the patches applied on top of the commit, or an empty string,
+if there were no patches. Note that until a checkout has the `patchset_hash`
+property it may not appear in reports or on the dashboard.
+
+The hash is a sha256 hash over newline-terminated sha256 hashes of each patch,
+in order of application. If your patch file alphabetic order matches the
+application order (which is true for patches generated with `git format-patch`
+or `git send-email`), and you only have the patchset you're hashing in the
+current directory, you can generate the hash with this command:
+
+    sha256sum *.patch | cut -c-64 | sha256sum | cut -c-64
+
+Example: `"a86ef57bf15cd35ba4da4e719e0874c8dd9432bb05d9fb5e45b716d43561d2b8"`
 
 ##### `start_time`
 The time the checkout was started by the CI system. As described by [RFC3339,
