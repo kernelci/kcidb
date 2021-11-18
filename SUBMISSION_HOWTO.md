@@ -48,6 +48,10 @@ Let's say you picked v8. Run this:
 pip3 install --user 'git+https://git@github.com/kernelci/kcidb.git@v8'
 ```
 
+Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
+
+    export PATH="$PATH":~/.local/bin
+
 See [README.md](README.md) for alternatives, and if you know your Python, feel
 free to do it your way!
 
