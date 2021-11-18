@@ -1,6 +1,10 @@
-Administrator guide
-===================
-
+---
+title: "Administrator guide"
+date: 2021-11-18
+draft: false
+wieght: 40
+description: "Deploying, maintaining, and upgrading a KCIDB service installation"
+---
 Kcidb infrastructure is mostly based on Google Cloud services at the moment:
 
     === Hosts ===  ======================= Google Cloud Project ========================
