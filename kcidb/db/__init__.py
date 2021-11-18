@@ -229,36 +229,6 @@ class Client(kcidb.orm.Source):
         assert LIGHT_ASSERTS or io.schema.is_valid(data)
         self.driver.load(io.schema.upgrade(data))
 
-    def complement(self, data):
-        """
-        Given I/O data, return its complement. I.e. the same data, but with
-        all objects from the database it references. E.g. for each checkout
-        load all its builds, for each build load all its tests. And vice
-        versa: for each test load its build, and for each build load its
-        checkout.
-
-        Args:
-            data:   The JSON data to complement from the database.
-                    Must adhere to a version of I/O schema
-                    Will not be modified.
-
-        Returns:
-            The complemented JSON data from the database adhering to the
-            latest version of I/O schema.
-        """
-        assert LIGHT_ASSERTS or self.is_initialized()
-        assert LIGHT_ASSERTS or io.schema.is_valid(data)
-        data = io.schema.upgrade(data)
-
-        # Collect IDs of all supplied objects
-        ids = {
-            obj_list_name: [obj["id"] for obj in data.get(obj_list_name, [])]
-            for obj_list_name in io.schema.LATEST.tree if obj_list_name
-        }
-
-        # Query the objects along with parents and children
-        return self.query(ids=ids, children=True, parents=True)
-
 
 class DBHelpAction(argparse.Action):
     """Argparse action outputting database string help and exiting."""
@@ -444,27 +414,6 @@ class QueryArgumentParser(SplitOutputArgumentParser):
             help='Match children of matching objects',
             action='store_true'
         )
-
-
-def complement_main():
-    """Execute the kcidb-db-complement command-line tool"""
-    sys.excepthook = kcidb.misc.log_and_print_excepthook
-    description = \
-        'kcidb-db-complement - Complement reports from database'
-    parser = OutputArgumentParser(description=description)
-    args = parser.parse_args()
-    client = Client(args.database)
-    if not client.is_initialized():
-        raise Exception(f"Database {args.database!r} is not initialized")
-    kcidb.misc.json_dump_stream(
-        (
-            client.complement(
-                io.schema.upgrade(io.schema.validate(data), copy=False)
-            )
-            for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno())
-        ),
-        sys.stdout, indent=args.indent, seq=args.seq
-    )
 
 
 def dump_main():

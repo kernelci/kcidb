@@ -81,7 +81,6 @@ setuptools.setup(
             "kcidb-db-load = kcidb.db:load_main",
             "kcidb-db-dump = kcidb.db:dump_main",
             "kcidb-db-query = kcidb.db:query_main",
-            "kcidb-db-complement = kcidb.db:complement_main",
             "kcidb-mq-io-publisher = kcidb.mq:io_publisher_main",
             "kcidb-mq-io-subscriber = kcidb.mq:io_subscriber_main",
             "kcidb-mq-pattern-publisher = kcidb.mq:pattern_publisher_main",
