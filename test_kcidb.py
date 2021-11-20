@@ -169,11 +169,15 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_validate_main(self):
         """Check kcidb-validate works"""
+        empty = json.dumps(dict(version=dict(major=4, minor=0))) + "\n"
+        second_empty = json.dumps(dict(version=dict(major=3, minor=0))) + "\n"
+
         self.assertExecutes('', "kcidb.validate_main")
-        self.assertExecutes('{"version":{"major":4,"minor":0}}',
-                            "kcidb.validate_main")
-        self.assertExecutes('{"version":{"major":3,"minor":0}}',
-                            "kcidb.validate_main", "3")
+        self.assertExecutes(empty, "kcidb.merge_main", "--indent=0",
+                            stdout_re=re.escape(empty))
+        self.assertExecutes(second_empty,
+                            "kcidb.validate_main", "--indent=0",
+                            stdout_re=re.escape(second_empty))
         self.assertExecutes('{"version":{"major":2,"minor":0}}',
                             "kcidb.validate_main", "1",
                             status=1,

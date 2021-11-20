@@ -250,11 +250,16 @@ def validate_main():
     """Execute the kcidb-validate command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-validate - Validate I/O JSON data'
-    parser = misc.ArgumentParser(description=description)
+    parser = misc.OutputArgumentParser(description=description)
     misc.argparse_schema_add_args(parser, "validate against")
     args = parser.parse_args()
-    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        args.schema_version.validate(data)
+    misc.json_dump_stream(
+        (
+            args.schema_version.validate(data)
+            for data in misc.json_load_stream_fd(sys.stdin.fileno())
+        ),
+        sys.stdout, indent=args.indent, seq=args.seq
+    )
 
 
 def upgrade_main():
