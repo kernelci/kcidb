@@ -15,7 +15,7 @@ notifications of arriving results.
 
 See our guides for more information:
 
-[Installation](doc/INSTALLATION.md)
-[Submitter guide](doc/SUBMITTER_GUIDE.md)
-[Developer guide](doc/DEVELOPER_GUIDE.md)
-[Administrator guide](doc/ADMINISTRATOR_GUIDE.md)
+* [Installation](doc/installation.md)
+* [Submitter guide](doc/submitter_guide.md)
+* [Developer guide](doc/developer_guide.md)
+* [Administrator guide](doc/administrator_guide.md)
