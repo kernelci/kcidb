@@ -7,12 +7,17 @@ import html
 from email.message import EmailMessage
 import kcidb.oo
 from kcidb.monitor.misc import is_valid_firestore_id
+from kcidb.templates import ENV as TEMPLATE_ENV
 
 # We like the "id" name
 # pylint: disable=invalid-name
 
-# A regex matching permitted notification message summary strings
-NOTIFICATION_MESSAGE_SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
+# A regex matching permitted notification message subject strings
+NOTIFICATION_MESSAGE_SUBJECT_RE = re.compile(r"[^\x00-\x1f\x7f]*")
+# Maximum length of a UTF-8-encoded notification message subject
+NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN = 256
+# Maximum length of a UTF-8-encoded notification message body
+NOTIFICATION_MESSAGE_BODY_MAX_LEN = 4096
 
 # A regex matching permitted subscription name strings
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
@@ -22,39 +27,63 @@ class NotificationMessage:
     """
     Message for a notification about a report object state.
     """
-    def __init__(self, recipients, summary="", description="", id=""):
+    # It's OK pylint: disable=too-many-arguments
+    def __init__(self, to, subject, body, cc=None, bcc=None, id=""):
         """
         Initialize a notification message.
 
         Args:
-            recipients:     List of e-mail addresses of notification message
-                            recipients.
-            summary:        Summary of the object state being notified about.
-                            Must encode into 256 bytes of UTF-8 at most.
-                            Must be a single-line string without control
-                            characters.
-            description:    Detailed description of the object state being
-                            notified about.
-                            Must encode into 4096 bytes of UTF-8 at most.
+            to:             List of e-mail addresses of notification message
+                            recipients to put into the 'To' header.
+            subject:        The text of a Jinja2 template for the message
+                            subject. Must render and encode into 256 bytes of
+                            UTF-8 at most, and be a single-line string without
+                            control characters.
+                            When rendering, the template environment will
+                            contain the object being notified about in a
+                            variable named after the object's type. I.e. a
+                            revision will be in the "revision" variable, a
+                            build in "build", and so on.
+            body:           The text of a Jinja2 template for the message
+                            body. Must render and encode into 4096 bytes of
+                            UTF-8 at most.
+                            When rendering, the template environment will
+                            contain the object being notified about in a
+                            variable named after the object's type. I.e. a
+                            revision will be in the "revision" variable, a
+                            build in "build", and so on.
+            cc:             List of e-mail addresses to receive a copy of the
+                            notification message, or None, meaning an empty
+                            list. To be put into the 'Cc' header.
+            bcc:            List of e-mail addresses to receive a "blind" copy
+                            of the notification message, or None, meaning an
+                            empty list. To be put into the 'Bcc' header.
             id:             String identifier of the notification message.
                             Must encode into 256 bytes of UTF-8 at most.
                             The system will only send one notification with
                             the same ID for the same subscription for each
                             database object.
         """
-        assert isinstance(recipients, list)
-        assert all(isinstance(r, str) for r in recipients)
-        assert isinstance(summary, str)
-        assert NOTIFICATION_MESSAGE_SUMMARY_RE.fullmatch(summary)
-        assert len(summary.encode()) <= 256
-        assert isinstance(description, str)
-        assert len(description.encode()) <= 4096
+        assert isinstance(to, list)
+        assert all(isinstance(address, str) for address in to)
+        assert isinstance(subject, str)
+        assert isinstance(body, str)
+        if cc is None:
+            cc = []
+        assert isinstance(cc, list)
+        assert all(isinstance(address, str) for address in cc)
+        if bcc is None:
+            bcc = []
+        assert isinstance(bcc, list)
+        assert all(isinstance(address, str) for address in bcc)
         assert isinstance(id, str)
         assert len(id.encode()) <= 256
 
-        self.recipients = recipients
-        self.summary = summary
-        self.description = description
+        self.to = to
+        self.subject = subject
+        self.body = body
+        self.cc = cc
+        self.bcc = bcc
         self.id = id
 
 
@@ -137,22 +166,45 @@ class Notification:
             An instance of email.message.EmailMessage with the notification
             ready to send, but missing the From header.
         """
+        # Render the message subject and body
+        ctx = {
+            self.obj.get_type().name: self.obj,
+        }
+        subject = TEMPLATE_ENV.from_string(self.message.subject).render(ctx)
+        subject_extra_bytes = \
+            len(subject.encode()) - NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN
+        assert subject_extra_bytes <= 0, \
+            f"Subject is {subject_extra_bytes} bytes too long"
+        assert NOTIFICATION_MESSAGE_SUBJECT_RE.fullmatch(subject), \
+            f"Subject is invalid, must match " \
+            f"{NOTIFICATION_MESSAGE_SUBJECT_RE.pattern} regex"
+        body = TEMPLATE_ENV.from_string(self.message.body).render(ctx)
+        body_extra_bytes = \
+            len(body.encode()) - NOTIFICATION_MESSAGE_BODY_MAX_LEN
+        assert body_extra_bytes <= 0, \
+            f"Body is {body_extra_bytes} bytes too long"
+
+        # Generate the plain-text message
         email = EmailMessage()
-        subject = self.message.summary + self.obj.summarize()
         email["Subject"] = subject
-        email["To"] = ", ".join(self.message.recipients)
+        email["To"] = ", ".join(self.message.to)
+        if self.message.cc:
+            email["Cc"] = ", ".join(self.message.cc)
+        if self.message.bcc:
+            email["Bcc"] = ", ".join(self.message.bcc)
         email["X-KCIDB-Notification-ID"] = self.id
         email["X-KCIDB-Notification-Message-ID"] = self.message.id
-        message = self.message.description + self.obj.describe()
-        email.set_content(message)
+        email.set_content(body)
+
+        # Add the HTML version generated from plain text
         escaped_subject = html.escape(subject, quote=True)
-        escaped_message = html.escape(message, quote=True)
-        escaped_message = re.sub(
+        escaped_body = html.escape(body, quote=True)
+        linked_body = re.sub(
             r'((http|https|git|ftp)://[^\s]+)',
             '<a href="\\1">\\1</a>',
-            escaped_message
+            escaped_body
         )
-        html_msg = textwrap.dedent("""\
+        html_body = textwrap.dedent("""\
             <html>
                 <head>
                     <title>{}</title>
@@ -161,6 +213,7 @@ class Notification:
                     <pre>{}</pre>
                 </body>
             </html>
-        """).format(escaped_subject, escaped_message)
-        email.add_alternative(html_msg, subtype='html')
+        """).format(escaped_subject, linked_body)
+        email.add_alternative(html_body, subtype='html')
+
         return email

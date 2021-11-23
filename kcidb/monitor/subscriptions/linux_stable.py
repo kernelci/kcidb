@@ -11,21 +11,25 @@ REPO_URL_SET = {
         "/stable/stable-queue.git",
     ]
 }
-RECIPIENTS = ["Linux Stable maillist <stable@vger.kernel.org>"]
 
 
 def _disabled_match_revision(revision):
     """Match revisions of interest to stable tree developers"""
+    subject_sfx = ' failed for {% include "revision_summary.txt.j2" %}'
+    msg_args = dict(
+        to=["Linux Stable maillist <stable@vger.kernel.org>"],
+        body='{% include "revision_description.txt.j2" %}',
+    )
     if not set(revision.repo_branch_checkouts) & REPO_URL_SET:
         return ()
     if revision.builds_valid is None:
         return ()
     if not revision.builds_valid:
-        return (Message(RECIPIENTS, "Builds failed for "),)
+        return (Message(subject='Builds' + subject_sfx, **msg_args),)
     for test in revision.tests:
         # Ignore syzbot until we have issues/incidents
         if test.origin == "syzbot":
             continue
         if test.status == "FAIL" and not test.waived:
-            return (Message(RECIPIENTS, "Tests failed for "),)
+            return (Message(subject='Tests' + subject_sfx, **msg_args),)
     return ()

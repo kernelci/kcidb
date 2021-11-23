@@ -3,50 +3,43 @@
 from kcidb.monitor.output import NotificationMessage as Message
 
 
+def generate_message(obj):
+    """Generate a test notification message for an object."""
+    name = obj.get_type().name
+    return Message(
+        to=["test@kernelci.org"],
+        subject=f'Test {name}: '
+        f'{{% include "{name}_summary.txt.j2" %}}',
+        body=f'Test {name} detected!\n\n'
+        f'{{% include "{name}_description.txt.j2" %}}',
+        id=name
+    )
+
+
 def match_revision(revision):
     """Match test revisions"""
     for checkout in revision.checkouts:
         if checkout.origin == "test":
-            return (
-                Message(["test@kernelci.org"],
-                        "Test revision: ",
-                        "Test revision detected!\n\n",
-                        "revision"),
-            )
+            return (generate_message(revision),)
     return ()
 
 
 def match_checkout(checkout):
     """Match test checkouts"""
     if checkout.origin == "test":
-        return (
-            Message(["test@kernelci.org"],
-                    "Test checkout: ",
-                    "Test checkout detected!\n\n",
-                    "checkout"),
-        )
+        return (generate_message(checkout),)
     return ()
 
 
 def match_build(build):
     """Match test builds"""
     if build.origin == "test":
-        return (
-            Message(["test@kernelci.org"],
-                    "Test build: ",
-                    "Test build detected!\n\n",
-                    "build"),
-        )
+        return (generate_message(build),)
     return ()
 
 
 def match_test(test):
     """Match test tests"""
     if test.origin == "test":
-        return (
-            Message(["test@kernelci.org"],
-                    "Test test: ",
-                    "Test test detected!\n\n",
-                    "test"),
-        )
+        return (generate_message(test),)
     return ()

@@ -54,10 +54,12 @@ class NotificationTestCase(unittest.TestCase):
         oo_data = oo_client.query(orm.Pattern.parse(">*#"))
 
         notification_message = NotificationMessage(
-            ["foo@kernelci.org", "bar@kernelci.org"],
-            "Revision detected: ",
-            "We detected a new revision!\n\n",
-            "id"
+            to=["foo@kernelci.org", "bar@kernelci.org"],
+            subject='Revision detected: '
+            '{% include "revision_summary.txt.j2" %}',
+            body='We detected a new revision!\n\n'
+            '{% include "revision_description.txt.j2" %}',
+            id="id"
         )
         notification = Notification("revision",
                                     oo_data["revision"][0],
