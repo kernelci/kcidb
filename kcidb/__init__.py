@@ -285,41 +285,6 @@ def count_main():
         sys.stdout.flush()
 
 
-def summarize_main():
-    """Execute the kcidb-summarize command-line tool"""
-    sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-summarize - Read I/O JSON data and ' \
-                  'output summaries of specified objects'
-    parser = oo.ArgumentParser(database="json", description=description)
-    args = parser.parse_args()
-    oo_client = oo.Client(db.Client(args.database))
-    pattern_set = set()
-    for pattern_string in args.pattern_strings:
-        pattern_set |= orm.Pattern.parse(pattern_string)
-    for objs in oo_client.query(pattern_set).values():
-        for obj in objs:
-            print(obj.summarize())
-            sys.stdout.flush()
-
-
-def describe_main():
-    """Execute the kcidb-describe command-line tool"""
-    sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-describe - Read I/O JSON data and ' \
-                  'output descriptions of specified objects'
-    parser = oo.ArgumentParser(database="json", description=description)
-    args = parser.parse_args()
-    oo_client = oo.Client(db.Client(args.database))
-    pattern_set = set()
-    for pattern_string in args.pattern_strings:
-        pattern_set |= orm.Pattern.parse(pattern_string)
-    for objs in oo_client.query(pattern_set).values():
-        for obj in objs:
-            sys.stdout.write(obj.describe())
-            sys.stdout.write("\x00")
-            sys.stdout.flush()
-
-
 def merge_main():
     """Execute the kcidb-merge command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook

@@ -2,7 +2,6 @@
 Kernel CI report object-oriented (OO) data representation.
 """
 
-import re
 import sys
 from abc import ABC, abstractmethod
 from functools import reduce
@@ -14,9 +13,6 @@ from kcidb.orm import Type, SCHEMA, Pattern, Source
 
 class Object:
     """An object-oriented representation of a database object"""
-
-    # A regular expression matching valid object summaries
-    SUMMARY_RE = re.compile(r"[^\x00-\x1f\x7f]*")
 
     # Calm down, pylint: disable=invalid-name
     def __init__(self, client, type, data):
@@ -36,6 +32,15 @@ class Object:
         self._client = client
         self._type = type
         self._data = data
+
+    def get_type(self):
+        """
+        Retrieve the object's type.
+
+        Returns:
+            The object's type, an instance of kcidb.orm.Type.
+        """
+        return self._type
 
     def get_id(self):
         """
@@ -91,31 +96,6 @@ class Object:
                     )
                 )[child_type_name]
         raise AttributeError(f"Attribute {name!r} not found")
-
-    def summarize(self):
-        """
-        Generate a text summary of the data node.
-
-        Returns:
-            A single-line string summary of the data node.
-        """
-        summary = self._type.summary_template.render({
-            self._type.name: self,
-        })
-        assert Object.SUMMARY_RE.fullmatch(summary), \
-            f"Summary is invalid: {repr(summary)}"
-        return summary
-
-    def describe(self):
-        """
-        Generate a detailed text description of the object.
-
-        Returns:
-            A (multiline) string describing the object in detail.
-        """
-        return self._type.description_template.render({
-            self._type.name: self,
-        })
 
 
 # A dictionary of "valid" values and their priority, defined as a positive

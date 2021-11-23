@@ -72,8 +72,6 @@ setuptools.setup(
             "kcidb-merge = kcidb:merge_main",
             "kcidb-submit = kcidb:submit_main",
             "kcidb-query = kcidb:query_main",
-            "kcidb-summarize = kcidb:summarize_main",
-            "kcidb-describe = kcidb:describe_main",
             "kcidb-notify = kcidb:notify_main",
             "kcidb-ingest = kcidb:ingest_main",
             "kcidb-db-init = kcidb.db:init_main",
