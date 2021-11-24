@@ -48,7 +48,6 @@ def match(oo_data, match_map=None):
                 for message in function(obj) or []:
                     assert isinstance(message, output.NotificationMessage)
                     notifications.append(
-                        output.Notification(obj_type_name, obj,
-                                            subscription, message)
+                        output.Notification(obj, subscription, message)
                     )
     return notifications
