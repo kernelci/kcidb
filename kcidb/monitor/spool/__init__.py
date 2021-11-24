@@ -108,17 +108,34 @@ class Client:
         if timestamp is None:
             timestamp = datetime.datetime.now(datetime.timezone.utc)
 
+        doc = self._get_doc(notification.id)
         try:
-            self._get_doc(notification.id).create(dict(
+            # Try to create an empty, permanently-picked document to avoid
+            # rendering the message unnecessarily, in case it was already
+            # spooled.
+            doc.create(dict(
                 created_at=timestamp,
+                # Marked picked forever
+                picked_until=datetime.datetime.max,
+            ))
+        except Conflict:
+            # The document already existed, abort
+            return False
+
+        # The document didn't exist, add our message, and mark "unpicked"
+        try:
+            doc.update(field_updates=dict(
                 # Set to a definitely timed-out time, free for picking
                 picked_until=datetime.datetime.min,
                 message=notification.render().as_string(
                     policy=email.policy.SMTPUTF8
                 ),
             ))
-        except Conflict:
-            return False
+        except Exception:
+            # Try to delete the document if failed for whatever reason
+            doc.delete()
+            raise
+
         return True
 
     def pick(self, id, timestamp=None, timeout=None):
