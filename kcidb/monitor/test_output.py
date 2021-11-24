@@ -61,8 +61,7 @@ class NotificationTestCase(unittest.TestCase):
             '{% include "revision_description.txt.j2" %}',
             id="id"
         )
-        notification = Notification("revision",
-                                    oo_data["revision"][0],
+        notification = Notification(oo_data["revision"][0],
                                     "subscription",
                                     notification_message)
         self.assertEqual(notification.id,

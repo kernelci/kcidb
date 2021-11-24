@@ -190,7 +190,7 @@ class MatchTestCase(unittest.TestCase):
         notifications = monitor.match(oo_data)
         self.assertEqual(len(notifications), 4)
         for notification in notifications:
-            obj_type_name = notification.obj_type_name
+            obj_type_name = notification.obj.get_type().name
             self.assertIsInstance(notification, monitor.output.Notification)
             message = notification.render()
             self.assertIsNone(message['From'])

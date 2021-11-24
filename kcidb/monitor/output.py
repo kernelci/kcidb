@@ -120,13 +120,11 @@ class Notification:
         return base64.b64decode(id_part, altchars=b'+-',
                                 validate=True).decode()
 
-    def __init__(self, obj_type_name, obj, subscription, message):
+    def __init__(self, obj, subscription, message):
         """
         Initialize a notification.
 
         Args:
-            obj_type_name:  Name of the object type (e.g. "revision") to
-                            which the object notified about belongs.
             obj:            Object-oriented representation of the object
                             being notified about (an instance of
                             kcidb.oo.Object).
@@ -139,20 +137,17 @@ class Notification:
             message:        Notification message. An instance of
                             NotificationMessage.
         """
-        assert isinstance(obj_type_name, str)
-        assert obj_type_name
         assert isinstance(obj, kcidb.oo.Object)
         assert isinstance(subscription, str)
         assert SUBSCRIPTION_RE.fullmatch(subscription)
         assert len(subscription.encode()) <= 64
         assert isinstance(message, NotificationMessage)
 
-        self.obj_type_name = obj_type_name
         self.obj = obj
         self.subscription = subscription
         self.message = message
         id = self.subscription + ":" + \
-            self.obj_type_name + ":" + \
+            self.obj.get_type().name + ":" + \
             Notification._to_id_part(repr(obj.get_id())) + ":" + \
             Notification._to_id_part(message.id)
         assert is_valid_firestore_id(id)
