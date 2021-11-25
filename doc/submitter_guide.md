@@ -59,10 +59,10 @@ account, and you can start using the production parameters:
 
 Pick a KCIDB [release][releases]. Latest would normally be best.
 
-Let's say you picked v8. Run this:
+Let's say you picked v9. Run this:
 
 ```bash
-pip3 install --user 'git+https://git@github.com/kernelci/kcidb.git@v8'
+pip3 install --user 'git+https://git@github.com/kernelci/kcidb.git@v9'
 ```
 
 Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
