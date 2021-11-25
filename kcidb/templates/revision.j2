@@ -29,5 +29,7 @@
                                       [git_repository_branch] |
         map(attribute="comment") | reject("none") | first | default(none)
     %}
-    {{- [location_commit_patches, comment] | reject("none") | join(" ") -}}
+    {{- [location_commit_patches,
+         none if comment is none else ('"' + comment + '"')] |
+        reject("none") | join(" ") -}}
 {% endmacro %}

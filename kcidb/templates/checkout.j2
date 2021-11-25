@@ -22,6 +22,7 @@
         none
         if location_commit is none
         else ([location_commit, patches] | reject("none") | join("")) %}
-    {{- [location_commit_patches, checkout.comment] |
+    {{- [location_commit_patches,
+         none if checkout.comment is none else ('"' + checkout.comment + '"')] |
         reject("none") | join(" ") -}}
 {% endmacro %}

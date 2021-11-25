@@ -1,7 +1,8 @@
 {# Build template macros #}
 
 {% macro summary(build) %}
-    {{- [build.architecture, build.config_name, build.comment] |
+    {{- [build.architecture, build.config_name,
+         none if build.comment is none else ('"' + build.comment + '"')] |
         reject("none") | join(" ") | default(build.id, true) -}}
 {% endmacro %}
 
