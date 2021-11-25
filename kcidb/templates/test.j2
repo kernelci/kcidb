@@ -32,8 +32,9 @@
 {% endmacro %}
 
 {% macro summary(test) %}
-    {{- [test.path, test.comment] | reject("none") |
-        join(" - ") | default(test.id, true) -}}
+    {{- [test.path,
+         none if test.comment is none else ('"' + test.comment + '"')] |
+        reject("none") | join(" ") | default(test.id, true) -}}
 {% endmacro %}
 
 {% macro container_summary(container, max_list_len) %}
