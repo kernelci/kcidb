@@ -54,6 +54,9 @@ account, and you can start using the production parameters:
 * Submission queue topic: `kcidb_new`
 * Dataset name: `kcidb_01`
 
+The submitted data will appear on our [main
+dashboard](https://kcidb.kernelci.org/).
+
 2\. Install KCIDB
 -----------------
 
