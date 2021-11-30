@@ -38,21 +38,21 @@ Finally you will need to specify some or all of the following to the
 tools/library:
 
 * Google Cloud project: `kernelci-production`
-* Submission queue topic: `playground_kernelci_new`
-* Dataset name: `playground_kernelci04`
+* Submission queue topic: `playground_kcidb_new`
+* Dataset name: `playground_kcidb_01`
 
 The above refers to the special "playground" setup we have, where you can
 freely experiment with your submissions, without worrying about any negative
 effects on the system or other submitters. This setup has a [separate
-dashboard](https://kcidb.kernelci.org/d/home/home?orgId=1&refresh=30m&var-origin=All&var-git_repository_url=All&var-dataset=playground_kernelci04)
+dashboard](https://kcidb.kernelci.org/?var-dataset=playground_kcidb_01)
 as well. We'll use playground parameters in the examples below.
 
 Once you feel comfortable and ready, we'll add extra permissions for your
 account, and you can start using the production parameters:
 
 * Google Cloud project: `kernelci-production`
-* Submission queue topic: `kernelci_new`
-* Dataset name: `kernelci04`
+* Submission queue topic: `kcidb_new`
+* Dataset name: `kcidb_01`
 
 2\. Install KCIDB
 -----------------
