@@ -224,3 +224,84 @@ class MatchTestCase(unittest.TestCase):
             content = html.get_payload()
             self.assertIn(f"Test {obj_type_name} detected!\n\n",
                           content)
+
+    def test_mark_brown(self):
+        """Check Mark Brown's subscription works"""
+        notifications = self.match({
+            "version": {
+                "major": 4,
+                "minor": 0
+            },
+            "checkouts": [
+                {
+                    "id": "_:redhat:d58071a8a76d779eedab38033ae4c821c30295a5",
+                    "origin": "redhat",
+                    "tree_name": "arm-next",
+                    "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux.git",
+                    "git_commit_hash": "d58071a8a76d779eedab38033ae4c821c30295a5",
+                    "git_repository_branch": "for-kernelci",
+                    "patchset_files": [],
+                    "patchset_hash": "",
+                    "start_time": "2021-11-29T14:36:59.751000+00:00",
+                    "contacts": [],
+                    "valid": True
+                },
+                {
+                    "id": "_:kernelci:383a44aec91c327ef4a9d03cfa65d1eaf3746c06",
+                    "origin": "kernelci",
+                    "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/soc/soc.git",
+                    "git_commit_hash": "383a44aec91c327ef4a9d03cfa65d1eaf3746c06",
+                    "git_commit_name": "v5.16-rc2-19-g383a44aec91c",
+                    "git_repository_branch": "arm/fixes",
+                    "patchset_files": [],
+                    "patchset_hash": "",
+                    "start_time": "2021-11-26T01:27:55.210000+00:00",
+                    "contacts": [],
+                    "valid": True
+                }
+            ],
+            "builds": [
+                {
+                    "id": "kernelci:kernelci.org:619fecfc6d932a49b5f2efb0",
+                    "checkout_id": "_:kernelci:383a44aec91c327ef4a9d03cfa65d1eaf3746c06",
+                    "origin": "kernelci",
+                    "comment": "v5.16-rc2-19-g383a44aec91c",
+                    "start_time": "2021-11-25T20:07:24.499000+00:00",
+                    "duration": 486.695294857,
+                    "architecture": "x86_64",
+                    "config_name": "x86_64_defconfig+x86-chromebook+kselftest",
+                    "valid": True
+                },
+                {
+                    "id": "redhat:1827126781",
+                    "checkout_id": "_:redhat:d58071a8a76d779eedab38033ae4c821c30295a5",
+                    "origin": "redhat",
+                    "start_time": "2021-11-28T22:49:02.797230+00:00",
+                    "architecture": "ppc64le",
+                    "command": "make -j24 INSTALL_MOD_STRIP=1 targz-pkg",
+                    "config_name": "fedora",
+                    "valid": False
+                }
+            ],
+            "tests": [
+                {
+                    "id": "kernelci:kernelci.org:619fee1d79537d9bc8f2efb4",
+                    "build_id": "kernelci:kernelci.org:619fecfc6d932a49b5f2efb0",
+                    "origin": "kernelci",
+                    "path": "ltp-timers.clock_getcpuclockid",
+                    "comment": "ltp-timers on asus-C433TA-AJ0005-rammus in lab-collabora",
+                    "status": "FAIL",
+                    "waived": False,
+                    "start_time": "2021-11-25T20:12:13.929000+00:00"
+                }
+            ]
+        })
+        subjects = sorted([
+                n.message.subject
+                for n in notifications
+                if n.subscription == "mark_brown" and
+                    "Mark Brown <broonie@kernel.org>" in n.message.to
+        ])
+        self.assertEqual(len(subjects), 2)
+        self.assertRegex(subjects[0], r"^Builds failed for ")
+        self.assertRegex(subjects[1], r"^Tests failed for ")
