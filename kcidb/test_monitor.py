@@ -21,13 +21,30 @@ class MatchTestCase(unittest.TestCase):
             minor=schema.LATEST.minor
         )
 
-    def test_min(self):
-        """Check minimal matching"""
+    @staticmethod
+    def match(io_data, pattern=">*#"):
+        """
+        Match subscriptions to I/O data and generate notifications.
 
+        Args:
+            io_data:    The I/O data to match subscriptions to.
+            pattern:    The ORM pattern string matching I/O data's objects to
+                        match. Default is all objects.
+
+        Returns:
+            A tuple of generated notifications.
+        """
+        assert schema.is_valid(io_data)
         db_client = db.Client("sqlite::memory:")
         db_client.init()
         oo_client = oo.Client(db_client)
-        db_client.load({
+        db_client.load(io_data)
+        return monitor.match(oo_client.query(orm.Pattern.parse(pattern)))
+
+    def test_min(self):
+        """Check minimal matching"""
+
+        notifications = self.match({
             "version": self.version,
             "checkouts": [
                 {
@@ -186,8 +203,6 @@ class MatchTestCase(unittest.TestCase):
                 },
             ],
         })
-        oo_data = oo_client.query(orm.Pattern.parse(">*#"))
-        notifications = monitor.match(oo_data)
         self.assertEqual(len(notifications), 4)
         for notification in notifications:
             obj_type_name = notification.obj.get_type().name
