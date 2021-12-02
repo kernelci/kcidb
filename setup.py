@@ -41,7 +41,7 @@ setuptools.setup(
     # Let's make that easier, pylint: disable=line-too-long
     install_requires=[
         "google-cloud-bigquery",
-        "google-cloud-pubsub",
+        "google-cloud-pubsub<2.0.0dev",
         "google-cloud-firestore",
         "google-cloud-secret-manager",
         # TODO: remove with minimal requirement of Python 3.8
