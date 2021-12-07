@@ -143,22 +143,22 @@ checkout with one build and one test:
 {
     "checkouts": [
         {
-            "id": "redhat:32254",
-            "origin": "redhat"
+            "id": "submitter:32254",
+            "origin": "submitter"
         }
     ],
     "builds": [
         {
-            "id": "redhat:32254",
+            "id": "submitter:32254",
             "checkout_id": "c9c9735c46f589b9877b7fc00c89ef1b61a31e18",
-            "origin": "redhat"
+            "origin": "submitter"
         }
     ],
     "tests": [
         {
-            "id": "redhat:114353810",
-            "build_id": "redhat:956769",
-            "origin": "redhat"
+            "id": "submitter:114353810",
+            "build_id": "submitter:956769",
+            "origin": "submitter"
         }
     ],
     "version": {
@@ -170,7 +170,7 @@ checkout with one build and one test:
 
 If you're curious, you can query the complete objects above with this command:
 
-    kcidb-query -d playground_kcidb_01 -t redhat:114353810 --parents
+    kcidb-query -d playground_kcidb_01 -t submitter:114353810 --parents
 
 #### Object IDs
 
