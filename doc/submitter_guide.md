@@ -79,7 +79,7 @@ To test your installation, authentication, and the parameters you received
 execute an empty query on the database:
 
 ```console
-$ kcidb-query -d playground_kernelci04
+$ kcidb-query -d playground_kcidb_01
 {
     "builds": [],
     "checkouts": [],
@@ -170,7 +170,7 @@ checkout with one build and one test:
 
 If you're curious, you can query the complete objects above with this command:
 
-    kcidb-query -d playground_kernelci04 -t redhat:114353810 --parents
+    kcidb-query -d playground_kcidb_01 -t redhat:114353810 --parents
 
 #### Object IDs
 
@@ -370,11 +370,11 @@ you should be able to find it in our [dashboard][dashboard], or query using
 the `kcidb-query` command-line tool. For example, if you want to retrieve a
 checkout object you submitted with ID `origin:23223`, execute:
 
-    kcidb-query -d playground_kernelci04 -c origin:23223
+    kcidb-query -d playground_kcidb_01 -c origin:23223
 
 If you want to retrieve all its builds and tests as well, execute:
 
-    kcidb-query -d playground_kernelci04 -c origin:23223 --children
+    kcidb-query -d playground_kcidb_01 -c origin:23223 --children
 
 See the output of `kcidb-query --help` for usage information, including how to
 retrieve builds, tests, and how to retrieve object parents.
