@@ -95,7 +95,7 @@ and submit an empty report:
 
 ```console
 $ echo '{"version":{"major":4,"minor":0}}' |
-        kcidb-submit -p kernelci-production -t playground_kernelci_new
+        kcidb-submit -p kernelci-production -t playground_kcidb_new
 ```
 
 Both should execute without errors and finish with zero exit status.
@@ -352,7 +352,7 @@ If you're using shell, and e.g. have your data in file `report.json`, pipe it
 to the `kcidb-submit` tool like this:
 
     kcidb-submit -p kernelci-production \
-                 -t playground_kernelci_new < report.json
+                 -t playground_kcidb_new < report.json
 
 If you're using Python 3, and e.g. have variable `report` holding standard
 JSON representation of your report, you can submit it like this:
@@ -361,7 +361,7 @@ JSON representation of your report, you can submit it like this:
 import kcidb
 
 client = kcidb.Client(project_id="kernelci-production",
-                      topic_name="playground_kernelci_new")
+                      topic_name="playground_kcidb_new")
 client.submit(report)
 ```
 
