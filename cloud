@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Cloud installation management tool.
 # Assumes its location is the top directory of KCIDB source tree.
