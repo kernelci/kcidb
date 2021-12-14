@@ -171,6 +171,10 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         """Check kcidb-validate works"""
         empty = json.dumps(dict(version=dict(major=4, minor=0))) + "\n"
         second_empty = json.dumps(dict(version=dict(major=3, minor=0))) + "\n"
+        third_empty = json.dumps(dict(version=dict(major=2, minor=0))) + "\n"
+        dirty_empty = json.dumps(dict(version=dict(major=3, minor=1))) + "\n"
+        valid_list = f"{empty}{second_empty}{third_empty}"
+        invalid_list = f"{empty}{dirty_empty}{third_empty}"
 
         self.assertExecutes('', "kcidb.validate_main")
         self.assertExecutes(empty, "kcidb.merge_main", "--indent=0",
@@ -196,6 +200,13 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             status=1, stderr_re=".*JSONParseError.*")
         self.assertExecutes('{}', "kcidb.validate_main",
                             status=1, stderr_re=".*ValidationError.*")
+        self.assertExecutes(valid_list,
+                            "kcidb.validate_main", "--indent=0",
+                            stdout_re=re.escape(valid_list))
+        self.assertExecutes(invalid_list,
+                            "kcidb.validate_main", "--indent=0",
+                            status=1, stdout_re=re.escape(empty),
+                            stderr_re=".*ValidationError.*")
 
     def test_upgrade_main(self):
         """Check kcidb-upgrade works"""
