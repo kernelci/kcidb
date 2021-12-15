@@ -547,7 +547,7 @@ function cloud_functions_env() {
         env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
     fi
     # Silly Python and its significant whitespace
-    sed -e 's/^\s\+//' <<<'
+    sed -E 's/^[[:blank:]]+//' <<<'
         import sys, yaml
         args = sys.argv[1::]
         middle = len(args) >> 1
