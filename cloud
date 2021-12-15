@@ -616,7 +616,7 @@ function cloud_functions_deploy() {
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
                           --trigger-topic "${updated_topic}" \
-                          --memory 1024MB \
+                          --memory 2048MB \
                           --timeout 540
 
     cloud_function_deploy "$project" "${prefix}load_queue" \
