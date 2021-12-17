@@ -1,0 +1,72 @@
+name: check_deployment
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check_deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check credentials
+        env:
+          STAGING_GCLOUD_PROJECT: ${{ secrets.STAGING_GCLOUD_PROJECT }}
+          STAGING_GCLOUD_SA_KEY: ${{ secrets.STAGING_GCLOUD_SA_KEY }}
+        run: |
+          # Check credentials
+          CREDENTIALS_PRESENT=true
+          function check() {
+            if eval "test -z \"\$$1\""; then
+              echo "$1 secret is missing." >&2
+              CREDENTIALS_PRESENT=false
+            fi
+          }
+          check STAGING_GCLOUD_PROJECT
+          check STAGING_GCLOUD_SA_KEY
+          if "$CREDENTIALS_PRESENT"; then
+            echo "All required credentials are present, continuing." >&2
+          else
+            echo "Required credentials are missing, aborting." >&2
+          fi
+          "$CREDENTIALS_PRESENT"
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip3 install --upgrade '.[dev]'
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.STAGING_GCLOUD_PROJECT }}
+          service_account_key: ${{ secrets.STAGING_GCLOUD_SA_KEY }}
+          export_default_credentials: true
+      - name: Deploy and Withdraw to Staging
+        run: |
+          ./cloud deploy kernelci-staging "" 1 -v \
+              --smtp-password-file=<(echo foobar)
+              --extra-cc=kernelci-results-staging@groups.io \
+              --submitter=kernelci-ci-tuxsuite \
+              --submitter=kernelci-production-ci-arm \
+              --submitter=kernelci-ci-gkernelci \
+              --submitter=kernelci-ci-kernelci \
+              --submitter=kernelci-ci-cki \
+              --submitter=kernelci-production-ci-syzbot
+      -name : Deploy and Withdraw to Production
+        run: |
+          ./cloud deploy kernelci-production "playground" 1 -v
+              --extra-cc=kernelci-results-staging@groups.io \
+              --submitter=kernelci-ci-tuxsuite \
+              --submitter=kernelci-production-ci-arm \
+              --submitter=kernelci-ci-gkernelci \
+              --submitter=kernelci-ci-kernelci \
+              --submitter=kernelci-ci-cki \
+              --submitter=kernelci-production-ci-syzbot \
+              --submitter=kernelci-ci-tuxsuite-test \
+              --submitter=kernelci-production-ci-fuego
+
