@@ -169,11 +169,14 @@ class Client:
             # Parse the message
             message = self.parser.parsestr(message_text)
             # Mark notification picked until timeout
-            transaction.update(doc, dict(
-                picked_at=timestamp,
-                picked_until=timestamp + timeout,
-            ))
-            return message
+            # Check that the notification is ready to be picked
+            if timestamp <= datetime.datetime.now(datetime.timezone.utc):
+                transaction.update(doc, dict(
+                    picked_at=timestamp,
+                    picked_until=timestamp + timeout,
+                ))
+                return message
+            return None
 
         return pick_if_not_picked(self.db.transaction(),
                                   self._get_doc(id),
@@ -285,3 +288,34 @@ def wipe_main():
         if until.tzinfo is None:
             until = until.astimezone()
     Client(args.collection, project=args.project).wipe(until=until)
+
+
+def pick_main():
+    """
+    periodic check for getting pending notification
+    then execute the kcidb-monitor-spool-pick command-line tool
+    to pick and send all pending notification
+    """
+    sys.excepthook = log_and_print_excepthook
+    description = \
+        'kcidb-monitor-spool-pick - Send all pending notifications'
+    parser = ArgumentParser(description=description)
+    parser.add_argument(
+        '-p', '--project',
+        help='ID of the Google Cloud project containing the spool. '
+             'Taken from credentials by default.',
+        default=None,
+        required=False
+    )
+    parser.add_argument(
+        '-c', '--collection',
+        help='The Google Firestore path to the spool collection.',
+        required=True
+    )
+    parser.add_argument(
+        'notification_id',
+        help='ID of the notification to send. ',
+        required=True
+    )
+    args = parser.parse_args()
+    Client(args.collection, project=args.project).pick(id=args.notification_id)
