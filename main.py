@@ -9,7 +9,6 @@ import smtplib
 import kcidb_io
 import kcidb
 
-
 PROJECT_ID = os.environ["GCP_PROJECT"]
 
 kcidb.misc.logging_setup(
@@ -106,7 +105,7 @@ def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
         pull_timeout_sec = \
             timeout_sec - \
             (datetime.datetime.now(datetime.timezone.utc) - start). \
-            total_seconds()
+                total_seconds()
         if pull_timeout_sec <= 0:
             LOGGER.debug("Ran out of time")
             break
@@ -214,7 +213,7 @@ def kcidb_spool_notifications(event, context):
     # Spool notifications from subscriptions
     for notification in kcidb.monitor.match(OO_CLIENT.query(pattern_set)):
         if not SELECTED_SUBSCRIPTIONS or \
-           notification.subscription in SELECTED_SUBSCRIPTIONS:
+                notification.subscription in SELECTED_SUBSCRIPTIONS:
             LOGGER.info("POSTING %s", notification.id)
             SPOOL_CLIENT.post(notification)
         else:
@@ -256,3 +255,40 @@ def kcidb_send_notification(data, context):
         smtp.quit()
     # Acknowledge notification as sent
     SPOOL_CLIENT.ack(notification_id)
+
+
+def kcidb_pick_notification():
+    """
+    Pick abandoned notifications and resend them
+    """
+    for notification_id in SPOOL_CLIENT.unpicked():
+        # Pick abandoned notification and resend
+        message = SPOOL_CLIENT.pick(notification_id)
+        if not message:
+            continue
+        # Send
+        # Set From address, if specified
+        if SMTP_FROM_ADDR:
+            message['From'] = SMTP_FROM_ADDR
+        # Add extra CC, if specified
+        if EXTRA_CC:
+            cc_addrs = message["CC"]
+            if cc_addrs:
+                message.replace_header("CC", cc_addrs + ", " + EXTRA_CC)
+            else:
+                message["CC"] = EXTRA_CC
+        # Connect to the SMTP server
+        smtp = smtplib.SMTP(host=SMTP_HOST, port=SMTP_PORT)
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(SMTP_USER, SMTP_PASSWORD)
+        try:
+            # Send message
+            LOGGER.info("SENDING %s", notification_id)
+            smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
+        finally:
+            # Disconnect from the SMTP server
+            smtp.quit()
+        # Acknowledge notification as sent
+        SPOOL_CLIENT.ack(notification_id)
