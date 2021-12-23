@@ -632,10 +632,8 @@ function cloud_functions_deploy() {
                           --entry-point kcidb_pick_notification \
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
-                          --trigger-event "${trigger_event}" \
-                          --trigger-resource "${trigger_resource}" \
+                          --trigger-topic "${trigger_topic}" \
                           --memory 256MB \
-                          --retry \
                           --timeout 540
 }
 
@@ -647,6 +645,7 @@ function cloud_functions_withdraw() {
     cloud_function_withdraw "$project" "${prefix}send_notification"
     cloud_function_withdraw "$project" "${prefix}spool_notifications"
     cloud_function_withdraw "$project" "${prefix}load_queue"
+    cloud_function_withdraw "$project" "${prefix}pick_notification"
 }
 
 # Check if a scheduler job exists
@@ -720,9 +719,6 @@ function scheduler_deploy() {
     # Deploy the jobs
     scheduler_job_pubsub_deploy "$project" "${prefix}trigger" \
                                 "$trigger_topic" '* * * * *' '{}'
-
-#    scheduler_job_pick_notification "$project" "${prefix}pick_notifications" \
-#                                     "$trigger_topic" '* * * * *' '{}'
 }
 
 # Withdraw from the scheduler
@@ -1264,37 +1260,6 @@ function execute() {
                     --log-level="$log_level" \
                     --submitters="${submitters[*]@Q}"
 }
-
-# Pick up notification and resend them again
-# Args: project name topic schedule message_body
-#function scheduler_job_pick_notification() {
-#    declare -r project="$1"; shift
-#    declare -r name="$1"; shift
-#    declare -r topic="$1"; shift
-#    declare -r schedule="$1"; shift
-#    declare -r message_body="$1"; shift
-#    exists=$(scheduler_job_exists "$project" "$name")
-#    if "$exists"; then
-#        if (($#)); then
-#            mute gcloud scheduler jobs update pubsub \
-#                "${name}" \
-#                --quiet \
-#                --project="$project" \
-#                --topic="$topic" \
-#                --schedule="$schedule" \
-#                --message-body="$message_body"
-#        fi
-#    else
-#        mute gcloud scheduler jobs create pubsub \
-#            "${name}" \
-#            --quiet \
-#            --project="$project" \
-#            --topic="$topic" \
-#            --schedule="$schedule" \
-#            --message-body="$message_body"
-#    fi
-#}
-
 execute "$@"
 
 

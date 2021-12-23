@@ -292,3 +292,4 @@ def kcidb_pick_notification():
             smtp.quit()
         # Acknowledge notification as sent
         SPOOL_CLIENT.ack(notification_id)
+
