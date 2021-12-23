@@ -293,3 +293,4 @@ def kcidb_pick_notification():
         # Acknowledge notification as sent
         SPOOL_CLIENT.ack(notification_id)
 
+
