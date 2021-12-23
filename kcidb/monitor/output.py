@@ -1,5 +1,6 @@
 """Kernel CI reporting - monitor - output"""
 
+import datetime
 import re
 import base64
 import textwrap
@@ -28,7 +29,7 @@ class NotificationMessage:
     Message for a notification about a report object state.
     """
     # It's OK pylint: disable=too-many-arguments
-    def __init__(self, to, subject, body, cc=None, bcc=None, id=""):
+    def __init__(self, to, subject, body, cc=None, bcc=None, id="", due=None):
         """
         Initialize a notification message.
 
@@ -63,6 +64,10 @@ class NotificationMessage:
                             The system will only send one notification with
                             the same ID for the same subscription for each
                             database object.
+            due:            An "aware" datetime.datetime object specifying the
+                            time notification should be sent out,
+                            or None to use
+                            datetime.datetime.now(datetime.timezone.utc).
         """
         assert isinstance(to, list)
         assert all(isinstance(address, str) for address in to)
@@ -78,6 +83,8 @@ class NotificationMessage:
         assert all(isinstance(address, str) for address in bcc)
         assert isinstance(id, str)
         assert len(id.encode()) <= 256
+        assert due is None or \
+               isinstance(due, datetime.datetime) and due.tzinfo
 
         self.to = to
         self.subject = subject
@@ -85,6 +92,7 @@ class NotificationMessage:
         self.cc = cc
         self.bcc = bcc
         self.id = id
+        self.due = due
 
 
 class Notification:

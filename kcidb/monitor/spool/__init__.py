@@ -12,7 +12,6 @@ import datetime
 import email
 import email.policy
 import dateutil.parser
-from google.cloud.exceptions import Conflict
 from google.cloud import firestore
 from kcidb.misc import ArgumentParser, log_and_print_excepthook
 from kcidb.monitor.misc import is_valid_firestore_id
@@ -99,8 +98,9 @@ class Client:
                             datetime.datetime.now(datetime.timezone.utc).
 
         Returns:
-            True, if the notification was posted onto the spool,
-            False, if not (it was already there).
+            True, if the new notification was posted onto the spool,
+            or the existing, "unpicked" notification was updated,
+            False, if not (it existed and was "picked" at the moment).
         """
         assert isinstance(notification, Notification)
         assert timestamp is None or \
@@ -108,18 +108,32 @@ class Client:
         if timestamp is None:
             timestamp = datetime.datetime.now(datetime.timezone.utc)
 
-        try:
-            self._get_doc(notification.id).create(dict(
-                created_at=timestamp,
-                # Set to a definitely timed-out time, free for picking
-                picked_until=datetime.datetime.min,
-                message=notification.render().as_string(
-                    policy=email.policy.SMTPUTF8
-                ),
-            ))
-        except Conflict:
-            return False
-        return True
+        @firestore.transactional
+        def create_or_update(transaction):
+            due = notification.message.due \
+                if notification.message.due else timestamp
+            doc = self._get_doc(notification.id)
+            snapshot = doc.get(field_paths=["picked_until"],
+                               transaction=transaction)
+            if snapshot.exists:
+                # if the notification has been picked
+                if snapshot.get("picked_until") > timestamp:
+                    return False
+                transaction.update(doc, dict(
+                    message=notification.render().
+                    as_string(policy=email.policy.SMTPUTF8), due=due))
+            else:
+                transaction.create(doc, dict(
+                    created_at=timestamp,
+                    # Set to a definitely timed-out time, free for picking
+                    picked_until=datetime.datetime.min,
+                    message=notification.render().
+                    as_string(policy=email.policy.SMTPUTF8),
+                    due=due
+                ))
+            return True
+
+        return create_or_update(self.db.transaction())
 
     def pick(self, id, timestamp=None, timeout=None):
         """
@@ -157,14 +171,16 @@ class Client:
         def pick_if_not_picked(transaction, doc, timestamp):
             """Pick notification, if not picked yet"""
             # Get the document snapshot
-            snapshot = doc.get(field_paths=["picked_until", "message"],
+            snapshot = doc.get(field_paths=["picked_until", "message", "due"],
                                transaction=transaction)
             picked_until = snapshot.get("picked_until")
             message_text = snapshot.get("message")
+            due = snapshot.get('due')
             # If the document doesn't exist, has no "picked_until" field,
             # no "message" field, or the picking has not timed out yet
+            # or the due date has not passed
             if not picked_until or not message_text or \
-               picked_until > timestamp:
+               picked_until > timestamp or due > timestamp:
                 return None
             # Parse the message
             message = self.parser.parsestr(message_text)
