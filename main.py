@@ -105,7 +105,7 @@ def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
         pull_timeout_sec = \
             timeout_sec - \
             (datetime.datetime.now(datetime.timezone.utc) - start). \
-                total_seconds()
+            total_seconds()
         if pull_timeout_sec <= 0:
             LOGGER.debug("Ran out of time")
             break
