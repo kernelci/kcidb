@@ -435,6 +435,7 @@ function pubsub_deploy() {
                           new_debug_subscription \
                           updated_topic \
                           updated_debug_subscription \
+                          notification_topic \
                           -- "$@")"
     eval "$params"
     pubsub_topic_deploy "$project" "${trigger_topic}"
@@ -452,6 +453,7 @@ function pubsub_deploy() {
     pubsub_topic_deploy "$project" "${updated_topic}"
     pubsub_subscription_deploy "$project" "${updated_topic}" \
                                "${updated_debug_subscription}"
+    pubsub_topic_deploy "$project" "${notification_topic}"
 }
 
 # Withdraw from Pub/Sub
@@ -465,6 +467,7 @@ function pubsub_deploy() {
 function pubsub_withdraw() {
     params="$(getopt_vars project \
                           trigger_topic \
+                          notification_topic \
                           new_topic \
                           new_load_subscription \
                           new_debug_subscription \
@@ -478,6 +481,7 @@ function pubsub_withdraw() {
     pubsub_subscription_withdraw "$project" "$new_load_subscription"
     pubsub_topic_withdraw "$project" "$new_topic"
     pubsub_topic_withdraw "$project" "$trigger_topic"
+    pubsub_topic_withdraw "$project" "$notification_topic"
 }
 
 # Deploy a Cloud Function
@@ -716,9 +720,12 @@ function scheduler_deploy() {
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
     declare -r trigger_topic="$1"; shift
+    declare -r notification_topic="$1"; shift
     # Deploy the jobs
     scheduler_job_pubsub_deploy "$project" "${prefix}trigger" \
                                 "$trigger_topic" '* * * * *' '{}'
+    scheduler_job_pubsub_deploy "$project" "${prefix}pick_notification" \
+                            "$notification_topic" '30 * * * *' '{}'
 }
 
 # Withdraw from the scheduler
@@ -728,6 +735,8 @@ function scheduler_withdraw() {
     declare -r prefix="$1"; shift
     scheduler_job_withdraw "$project" "${prefix}trigger" \
                            "$trigger_topic" '* * * * *' '{}'
+    scheduler_job_withdraw "$project" "${prefix}pick_notification" \
+                       "$notification_topic" '30 * * * *' '{}'
 }
 
 # Deploy permissions for a submitter
@@ -917,6 +926,7 @@ function execute_command() {
     eval "declare -a submitters=($submitters)"
 
     declare -r trigger_topic="${prefix}trigger"
+    declare -r notification_topic="${prefix}notification_trigger"
     declare -r new_topic="${prefix}new"
     declare -r new_load_subscription="${prefix}new_load"
     declare -r new_debug_subscription="${prefix}new_debug"
@@ -955,7 +965,8 @@ function execute_command() {
             --new-load-subscription="$new_load_subscription" \
             --new-debug-subscription="$new_debug_subscription" \
             --updated-topic="$updated_topic" \
-            --updated-debug-subscription="$updated_debug_subscription"
+            --updated-debug-subscription="$updated_debug_subscription" \
+            --notification-topic="$notification_topic"
         sections_run "$sections" secrets_deploy \
             "$project" "$smtp_password_secret" "$smtp_password_file"
         sections_run "$sections" firestore_deploy "$project"
@@ -974,13 +985,13 @@ function execute_command() {
             --smtp-password-secret="$smtp_password_secret" \
             --database="$database"
         sections_run "$sections" scheduler_deploy \
-            "$project" "$prefix" "$trigger_topic"
+            "$project" "$prefix" "$trigger_topic" "$notification_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
     elif [ "$command" == "withdraw" ]; then
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
-        sections_run "$sections" scheduler_withdraw "$project" "$prefix"
+        sections_run "$sections" scheduler_withdraw "$project" "$prefix" "$notification_topic"
         sections_run "$sections" cloud_functions_withdraw "$project" "$prefix"
         sections_run "$sections" firestore_withdraw \
             "$project" "$spool_collection_path"
@@ -989,6 +1000,7 @@ function execute_command() {
         sections_run "$sections" pubsub_withdraw \
             --project="$project" \
             --trigger-topic="$trigger_topic" \
+            --notification-topic="$notification_topic" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
             --new-debug-subscription="$new_debug_subscription" \
