@@ -252,6 +252,9 @@ def kcidb_pick_notifications():
 
 
 def send_email_notification(message, notification_id):
+    """
+    Send message via email
+    """
     # Set From address, if specified
     if SMTP_FROM_ADDR:
         message['From'] = SMTP_FROM_ADDR
