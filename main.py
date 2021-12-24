@@ -275,4 +275,3 @@ def send_email_notification(message, notification_id):
     finally:
         # Disconnect from the SMTP server
         smtp.quit()
-    return
