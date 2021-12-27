@@ -563,7 +563,7 @@ function cloud_functions_env() {
 
 # Deploy Cloud Functions
 # Args: --project=NAME --prefix=PREFIX --source=PATH
-#       --load-queue-trigger-topic=NAME
+#       --load_queue_trigger_topic=NAME
 #       --log-level=NAME
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
@@ -621,7 +621,7 @@ function cloud_functions_deploy() {
                           --entry-point kcidb_spool_notifications \
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
-                          --load-queue-trigger-topic "${updated_topic}" \
+                          --trigger-topic "${updated_topic}" \
                           --memory 2048MB \
                           --timeout 540
 
@@ -630,7 +630,7 @@ function cloud_functions_deploy() {
                           --entry-point kcidb_load_queue \
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
-                          --load-queue-trigger-topic "${load_queue_trigger_topic}" \
+                          --trigger-topic "${load_queue_trigger_topic}" \
                           --memory 256MB \
                           --timeout 540
     cloud_function_deploy "$project" "${prefix}pick_notification" \
@@ -638,7 +638,7 @@ function cloud_functions_deploy() {
                           --entry-point kcidb_pick_notifications\
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
-                          --load-queue-trigger-topic "${load_queue_trigger_topic}" \
+                          --trigger-topic "${load_queue_trigger_topic}" \
                           --memory 256MB \
                           --timeout 540
 }
