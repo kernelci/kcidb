@@ -213,7 +213,7 @@ def kcidb_spool_notifications(event, context):
     # Spool notifications from subscriptions
     for notification in kcidb.monitor.match(OO_CLIENT.query(pattern_set)):
         if not SELECTED_SUBSCRIPTIONS or \
-                notification.subscription in SELECTED_SUBSCRIPTIONS:
+            notification.subscription in SELECTED_SUBSCRIPTIONS:
             LOGGER.info("POSTING %s", notification.id)
             SPOOL_CLIENT.post(notification)
         else:
@@ -230,8 +230,10 @@ def kcidb_send_notification(data, context):
     message = SPOOL_CLIENT.pick(notification_id)
     if not message:
         return
+    # log message before sending email
+    LOGGER.info("SENDING %s", notification_id)
     # send message via email
-    send_email_notification(message, notification_id)
+    send_message(message)
     # Acknowledge notification as sent
     SPOOL_CLIENT.ack(notification_id)
 
@@ -245,15 +247,20 @@ def kcidb_pick_notifications():
         message = SPOOL_CLIENT.pick(notification_id)
         if not message:
             continue
+        # log message before sending email
+        LOGGER.info("SENDING %s", notification_id)
         # send message via email
-        send_email_notification(message, notification_id)
+        send_message(message)
         # Acknowledge notification as sent
         SPOOL_CLIENT.ack(notification_id)
 
 
-def send_email_notification(message, notification_id):
+def send_message(message):
     """
     Send message via email
+
+    Args:
+        message:    The message to send.
     """
     # Set From address, if specified
     if SMTP_FROM_ADDR:
@@ -273,7 +280,6 @@ def send_email_notification(message, notification_id):
     smtp.login(SMTP_USER, SMTP_PASSWORD)
     try:
         # Send message
-        LOGGER.info("SENDING %s", notification_id)
         smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
     finally:
         # Disconnect from the SMTP server
