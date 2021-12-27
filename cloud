@@ -722,9 +722,9 @@ function scheduler_deploy() {
     declare -r trigger_topic="$1"; shift
     declare -r notification_topic="$1"; shift
     # Deploy the jobs
-    scheduler_job_pubsub_deploy "$project" "${prefix}trigger" \
+    scheduler_job_pubsub_deploy "$project" "${prefix}load_queue_trigger" \
                                 "$trigger_topic" '* * * * *' '{}'
-    scheduler_job_pubsub_deploy "$project" "${prefix}pick_notification" \
+    scheduler_job_pubsub_deploy "$project" "${prefix}pick_notifications_trigger" \
                             "$notification_topic" '30 * * * *' '{}'
 }
 
@@ -733,9 +733,9 @@ function scheduler_deploy() {
 function scheduler_withdraw() {
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
-    scheduler_job_withdraw "$project" "${prefix}trigger" \
+    scheduler_job_withdraw "$project" "${prefix}load_queue_trigger" \
                            "$trigger_topic" '* * * * *' '{}'
-    scheduler_job_withdraw "$project" "${prefix}pick_notification" \
+    scheduler_job_withdraw "$project" "${prefix}pick_notifications_trigger" \
                        "$notification_topic" '30 * * * *' '{}'
 }
 
@@ -925,8 +925,8 @@ function execute_command() {
     # Convert submitters from a string of words to an array
     eval "declare -a submitters=($submitters)"
 
-    declare -r trigger_topic="${prefix}trigger"
-    declare -r notification_topic="${prefix}notification_trigger"
+    declare -r trigger_topic="${prefix}load_queue_trigger"
+    declare -r notification_topic="${prefix}pick_notifications_trigger"
     declare -r new_topic="${prefix}new"
     declare -r new_load_subscription="${prefix}new_load"
     declare -r new_debug_subscription="${prefix}new_debug"
