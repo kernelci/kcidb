@@ -1272,4 +1272,5 @@ function execute() {
                     --log-level="$log_level" \
                     --submitters="${submitters[*]@Q}"
 }
+
 execute "$@"
