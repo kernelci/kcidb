@@ -240,7 +240,7 @@ def kcidb_send_notification(data, context):
 
 def kcidb_pick_notifications():
     """
-    Pick abandoned notifications and resend them
+    Pick abandoned notifications and send them.
     """
     for notification_id in SPOOL_CLIENT.unpicked():
         # Pick abandoned notification and resend
@@ -257,7 +257,7 @@ def kcidb_pick_notifications():
 
 def send_message(message):
     """
-    Send message via email
+    Send message via email.
 
     Args:
         message:    The message to send.
