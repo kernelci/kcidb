@@ -231,6 +231,36 @@ def kcidb_send_notification(data, context):
     message = SPOOL_CLIENT.pick(notification_id)
     if not message:
         return
+    LOGGER.info("SENDING %s", notification_id)
+    # send message via email
+    send_message(message)
+    # Acknowledge notification as sent
+    SPOOL_CLIENT.ack(notification_id)
+
+
+def kcidb_pick_notifications(data, context):
+    """
+    Pick abandoned notifications and send them.
+    """
+    for notification_id in SPOOL_CLIENT.unpicked():
+        # Pick abandoned notification and resend
+        message = SPOOL_CLIENT.pick(notification_id)
+        if not message:
+            continue
+        LOGGER.info("SENDING %s", notification_id)
+        # send message via email
+        send_message(message)
+        # Acknowledge notification as sent
+        SPOOL_CLIENT.ack(notification_id)
+
+
+def send_message(message):
+    """
+    Send message via email.
+
+    Args:
+        message:    The message to send.
+    """
     # Set From address, if specified
     if SMTP_FROM_ADDR:
         message['From'] = SMTP_FROM_ADDR
@@ -249,10 +279,7 @@ def kcidb_send_notification(data, context):
     smtp.login(SMTP_USER, SMTP_PASSWORD)
     try:
         # Send message
-        LOGGER.info("SENDING %s", notification_id)
         smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
     finally:
         # Disconnect from the SMTP server
         smtp.quit()
-    # Acknowledge notification as sent
-    SPOOL_CLIENT.ack(notification_id)

@@ -421,23 +421,25 @@ function pubsub_subscription_withdraw() {
 
 # Deploy to Pub/Sub
 # Args: --project=NAME
-#       --trigger-topic=NAME
+#       --load-queue-trigger-topic=NAME
 #       --new-topic=NAME
 #       --new-load-subscription=NAME
 #       --new-debug-subscription=NAME
 #       --updated-topic=NAME
 #       --updated-debug-subscription=NAME
+#       --pick-notifications-trigger-topic=NAME
 function pubsub_deploy() {
     params="$(getopt_vars project \
-                          trigger_topic \
+                          load_queue_trigger_topic \
                           new_topic \
                           new_load_subscription \
                           new_debug_subscription \
                           updated_topic \
                           updated_debug_subscription \
+                          pick_notifications_trigger_topic \
                           -- "$@")"
     eval "$params"
-    pubsub_topic_deploy "$project" "${trigger_topic}"
+    pubsub_topic_deploy "$project" "${load_queue_trigger_topic}"
 
     pubsub_topic_deploy "$project" "${new_topic}"
     pubsub_subscription_deploy "$project" "${new_topic}" \
@@ -452,11 +454,13 @@ function pubsub_deploy() {
     pubsub_topic_deploy "$project" "${updated_topic}"
     pubsub_subscription_deploy "$project" "${updated_topic}" \
                                "${updated_debug_subscription}"
+    pubsub_topic_deploy "$project" "${pick_notifications_trigger_topic}"
 }
 
 # Withdraw from Pub/Sub
 # Args: --project=NAME
-#       --trigger-topic=NAME
+#       --load-queue-trigger-topic=NAME
+#       --pick-notifications-trigger-topic=NAME
 #       --new-topic=NAME
 #       --new-load-subscription=NAME
 #       --new-debug-subscription=NAME
@@ -464,7 +468,8 @@ function pubsub_deploy() {
 #       --updated-debug-subscription=NAME
 function pubsub_withdraw() {
     params="$(getopt_vars project \
-                          trigger_topic \
+                          load_queue_trigger_topic \
+                          pick_notifications_trigger_topic \
                           new_topic \
                           new_load_subscription \
                           new_debug_subscription \
@@ -477,7 +482,8 @@ function pubsub_withdraw() {
     pubsub_subscription_withdraw "$project" "$new_debug_subscription"
     pubsub_subscription_withdraw "$project" "$new_load_subscription"
     pubsub_topic_withdraw "$project" "$new_topic"
-    pubsub_topic_withdraw "$project" "$trigger_topic"
+    pubsub_topic_withdraw "$project" "$load_queue_trigger_topic"
+    pubsub_topic_withdraw "$project" "$pick_notifications_trigger_topic"
 }
 
 # Deploy a Cloud Function
@@ -557,7 +563,8 @@ function cloud_functions_env() {
 
 # Deploy Cloud Functions
 # Args: --project=NAME --prefix=PREFIX --source=PATH
-#       --trigger-topic=NAME
+#       --load-queue-trigger-topic=NAME
+#       --pick-notifications-trigger-topic=NAME
 #       --log-level=NAME
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
@@ -566,7 +573,8 @@ function cloud_functions_env() {
 #       --database=SPEC
 function cloud_functions_deploy() {
     params="$(getopt_vars project prefix source \
-                          trigger_topic \
+                          load_queue_trigger_topic \
+                          pick_notifications_trigger_topic \
                           log_level \
                           new_topic new_load_subscription \
                           updated_topic spool_collection_path \
@@ -599,6 +607,14 @@ function cloud_functions_deploy() {
     trigger_event+="document.create"
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
+    cloud_function_deploy "$project" "${prefix}pick_notifications" \
+                          "$source" \
+                          --entry-point kcidb_pick_notifications\
+                          --env-vars-file "$env_yaml" \
+                          --runtime python37 \
+                          --trigger-topic "${pick_notifications_trigger_topic}" \
+                          --memory 256MB \
+                          --timeout 540
     cloud_function_deploy "$project" "${prefix}send_notification" \
                           "$source" \
                           --entry-point kcidb_send_notification \
@@ -624,7 +640,7 @@ function cloud_functions_deploy() {
                           --entry-point kcidb_load_queue \
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
-                          --trigger-topic "${trigger_topic}" \
+                          --trigger-topic "${load_queue_trigger_topic}" \
                           --memory 256MB \
                           --timeout 540
 }
@@ -634,6 +650,7 @@ function cloud_functions_deploy() {
 function cloud_functions_withdraw() {
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
+    cloud_function_withdraw "$project" "${prefix}pick_notifications"
     cloud_function_withdraw "$project" "${prefix}send_notification"
     cloud_function_withdraw "$project" "${prefix}spool_notifications"
     cloud_function_withdraw "$project" "${prefix}load_queue"
@@ -702,14 +719,18 @@ function scheduler_job_withdraw() {
 }
 
 # Deploy to scheduler
-# Args: project prefix trigger_topic
+# Args: project prefix load_queue_trigger_topic pick_notifications_trigger_topic
 function scheduler_deploy() {
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
-    declare -r trigger_topic="$1"; shift
+    declare -r load_queue_trigger_topic="$1"; shift
+    declare -r pick_notifications_trigger_topic="$1"; shift
     # Deploy the jobs
-    scheduler_job_pubsub_deploy "$project" "${prefix}trigger" \
-                                "$trigger_topic" '* * * * *' '{}'
+    scheduler_job_pubsub_deploy "$project" "${prefix}load_queue_trigger" \
+                                "$load_queue_trigger_topic" '* * * * *' '{}'
+    scheduler_job_pubsub_deploy "$project" "${prefix}pick_notifications_trigger" \
+                                "$pick_notifications_trigger_topic" \
+                                 '30 * * * *' '{}'
 }
 
 # Withdraw from the scheduler
@@ -717,7 +738,8 @@ function scheduler_deploy() {
 function scheduler_withdraw() {
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
-    scheduler_job_withdraw "$project" "${prefix}trigger"
+    scheduler_job_withdraw "$project" "${prefix}load_queue_trigger"
+    scheduler_job_withdraw "$project" "${prefix}pick_notifications_trigger"
 }
 
 # Deploy permissions for a submitter
@@ -906,7 +928,8 @@ function execute_command() {
     # Convert submitters from a string of words to an array
     eval "declare -a submitters=($submitters)"
 
-    declare -r trigger_topic="${prefix}trigger"
+    declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
+    declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
     declare -r new_topic="${prefix}new"
     declare -r new_load_subscription="${prefix}new_load"
     declare -r new_debug_subscription="${prefix}new_debug"
@@ -940,12 +963,14 @@ function execute_command() {
         sections_run "$sections" bigquery_deploy "$project" "$dataset"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
-            --trigger-topic="$trigger_topic" \
+            --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
             --new-debug-subscription="$new_debug_subscription" \
             --updated-topic="$updated_topic" \
-            --updated-debug-subscription="$updated_debug_subscription"
+            --updated-debug-subscription="$updated_debug_subscription" \
+            --pick-notifications-trigger-topic \
+              "$pick_notifications_trigger_topic"
         sections_run "$sections" secrets_deploy \
             "$project" "$smtp_password_secret" "$smtp_password_file"
         sections_run "$sections" firestore_deploy "$project"
@@ -953,8 +978,10 @@ function execute_command() {
             --project="$project" \
             --prefix="$prefix" \
             --source="$(dirname "$(realpath "$0")")" \
+            --load-queue-trigger-topic="$load_queue_trigger_topic" \
+            --pick-notifications-trigger-topic \
+              "$pick_notifications_trigger_topic" \
             --log-level="$log_level" \
-            --trigger-topic="$trigger_topic" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
             --updated-topic="$updated_topic" \
@@ -964,7 +991,8 @@ function execute_command() {
             --smtp-password-secret="$smtp_password_secret" \
             --database="$database"
         sections_run "$sections" scheduler_deploy \
-            "$project" "$prefix" "$trigger_topic"
+            "$project" "$prefix" "$load_queue_trigger_topic" \
+            "$pick_notifications_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
     elif [ "$command" == "withdraw" ]; then
@@ -978,7 +1006,9 @@ function execute_command() {
             "$project" "$smtp_password_secret"
         sections_run "$sections" pubsub_withdraw \
             --project="$project" \
-            --trigger-topic="$trigger_topic" \
+            --load-queue-trigger-topic="$load_queue_trigger_topic" \
+            --pick-notifications-trigger-topic \
+              "$pick_notifications_trigger_topic" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
             --new-debug-subscription="$new_debug_subscription" \
