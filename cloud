@@ -717,8 +717,7 @@ function scheduler_deploy() {
 function scheduler_withdraw() {
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
-    scheduler_job_withdraw "$project" "${prefix}trigger" \
-                           "$trigger_topic" '* * * * *' '{}'
+    scheduler_job_withdraw "$project" "${prefix}trigger"
 }
 
 # Deploy permissions for a submitter
