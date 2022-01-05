@@ -1327,10 +1327,10 @@ class Cache(Source):
             id = get_id(obj)
             if id in id_objs:
                 obj = id_objs[id]
-                LOGGER.info("Deduplicated %r %r", type_name, id)
+                LOGGER.debug("Deduplicated %r %r", type_name, id)
             else:
                 id_objs[id] = obj
-                LOGGER.info("Cached %r %r", type_name, id)
+                LOGGER.debug("Cached %r %r", type_name, id)
             # If we've got all children of an object
             if base_pattern is not None and \
                pattern.child and pattern.obj_id_set is None:
@@ -1394,10 +1394,10 @@ class Cache(Source):
         self.pattern_responses[pattern] = response
         cached.add(pattern)
         # Log cached patterns
-        LOGGER.info("Cached patterns %r", cached)
+        LOGGER.debug("Cached patterns %r", cached)
         if LOGGER.getEffectiveLevel() <= logging.INFO:
             LOGGER.info(
-                "Cache now has %s",
+                "Cache has %s",
                 ", ".join(
                     tuple(
                         f"{len(id_objs)} {type_name}s"
@@ -1431,14 +1431,14 @@ class Cache(Source):
             # Try to get the response from the cache
             try:
                 pattern_response = self.pattern_responses[pattern]
-                LOGGER.info("Fetched from the cache: %r", pattern)
+                LOGGER.debug("Fetched from the cache: %r", pattern)
             # If not found
             except KeyError:
                 # Query the source and merge the response into the cache
                 pattern_response = self._merge_pattern_response(
                     pattern, self.source.oo_query({pattern})
                 )
-                LOGGER.info("Merged into the cache: %r", pattern)
+                LOGGER.debug("Merged into the cache: %r", pattern)
             # Merge into the overall response
             for type_name, objs in pattern_response.items():
                 get_id = SCHEMA.types[type_name].get_id
