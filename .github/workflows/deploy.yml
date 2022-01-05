@@ -1,19 +1,15 @@
 name: deploy
 
-
-# Only trigger, when the test workflow succeeded
 "on":
   push:
     branches: [main]
-  workflow_run:
-    workflows: ["test"]
-    types:
-      - completed
-
 
 jobs:
+  test:
+    uses: kernelci/kcidb/.github/workflows/test.yml@main
+
   deploy:
-    # this job will only run if the PR has been merged
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
