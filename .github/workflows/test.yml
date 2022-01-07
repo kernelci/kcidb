@@ -3,7 +3,12 @@ name: test
 "on":
   pull_request:
     branches: [main]
-  workflow_call: {}
+  workflow_call:
+    secrets:
+      STAGING_GCLOUD_PROJECT:
+        required: true
+      STAGING_GCLOUD_SA_KEY:
+        required: true
 
 jobs:
   check_python:
