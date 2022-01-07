@@ -56,7 +56,7 @@ jobs:
       - name: Deploy to Staging
         run: |
           ./cloud deploy kernelci-staging "" 1 -v \
-              --smtp-password-file=<(echo foobar)
+              --smtp-password-file=<(echo foobar) \
               --extra-cc=kernelci-results-staging@groups.io \
               --submitter=kernelci-ci-tuxsuite \
               --submitter=kernelci-production-ci-arm \
