@@ -56,10 +56,4 @@ jobs:
         run: |
           ./cloud deploy kernelci-staging "" 1 -v \
               --smtp-password-file=<(echo foobar) \
-              --extra-cc=kernelci-results-staging@groups.io \
-              --submitter=kernelci-ci-tuxsuite \
-              --submitter=kernelci-production-ci-arm \
-              --submitter=kernelci-ci-gkernelci \
-              --submitter=kernelci-ci-kernelci \
-              --submitter=kernelci-ci-cki \
-              --submitter=kernelci-production-ci-syzbot
+              --extra-cc=kernelci-results-staging@groups.io
