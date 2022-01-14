@@ -303,5 +303,5 @@ class MatchTestCase(unittest.TestCase):
                     "Mark Brown <broonie@kernel.org>" in n.message.to
         ])
         self.assertEqual(len(subjects), 2)
-        self.assertRegex(subjects[0], r"^Builds failed for ")
-        self.assertRegex(subjects[1], r"^Tests failed for ")
+        self.assertRegex(subjects[0], r"^Testing done for ")
+        self.assertRegex(subjects[1], r"^Testing done for ")
