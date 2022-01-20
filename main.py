@@ -9,6 +9,7 @@ import smtplib
 import kcidb
 
 
+# Name of the Google Cloud project we're deployed in
 PROJECT_ID = os.environ["GCP_PROJECT"]
 
 kcidb.misc.logging_setup(
@@ -16,37 +17,60 @@ kcidb.misc.logging_setup(
 )
 LOGGER = logging.getLogger()
 
+# The subscriber object for the submission queue
 LOAD_QUEUE_SUBSCRIBER = kcidb.mq.IOSubscriber(
     PROJECT_ID,
     os.environ["KCIDB_LOAD_QUEUE_TOPIC"],
     os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"]
 )
+# Maximum number of messages loaded from the submission queue in one go
 LOAD_QUEUE_MSG_MAX = int(os.environ["KCIDB_LOAD_QUEUE_MSG_MAX"])
+# Maximum number of objects loaded from the submission queue in one go
 LOAD_QUEUE_OBJ_MAX = int(os.environ["KCIDB_LOAD_QUEUE_OBJ_MAX"])
+# Maximum time for pulling maximum amount of submissions from the queue
 LOAD_QUEUE_TIMEOUT_SEC = float(os.environ["KCIDB_LOAD_QUEUE_TIMEOUT_SEC"])
 
+# String specifying the database to access,
+# i.e. the kcidb.db.Client.__init__() argument.
 DATABASE = os.environ["KCIDB_DATABASE"]
+# Minimum time between loading submissions into the database
 DATABASE_LOAD_PERIOD = datetime.timedelta(
     seconds=int(os.environ["KCIDB_DATABASE_LOAD_PERIOD_SEC"])
 )
 
+# A whitespace-separated list of subscription names to limit notifying to
 SELECTED_SUBSCRIPTIONS = \
     os.environ.get("KCIDB_SELECTED_SUBSCRIPTIONS", "").split()
 
+# A Firestore path to the collection for spooled notifications
 SPOOL_COLLECTION_PATH = os.environ["KCIDB_SPOOL_COLLECTION_PATH"]
 
+# A string to be added to the CC header of notifications being sent out
 EXTRA_CC = os.environ.get("KCIDB_EXTRA_CC", None)
+# The address of the SMTP host to send notifications through
 SMTP_HOST = os.environ["KCIDB_SMTP_HOST"]
+# The port of the SMTP server to send notifications through
 SMTP_PORT = int(os.environ["KCIDB_SMTP_PORT"])
+# The username to authenticate to SMTP server with
 SMTP_USER = os.environ["KCIDB_SMTP_USER"]
+# The name of the Google Secret Manager's "secret" with SMTP user's password
 SMTP_PASSWORD_SECRET = os.environ["KCIDB_SMTP_PASSWORD_SECRET"]
+# The SMTP user's password
 SMTP_PASSWORD = kcidb.misc.get_secret(PROJECT_ID, SMTP_PASSWORD_SECRET)
+# The address to use as the "From" address in sent notifications
 SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
+# The address to tell the SMTP server to send the message to,
+# overriding any recipients in the message itself.
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
 
+# The database client instance
 DB_CLIENT = kcidb.db.Client(DATABASE)
+# The object-oriented database client instance
 OO_CLIENT = kcidb.oo.Client(DB_CLIENT)
+# The notification spool client
 SPOOL_CLIENT = kcidb.monitor.spool.Client(SPOOL_COLLECTION_PATH)
+# The publisher object for the queue with patterns matching objects updated by
+# loading submissions.
 UPDATED_QUEUE_PUBLISHER = kcidb.mq.ORMPatternPublisher(
     PROJECT_ID,
     os.environ["KCIDB_UPDATED_QUEUE_TOPIC"]
