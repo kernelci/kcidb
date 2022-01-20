@@ -5,6 +5,7 @@ import json
 import textwrap
 import kcidb
 from kcidb.io import SCHEMA
+from kcidb.unittest import local_only
 
 
 class LightAssertsTestCase(kcidb.unittest.TestCase):
@@ -20,6 +21,7 @@ class LightAssertsTestCase(kcidb.unittest.TestCase):
                          "environment variable set to a non-empty string")
 
 
+@local_only
 class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 

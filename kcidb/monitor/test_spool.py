@@ -3,8 +3,10 @@
 import textwrap
 import dateutil.parser
 import kcidb
+from kcidb.unittest import local_only
 
 
+@local_only
 class SpoolMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 

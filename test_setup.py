@@ -5,8 +5,10 @@ import sys
 import unittest
 from importlib import import_module
 from unittest.mock import patch
+from kcidb.unittest import local_only
 
 
+@local_only
 class SetupTestCase(unittest.TestCase):
     """setup.py test case"""
 

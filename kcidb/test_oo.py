@@ -1,8 +1,10 @@
 """kcidb.oo test module"""
 
 import kcidb
+from kcidb.unittest import local_only
 
 
+@local_only
 class KCIDBOOClientTestCase(kcidb.unittest.TestCase):
     """Test case for oo.Client"""
     # Conform to unittest conventions, pylint: disable=invalid-name
