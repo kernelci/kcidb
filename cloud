@@ -513,14 +513,16 @@ function cloud_function_withdraw() {
 }
 
 # Output deployment environment YAML for Cloud Functions
-# Args: --log-level=NAME
+# Args: --format=yaml|sh
+#       --log-level=NAME
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --database=SPEC
 function cloud_functions_env() {
-    params="$(getopt_vars log_level \
+    params="$(getopt_vars format \
+                          log_level \
                           new_topic new_load_subscription \
                           updated_topic spool_collection_path \
                           extra_cc \
@@ -552,13 +554,24 @@ function cloud_functions_env() {
     if [ -n "$smtp_to_addrs" ]; then
         env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
     fi
-    # Silly Python and its significant whitespace
-    sed -E 's/^[[:blank:]]+//' <<<'
-        import sys, yaml
-        args = sys.argv[1::]
-        middle = len(args) >> 1
-        yaml.dump(dict(zip(args[:middle], args[middle:])), stream=sys.stdout)
-    ' | python3 - "${!env[@]}" "${env[@]}"
+    if [ "$format" == "yaml" ]; then
+        # Silly Python and its significant whitespace
+        sed -E 's/^[[:blank:]]+//' <<<'
+            import sys, yaml
+            args = sys.argv[1::]
+            middle = len(args) >> 1
+            yaml.dump(dict(zip(args[:middle], args[middle:])),
+                      stream=sys.stdout)
+        ' | python3 - "${!env[@]}" "${env[@]}"
+    elif [ "$format" == "sh" ]; then
+        declare name
+        for name in "${!env[@]}"; do
+            echo "export $name=${env[$name]@Q}"
+        done
+    else
+        echo "Unknown environment output format: ${format@Q}" >&2
+        exit 1
+    fi
 }
 
 # Deploy Cloud Functions
@@ -590,7 +603,8 @@ function cloud_functions_deploy() {
     # Remove it on function return / shell exit
     trap "rm ${env_yaml@Q}; ${old_trap:-trap - RETURN EXIT}" RETURN EXIT
     # Generate environment YAML contents
-    cloud_functions_env --log-level="$log_level" \
+    cloud_functions_env --format=yaml \
+                        --log-level="$log_level" \
                         --new-topic="$new_topic" \
                         --new-load-subscription="$new_load_subscription" \
                         --updated-topic="$updated_topic" \
@@ -903,6 +917,7 @@ function sections_run() {
 
 # Execute a deploy/withdraw command
 # Args: --command=NAME
+#       --format=yaml|sh
 #       --sections=EXTGLOB
 #       --project=NAME
 #       --prefix=STRING
@@ -914,6 +929,7 @@ function sections_run() {
 #       --submitters=WORDS
 function execute_command() {
     params="$(getopt_vars command \
+                          format \
                           project \
                           sections \
                           prefix \
@@ -942,7 +958,8 @@ function execute_command() {
 
     # Handle "env" command, if specified
     if [ "$command" == "env" ]; then
-        cloud_functions_env --log-level="$log_level" \
+        cloud_functions_env --format="$format" \
+                            --log-level="$log_level" \
                             --new-topic="$new_topic" \
                             --new-load-subscription="$new_load_subscription" \
                             --updated-topic="$updated_topic" \
@@ -1089,6 +1106,9 @@ function usage_env() {
     echo ""
     echo "    -h, --help"
     echo "              Display this usage message and exit."
+    echo "    --format=FORMAT"
+    echo "              Specify either \"yaml\" or \"sh\" as the output"
+    echo "              format. Default is \"yaml\"."
     echo "    --extra-cc=ADDRS"
     echo "              Add specified addresses to CC of all emails."
     echo "    --smtp-to-addrs=ADDRS"
@@ -1196,6 +1216,9 @@ function execute() {
         if [[ $command == @(deploy|env) ]]; then
             getopt_longopts+=",extra-cc:,smtp-to-addrs:"
             getopt_longopts+=",log-level:"
+            if [[ $command == env ]]; then
+                getopt_longopts+=",format:"
+            fi
         fi
         if [[ $command == @(deploy) ]]; then
             getopt_longopts+=",smtp-password-file:"
@@ -1222,6 +1245,7 @@ function execute() {
     declare smtp_password_file=""
     declare log_level="INFO"
     declare -a submitters=()
+    declare format="yaml"
     while true; do
         case "$1" in
             -h|--help) "usage_${command//-/_}"; exit 0;;
@@ -1231,6 +1255,7 @@ function execute() {
             --smtp-to-addrs) smtp_to_addrs="$2"; shift 2;;
             --smtp-password-file) smtp_password_file="$2"; shift 2;;
             --log-level) log_level="$2"; shift 2;;
+            --format) format="$2"; shift 2;;
             --submitter) submitters+=("$2"); shift 2;;
             --) shift; break;;
             *) echo "Unknown option: $1" >&2; exit 1;;
@@ -1270,6 +1295,7 @@ function execute() {
 
     # Execute the command
     execute_command --command="$command" \
+                    --format="$format" \
                     --sections="$sections" \
                     --project="$project" \
                     --prefix="${namespace:-}${namespace:+_}kcidb_" \
