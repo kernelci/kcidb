@@ -135,13 +135,13 @@ jobs:
       - name: Double Deploy and Double Withdraw
         run: |
           status=0
-          namespace="gh_run_${{ github.run_id }}"
+          declare -a args=("kernelci-staging" "gh_run_${{ github.run_id }}")
           echo "FIRST DEPLOYMENT" >&2
-          ./cloud deploy kernelci-staging "$namespace" --verbose --smtp-password-file=<(echo foobar) || status=$((status || $?))
+          ./cloud deploy "${args[@]}" --verbose --smtp-password-file=<(echo foobar) || status=$((status || $?))
           echo "SECOND DEPLOYMENT" >&2
-          ./cloud deploy kernelci-staging "$namespace" --verbose || status=$((status || $?))
+          ./cloud deploy "${args[@]}" --verbose || status=$((status || $?))
           echo "FIRST WITHDRAWAL" >&2
-          ./cloud withdraw kernelci-staging "$namespace" --verbose || status=$((status || $?))
+          ./cloud withdraw "${args[@]}" --verbose || status=$((status || $?))
           echo "SECOND WITHDRAWAL" >&2
-          ./cloud withdraw kernelci-staging "$namespace" --verbose || status=$((status || $?))
+          ./cloud withdraw "${args[@]}" --verbose || status=$((status || $?))
           exit "$status"
