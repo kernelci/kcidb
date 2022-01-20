@@ -132,10 +132,22 @@ jobs:
           project_id: ${{ secrets.STAGING_GCLOUD_PROJECT }}
           service_account_key: ${{ secrets.STAGING_GCLOUD_SA_KEY }}
           export_default_credentials: true
-      - name: Deploy and Withdraw
+      - name: Deploy, Test, and Withdraw
         run: |
           status=0
           declare -a args=("kernelci-staging" "gh_run_${{ github.run_id }}")
-          ./cloud deploy "${args[@]}" --verbose --smtp-password-file=<(echo foobar) || status=$((status || $?))
+          declare -a env_args=("${args[@]}" --heavy-asserts)
+          env=$(./cloud env --format=sh "${env_args[@]}")
+
+          ./cloud deploy "${env_args[@]}" --verbose --smtp-password-file=<(echo foobar) || status=$((status || $?))
+
+          (
+            source <(echo "$env")
+            export GCP_PROJECT="${{ secrets.STAGING_GCLOUD_PROJECT }}"
+            export KCIDB_DEPLOYED=1
+            pytest
+          ) || status=$((status || $?))
+
           ./cloud withdraw "${args[@]}" --verbose || status=$((status || $?))
+
           exit "$status"
