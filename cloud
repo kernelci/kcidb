@@ -515,6 +515,7 @@ function cloud_function_withdraw() {
 # Output deployment environment YAML for Cloud Functions
 # Args: --format=yaml|sh
 #       --log-level=NAME
+#       --heavy-asserts=true|false
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
 #       --extra-cc=ADDRS
@@ -523,6 +524,7 @@ function cloud_function_withdraw() {
 function cloud_functions_env() {
     params="$(getopt_vars format \
                           log_level \
+                          heavy_asserts \
                           new_topic new_load_subscription \
                           updated_topic spool_collection_path \
                           extra_cc \
@@ -554,6 +556,10 @@ function cloud_functions_env() {
     if [ -n "$smtp_to_addrs" ]; then
         env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
     fi
+    if "$heavy_asserts"; then
+        env[KCIDB_IO_HEAVY_ASSERTS]="1"
+        env[KCIDB_HEAVY_ASSERTS]="1"
+    fi
     if [ "$format" == "yaml" ]; then
         # Silly Python and its significant whitespace
         sed -E 's/^[[:blank:]]+//' <<<'
@@ -579,6 +585,7 @@ function cloud_functions_env() {
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
 #       --log-level=NAME
+#       --heavy-asserts=true|false
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-topic=NAME --spool-collection-path=PATH
 #       --extra-cc=ADDRS
@@ -588,7 +595,7 @@ function cloud_functions_deploy() {
     params="$(getopt_vars project prefix source \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
-                          log_level \
+                          log_level heavy_asserts \
                           new_topic new_load_subscription \
                           updated_topic spool_collection_path \
                           extra_cc \
@@ -605,6 +612,7 @@ function cloud_functions_deploy() {
     # Generate environment YAML contents
     cloud_functions_env --format=yaml \
                         --log-level="$log_level" \
+                        --heavy-asserts="$heavy_asserts" \
                         --new-topic="$new_topic" \
                         --new-load-subscription="$new_load_subscription" \
                         --updated-topic="$updated_topic" \
@@ -926,6 +934,7 @@ function sections_run() {
 #       --smtp-to-addrs=STRING
 #       --smtp-password-file=STRING
 #       --log-level=NAME
+#       --heavy-asserts=true|false
 #       --submitters=WORDS
 function execute_command() {
     params="$(getopt_vars command \
@@ -938,6 +947,7 @@ function execute_command() {
                           smtp_to_addrs \
                           smtp_password_file \
                           log_level \
+                          heavy_asserts \
                           submitters \
                           -- "$@")"
     eval "$params"
@@ -960,6 +970,7 @@ function execute_command() {
     if [ "$command" == "env" ]; then
         cloud_functions_env --format="$format" \
                             --log-level="$log_level" \
+                            --heavy-asserts="$heavy_asserts" \
                             --new-topic="$new_topic" \
                             --new-load-subscription="$new_load_subscription" \
                             --updated-topic="$updated_topic" \
@@ -999,6 +1010,7 @@ function execute_command() {
             --pick-notifications-trigger-topic \
               "$pick_notifications_trigger_topic" \
             --log-level="$log_level" \
+            --heavy-asserts="$heavy_asserts" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
             --updated-topic="$updated_topic" \
@@ -1084,6 +1096,8 @@ function usage_deploy() {
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
+    echo "    --heavy-asserts"
+    echo "              Enable heavy assertion checking in deployment."
     echo "    --submitter=NAME"
     echo "              Specify a service account to permit submissions for."
     echo "              Repeat to add more submitters."
@@ -1117,6 +1131,8 @@ function usage_env() {
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
+    echo "    --heavy-asserts"
+    echo "              Enable heavy assertion checking in deployment."
     echo ""
     echo "Positional arguments:"
     echo ""
@@ -1215,7 +1231,7 @@ function execute() {
         fi
         if [[ $command == @(deploy|env) ]]; then
             getopt_longopts+=",extra-cc:,smtp-to-addrs:"
-            getopt_longopts+=",log-level:"
+            getopt_longopts+=",log-level:,heavy-asserts"
             if [[ $command == env ]]; then
                 getopt_longopts+=",format:"
             fi
@@ -1244,6 +1260,7 @@ function execute() {
     declare smtp_to_addrs=""
     declare smtp_password_file=""
     declare log_level="INFO"
+    declare heavy_asserts="false"
     declare -a submitters=()
     declare format="yaml"
     while true; do
@@ -1255,6 +1272,7 @@ function execute() {
             --smtp-to-addrs) smtp_to_addrs="$2"; shift 2;;
             --smtp-password-file) smtp_password_file="$2"; shift 2;;
             --log-level) log_level="$2"; shift 2;;
+            --heavy-asserts) heavy_asserts="true"; shift;;
             --format) format="$2"; shift 2;;
             --submitter) submitters+=("$2"); shift 2;;
             --) shift; break;;
@@ -1304,6 +1322,7 @@ function execute() {
                     --smtp-to-addrs="$smtp_to_addrs" \
                     --smtp-password-file="$smtp_password_file" \
                     --log-level="$log_level" \
+                    --heavy-asserts="$heavy_asserts" \
                     --submitters="${submitters[*]@Q}"
 }
 
