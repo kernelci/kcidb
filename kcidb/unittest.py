@@ -1,10 +1,25 @@
 """Kernel CI reporting - unittest extensions"""
 
+import os
 import re
 import sys
 import unittest
 import textwrap
 import subprocess
+
+
+def local_only(subject):
+    """Decorate a test function or a test case class as local-only"""
+    return unittest.skipIf(
+        os.environ.get("KCIDB_DEPLOYED", ""), "local-only"
+    )(subject)
+
+
+def deployment_only(subject):
+    """Decorate a test function or a test case class as deployment-only"""
+    return unittest.skipUnless(
+        os.environ.get("KCIDB_DEPLOYED", ""), "deployment-only"
+    )(subject)
 
 
 class TestCase(unittest.TestCase):

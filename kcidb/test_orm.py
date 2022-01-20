@@ -4,6 +4,7 @@
 
 from jinja2 import Template
 import kcidb
+from kcidb.unittest import local_only
 
 
 EMPTY_TEMPLATE = Template("")
@@ -104,6 +105,7 @@ def from_io(io_data):
     return kcidb.orm.Pattern.from_io(io_data, schema=SCHEMA)
 
 
+@local_only
 class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
     """Test case for the Pattern class"""
 
@@ -539,6 +541,7 @@ def raw_revision(**kwargs):
     return raw_data("revision", **kwargs)
 
 
+@local_only
 class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
     """Test case for orm.Source"""
 

@@ -5,8 +5,10 @@ import textwrap
 import json
 from unittest.mock import Mock, patch
 import kcidb
+from kcidb.unittest import local_only
 
 
+@local_only
 class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 
@@ -171,6 +173,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             driver_source=driver_source)
 
 
+@local_only
 class KCIDBDBClient(kcidb.unittest.TestCase):
     """Test case for the Client class"""
 

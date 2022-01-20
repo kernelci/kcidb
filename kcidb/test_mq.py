@@ -4,8 +4,10 @@ import re
 import textwrap
 import json
 import kcidb
+from kcidb.unittest import local_only
 
 
+@local_only
 class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 

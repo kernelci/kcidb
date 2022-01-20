@@ -3,12 +3,14 @@
 import unittest
 from kcidb.io import SCHEMA
 from kcidb import orm, db, oo, monitor
+from kcidb.unittest import local_only
 
 # Disable long line checking for JSON data
 # flake8: noqa
 # pylint: disable=line-too-long
 
 
+@local_only
 class MatchTestCase(unittest.TestCase):
     """kcidb.monitor.match test case"""
 

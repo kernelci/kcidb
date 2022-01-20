@@ -2,8 +2,10 @@
 
 import textwrap
 import kcidb
+from kcidb.unittest import local_only
 
 
+@local_only
 class KCIDBTestsMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 
