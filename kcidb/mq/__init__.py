@@ -184,7 +184,7 @@ class Subscriber(ABC):
             topic_name:         Name of the message queue topic to subscribe
                                 to.
             subscription_name:  Name of the subscription to use.
-            client:             The Google Pub/Sub PublisherClient to use, or
+            client:             The Google Pub/Sub SubscriberClient to use, or
                                 None to create and use one with default
                                 settings.
         """
