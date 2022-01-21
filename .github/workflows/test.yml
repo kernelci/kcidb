@@ -135,7 +135,9 @@ jobs:
       - name: Deploy, Test, and Withdraw
         run: |
           status=0
-          declare -a args=("kernelci-staging" "gh_run_${{ github.run_id }}")
+          declare -a args=(
+            "kernelci-staging" "gh_run_${{ github.run_id }}" --smtp-mocked
+          )
           declare -a env_args=("${args[@]}" --heavy-asserts)
           env=$(./cloud env --format=sh "${env_args[@]}")
 
