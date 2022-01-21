@@ -730,7 +730,7 @@ function scheduler_deploy() {
                                 "$load_queue_trigger_topic" '* * * * *' '{}'
     scheduler_job_pubsub_deploy "$project" "${prefix}pick_notifications_trigger" \
                                 "$pick_notifications_trigger_topic" \
-                                 '*/30 * * * *' '{}'
+                                 '*/10 * * * *' '{}'
 }
 
 # Withdraw from the scheduler
