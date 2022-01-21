@@ -45,8 +45,6 @@ SELECTED_SUBSCRIPTIONS = \
 # A Firestore path to the collection for spooled notifications
 SPOOL_COLLECTION_PATH = os.environ["KCIDB_SPOOL_COLLECTION_PATH"]
 
-# A string to be added to the CC header of notifications being sent out
-EXTRA_CC = os.environ.get("KCIDB_EXTRA_CC", None)
 # The address of the SMTP host to send notifications through
 SMTP_HOST = os.environ["KCIDB_SMTP_HOST"]
 # The port of the SMTP server to send notifications through
@@ -57,11 +55,23 @@ SMTP_USER = os.environ["KCIDB_SMTP_USER"]
 SMTP_PASSWORD_SECRET = os.environ["KCIDB_SMTP_PASSWORD_SECRET"]
 # The SMTP user's password
 SMTP_PASSWORD = kcidb.misc.get_secret(PROJECT_ID, SMTP_PASSWORD_SECRET)
-# The address to use as the "From" address in sent notifications
-SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 # The address to tell the SMTP server to send the message to,
 # overriding any recipients in the message itself.
 SMTP_TO_ADDRS = os.environ.get("KCIDB_SMTP_TO_ADDRS", None)
+# The name of the PubSub topic to post email messages to, instead of sending
+# them to the SMTP server with SMTP_* parameters specified above. If
+# specified, those parameters are ignored.
+SMTP_TOPIC = os.environ.get("KCIDB_SMTP_TOPIC", None)
+# The publisher object for email messages, if we're requested to send them to
+# a PubSub topic
+SMTP_PUBLISHER = None if SMTP_TOPIC is None \
+    else kcidb.mq.EmailPublisher(PROJECT_ID, SMTP_TOPIC)
+# The name of the subscription for email messages posted to the SMTP topic
+SMTP_SUBSCRIPTION = os.environ.get("KCIDB_SMTP_SUBSCRIPTION", None)
+# The address to use as the "From" address in sent notifications
+SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
+# A string to be added to the CC header of notifications being sent out
+EXTRA_CC = os.environ.get("KCIDB_EXTRA_CC", None)
 
 # The database client instance
 DB_CLIENT = kcidb.db.Client(DATABASE)
@@ -297,15 +307,19 @@ def send_message(message):
             message.replace_header("CC", cc_addrs + ", " + EXTRA_CC)
         else:
             message["CC"] = EXTRA_CC
-    # Connect to the SMTP server
-    smtp = smtplib.SMTP(host=SMTP_HOST, port=SMTP_PORT)
-    smtp.ehlo()
-    smtp.starttls()
-    smtp.ehlo()
-    smtp.login(SMTP_USER, SMTP_PASSWORD)
-    try:
-        # Send message
-        smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
-    finally:
-        # Disconnect from the SMTP server
-        smtp.quit()
+    # If we're requested to divert messages to a PubSub topic
+    if SMTP_PUBLISHER is not None:
+        SMTP_PUBLISHER.publish(message)
+    else:
+        # Connect to the SMTP server
+        smtp = smtplib.SMTP(host=SMTP_HOST, port=SMTP_PORT)
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(SMTP_USER, SMTP_PASSWORD)
+        try:
+            # Send message
+            smtp.send_message(message, to_addrs=SMTP_TO_ADDRS)
+        finally:
+            # Disconnect from the SMTP server
+            smtp.quit()

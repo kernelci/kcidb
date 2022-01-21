@@ -428,6 +428,8 @@ function pubsub_subscription_withdraw() {
 #       --updated-topic=NAME
 #       --updated-debug-subscription=NAME
 #       --pick-notifications-trigger-topic=NAME
+#       --smtp-topic=NAME
+#       --smtp-subscription=NAME
 function pubsub_deploy() {
     params="$(getopt_vars project \
                           load_queue_trigger_topic \
@@ -437,6 +439,7 @@ function pubsub_deploy() {
                           updated_topic \
                           updated_debug_subscription \
                           pick_notifications_trigger_topic \
+                          smtp_topic smtp_subscription \
                           -- "$@")"
     eval "$params"
     pubsub_topic_deploy "$project" "${load_queue_trigger_topic}"
@@ -455,6 +458,11 @@ function pubsub_deploy() {
     pubsub_subscription_deploy "$project" "${updated_topic}" \
                                "${updated_debug_subscription}"
     pubsub_topic_deploy "$project" "${pick_notifications_trigger_topic}"
+    if [ -n "$smtp_topic" ]; then
+        pubsub_topic_deploy "$project" "$smtp_topic"
+        pubsub_subscription_deploy "$project" "$smtp_topic" \
+                                   "$smtp_subscription"
+    fi
 }
 
 # Withdraw from Pub/Sub
@@ -466,6 +474,8 @@ function pubsub_deploy() {
 #       --new-debug-subscription=NAME
 #       --updated-topic=NAME
 #       --updated-debug-subscription=NAME
+#       --smtp-topic=NAME
+#       --smtp-subscription=NAME
 function pubsub_withdraw() {
     params="$(getopt_vars project \
                           load_queue_trigger_topic \
@@ -475,8 +485,13 @@ function pubsub_withdraw() {
                           new_debug_subscription \
                           updated_topic \
                           updated_debug_subscription \
+                          smtp_topic smtp_subscription \
                           -- "$@")"
     eval "$params"
+    if [ -n "$smtp_topic" ]; then
+        pubsub_subscription_withdraw "$project" "$smtp_subscription"
+        pubsub_topic_withdraw "$project" "$smtp_topic"
+    fi
     pubsub_subscription_withdraw "$project" "$updated_debug_subscription"
     pubsub_topic_withdraw "$project" "$updated_topic"
     pubsub_subscription_withdraw "$project" "$new_debug_subscription"
@@ -520,6 +535,7 @@ function cloud_function_withdraw() {
 #       --updated-topic=NAME --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
+#       --smtp-topic=NAME --smtp-subscription=NAME
 #       --database=SPEC
 function cloud_functions_env() {
     params="$(getopt_vars format \
@@ -529,6 +545,7 @@ function cloud_functions_env() {
                           updated_topic spool_collection_path \
                           extra_cc \
                           smtp_to_addrs smtp_password_secret \
+                          smtp_topic smtp_subscription \
                           database \
                           -- "$@")"
     eval "$params"
@@ -555,6 +572,10 @@ function cloud_functions_env() {
     fi
     if [ -n "$smtp_to_addrs" ]; then
         env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
+    fi
+    if [ -n "$smtp_topic" ]; then
+        env[KCIDB_SMTP_TOPIC]="$smtp_topic"
+        env[KCIDB_SMTP_SUBSCRIPTION]="$smtp_subscription"
     fi
     if "$heavy_asserts"; then
         env[KCIDB_IO_HEAVY_ASSERTS]="1"
@@ -590,6 +611,7 @@ function cloud_functions_env() {
 #       --updated-topic=NAME --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
+#       --smtp-topic=NAME --smtp-subscription=NAME
 #       --database=SPEC
 function cloud_functions_deploy() {
     params="$(getopt_vars project prefix source \
@@ -600,6 +622,7 @@ function cloud_functions_deploy() {
                           updated_topic spool_collection_path \
                           extra_cc \
                           smtp_to_addrs smtp_password_secret \
+                          smtp_topic smtp_subscription \
                           database \
                           -- "$@")"
     eval "$params"
@@ -620,6 +643,8 @@ function cloud_functions_deploy() {
                         --extra-cc="$extra_cc" \
                         --smtp-to-addrs="$smtp_to_addrs" \
                         --smtp-password-secret="$smtp_password_secret" \
+                        --smtp-topic="$smtp_topic" \
+                        --smtp-subscription="$smtp_subscription" \
                         --database="$database" \
                         >| "$env_yaml"
 
@@ -933,6 +958,7 @@ function sections_run() {
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=STRING
 #       --smtp-password-file=STRING
+#       --smtp-mocked=true|false
 #       --log-level=NAME
 #       --heavy-asserts=true|false
 #       --submitters=WORDS
@@ -946,6 +972,7 @@ function execute_command() {
                           extra_cc \
                           smtp_to_addrs \
                           smtp_password_file \
+                          smtp_mocked \
                           log_level \
                           heavy_asserts \
                           submitters \
@@ -965,6 +992,10 @@ function execute_command() {
     declare -r smtp_password_secret="${prefix}smtp_password"
     declare -r dataset="${prefix}${version}"
     declare -r database="bigquery:${project}.${dataset}"
+    declare -r smtp_topic=$("$smtp_mocked" && echo "${prefix}smtp" || true)
+    declare -r smtp_subscription=$(
+        "$smtp_mocked" && echo "${prefix}smtp_received" || true
+    )
 
     # Handle "env" command, if specified
     if [ "$command" == "env" ]; then
@@ -978,6 +1009,8 @@ function execute_command() {
                             --extra-cc="$extra_cc" \
                             --smtp-to-addrs="$smtp_to_addrs" \
                             --smtp-password-secret="$smtp_password_secret" \
+                            --smtp-topic="$smtp_topic" \
+                            --smtp-subscription="$smtp_subscription" \
                             --database="$database"
         return
     fi
@@ -998,7 +1031,9 @@ function execute_command() {
             --updated-topic="$updated_topic" \
             --updated-debug-subscription="$updated_debug_subscription" \
             --pick-notifications-trigger-topic \
-              "$pick_notifications_trigger_topic"
+              "$pick_notifications_trigger_topic" \
+            --smtp-topic="$smtp_topic" \
+            --smtp-subscription="$smtp_subscription"
         sections_run "$sections" secrets_deploy \
             "$project" "$smtp_password_secret" "$smtp_password_file"
         sections_run "$sections" firestore_deploy "$project"
@@ -1018,6 +1053,8 @@ function execute_command() {
             --extra-cc="$extra_cc" \
             --smtp-to-addrs="$smtp_to_addrs" \
             --smtp-password-secret="$smtp_password_secret" \
+            --smtp-topic="$smtp_topic" \
+            --smtp-subscription="$smtp_subscription" \
             --database="$database"
         sections_run "$sections" scheduler_deploy \
             "$project" "$prefix" "$load_queue_trigger_topic" \
@@ -1042,7 +1079,9 @@ function execute_command() {
             --new-load-subscription="$new_load_subscription" \
             --new-debug-subscription="$new_debug_subscription" \
             --updated-topic="$updated_topic" \
-            --updated-debug-subscription="$updated_debug_subscription"
+            --updated-debug-subscription="$updated_debug_subscription" \
+            --smtp-topic="$smtp_topic" \
+            --smtp-subscription="$smtp_subscription"
         sections_run "$sections" bigquery_withdraw "$project" "$dataset"
     fi
 }
@@ -1093,6 +1132,10 @@ function usage_deploy() {
     echo "    --smtp-password-file=FILE"
     echo "              Specify a file with the SMTP server password,"
     echo "              or \"-\" to read it from stdin."
+    echo "    --smtp-mocked"
+    echo "              Post notification messages to a PubSub topic,"
+    echo "              instead of sending them to the SMTP server."
+    echo "              Used when testing deployments."
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
@@ -1128,6 +1171,10 @@ function usage_env() {
     echo "    --smtp-to-addrs=ADDRS"
     echo "              Specify a comma-separated list of addresses"
     echo "              to override recipients of email notifications."
+    echo "    --smtp-mocked"
+    echo "              Post notification messages to a PubSub topic,"
+    echo "              instead of sending them to the SMTP server."
+    echo "              Used when testing deployments."
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
@@ -1159,6 +1206,10 @@ function usage_withdraw() {
     echo "              installation sections to limit withdrawal to."
     echo "              See output of \"$(basename "$0") list-sections\""
     echo "              for a list of available sections."
+    echo "    --smtp-mocked"
+    echo "              Withdraw the PubSub topic receiving notification"
+    echo "              messages instead of the SMTP server"
+    echo "              Used when testing deployments."
     echo "    --submitter=NAME"
     echo "              Specify a service account to deny submissions for."
     echo "              Repeat to add more submitters."
@@ -1225,6 +1276,7 @@ function execute() {
     declare getopt_longopts="help"
 
     if [[ $command == @(deploy|env|withdraw) ]]; then
+        getopt_longopts+=",smtp-mocked"
         if [[ $command == @(deploy|withdraw) ]]; then
             getopt_shortopts+="vs:"
             getopt_longopts+=",verbose,sections:,submitter:"
@@ -1259,6 +1311,7 @@ function execute() {
     declare extra_cc=""
     declare smtp_to_addrs=""
     declare smtp_password_file=""
+    declare smtp_mocked="false"
     declare log_level="INFO"
     declare heavy_asserts="false"
     declare -a submitters=()
@@ -1271,6 +1324,7 @@ function execute() {
             --extra-cc) extra_cc="$2"; shift 2;;
             --smtp-to-addrs) smtp_to_addrs="$2"; shift 2;;
             --smtp-password-file) smtp_password_file="$2"; shift 2;;
+            --smtp-mocked) smtp_mocked="true"; shift;;
             --log-level) log_level="$2"; shift 2;;
             --heavy-asserts) heavy_asserts="true"; shift;;
             --format) format="$2"; shift 2;;
@@ -1321,6 +1375,7 @@ function execute() {
                     --extra-cc="$extra_cc" \
                     --smtp-to-addrs="$smtp_to_addrs" \
                     --smtp-password-file="$smtp_password_file" \
+                    --smtp-mocked="$smtp_mocked" \
                     --log-level="$log_level" \
                     --heavy-asserts="$heavy_asserts" \
                     --submitters="${submitters[*]@Q}"
