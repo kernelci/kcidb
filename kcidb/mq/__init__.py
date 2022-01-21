@@ -5,6 +5,9 @@ import logging
 import threading
 import sys
 import argparse
+import email
+import email.message
+import email.policy
 from abc import ABC, abstractmethod
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
@@ -371,6 +374,59 @@ class ORMPatternSubscriber(Subscriber):
         for line in message_data.decode().splitlines():
             pattern_set |= kcidb.orm.Pattern.parse(line)
         return pattern_set
+
+
+class EmailPublisher(Publisher):
+    """Email queue publisher"""
+
+    @staticmethod
+    def encode_data(data):
+        """
+        Encode an email, into message data.
+
+        Args:
+            data:   The email to encode.
+
+        Returns
+            The encoded message data.
+
+        Raises:
+            An exception in case data encoding failed.
+        """
+        assert isinstance(data, email.message.EmailMessage)
+        return data.as_string(policy=email.policy.SMTPUTF8).encode()
+
+
+class EmailSubscriber(Subscriber):
+    """Email queue subscriber"""
+
+    def decode_data(self, message_data):
+        """
+        Decode email from the message data.
+
+        Args:
+            message_data:   The message data from the message queue
+                            ("data" field of pubsub.types.PubsubMessage) to be
+                            decoded.
+
+        Returns
+            The decoded email (email.message.EmailMessage) object.
+
+        Raises:
+            An exception in case data decoding failed.
+        """
+        return self.parser.parsestr(message_data.decode())
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the email subscriber.
+
+        Args:
+            args:   The positional arguments to initialize Subscriber with.
+            kwargs: The keyword arguments to initialize Subscriber with.
+        """
+        super().__init__(*args, **kwargs)
+        self.parser = email.parser.Parser(policy=email.policy.SMTPUTF8)
 
 
 def argparse_add_args(parser):
