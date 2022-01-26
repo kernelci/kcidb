@@ -5,6 +5,7 @@ import re
 import base64
 import textwrap
 import html
+import logging
 from email.message import EmailMessage
 import kcidb.oo
 from kcidb.monitor.misc import is_valid_firestore_id
@@ -15,13 +16,16 @@ from kcidb.templates import ENV as TEMPLATE_ENV
 
 # A regex matching permitted notification message subject strings
 NOTIFICATION_MESSAGE_SUBJECT_RE = re.compile(r"[^\x00-\x1f\x7f]*")
-# Maximum length of a UTF-8-encoded notification message subject
+# Maximum character length of a notification message subject
 NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN = 256
-# Maximum length of a UTF-8-encoded notification message body
+# Maximum character length of a notification message body
 NOTIFICATION_MESSAGE_BODY_MAX_LEN = 4096
 
 # A regex matching permitted subscription name strings
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
+
+# Module's logger
+LOGGER = logging.getLogger(__name__)
 
 
 class NotificationMessage:
@@ -174,18 +178,22 @@ class Notification:
             self.obj.get_type().name: self.obj,
         }
         subject = TEMPLATE_ENV.from_string(self.message.subject).render(ctx)
-        subject_extra_bytes = \
-            len(subject.encode()) - NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN
-        assert subject_extra_bytes <= 0, \
-            f"Subject is {subject_extra_bytes} bytes too long"
+        subject_extra_characters = \
+            len(subject) - NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN
+        if subject_extra_characters > 0:
+            subject = subject[:NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN - 1] + "✂️"
+            LOGGER.warning("Subject is %s characters too long, truncated",
+                           subject_extra_characters)
         assert NOTIFICATION_MESSAGE_SUBJECT_RE.fullmatch(subject), \
             f"Subject is invalid, must match " \
             f"{NOTIFICATION_MESSAGE_SUBJECT_RE.pattern} regex"
         body = TEMPLATE_ENV.from_string(self.message.body).render(ctx)
-        body_extra_bytes = \
-            len(body.encode()) - NOTIFICATION_MESSAGE_BODY_MAX_LEN
-        assert body_extra_bytes <= 0, \
-            f"Body is {body_extra_bytes} bytes too long"
+        body_extra_characters = \
+            len(body) - NOTIFICATION_MESSAGE_BODY_MAX_LEN
+        if body_extra_characters > 0:
+            body = body[:NOTIFICATION_MESSAGE_BODY_MAX_LEN - 1] + "✂️"
+            LOGGER.warning("Body is %s characters too long, truncated",
+                           body_extra_characters)
 
         # Generate the plain-text message
         email = EmailMessage()
