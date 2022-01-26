@@ -1,9 +1,11 @@
 """kcdib.monitor module tests"""
 
+import os
 import unittest
+import kcidb
 from kcidb.io import SCHEMA
 from kcidb import orm, db, oo, monitor
-from kcidb.unittest import local_only
+from kcidb.unittest import local_only, deployment_only
 
 # Disable long line checking for JSON data
 # flake8: noqa
@@ -307,3 +309,211 @@ class MatchTestCase(unittest.TestCase):
         self.assertEqual(len(subjects), 2)
         self.assertRegex(subjects[0], r"^Testing done for ")
         self.assertRegex(subjects[1], r"^Testing done for ")
+
+
+@deployment_only
+class DeploymentEmailTestCase(unittest.TestCase):
+    """Deployment email generation test case"""
+
+    @deployment_only
+    def test_email_generated(self):
+        """Check appropriate email is generated for "test" subscription"""
+
+        client = kcidb.Client(
+            project_id=os.environ["GCP_PROJECT"],
+            topic_name=os.environ["KCIDB_LOAD_QUEUE_TOPIC"]
+        )
+        email_subscriber = kcidb.mq.EmailSubscriber(
+            os.environ["GCP_PROJECT"],
+            os.environ["KCIDB_SMTP_TOPIC"],
+            os.environ["KCIDB_SMTP_SUBSCRIPTION"]
+        )
+        io_data = {
+            "version": {
+                "major": 4,
+                "minor": 0
+            },
+            "checkouts": [
+                {
+                    "contacts": [
+                        "rdma-dev-team@redhat.com"
+                    ],
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
+                    "git_repository_branch": "wip/jgg-for-next",
+                    "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                    "misc": {
+                        "pipeline_id": 467715
+                    },
+                    "id": "non_test:1",
+                    "origin": "non_test",
+                    "patchset_files": [],
+                    "valid": True,
+                },
+                {
+                    "contacts": [
+                        "rdma-dev-team@redhat.com"
+                    ],
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
+                    "git_repository_branch": "wip/jgg-for-next",
+                    "git_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
+                    "patchset_hash": "",
+                    "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                    "misc": {
+                        "pipeline_id": 467715
+                    },
+                    "id": "test:1",
+                    "origin": "test",
+                    "patchset_files": [],
+                    "valid": True,
+                },
+            ],
+            "builds": [
+                {
+                    "architecture": "aarch64",
+                    "command": "make -j30 INSTALL_MOD_STRIP=1 targz-pkg",
+                    "compiler": "aarch64-linux-gnu-gcc (GCC) 9.2.1 20190827 (Red Hat Cross 9.2.1-1)",
+                    "config_name": "fedora",
+                    "duration": 237.0,
+                    "id": "non_test:1",
+                    "origin": "non_test",
+                    "input_files": [],
+                    "log_url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/03/469720/build_aarch64.log",
+                    "misc": {
+                        "job_id": 678223,
+                        "pipeline_id": 469720
+                    },
+                    "output_files": [],
+                    "checkout_id": "test:1",
+                    "start_time": "2020-03-03T17:52:02.370000+00:00",
+                    "valid": True
+                },
+                {
+                    "architecture": "aarch64",
+                    "command": "make -j30 INSTALL_MOD_STRIP=1 targz-pkg",
+                    "compiler": "aarch64-linux-gnu-gcc (GCC) 9.2.1 20190827 (Red Hat Cross 9.2.1-1)",
+                    "config_name": "fedora",
+                    "duration": 237.0,
+                    "id": "test:1",
+                    "origin": "test",
+                    "input_files": [],
+                    "log_url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/03/469720/build_aarch64.log",
+                    "misc": {
+                        "job_id": 678223,
+                        "pipeline_id": 469720
+                    },
+                    "output_files": [],
+                    "checkout_id": "test:1",
+                    "start_time": "2020-03-03T17:52:02.370000+00:00",
+                    "valid": True
+                },
+            ],
+            "tests": [
+                {
+                    "build_id": "redhat:679936",
+                    "comment": "IOMMU boot test",
+                    "duration": 1847.0,
+                    "id": "non_test:1",
+                    "origin": "non_test",
+                    "output_files": [
+                        {
+                            "name": "x86_64_4_console.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_console.log"
+                        },
+                        {
+                            "name": "x86_64_4_IOMMU_boot_test_dmesg.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_IOMMU_boot_test_dmesg.log"
+                        },
+                        {
+                            "name": "x86_64_4_IOMMU_boot_test_resultoutputfile.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_IOMMU_boot_test_resultoutputfile.log"
+                        },
+                        {
+                            "name": "x86_64_4_IOMMU_boot_test_taskout.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_IOMMU_boot_test_taskout.log"
+                        }
+                    ],
+                    "environment": {
+                        "comment": "meson-gxl-s905d-p230 in lab-baylibre",
+                        "misc": {
+                            "device": "meson-gxl-s905d-p230",
+                            "instance": "meson-gxl-s905d-p230-sea",
+                            "lab": "lab-baylibre",
+                            "mach": "amlogic",
+                            "rootfs_url": "https://storage.kernelci.org/images/rootfs/buildroot/kci-2019.02-9-g25091c539382/arm64/baseline/rootfs.cpio.gz"
+                        }
+                    },
+                    "path": "redhat_iommu_boot",
+                    "start_time": "2020-03-04T21:30:57+00:00",
+                    "status": "ERROR",
+                    "waived": True
+                },
+                {
+                    "build_id": "redhat:679936",
+                    "comment": "IOMMU boot test",
+                    "duration": 1847.0,
+                    "id": "test:1",
+                    "origin": "test",
+                    "output_files": [
+                        {
+                            "name": "x86_64_4_console.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_console.log"
+                        },
+                        {
+                            "name": "x86_64_4_IOMMU_boot_test_dmesg.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_IOMMU_boot_test_dmesg.log"
+                        },
+                        {
+                            "name": "x86_64_4_IOMMU_boot_test_resultoutputfile.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_IOMMU_boot_test_resultoutputfile.log"
+                        },
+                        {
+                            "name": "x86_64_4_IOMMU_boot_test_taskout.log",
+                            "url": "https://cki-artifacts.s3.amazonaws.com/datawarehouse/2020/03/04/471145/x86_64_4_IOMMU_boot_test_taskout.log"
+                        }
+                    ],
+                    "environment": {
+                        "comment": "meson-gxl-s905d-p230 in lab-baylibre",
+                        "misc": {
+                            "device": "meson-gxl-s905d-p230",
+                            "instance": "meson-gxl-s905d-p230-sea",
+                            "lab": "lab-baylibre",
+                            "mach": "amlogic",
+                            "rootfs_url": "https://storage.kernelci.org/images/rootfs/buildroot/kci-2019.02-9-g25091c539382/arm64/baseline/rootfs.cpio.gz"
+                        }
+                    },
+                    "path": "redhat_iommu_boot",
+                    "start_time": "2020-03-04T21:30:57+00:00",
+                    "status": "ERROR",
+                    "waived": True
+                },
+            ],
+        }
+
+        # Submit data to submission queue
+        client.submit(io_data)
+        # Try to pull the four notification messages we're expecting and
+        # check we get one correct message per object type
+        obj_types = {"revision", "checkout", "build", "test"}
+        for ack_id, email in email_subscriber.pull_iter(4, 1800):
+            email_subscriber.ack(ack_id)
+            self.assertEqual(email['From'], "bot@kernelci.org")
+            self.assertEqual(email['To'], "test@kernelci.org")
+            obj_type = email['X-KCIDB-Notification-Message-ID']
+            self.assertIn(obj_type, obj_types)
+            obj_types.remove(obj_type)
+            self.assertIn(f"Test {obj_type}: ", email['Subject'])
+            text, html = email.get_payload()
+            self.assertEqual('text/plain', text.get_content_type())
+            self.assertEqual('utf-8', text.get_content_charset())
+            content = text.get_content()
+            self.assertIn(f"Test {obj_type} detected!\r\n\r\n", content)
+            self.assertEqual('text/html', html.get_content_type())
+            self.assertEqual('utf-8', html.get_content_charset())
+            content = html.get_content()
+            self.assertIn(f"Test {obj_type} detected!\r\n\r\n", content)
+        # Check we got all four
+        self.assertEqual(len(obj_types), 0)
+        # Check we get no more notification messages
+        self.assertEqual(len(email_subscriber.pull(1, 5)), 0)
