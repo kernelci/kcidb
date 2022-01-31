@@ -315,14 +315,14 @@ class Schema:
 
 
 # Latest I/O schema shared definitions
-_DEFS = io.schema.LATEST.json['$defs']
-# Checkout properties from the latest I/O schema
+_DEFS = io.SCHEMA.json['$defs']
+# Checkout properties from the current I/O schema
 _CHECKOUT = _DEFS['checkout']['properties']
-# Build properties from the latest I/O schema
+# Build properties from the current I/O schema
 _BUILD = _DEFS['build']['properties']
-# Test properties from the latest I/O schema
+# Test properties from the current I/O schema
 _TEST = _DEFS['test']['properties']
-# Test environment properties from the latest I/O schema
+# Test environment properties from the current I/O schema
 _TEST_ENVIRONMENT = _TEST['environment']['properties']
 
 # The schema of the raw object-oriented data
@@ -416,11 +416,11 @@ SCHEMA = Schema(
     )
 )
 
-assert all(k.endswith("s") for k in io.schema.LATEST.tree if k), \
+assert all(k.endswith("s") for k in io.SCHEMA.tree if k), \
     "Not all I/O object list names end with 's'"
 
 assert set(SCHEMA.types) >= \
-    set(k[:-1] for k in io.schema.LATEST.tree if k), \
+    set(k[:-1] for k in io.SCHEMA.tree if k), \
     "OO types are not a superset of I/O types"
 
 # A (verbose) regular expression pattern matching an unquoted ID field
@@ -1171,7 +1171,7 @@ class Pattern:
 
         Args:
             io_data:    The I/O data to create the pattern list from.
-                        Must adhere to the latest schema version.
+                        Must adhere to the current schema version.
             schema:     An object type schema to use, or None to use
                         kcidb.orm.SCHEMA.
 
@@ -1179,17 +1179,17 @@ class Pattern:
             A set of Pattern objects matching the objects in the supplied I/O
             data.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid_latest(io_data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(io_data)
         assert schema is None or isinstance(schema, Schema)
         if schema is None:
             schema = SCHEMA
         # Assert all I/O object lists are represented in the OO schema
         assert set(schema.types) >= \
-            set(k[:-1] for k in io.schema.LATEST.tree if k), \
+            set(k[:-1] for k in io.SCHEMA.tree if k), \
             "Specified OO types are not a superset of I/O types"
         pattern_set = set()
         # Assume each I/O object is identified by a required "id" field
-        for obj_list_name in io.schema.LATEST.tree:
+        for obj_list_name in io.SCHEMA.tree:
             if not obj_list_name:
                 continue
             assert obj_list_name.endswith("s")

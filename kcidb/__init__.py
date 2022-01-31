@@ -41,7 +41,7 @@ class Client:
             `kcidb.DatabaseNotInitialized` if the database is not
             initialized.
             `kcidb.db.IncompatibleSchema` if the database schema
-            is incompatible with the latest I/O schema.
+            is incompatible with the current I/O schema.
         """
         assert database is None or \
             isinstance(database, str) and database
@@ -65,7 +65,7 @@ class Client:
 
         Args:
             data:   The JSON report data to submit.
-                    Must adhere to the latest version of I/O schema.
+                    Must adhere to the current version of I/O schema.
 
         Returns:
             Submission ID string.
@@ -74,7 +74,7 @@ class Client:
             `NotImplementedError`, if not supplied with a project ID or an MQ
             topic name at initialization time.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
         if not self.mq_publisher:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
@@ -85,7 +85,7 @@ class Client:
 
         Args:
             data_iter:  An iterator returning the JSON report data to submit.
-                        Each must adhere to the latest version of I/O schema.
+                        Each must adhere to the current version of I/O schema.
             done_cb:    A function to call when a report is successfully
                         submitted. Will be called with the submission ID of
                         each report returned by the iterator, in order.
@@ -117,7 +117,7 @@ class Client:
                                 returned report, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
 
@@ -155,7 +155,7 @@ class Client:
                         as well.
 
         Returns:
-            The fetched JSON data adhering to the latest I/O schema version.
+            The fetched JSON data adhering to the current I/O schema version.
 
         Raises:
             `NotImplementedError`, if not supplied with a dataset name at
@@ -174,7 +174,7 @@ class Client:
         else:
             raise NotImplementedError
 
-        assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
         return data
 
 
@@ -202,7 +202,7 @@ def submit_main():
         sys.stdout.flush()
 
     client.submit_iter(
-        (io.schema.upgrade(io.schema.validate(data), copy=False)
+        (io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
          for data in misc.json_load_stream_fd(sys.stdin.fileno())),
         done_cb=print_submission_id
     )
@@ -232,7 +232,7 @@ def query_main():
 def schema_main():
     """Execute the kcidb-schema command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-schema - Output latest or older I/O JSON schema'
+    description = 'kcidb-schema - Output current or older I/O JSON schema'
     parser = misc.OutputArgumentParser(description=description)
     misc.argparse_schema_add_args(parser, "output")
     args = parser.parse_args()
@@ -259,13 +259,13 @@ def validate_main():
 def upgrade_main():
     """Execute the kcidb-upgrade command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
-    description = 'kcidb-upgrade - Upgrade I/O JSON data to latest schema'
+    description = 'kcidb-upgrade - Upgrade I/O JSON data to current schema'
     parser = misc.OutputArgumentParser(description=description)
     misc.argparse_schema_add_args(parser, "upgrade")
     args = parser.parse_args()
     misc.json_dump_stream(
         (
-            args.schema_version.upgrade(io.schema.validate(data), copy=False)
+            args.schema_version.upgrade(io.SCHEMA.validate(data), copy=False)
             for data in misc.json_load_stream_fd(sys.stdin.fileno())
         ),
         sys.stdout, indent=args.indent, seq=args.seq
@@ -280,7 +280,7 @@ def count_main():
     parser.parse_args()
 
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        print(io.count(io.schema.validate(data)), file=sys.stdout)
+        print(io.SCHEMA.count(io.SCHEMA.validate(data)), file=sys.stdout)
         sys.stdout.flush()
 
 
@@ -292,11 +292,11 @@ def merge_main():
     args = parser.parse_args()
 
     sources = [
-        io.schema.validate(data)
+        io.SCHEMA.validate(data)
         for data in misc.json_load_stream_fd(sys.stdin.fileno())
     ]
-    merged_data = io.merge(io.new(), sources,
-                           copy_target=False, copy_sources=False)
+    merged_data = io.SCHEMA.merge(io.SCHEMA.new(), sources,
+                                  copy_target=False, copy_sources=False)
     misc.json_dump(merged_data, sys.stdout, indent=args.indent, seq=args.seq)
 
 
@@ -336,7 +336,7 @@ def ingest_main():
     # For each JSON object in stdin
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
         # Validate and upgrade the data
-        data = io.schema.upgrade(io.schema.validate(data), copy=False)
+        data = io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
         # Load into the database
         db_client.load(data)
         # Record patterns matching the loaded objects and all their parents

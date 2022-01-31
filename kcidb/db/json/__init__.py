@@ -36,5 +36,5 @@ class Driver(SQLiteDriver):
             super().__init__(":memory:")
             self.init()
             for data in kcidb.misc.json_load_stream_fd(json_file.fileno()):
-                data = io.schema.upgrade(io.schema.validate(data), copy=False)
+                data = io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
                 self.load(data)

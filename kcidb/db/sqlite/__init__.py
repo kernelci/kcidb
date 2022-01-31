@@ -122,8 +122,8 @@ class Driver(AbstractDriver):
                         raise Exception(
                             f"Failed creating table {name!r}"
                         ) from exc
-                version = int(io.schema.LATEST.major * 1000 +
-                              io.schema.LATEST.minor % 1000)
+                version = int(io.SCHEMA.major * 1000 +
+                              io.SCHEMA.minor % 1000)
                 cursor.execute(f"PRAGMA user_version = {version}")
             finally:
                 cursor.close()
@@ -187,7 +187,7 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -195,7 +195,7 @@ class Driver(AbstractDriver):
         assert objects_per_report >= 0
 
         obj_num = 0
-        data = io.new()
+        data = io.SCHEMA.new()
         with self.conn:
             cursor = self.conn.cursor()
             try:
@@ -219,17 +219,17 @@ class Driver(AbstractDriver):
                         if objects_per_report and \
                                 obj_num >= objects_per_report:
                             assert LIGHT_ASSERTS or \
-                                    io.schema.is_valid_latest(data)
+                                    io.SCHEMA.is_valid_exactly(data)
                             yield data
                             obj_num = 0
-                            data = io.new()
+                            data = io.SCHEMA.new()
                             obj_list = None
             finally:
                 cursor.close()
 
         if obj_num:
-            io.schema.validate_latest(data)
-            assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+            io.SCHEMA.validate_exactly(data)
+            assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
             yield data
 
     # We can live with this for now, pylint: disable=too-many-arguments
@@ -250,7 +250,7 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -269,7 +269,7 @@ class Driver(AbstractDriver):
         # containing a SELECT statement and the list of its parameters,
         # returning IDs of the objects to fetch.
         obj_list_queries = {}
-        for obj_list_name in io.schema.LATEST.tree:
+        for obj_list_name in io.SCHEMA.tree:
             if not obj_list_name:
                 continue
             table_ids = ids.get(obj_list_name, [])
@@ -292,7 +292,7 @@ class Driver(AbstractDriver):
                 """Add parent IDs to query results"""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
-                for child_list_name in io.schema.LATEST.tree[obj_list_name]:
+                for child_list_name in io.SCHEMA.tree[obj_list_name]:
                     add_parents(child_list_name)
                     child_query = obj_list_queries[child_list_name]
                     query[0] += \
@@ -304,7 +304,7 @@ class Driver(AbstractDriver):
                         ") USING(id)\n"
                     query[1] += child_query[1]
 
-            for obj_list_name in io.schema.LATEST.tree[""]:
+            for obj_list_name in io.SCHEMA.tree[""]:
                 add_parents(obj_list_name)
 
         # Add referenced children if requested
@@ -313,7 +313,7 @@ class Driver(AbstractDriver):
                 """Add child IDs to query results"""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
-                for child_list_name in io.schema.LATEST.tree[obj_list_name]:
+                for child_list_name in io.SCHEMA.tree[obj_list_name]:
                     child_query = obj_list_queries[child_list_name]
                     child_query[0] += \
                         f"UNION\n" \
@@ -327,12 +327,12 @@ class Driver(AbstractDriver):
                     child_query[1] += query[1]
                     add_children(child_list_name)
 
-            for obj_list_name in io.schema.LATEST.tree[""]:
+            for obj_list_name in io.SCHEMA.tree[""]:
                 add_children(obj_list_name)
 
         # Fetch the data
         obj_num = 0
-        data = io.new()
+        data = io.SCHEMA.new()
         with self.conn:
             cursor = self.conn.cursor()
             try:
@@ -359,16 +359,16 @@ class Driver(AbstractDriver):
                         if objects_per_report and \
                                 obj_num >= objects_per_report:
                             assert LIGHT_ASSERTS or \
-                                    io.schema.is_valid_latest(data)
+                                    io.SCHEMA.is_valid_exactly(data)
                             yield data
                             obj_num = 0
-                            data = io.new()
+                            data = io.SCHEMA.new()
                             obj_list = None
             finally:
                 cursor.close()
 
         if obj_num:
-            assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+            assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
             yield data
 
     @staticmethod
@@ -587,7 +587,7 @@ class Driver(AbstractDriver):
             data:   The JSON data to load into the database.
                     Must adhere to a version of I/O schema.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
         with self.conn:
             cursor = self.conn.cursor()
             try:

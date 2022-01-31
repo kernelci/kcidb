@@ -1,7 +1,7 @@
 """kcdib.monitor module tests"""
 
 import unittest
-from kcidb.io import schema
+from kcidb.io import SCHEMA
 from kcidb import orm, db, oo, monitor
 
 # Disable long line checking for JSON data
@@ -17,8 +17,8 @@ class MatchTestCase(unittest.TestCase):
         # pylint: disable=invalid-name
         self.maxDiff = None
         self.version = dict(
-            major=schema.LATEST.major,
-            minor=schema.LATEST.minor
+            major=SCHEMA.major,
+            minor=SCHEMA.minor
         )
 
     @staticmethod
@@ -34,7 +34,7 @@ class MatchTestCase(unittest.TestCase):
         Returns:
             A tuple of generated notifications.
         """
-        assert schema.is_valid(io_data)
+        assert SCHEMA.is_valid(io_data)
         db_client = db.Client("sqlite::memory:")
         db_client.init()
         oo_client = oo.Client(db_client)

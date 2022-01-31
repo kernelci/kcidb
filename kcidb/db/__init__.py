@@ -39,7 +39,7 @@ class Client(kcidb.orm.Source):
         Raises:
             NotFound            - if the database does not exist;
             IncompatibleSchema  - if the database is not empty and its schema
-                                  is incompatible with the latest I/O schema.
+                                  is incompatible with the current I/O schema.
         """
         assert isinstance(database, str)
         try:
@@ -64,7 +64,7 @@ class Client(kcidb.orm.Source):
             ) from exc
         if self.driver.is_initialized():
             major, minor = self.driver.get_schema_version()
-            if major != io.schema.LATEST.major:
+            if major != io.SCHEMA.major:
                 raise misc.IncompatibleSchema(major, minor)
 
     def is_initialized(self):
@@ -111,7 +111,7 @@ class Client(kcidb.orm.Source):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -125,14 +125,14 @@ class Client(kcidb.orm.Source):
         Dump all data from the database.
 
         Returns:
-            The JSON data from the database adhering to the latest I/O schema
+            The JSON data from the database adhering to the current I/O schema
             version.
         """
         assert self.is_initialized()
         try:
             return next(self.dump_iter(objects_per_report=0))
         except StopIteration:
-            return io.new()
+            return io.SCHEMA.new()
 
     def query_iter(self, ids=None,
                    children=False, parents=False,
@@ -153,7 +153,7 @@ class Client(kcidb.orm.Source):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -183,7 +183,7 @@ class Client(kcidb.orm.Source):
                         as well.
 
         Returns:
-            The JSON data from the database adhering to the latest I/O schema
+            The JSON data from the database adhering to the current I/O schema
             version.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
@@ -198,7 +198,7 @@ class Client(kcidb.orm.Source):
                                         children=children, parents=parents,
                                         objects_per_report=0))
         except StopIteration:
-            return io.new()
+            return io.SCHEMA.new()
 
     def oo_query(self, pattern_set):
         """
@@ -226,8 +226,8 @@ class Client(kcidb.orm.Source):
                     Must adhere to a version of I/O schema.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
-        assert LIGHT_ASSERTS or io.schema.is_valid(data)
-        self.driver.load(io.schema.upgrade(data))
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
+        self.driver.load(io.SCHEMA.upgrade(data))
 
 
 class DBHelpAction(argparse.Action):
@@ -466,7 +466,7 @@ def load_main():
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
     for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno()):
-        data = io.schema.upgrade(io.schema.validate(data), copy=False)
+        data = io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
         client.load(data)
 
 

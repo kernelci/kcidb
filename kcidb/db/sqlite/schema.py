@@ -1,7 +1,7 @@
 """
 Kernel CI SQLite report database schema.
 
-Always corresponds to the latest I/O schema.
+Always corresponds to the current I/O schema.
 """
 import json
 from enum import Enum

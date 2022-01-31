@@ -1,7 +1,7 @@
 """
 Kernel CI BigQuery report database schema.
 
-Always corresponds to the latest I/O schema.
+Always corresponds to the current I/O schema.
 """
 from google.cloud.bigquery.schema import SchemaField as Field
 

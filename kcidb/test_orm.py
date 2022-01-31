@@ -330,7 +330,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
         """
         Check Pattern.from_io() works correctly.
         """
-        io_data = kcidb.io.new()
+        io_data = kcidb.io.SCHEMA.new()
         self.assertEqual(from_io(io_data), set())
 
         io_data = {
@@ -340,7 +340,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             ],
             "tests": [
             ],
-            **kcidb.io.new()
+            **kcidb.io.SCHEMA.new()
         }
         self.assertEqual(from_io(io_data), set())
 
@@ -354,7 +354,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb.io.new()
+            **kcidb.io.SCHEMA.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "checkout", {("origin:1",)})
@@ -384,7 +384,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb.io.new()
+            **kcidb.io.SCHEMA.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(
@@ -401,7 +401,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb.io.new()
+            **kcidb.io.SCHEMA.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "build", {("origin:2",)})
@@ -415,7 +415,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb.io.new()
+            **kcidb.io.SCHEMA.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "test", {("origin:3",)})
@@ -445,7 +445,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb.io.new()
+            **kcidb.io.SCHEMA.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "checkout", {("origin:1",)}),

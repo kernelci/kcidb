@@ -104,7 +104,7 @@ Both should execute without errors and finish with zero exit status.
 -----------------------------
 
 KCIDB accepts data in JSON, described by a versioned schema. The
-`kcidb-schema` tool will output the latest schema version. However, all tools
+`kcidb-schema` tool will output the current schema version. However, all tools
 will accept data complying with older schema versions, as a rule. Any
 exceptions to that will be mentioned in KCIDB release notes. Pipe your data
 into `kcidb-validate` tool to check if it will be accepted.
