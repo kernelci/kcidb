@@ -46,7 +46,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_dump_main(self):
         """Check kcidb-db-dump works"""
-        empty = kcidb.io.new()
+        empty = kcidb.io.SCHEMA.new()
         argv = ["kcidb.db.dump_main", "-d", "bigquery:project.dataset",
                 "--indent=0"]
 
@@ -96,7 +96,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             "--parents", "--children", "--objects-per-report", "10",
             "--indent=0",
         ]
-        empty = kcidb.io.new()
+        empty = kcidb.io.SCHEMA.new()
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             client = Mock()
@@ -140,7 +140,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', *argv, driver_source=driver_source,
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = kcidb.io.new()
+        empty = kcidb.io.SCHEMA.new()
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
@@ -176,7 +176,7 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
 
     # I/O data containing all possible fields
     COMPREHENSIVE_IO_DATA = {
-        **kcidb.io.new(),
+        **kcidb.io.SCHEMA.new(),
         "checkouts": [
             dict(
                 id="origin:1",

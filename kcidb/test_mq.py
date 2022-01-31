@@ -47,7 +47,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         """Check kcidb-mq-io-publisher publish works"""
         argv = ["kcidb.mq.io_publisher_main",
                 "-p", "project", "-t", "topic", "publish"]
-        empty = kcidb.io.new()
+        empty = kcidb.io.SCHEMA.new()
 
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
@@ -146,7 +146,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         argv = ["kcidb.mq.io_subscriber_main",
                 "-p", "project", "-t", "topic", "-s", "subscription",
                 "pull", "--timeout", "123", "--indent=0"]
-        empty = kcidb.io.new()
+        empty = kcidb.io.SCHEMA.new()
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             subscriber = Mock()

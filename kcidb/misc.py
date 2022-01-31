@@ -263,7 +263,7 @@ def argparse_schema_add_args(parser, version_verb):
                 f"Invalid major version number: {string!r}"
             )
         major = int(string)
-        version = io.schema.LATEST
+        version = io.SCHEMA
         while version and version.major != major:
             version = version.previous
         if version is None:
@@ -277,10 +277,10 @@ def argparse_schema_add_args(parser, version_verb):
         metavar="SCHEMA_VERSION",
         type=schema_version,
         help=f"{version_verb.capitalize()} the schema with the specified "
-        f"major version. Default is the latest schema version "
-        f"(currently {io.schema.LATEST.major}).",
+        f"major version. Default is the current schema version "
+        f"(currently {io.SCHEMA.major}).",
         nargs='?',
-        default=io.schema.LATEST
+        default=io.SCHEMA
     )
 
 

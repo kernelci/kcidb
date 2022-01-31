@@ -133,8 +133,8 @@ class Driver(AbstractDriver):
                 f" FROM `{table_ref}` GROUP BY id"
             self.client.create_table(view)
         # Set dataset schema version
-        self.dataset.labels["version_major"] = str(io.schema.LATEST.major)
-        self.dataset.labels["version_minor"] = str(io.schema.LATEST.minor)
+        self.dataset.labels["version_major"] = str(io.SCHEMA.major)
+        self.dataset.labels["version_minor"] = str(io.SCHEMA.minor)
         self.client.update_dataset(self.dataset, ["labels"])
 
     def cleanup(self):
@@ -234,7 +234,7 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -242,7 +242,7 @@ class Driver(AbstractDriver):
         assert objects_per_report >= 0
 
         obj_num = 0
-        data = io.new()
+        data = io.SCHEMA.new()
         for obj_list_name in schema.TABLE_MAP:
             query_string = f"SELECT * FROM `{obj_list_name}`"
             query_job = self._query_create(query_string)
@@ -254,14 +254,14 @@ class Driver(AbstractDriver):
                 obj_list.append(Driver._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
-                    assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+                    assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
                     yield data
                     obj_num = 0
-                    data = io.new()
+                    data = io.SCHEMA.new()
                     obj_list = None
 
         if obj_num:
-            assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+            assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
             yield data
 
     def query_iter(self, ids, children, parents, objects_per_report):
@@ -280,7 +280,7 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -305,7 +305,7 @@ class Driver(AbstractDriver):
                     ),
                 ],
             ]
-            for obj_list_name in io.schema.LATEST.tree if obj_list_name
+            for obj_list_name in io.SCHEMA.tree if obj_list_name
         }
 
         # Add referenced parents if requested
@@ -314,7 +314,7 @@ class Driver(AbstractDriver):
                 """Add parent IDs to query results"""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
-                for child_list_name in io.schema.LATEST.tree[obj_list_name]:
+                for child_list_name in io.SCHEMA.tree[obj_list_name]:
                     add_parents(child_list_name)
                     child_query = obj_list_queries[child_list_name]
                     query[0] += \
@@ -326,7 +326,7 @@ class Driver(AbstractDriver):
                         ") USING(id)\n"
                     query[1] += child_query[1]
 
-            for obj_list_name in io.schema.LATEST.tree[""]:
+            for obj_list_name in io.SCHEMA.tree[""]:
                 add_parents(obj_list_name)
 
         # Add referenced children if requested
@@ -335,7 +335,7 @@ class Driver(AbstractDriver):
                 """Add child IDs to query results"""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
-                for child_list_name in io.schema.LATEST.tree[obj_list_name]:
+                for child_list_name in io.SCHEMA.tree[obj_list_name]:
                     child_query = obj_list_queries[child_list_name]
                     child_query[0] += \
                         f"UNION DISTINCT\n" \
@@ -349,12 +349,12 @@ class Driver(AbstractDriver):
                     child_query[1] += query[1]
                     add_children(child_list_name)
 
-            for obj_list_name in io.schema.LATEST.tree[""]:
+            for obj_list_name in io.SCHEMA.tree[""]:
                 add_children(obj_list_name)
 
         # Fetch the data
         obj_num = 0
-        data = io.new()
+        data = io.SCHEMA.new()
         for obj_list_name, query in obj_list_queries.items():
             query_parameters = query[1]
             query_string = \
@@ -370,14 +370,14 @@ class Driver(AbstractDriver):
                 obj_list.append(Driver._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
-                    assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+                    assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
                     yield data
                     obj_num = 0
-                    data = io.new()
+                    data = io.SCHEMA.new()
                     obj_list = None
 
         if obj_num:
-            assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+            assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
             yield data
 
     @staticmethod
@@ -538,7 +538,7 @@ class Driver(AbstractDriver):
             data:   The JSON data to load into the database.
                     Must adhere to a version of I/O schema.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
 
         # Load the data
         for obj_list_name, table_schema in schema.TABLE_MAP.items():

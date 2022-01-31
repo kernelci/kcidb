@@ -2,11 +2,10 @@
 
 import email
 import unittest
-from kcidb.io import schema
 from kcidb import orm, db, oo
 from kcidb.monitor.output import NotificationMessage, Notification,\
     NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN, NOTIFICATION_MESSAGE_BODY_MAX_LEN
-
+from kcidb.io import SCHEMA
 
 # Disable long line checking for JSON data
 # flake8: noqa
@@ -21,8 +20,8 @@ class NotificationTestCase(unittest.TestCase):
         # pylint: disable=invalid-name
         self.maxDiff = None
         self.version = dict(
-            major=schema.LATEST.major,
-            minor=schema.LATEST.minor
+            major=SCHEMA.major,
+            minor=SCHEMA.minor
         )
 
     def test_min(self):

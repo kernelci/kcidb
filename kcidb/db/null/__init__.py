@@ -43,7 +43,7 @@ class Driver(AbstractDriver):
         Returns:
             Major and minor version numbers.
         """
-        return io.schema.LATEST.major, io.schema.LATEST.minor
+        return io.SCHEMA.major, io.SCHEMA.minor
 
     def init(self):
         """
@@ -76,11 +76,11 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
-        yield io.new()
+        yield io.SCHEMA.new()
 
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids, children, parents, objects_per_report):
@@ -100,11 +100,11 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
-        yield io.new()
+        yield io.SCHEMA.new()
 
     def oo_query(self, pattern_set):
         """

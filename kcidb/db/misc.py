@@ -20,7 +20,7 @@ class NotFound(Error):
 
 
 class IncompatibleSchema(Error):
-    """Database schema is incompatible with the latest I/O schema"""
+    """Database schema is incompatible with the current I/O schema"""
 
     def __init__(self, db_major, db_minor):
         """
@@ -32,8 +32,8 @@ class IncompatibleSchema(Error):
         """
         super().__init__(f"Database schema {db_major}.{db_minor} "
                          f"is incompatible with I/O schema "
-                         f"{io.schema.LATEST.major}."
-                         f"{io.schema.LATEST.minor}")
+                         f"{io.SCHEMA.major}."
+                         f"{io.SCHEMA.minor}")
 
 
 class Driver(ABC):
@@ -121,7 +121,7 @@ class Driver(ABC):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -145,7 +145,7 @@ class Driver(ABC):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the latest I/O
+            An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
@@ -182,6 +182,6 @@ class Driver(ABC):
 
         Args:
             data:   The JSON data to load into the database.
-                    Must adhere to the latest version of the I/O schema.
+                    Must adhere to the current version of the I/O schema.
         """
-        assert LIGHT_ASSERTS or io.schema.is_valid_latest(data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)

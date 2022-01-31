@@ -281,11 +281,11 @@ class IOPublisher(Publisher):
     @staticmethod
     def encode_data(data):
         """
-        Encode JSON data, adhering to the latest version of I/O schema, into
+        Encode JSON data, adhering to the current version of I/O schema, into
         message data.
 
         Args:
-            data:   JSON data to be encoded, adhering to the latest I/O schema
+            data:   JSON data to be encoded, adhering to the current I/O schema
                     version.
 
         Returns
@@ -305,7 +305,7 @@ class IOSubscriber(Subscriber):
     @staticmethod
     def decode_data(message_data):
         """
-        Decode message data to extract the JSON data adhering to the latest
+        Decode message data to extract the JSON data adhering to the current
         I/O schema.
 
         Args:
@@ -314,13 +314,13 @@ class IOSubscriber(Subscriber):
                             decoded.
 
         Returns
-            The decoded JSON data adhering to the latest I/O schema.
+            The decoded JSON data adhering to the current I/O schema.
 
         Raises:
             An exception in case data decoding failed.
         """
         data = json.loads(message_data.decode())
-        return io.schema.upgrade(io.schema.validate(data), copy=False)
+        return io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
 
 
 class ORMPatternPublisher(Publisher):
@@ -546,7 +546,7 @@ def io_publisher_main():
             print(publishing_id, file=sys.stdout)
             sys.stdout.flush()
         publisher.publish_iter(
-            (io.schema.upgrade(io.schema.validate(data), copy=False)
+            (io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
              for data in misc.json_load_stream_fd(sys.stdin.fileno())),
             done_cb=print_publishing_id
         )
