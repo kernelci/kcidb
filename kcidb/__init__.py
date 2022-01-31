@@ -9,11 +9,6 @@ from kcidb.misc import LIGHT_ASSERTS
 from kcidb import db, mq, orm, oo, monitor, tests, unittest, misc # noqa
 
 
-# pylint: disable=invalid-name
-# TODO Remove once users switched to kcidb_io.schema
-# Compatibility alias
-io_schema = io.schema
-
 # Module's logger
 LOGGER = logging.getLogger(__name__)
 
