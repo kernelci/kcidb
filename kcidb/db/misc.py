@@ -1,7 +1,7 @@
 """Kernel CI reporting database - misc definitions"""
 
 from abc import ABC, abstractmethod
-import kcidb_io as io
+import kcidb.io as io
 import kcidb.orm
 from kcidb.misc import LIGHT_ASSERTS
 

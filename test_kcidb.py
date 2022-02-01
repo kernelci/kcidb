@@ -3,7 +3,6 @@
 import re
 import json
 import textwrap
-import kcidb_io
 import kcidb
 
 
@@ -12,7 +11,7 @@ class LightAssertsTestCase(kcidb.unittest.TestCase):
 
     def test_light_asserts_are_disabled(self):
         """Check light asserts are disabled"""
-        self.assertFalse(kcidb_io.misc.LIGHT_ASSERTS,
+        self.assertFalse(kcidb.io.misc.LIGHT_ASSERTS,
                          "Tests must run with KCIDB_IO_HEAVY_ASSERTS "
                          "environment variable set to a non-empty string")
         self.assertFalse(kcidb.misc.LIGHT_ASSERTS,
@@ -55,7 +54,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', *argv, driver_source=driver_source,
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = kcidb_io.new()
+        empty = kcidb.io.new()
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
@@ -114,7 +113,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             "--parents", "--children", "--objects-per-report", "10",
             "--indent=0",
         ]
-        empty = kcidb_io.new()
+        empty = kcidb.io.new()
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             client = Mock()
@@ -149,12 +148,12 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         """Check kcidb-schema works"""
         self.assertExecutes(
                 "", "kcidb.schema_main",
-                stdout_re=f'.*"const": {kcidb_io.schema.LATEST.major},.*'
+                stdout_re=f'.*"const": {kcidb.io.schema.LATEST.major},.*'
         )
         self.assertExecutes(
                 "", "kcidb.schema_main",
-                str(kcidb_io.schema.LATEST.major - 1),
-                stdout_re=f'.*"const": {kcidb_io.schema.LATEST.major - 1},.*'
+                str(kcidb.io.schema.LATEST.major - 1),
+                stdout_re=f'.*"const": {kcidb.io.schema.LATEST.major - 1},.*'
         )
         self.assertExecutes("",
                             "kcidb.schema_main", "0",
@@ -162,10 +161,10 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             stderr_re=".*Invalid major version number: '0'\n")
         self.assertExecutes('{"version":{"major":4,"minor":0}}',
                             "kcidb.schema_main",
-                            str(kcidb_io.schema.LATEST.major + 1),
+                            str(kcidb.io.schema.LATEST.major + 1),
                             status=2,
                             stderr_re=".*No schema version found for major "
-                            f"number {kcidb_io.schema.LATEST.major + 1}\n")
+                            f"number {kcidb.io.schema.LATEST.major + 1}\n")
 
     def test_validate_main(self):
         """Check kcidb-validate works"""
@@ -192,10 +191,10 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             stderr_re=".*Invalid major version number: '0'\n")
         self.assertExecutes('{"version":{"major":4,"minor":0}}',
                             "kcidb.validate_main",
-                            str(kcidb_io.schema.LATEST.major + 1),
+                            str(kcidb.io.schema.LATEST.major + 1),
                             status=2,
                             stderr_re=".*No schema version found for major "
-                            f"number {kcidb_io.schema.LATEST.major + 1}\n")
+                            f"number {kcidb.io.schema.LATEST.major + 1}\n")
         self.assertExecutes('{', "kcidb.validate_main",
                             status=1, stderr_re=".*JSONParseError.*")
         self.assertExecutes('{}', "kcidb.validate_main",
@@ -210,8 +209,8 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_upgrade_main(self):
         """Check kcidb-upgrade works"""
-        major = kcidb_io.schema.LATEST.major
-        minor = kcidb_io.schema.LATEST.minor
+        major = kcidb.io.schema.LATEST.major
+        minor = kcidb.io.schema.LATEST.minor
 
         prev_version = \
             json.dumps(dict(version=dict(major=major - 1, minor=minor))) + "\n"
@@ -242,10 +241,10 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             stderr_re=".*Invalid major version number: '0'\n")
         self.assertExecutes(latest_version,
                             "kcidb.upgrade_main",
-                            str(kcidb_io.schema.LATEST.major + 1),
+                            str(kcidb.io.schema.LATEST.major + 1),
                             status=2,
                             stderr_re=".*No schema version found for major "
-                            f"number {kcidb_io.schema.LATEST.major + 1}\n")
+                            f"number {kcidb.io.schema.LATEST.major + 1}\n")
 
         self.assertExecutes(latest_version,
                             "kcidb.upgrade_main", str(major - 1),

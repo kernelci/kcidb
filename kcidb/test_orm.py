@@ -3,7 +3,6 @@
 # Over 1000 lines, pylint: disable=too-many-lines
 
 from jinja2 import Template
-import kcidb_io
 import kcidb
 
 
@@ -331,7 +330,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
         """
         Check Pattern.from_io() works correctly.
         """
-        io_data = kcidb_io.new()
+        io_data = kcidb.io.new()
         self.assertEqual(from_io(io_data), set())
 
         io_data = {
@@ -341,7 +340,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             ],
             "tests": [
             ],
-            **kcidb_io.new()
+            **kcidb.io.new()
         }
         self.assertEqual(from_io(io_data), set())
 
@@ -355,7 +354,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb_io.new()
+            **kcidb.io.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "checkout", {("origin:1",)})
@@ -385,7 +384,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb_io.new()
+            **kcidb.io.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(
@@ -402,7 +401,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb_io.new()
+            **kcidb.io.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "build", {("origin:2",)})
@@ -416,7 +415,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb_io.new()
+            **kcidb.io.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "test", {("origin:3",)})
@@ -446,7 +445,7 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                     "origin": "origin",
                 },
             ],
-            **kcidb_io.new()
+            **kcidb.io.new()
         }
         self.assertEqual(from_io(io_data), {
             pattern(None, True, "checkout", {("origin:1",)}),

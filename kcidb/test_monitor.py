@@ -1,7 +1,7 @@
 """kcdib.monitor module tests"""
 
 import unittest
-from kcidb_io import schema
+from kcidb.io import schema
 from kcidb import orm, db, oo, monitor
 
 # Disable long line checking for JSON data

@@ -3,7 +3,7 @@
 import sys
 import logging
 import argparse
-import kcidb_io as io
+import kcidb.io as io
 import kcidb.orm
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS

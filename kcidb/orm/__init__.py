@@ -9,7 +9,7 @@ import logging
 import argparse
 from abc import ABC, abstractmethod
 import jsonschema
-import kcidb_io as io
+import kcidb.io as io
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS
 

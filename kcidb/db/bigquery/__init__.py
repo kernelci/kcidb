@@ -9,7 +9,7 @@ from datetime import datetime
 from google.cloud import bigquery
 from google.api_core.exceptions import BadRequest as GoogleBadRequest
 from google.api_core.exceptions import NotFound as GoogleNotFound
-import kcidb_io as io
+import kcidb.io as io
 import kcidb.orm
 from kcidb.db.bigquery import schema
 from kcidb.misc import LIGHT_ASSERTS

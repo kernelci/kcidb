@@ -14,7 +14,7 @@ except ImportError:  # Python 3.6
     import importlib_metadata as metadata
 from google.cloud import secretmanager
 import jq
-import kcidb_io as io
+import kcidb.io as io
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
