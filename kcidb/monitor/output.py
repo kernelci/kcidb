@@ -181,7 +181,7 @@ class Notification:
         subject_extra_characters = \
             len(subject) - NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN
         if subject_extra_characters > 0:
-            subject = subject[:NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN - 1] + "✂️"
+            subject = subject[:NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN - 2] + "✂️"
             LOGGER.warning("Subject is %s characters too long, truncated",
                            subject_extra_characters)
         assert NOTIFICATION_MESSAGE_SUBJECT_RE.fullmatch(subject), \
@@ -191,7 +191,7 @@ class Notification:
         body_extra_characters = \
             len(body) - NOTIFICATION_MESSAGE_BODY_MAX_LEN
         if body_extra_characters > 0:
-            body = body[:NOTIFICATION_MESSAGE_BODY_MAX_LEN - 1] + "✂️"
+            body = body[:NOTIFICATION_MESSAGE_BODY_MAX_LEN - 2] + "✂️"
             LOGGER.warning("Body is %s characters too long, truncated",
                            body_extra_characters)
 
