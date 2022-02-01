@@ -93,6 +93,7 @@ jobs:
         run: kcidb-tests-validate --urls < tests.yaml
 
   check_deployment:
+    needs: check_python
     runs-on: ubuntu-latest
     steps:
       - name: Check credentials
