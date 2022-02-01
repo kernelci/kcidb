@@ -2,7 +2,7 @@
 
 import sys
 import textwrap
-import kcidb_io as io
+import kcidb.io as io
 import kcidb.misc
 from kcidb.db.sqlite import Driver as SQLiteDriver
 

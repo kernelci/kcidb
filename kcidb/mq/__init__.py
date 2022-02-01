@@ -8,7 +8,7 @@ import argparse
 from abc import ABC, abstractmethod
 from google.cloud import pubsub
 from google.api_core.exceptions import DeadlineExceeded
-import kcidb_io as io
+import kcidb.io as io
 import kcidb.orm
 from kcidb import misc
 from kcidb.misc import LIGHT_ASSERTS

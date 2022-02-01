@@ -6,7 +6,7 @@ import textwrap
 import sqlite3
 from functools import reduce
 import datetime
-import kcidb_io as io
+import kcidb.io as io
 import kcidb.orm
 from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db.sqlite import schema

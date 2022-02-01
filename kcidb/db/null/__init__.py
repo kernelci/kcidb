@@ -2,7 +2,7 @@
 
 import textwrap
 import datetime
-import kcidb_io as io
+import kcidb.io as io
 from kcidb.db.misc import Driver as AbstractDriver
 
 

@@ -2,7 +2,7 @@
 
 import email
 import unittest
-from kcidb_io import schema
+from kcidb.io import schema
 from kcidb import orm, db, oo
 from kcidb.monitor.output import NotificationMessage, Notification
 
