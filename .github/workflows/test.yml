@@ -51,7 +51,7 @@ jobs:
       - name: Check python sources with pylint
         run: "pylint kcidb *.py"
       - name: Test with pytest
-        run: KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest
+        run: KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest --tb=native
 
   check_auxilary_files:
 
@@ -145,7 +145,7 @@ jobs:
             source <(echo "$env")
             export GCP_PROJECT="${{ secrets.STAGING_GCLOUD_PROJECT }}"
             export KCIDB_DEPLOYED=1
-            pytest
+            pytest --tb=native
           ) || status=$((status || $?))
 
           ./cloud withdraw "${args[@]}" --verbose || status=$((status || $?))
