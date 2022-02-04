@@ -202,3 +202,83 @@ class NotificationTestCase(unittest.TestCase):
         self.assertEqual(message.get("Subject")[-2:], "✂️")
         self.assertEqual(len(message.get_body('plain').get_content()[:-1]), NOTIFICATION_MESSAGE_BODY_MAX_LEN)
         self.assertEqual((message.get_body('plain').get_content())[-3:-1], "✂️")
+
+    def test_subject_invalid_character(self):
+        """Check subject invalid character of Notification """
+
+        db_client = db.Client("sqlite::memory:")
+        db_client.init()
+        oo_client = oo.Client(db_client)
+        db_client.load({
+            "version": self.version,
+            "checkouts": [
+                {
+                    "contacts": [
+                        "rdma-dev-team@redhat.com"
+                    ],
+                    "start_time": "2020-03-02T15:16:15.790000+00:00",
+                    "git_repository_branch": "wip/jgg-for-next",
+                    "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux.git",
+                    "misc": {
+                        "pipeline_id": 467715
+                    },
+                    "id": "origin:1",
+                    "origin": "origin",
+                    "patchset_files": [],
+                    "valid": True,
+                },
+            ],
+            "builds": [
+                                {
+                    "id": "kernelci:kernelci.org:619fecfc6d932a49b5f2efb0",
+                    "checkout_id": "origin:1",
+                    "origin": "origin",
+                    "comment": "v5.16-rc2-19-g383a44aec91c",
+                    "start_time": "2021-11-25T20:07:24.499000+00:00",
+                    "duration": 486.695294857,
+                    "architecture": "x86_64",
+                    "config_name": "x86_64_defconfig+x86-chromebook+kselftest",
+                    "valid": True
+                },
+            ]
+        })
+        revision = oo_client.query(orm.Pattern.parse(">revision#"))["revision"][0]
+
+        # test invalid character in subject are replaced
+        # by the uncertainty sign character in the email
+        notification_message = NotificationMessage(
+            ["kernelci-results-staging@groups.io"],
+            subject="Test completed for linux.git:\n@commit20-\x7f\t",
+            body="Below is the summary of results Kernel CI database has recorded for this revision so far."
+        )
+        notification = Notification(revision, "test_subscription", notification_message)
+        message = notification.render()
+        self.assertIsInstance(message, email.message.EmailMessage)
+        self.assertEqual(len(message.get("Subject")), 42)
+        self.assertEqual(message.get("Subject")[29], "⯑")
+        self.assertEqual(message.get("Subject")[-2:], "⯑⯑")
+
+        # test empty subject passes unchanged in the email
+        notification_message = NotificationMessage(
+            ["kernelci-results-staging@groups.io"],
+            subject="",
+            body="Below is the summary of results."
+        )
+        notification = Notification(revision, "test_subscription2", notification_message)
+        message = notification.render()
+        self.assertIsInstance(message, email.message.EmailMessage)
+        self.assertEqual(len(message.get("Subject")), 0)
+
+        # test subject with all valid characters passes unchanged in the email
+        notification_message = NotificationMessage(
+            ["kernelci-results-staging@groups.io"],
+            subject="Testing for this Subject.😀😀",
+            body="Below is the summary of results."
+        )
+        notification = Notification(revision, "test_subscription2", notification_message)
+        message = notification.render()
+        self.assertIsInstance(message, email.message.EmailMessage)
+        self.assertEqual(len(message.get("Subject")), 27)
+        self.assertNotIn(message.get("Subject"), "⯑")
