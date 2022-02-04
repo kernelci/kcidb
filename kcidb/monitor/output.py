@@ -14,8 +14,11 @@ from kcidb.templates import ENV as TEMPLATE_ENV
 # We like the "id" name
 # pylint: disable=invalid-name
 
+# Characters not allowed in notifications message subjects
+NOTIFICATION_MESSAGE_SUBJECT_INVALID_CHARS = r"\x00-\x1f\x7f"
 # A regex matching permitted notification message subject strings
-NOTIFICATION_MESSAGE_SUBJECT_RE = re.compile(r"[^\x00-\x1f\x7f]*")
+NOTIFICATION_MESSAGE_SUBJECT_RE = \
+    re.compile(f"[^{NOTIFICATION_MESSAGE_SUBJECT_INVALID_CHARS}]*")
 # Maximum character length of a notification message subject
 NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN = 256
 # Maximum character length of a notification message body
@@ -184,9 +187,12 @@ class Notification:
             subject = subject[:NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN - 2] + "✂️"
             LOGGER.warning("Subject is %s characters too long, truncated",
                            subject_extra_characters)
-        assert NOTIFICATION_MESSAGE_SUBJECT_RE.fullmatch(subject), \
-            f"Subject is invalid, must match " \
-            f"{NOTIFICATION_MESSAGE_SUBJECT_RE.pattern} regex"
+        if not NOTIFICATION_MESSAGE_SUBJECT_RE.fullmatch(subject):
+            subject = re.sub(f"[{NOTIFICATION_MESSAGE_SUBJECT_INVALID_CHARS}]",
+                             "⯑", subject)
+            LOGGER.warning("Subject is invalid, must match %s"
+                           "regex, invalid characters removed",
+                           NOTIFICATION_MESSAGE_SUBJECT_RE.pattern)
         body = TEMPLATE_ENV.from_string(self.message.body).render(ctx)
         body_extra_characters = \
             len(body) - NOTIFICATION_MESSAGE_BODY_MAX_LEN
