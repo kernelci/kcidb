@@ -1,5 +1,6 @@
 """Kernel CI reporting - misc definitions"""
 
+import math
 import re
 import os
 import sys
@@ -164,6 +165,32 @@ def non_negative_int(string):
             f'{repr(string)} is not a positive integer, nor zero'
         )
     return int(string)
+
+
+def non_negative_int_or_inf(string):
+    """
+    Parse a non-negative integer or a positive infinity out of a string.
+    Matches the argparse type function interface.
+
+    Args:
+        string: The string to parse.
+
+    Returns:
+        The non-negative integer, or  parsed out of the string.
+
+    Raises:
+        argparse.ArgumentTypeError: the string wasn't representing a
+        non-negative integer or infinity.
+    """
+    try:
+        value = float(string)
+        if value != math.inf:
+            value = non_negative_int(string)
+    except (ValueError, argparse.ArgumentTypeError) as exc:
+        raise argparse.ArgumentTypeError(
+            f'{repr(string)} is not zero, a positive integer, or infinity'
+        ) from exc
+    return value
 
 
 def argparse_output_add_args(parser):
