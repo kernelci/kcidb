@@ -152,14 +152,15 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
             subscriber = Mock()
-            subscriber.pull = Mock(return_value=[("ID", {repr(empty)})])
+            subscriber.pull_iter = \
+                Mock(return_value=[("ID", {repr(empty)})])
             subscriber.ack = Mock()
             with patch("kcidb.mq.IOSubscriber", return_value=subscriber) as \
                     Subscriber:
                 status = function()
             Subscriber.assert_called_once_with("project", "topic",
                                                "subscription")
-            subscriber.pull.assert_called_once_with(1, timeout=123)
+            subscriber.pull_iter.assert_called_once_with(1, timeout=123)
             subscriber.ack.assert_called_once_with("ID")
             return status
         """)
@@ -327,7 +328,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
             from unittest.mock import patch, Mock
             from kcidb.orm import Pattern, SCHEMA
             subscriber = Mock()
-            subscriber.pull = Mock(return_value=[("ID", {
+            subscriber.pull_iter = Mock(return_value=[("ID", {
                 Pattern(
                     Pattern(
                         Pattern(
@@ -354,7 +355,7 @@ class KCIDBMQMainFunctionsTestCase(kcidb.unittest.TestCase):
                 status = function()
             Subscriber.assert_called_once_with("project", "topic",
                                                "subscription")
-            subscriber.pull.assert_called_once_with(1, timeout=123)
+            subscriber.pull_iter.assert_called_once_with(1, timeout=123)
             subscriber.ack.assert_called_once_with("ID")
             return status
         """)
