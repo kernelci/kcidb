@@ -108,75 +108,6 @@ def kcidb_load_message(event, context):
     UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
 
 
-def kcidb_load_queue_msgs(subscriber, msg_max, obj_max, timeout_sec):
-    """
-    Pull I/O data messages from a subscriber with a limit on message number,
-    total object number and time spent.
-
-    Args:
-        subscriber:     The subscriber (kcidb.mq.Subscriber) to pull from.
-        msg_max:        Maximum number of messages to pull.
-        obj_max:        Maximum number of objects to pull.
-        timeout_sec:    Maximum number of seconds to spend.
-
-    Returns:
-        The list of pulled messages.
-    """
-    # Yeah it's crowded, but bear with us, pylint: disable=too-many-locals
-    # Pull data from queue until we get enough, or time runs out
-    start = datetime.datetime.now(datetime.timezone.utc)
-    obj_num = 0
-    pulls = 0
-    msgs = []
-    while True:
-        # Calculate remaining messages
-        pull_msg_max = msg_max - len(msgs)
-        if pull_msg_max <= 0:
-            LOGGER.debug("Received enough messages")
-            break
-
-        # Calculate remaining time
-        pull_timeout_sec = \
-            timeout_sec - \
-            (datetime.datetime.now(datetime.timezone.utc) - start). \
-            total_seconds()
-        if pull_timeout_sec <= 0:
-            LOGGER.debug("Ran out of time")
-            break
-
-        # Pull
-        LOGGER.debug("Pulling <= %u messages from the queue, "
-                     "with timeout %us...", pull_msg_max, pull_timeout_sec)
-        pull_msgs = subscriber.pull(pull_msg_max, timeout=pull_timeout_sec)
-        pulls += 1
-        LOGGER.debug("Pulled %u messages", len(pull_msgs))
-
-        # Add messages up to obj_max, except the first one
-        for index, msg in enumerate(pull_msgs):
-            msg_obj_num = kcidb.io.SCHEMA.count(msg[1])
-            obj_num += msg_obj_num
-            if msgs and obj_num > obj_max:
-                LOGGER.debug("Message #%u crossed %u-object boundary "
-                             "at %u total objects",
-                             len(msgs) + 1, obj_max, obj_num)
-                obj_num -= msg_obj_num
-                for nack_msg in pull_msgs[index:]:
-                    subscriber.nack(nack_msg[0])
-                LOGGER.debug("NACK'ed %s messages", len(pull_msgs) - index)
-                break
-            msgs.append(msg)
-        else:
-            continue
-        break
-
-    duration_seconds = \
-        (datetime.datetime.now(datetime.timezone.utc) - start).total_seconds()
-    LOGGER.debug("Pulled %u messages, %u objects total "
-                 "in %u pulls and %u seconds",
-                 len(msgs), obj_num, pulls, duration_seconds)
-    return msgs
-
-
 def kcidb_load_queue(event, context):
     """
     Load multiple KCIDB data messages from the LOAD_QUEUE_SUBSCRIBER queue
@@ -192,10 +123,11 @@ def kcidb_load_queue(event, context):
         return
 
     # Pull messages
-    msgs = kcidb_load_queue_msgs(LOAD_QUEUE_SUBSCRIBER,
-                                 LOAD_QUEUE_MSG_MAX,
-                                 LOAD_QUEUE_OBJ_MAX,
-                                 LOAD_QUEUE_TIMEOUT_SEC)
+    msgs = LOAD_QUEUE_SUBSCRIBER.pull(
+        max_num=LOAD_QUEUE_MSG_MAX,
+        timeout=LOAD_QUEUE_TIMEOUT_SEC,
+        max_obj=LOAD_QUEUE_OBJ_MAX
+    )
     if msgs:
         LOGGER.info("Pulled %u messages", len(msgs))
     else:

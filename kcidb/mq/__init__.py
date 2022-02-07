@@ -392,6 +392,88 @@ class IOSubscriber(Subscriber):
         data = json.loads(message_data.decode())
         return io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
 
+    # We'll be OK, pylint: disable=arguments-differ
+    def pull_iter(self, max_num=math.inf, timeout=math.inf, max_obj=math.inf):
+        """
+        Create a generator iterator pulling published data from the message
+        queue, discarding (and logging as errors) invalid data. The generator
+        stops pulling when either the specified number of messages is
+        retrieved, the specified number of objects is retrieved within the
+        messages, or the specified timeout expires.
+
+        Args:
+            max_num:    Maximum number of messages to pull, or infinity for
+                        unlimited number of messages. Default is infinity.
+            timeout:    A finite number representing the seconds to spend
+                        retrieving "max_num" messages, or infinity to wait
+                        for messages forever. Default is infinity.
+            max_obj:    Maximum number of objects to pull within messages, or
+                        infinity for no limit. First pulled message is allowed
+                        to exceed the limit. Default is infinity.
+
+        Returns:
+            A generator iterator returning messages - tuples, each with two
+            items:
+            * The ID to use when acknowledging the reception of the data.
+            * The decoded data from the message queue.
+        """
+        assert isinstance(max_num, (int, float))
+        assert isinstance(timeout, (int, float))
+        assert isinstance(max_obj, (int, float))
+        msg_num = 0
+        obj_num = 0
+        msg_pull_iter = super().pull_iter(max_num=max_num, timeout=timeout)
+        try:
+            for msg in msg_pull_iter:
+                msg_obj_num = io.SCHEMA.count(msg[1])
+                obj_num += msg_obj_num
+                if msg_num > 0 and obj_num > max_obj:
+                    LOGGER.debug("Message #%u crossed %u-object boundary "
+                                 "at %u total objects, NACK'ing",
+                                 msg_num + 1, max_obj, obj_num)
+                    self.nack(msg[0])
+                    obj_num -= msg_obj_num
+                    break
+                msg_num += 1
+                yield msg
+            if obj_num >= max_obj:
+                LOGGER.debug("Received enough objects")
+        finally:
+            msg_pull_iter.close()
+
+    # We'll be OK, pylint: disable=arguments-differ
+    def pull(self, max_num=1, timeout=None, max_obj=None):
+        """
+        Pull published data from the message queue, discarding (and logging as
+        errors) invalid data. Stop pulling when either the specified number of
+        messages is retrieved, the specified number of objects is retrieved
+        within the messages, or the specified timeout expires.
+
+        Args:
+            max_num:    Maximum number of messages to pull, or infinity for
+                        unlimited number of messages. Cannot be infinity, if
+                        both "timeout" and "max_obj" are infinity.
+                        Default is infinity.
+            timeout:    A finite number representing the seconds to spend
+                        retrieving "max_num" messages and/or "max_obj"
+                        objects, or infinity to wait for messages forever.
+                        Default is infinity.
+            max_obj:    Maximum number of objects to pull within messages, or
+                        infinity for no limit. First pulled message is allowed
+                        to exceed the limit. Default is infinity.
+
+        Returns:
+            A list of messages - tuples, each with two items:
+            * The ID to use when acknowledging the reception of the data.
+            * The decoded data from the message queue.
+        """
+        assert isinstance(max_num, (int, float))
+        assert isinstance(timeout, (int, float))
+        assert isinstance(max_obj, (int, float))
+        assert max_num != math.inf or timeout != math.inf or \
+            max_obj != math.inf
+        return list(self.pull_iter(max_num, timeout, max_obj))
+
 
 class ORMPatternPublisher(Publisher):
     """ORM pattern queue publisher"""
