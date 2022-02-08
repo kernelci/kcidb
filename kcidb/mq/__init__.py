@@ -295,7 +295,7 @@ class IOPublisher(Publisher):
             An exception in case data encoding failed.
         """
         if not LIGHT_ASSERTS:
-            io.schema.validate_latest(data)
+            io.SCHEMA.validate_exactly(data)
         return json.dumps(data).encode()
 
 
