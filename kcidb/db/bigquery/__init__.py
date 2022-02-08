@@ -219,7 +219,7 @@ class Driver(AbstractDriver):
                 if value is None:
                     if drop_null:
                         del node[key]
-                elif key == "misc":
+                elif key == "misc" or key.endswith("_misc"):
                     node[key] = json.loads(value)
                 else:
                     node[key] = Driver._unpack_node(value)
