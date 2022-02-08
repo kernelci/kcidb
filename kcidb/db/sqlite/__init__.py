@@ -585,7 +585,7 @@ class Driver(AbstractDriver):
 
         Args:
             data:   The JSON data to load into the database.
-                    Must adhere to a version of I/O schema.
+                    Must adhere to the current version of I/O schema.
         """
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
         with self.conn:
