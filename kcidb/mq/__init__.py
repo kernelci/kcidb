@@ -842,3 +842,42 @@ def pattern_subscriber_main():
             ))
             sys.stdout.flush()
             subscriber.ack(ack_id)
+
+
+def email_publisher_main():
+    """Execute the kcidb-mq-email-publisher command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
+    description = \
+        'kcidb-mq-email-publisher - ' \
+        'Kernel CI email queue publisher management tool'
+    parser = PublisherArgumentParser("email", description=description)
+    args = parser.parse_args()
+    publisher = EmailPublisher(args.project, args.topic)
+    if args.command == "init":
+        publisher.init()
+    elif args.command == "cleanup":
+        publisher.cleanup()
+    elif args.command == "publish":
+        parser = email.parser.Parser(policy=email.policy.SMTPUTF8)
+        publisher.publish(parser.parse(sys.stdin))
+
+
+def email_subscriber_main():
+    """Execute the kcidb-mq-email-subscriber command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
+    description = \
+        'kcidb-mq-email-subscriber - ' \
+        'Kernel CI email queue subscriber management tool'
+    parser = SubscriberArgumentParser("email", description=description)
+    args = parser.parse_args()
+    subscriber = EmailSubscriber(args.project, args.topic, args.subscription)
+    if args.command == "init":
+        subscriber.init()
+    elif args.command == "cleanup":
+        subscriber.cleanup()
+    elif args.command == "pull":
+        for ack_id, data in \
+                subscriber.pull_iter(args.messages, timeout=args.timeout):
+            sys.stdout.write(data.as_string(policy=email.policy.SMTPUTF8))
+            sys.stdout.flush()
+            subscriber.ack(ack_id)
