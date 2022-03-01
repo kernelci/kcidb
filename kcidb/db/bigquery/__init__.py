@@ -120,8 +120,13 @@ class Driver(AbstractDriver):
             # Create raw table with duplicate records
             table_ref = self.dataset_ref.table("_" + table_name)
             table = bigquery.table.Table(table_ref, schema=table_schema)
+            table.time_partitioning = bigquery.TimePartitioning(
+                    type_=bigquery.TimePartitioningType.MONTH,
+                    field="start_time",
+                    expiration_ms=2592000,  # 1 month
+                )
             self.client.create_table(table)
-            # Create a view deduplicating the table records
+            # Create a view reduplicating the table records
             view_ref = self.dataset_ref.table(table_name)
             view = bigquery.table.Table(view_ref)
             view.view_query = \
