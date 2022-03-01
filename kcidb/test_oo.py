@@ -2,6 +2,7 @@
 
 import kcidb
 from kcidb.unittest import local_only
+from kcidb.oo import Checkout, Build, Test
 
 
 @local_only
@@ -203,3 +204,255 @@ class KCIDBOOClientTestCase(kcidb.unittest.TestCase):
             '>checkout#>build#>test#',
             {"test", "build", "checkout", "revision"}, 2
         )
+
+
+class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
+    """Test case for traversing objects."""
+
+    # Conform to unittest conventions, pylint: disable=invalid-name
+
+    def query_str(self, pattern_string):
+        """Run OO client query with a parsed string."""
+        return self.client.query(
+            kcidb.orm.Pattern.parse(pattern_string)
+        )
+
+    def assertContains(self, container, contents):
+        """
+        Check that a container has the specified contents.
+
+        Args:
+            container:  The container to check the contents of.
+            contents:   The contents pattern to check against. The pattern
+                        matches either a list of certain number of objects
+                        of particular type, or a dictionary with string keys
+                        and values matching specified patterns.
+
+                        A list pattern is a tuple containing the type of each
+                        contained instance, and the number of those instances.
+
+                        A dictionary pattern is a dictionary containing string
+                        keys for the matched dictionary to have, with values
+                        being patterns for the corresponding values in the
+                        matched dictionary.
+        """
+        assert isinstance(container, (list, dict))
+        assert isinstance(contents, (tuple, dict))
+
+        if isinstance(contents, tuple):
+            self.assertEqual(
+                len(contents), 2,
+                msg="Invalid number of element in contents"
+            )
+            self.assertEqual(
+                len(container), contents[1],
+                msg=f"Invalid number of {contents[0]} instances"
+            )
+            for i, obj in enumerate(container):
+                self.assertIsInstance(
+                    obj, contents[0],
+                    msg=f"Invalid type of {contents[0]} #{i}")
+
+        elif isinstance(contents, dict):
+            for key in {**container, **contents}:
+                if key not in contents:
+                    self.assertNotIn(key, container,
+                                     msg=f"Key({key}) missing in content.")
+                if key not in container:
+                    self.assertNotIn(key, contents,
+                                     msg=f"Extra key({key}) found in content.")
+
+                self.assertContains(container[key], contents[key])
+
+    def setUp(self):
+        """Setup database and create oo.Client object"""
+        source = kcidb.db.Client("sqlite::memory:")
+        source.init()
+        source.load(
+            {
+                "version": {"major": 4, "minor": 0},
+                "checkouts": [
+                    {
+                        "id": "_:valid1",
+                        "origin": "kernelci",
+                        "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                           "cd2311499c5b4e5f1",
+                        "patchset_hash": "",
+                        "git_repository_branch": "valid1",
+                        "git_repository_url": "https://repo_valid",
+                        "valid": True
+                    },
+                    {
+
+                        "id": "_:valid2",
+                        "origin": "redhat",
+                        "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                           "cd2311499c5b4e5f1",
+                        "patchset_hash": "",
+                        "git_repository_url": "https://repo_valid",
+                        "git_repository_branch": "valid2",
+                        "valid": True,
+
+                    },
+                    {
+                        "id": "_:invalid", "origin": "google",
+                        "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                           "cd2311499c5b4e5f1",
+                        "patchset_hash": "",
+                        "git_repository_branch": "invalid",
+                        "git_repository_url": "https://repo_invalid",
+                        "valid": False,
+                    }
+                ],
+                "builds": [
+                    {
+                        "id": "kernelci:valid1",
+                        "origin": "kernelci",
+                        "checkout_id": "_:valid1",
+                        "architecture": "valid1",
+                        "valid": True,
+                    },
+                    {
+                        "id": "kernelci:valid2",
+                        "origin": "kernelci",
+                        "checkout_id": "_:valid1",
+                        "architecture": "valid2",
+                        "valid": True,
+                    },
+                    {
+                        "id": "kernelci:invalid",
+                        "origin": "kernelci",
+                        "checkout_id": "_:valid1",
+                        "architecture": "invalid",
+                        "valid": False,
+                    },
+                    {
+                        "id": "redhat:valid1",
+                        "checkout_id": "_:valid2",
+                        "origin": "redhat",
+                        "valid": True,
+                        "architecture": "valid1",
+                    },
+                    {
+                        "id": "redhat:valid2",
+                        "checkout_id": "_:valid2",
+                        "origin": "redhat",
+                        "valid": True,
+                        "architecture": "valid2",
+                    },
+                    {
+                        "id": "redhat:invalid",
+                        "checkout_id": "_:valid2",
+                        "origin": "redhat",
+                        "valid": False,
+                        "architecture": "invalid",
+                    },
+                ],
+                "tests": [
+                    {
+                        "id": "kernelci:valid1_1",
+                        "build_id": "kernelci:valid1",
+                        "origin": "kernelci", "status": "PASS", "path": "pass1"
+                    },
+                    {
+                        "id": "kernelci:valid1_2",
+                        "build_id": "kernelci:valid1",
+                        "origin": "kernelci", "status": "PASS", "path": "pass2"
+                    },
+                    {
+                        "id": "kernelci:valid1_3",
+                        "build_id": "kernelci:valid1",
+                        "origin": "kernelci", "status": "FAIL", "path": "fail",
+                    },
+                    {
+                        "id": "kernelci:valid2_1",
+                        "build_id": "kernelci:valid2",
+                        "origin": "kernelci", "status": "PASS", "path": "pass1"
+                    },
+                    {
+                        "id": "kernelci:valid2_2",
+                        "build_id": "kernelci:valid2",
+                        "origin": "kernelci", "status": "PASS", "path": "pass2"
+                    },
+                    {
+                        "id": "kernelci:valid2_3",
+                        "build_id": "kernelci:valid2",
+                        "origin": "kernelci", "status": "FAIL", "path": "fail"
+                    },
+                    {
+                        "id": "redhat:valid1_1",
+                        "build_id": "redhat:valid1",
+                        "origin": "redhat", "status": "PASS", "path": "pass1"
+                    },
+                    {
+                        "id": "redhat:valid1_2",
+                        "build_id": "redhat:valid1",
+                        "origin": "redhat", "status": "PASS", "path": "pass2",
+                    },
+                    {
+                        "id": "redhat:valid1_3",
+                        "build_id": "redhat:valid1",
+                        "origin": "redhat", "status": "FAIL", "path": "fail",
+                    },
+                    {
+                        "id": "redhat:valid2_1",
+                        "build_id": "redhat:valid2",
+                        "origin": "redhat", "status": "PASS", "path": "pass1"
+                    },
+                    {
+                        "id": "redhat:valid2_2",
+                        "build_id": "redhat:valid2",
+                        "origin": "redhat", "status": "PASS", "path": "pass2",
+                    },
+                    {
+                        "id": "redhat:valid2_3",
+                        "build_id": "redhat:valid2",
+                        "origin": "redhat", "status": "FAIL", "path": "fail",
+                    },
+                ]
+            }
+        )
+        self.client = kcidb.oo.Client(source)
+
+    def test_traversing_revision_links(self):
+        """Check that revision's links are successfully traversed."""
+
+        revision = self.query_str(
+            '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]#'
+        )['revision'][0]
+
+        self.assertContains(revision.checkouts, (Checkout, 3))
+        self.assertContains(revision.builds, (Build, 6))
+        self.assertContains(revision.tests, (Test, 12))
+
+        self.assertContains(revision.repo_branch_checkouts, {
+            "https://repo_valid": {
+                "valid1": (Checkout, 1),
+                "valid2": (Checkout, 1),
+            },
+            "https://repo_invalid": {
+                "invalid": (Checkout, 1),
+            },
+        })
+        self.assertContains(revision.architecture_valid_builds, {
+            "invalid": {
+                False: (Build, 2),
+                True: (Build, 0),
+                None: (Build, 0),
+            },
+            "valid1": {
+                False: (Build, 0),
+                True: (Build, 2),
+                None: (Build, 0)
+            },
+            "valid2": {
+                False: (Build, 0),
+                True: (Build, 2),
+                None: (Build, 0)
+            }
+        })
+
+        self.assertFalse(revision.checkouts_valid)
+        self.assertFalse(revision.builds_valid)
+
+        self.assertIsInstance(revision.tests_root, kcidb.oo.Node)

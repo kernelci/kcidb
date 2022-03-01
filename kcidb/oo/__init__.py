@@ -419,6 +419,9 @@ class Build(Object, TestContainer):
 class Test(Object):
     """An OO-representation of a test"""
 
+    # prevent class from being collected by unittest.
+    __test__ = False
+
 
 # A map of object type names and Object-derived classes handling their data
 CLASSES = dict(
