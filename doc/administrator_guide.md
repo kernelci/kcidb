@@ -196,7 +196,7 @@ To upgrade the dataset schema, do the following.
 
         bq mk --project_id=kernelci kernelci02
         # Using new-schema kcidb
-        kcidb-db-init -d kernelci02
+        kcidb-db-init -d bigquery:kernelci02
 
 3. Switch all data submitters to using new-schema kcidb and the newly-created
    dataset.
@@ -205,7 +205,7 @@ To upgrade the dataset schema, do the following.
    with `_archive` suffix, using the old-schema kcidb:
 
         # Using old-schema kcidb
-        kcidb-db-init -d kernelci01_archive
+        kcidb-db-init -d bigquery:kernelci01_archive
 
 5. Using BigQuery management console, shedule copying the old dataset to the
    created dataset. When that is done, remove the old dataset.
@@ -215,7 +215,7 @@ To upgrade the dataset schema, do the following.
    `kcidb-db-dump` and new-schema `kcidb-db-load`.
 
         # Using old-schema kcidb
-        kcidb-db-dump -d kernelci01_archive > kernelci01_archive.json
+        kcidb-db-dump -d bigquery:kernelci01_archive > kernelci01_archive.json
         # Using new-schema kcidb
-        kcidb-db-load -d kernelci02 < kernelci01_archive.json
+        kcidb-db-load -d bigquery:kernelci02 < kernelci01_archive.json
 
