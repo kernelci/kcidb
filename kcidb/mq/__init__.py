@@ -549,6 +549,7 @@ class EmailPublisher(Publisher):
 class EmailSubscriber(Subscriber):
     """Email queue subscriber"""
 
+    # We'll be OK, pylint: disable=arguments-differ
     def decode_data(self, message_data):
         """
         Decode email from the message data.
