@@ -111,8 +111,8 @@ VALID_PRIORITY = {
 # positive integer, with lower values meaning higher priority. Sorted higher
 # priority first.
 TEST_STATUS_PRIORITY = {
-    "ERROR":    1,
-    "FAIL":     2,
+    "FAIL":     1,
+    "ERROR":    2,
     "PASS":     3,
     "DONE":     4,
     "SKIP":     5,
