@@ -344,6 +344,7 @@ class Revision(Object, BuildContainer, TestContainer):
             if branch not in branch_checkouts:
                 branch_checkouts[branch] = []
             branch_checkouts[branch].append(checkout)
+        # pylint: disable=modified-iterating-dict
         # Sort branches by number of checkouts
         for repo in repo_branch_checkouts:
             repo_branch_checkouts[repo] = dict(sorted(
