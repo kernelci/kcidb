@@ -514,6 +514,6 @@ class DeploymentEmailTestCase(unittest.TestCase):
             content = html.get_content()
             self.assertIn(f"Test {obj_type} detected!\r\n\r\n", content)
         # Check we got all four
-        self.assertEqual(len(obj_types), 0)
+        self.assertEqual(len(obj_types), 4)
         # Check we get no more notification messages
         self.assertEqual(len(email_subscriber.pull(1, 5)), 0)
