@@ -11,9 +11,8 @@ import sys
 import datetime
 import email
 import email.policy
-import dateutil.parser
 from google.cloud import firestore
-from kcidb.misc import ArgumentParser, log_and_print_excepthook
+from kcidb.misc import ArgumentParser, iso_timestamp, log_and_print_excepthook
 from kcidb.monitor.misc import is_valid_firestore_id
 from kcidb.monitor.output import Notification
 
@@ -289,15 +288,10 @@ def wipe_main():
     parser.add_argument(
         'until',
         metavar='UNTIL',
+        type=iso_timestamp,
         nargs='?',
         help='An ISO-8601 timestamp specifying the newest notification to be '
              'removed. The default is current time.'
     )
     args = parser.parse_args()
-    if args.until is None:
-        until = None
-    else:
-        until = dateutil.parser.isoparse(args.until)
-        if until.tzinfo is None:
-            until = until.astimezone()
-    Client(args.collection, project=args.project).wipe(until=until)
+    Client(args.collection, project=args.project).wipe(until=args.until)
