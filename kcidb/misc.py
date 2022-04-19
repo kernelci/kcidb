@@ -176,7 +176,8 @@ def non_negative_int_or_inf(string):
         string: The string to parse.
 
     Returns:
-        The non-negative integer, or  parsed out of the string.
+        The non-negative integer, or positive infinity parsed out of the
+        string.
 
     Raises:
         argparse.ArgumentTypeError: the string wasn't representing a
