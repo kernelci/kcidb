@@ -5,6 +5,7 @@ Always corresponds to the current I/O schema.
 """
 import json
 from enum import Enum
+import dateutil.parser
 
 
 class Constraint(Enum):
@@ -135,6 +136,33 @@ class JSONColumn(TextColumn):
         super().__init__(constraint=constraint)
 
 
+class TimestampColumn(TextColumn):
+    """A normalized timestamp column"""
+
+    @staticmethod
+    def pack(value):
+        """
+        Pack the JSON representation of the column value into the SQLite
+        representation.
+        """
+        return dateutil.parser.isoparse(value).isoformat(
+            timespec='microseconds'
+        )
+
+    def __init__(self, constraint=None):
+        """
+        Initialize the column description.
+
+        Args:
+            constraint:     The column's constraint.
+                            A member of the Constraint enum, or None,
+                            meaning no constraint.
+        """
+        assert constraint is None or isinstance(constraint, Constraint)
+
+        super().__init__(constraint=constraint)
+
+
 # A map of table names to CREATE TABLE statements
 TABLES = dict(
     checkouts=dict(
@@ -150,7 +178,7 @@ TABLES = dict(
             "patchset_hash": TextColumn(),
             "message_id": TextColumn(),
             "comment": TextColumn(),
-            "start_time": TextColumn(),
+            "start_time": TimestampColumn(),
             "contacts": JSONColumn(),
             "log_url": TextColumn(),
             "log_excerpt": TextColumn(),
@@ -164,7 +192,7 @@ TABLES = dict(
             "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
             "origin": TextColumn(constraint=Constraint.NOT_NULL),
             "comment": TextColumn(),
-            "start_time": TextColumn(),
+            "start_time": TimestampColumn(),
             "duration": Column("REAL"),
             "architecture": TextColumn(),
             "command": TextColumn(),
@@ -193,7 +221,7 @@ TABLES = dict(
             "log_excerpt": TextColumn(),
             "status": TextColumn(),
             "waived": BoolColumn(),
-            "start_time": TextColumn(),
+            "start_time": TimestampColumn(),
             "duration": Column("REAL"),
             "output_files": JSONColumn(),
             "misc": JSONColumn()
@@ -248,7 +276,7 @@ OO_QUERIES = dict(
             git_repository_branch=TextColumn(),
             tree_name=TextColumn(),
             message_id=TextColumn(),
-            start_time=TextColumn(),
+            start_time=TimestampColumn(),
             log_url=TextColumn(),
             log_excerpt=TextColumn(),
             comment=TextColumn(),
@@ -280,7 +308,7 @@ OO_QUERIES = dict(
             id=TextColumn(),
             checkout_id=TextColumn(),
             origin=TextColumn(),
-            start_time=TextColumn(),
+            start_time=TimestampColumn(),
             duration=Column("REAL"),
             architecture=TextColumn(),
             command=TextColumn(),
@@ -325,7 +353,7 @@ OO_QUERIES = dict(
             log_excerpt=TextColumn(),
             status=TextColumn(),
             waived=BoolColumn(),
-            start_time=TextColumn(),
+            start_time=TimestampColumn(),
             duration=Column("REAL"),
             output_files=JSONColumn(),
             comment=TextColumn(),
