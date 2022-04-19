@@ -2,7 +2,7 @@
 
 import kcidb
 from kcidb.unittest import local_only
-from kcidb.oo import Checkout, Build, Test
+from kcidb.oo import Checkout, Build, Test, Node
 
 
 @local_only
@@ -455,4 +455,4 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
         self.assertFalse(revision.checkouts_valid)
         self.assertFalse(revision.builds_valid)
 
-        self.assertIsInstance(revision.tests_root, kcidb.oo.Node)
+        self.assertIsInstance(revision.tests_root, Node)
