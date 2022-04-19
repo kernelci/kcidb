@@ -293,7 +293,7 @@ class Driver(AbstractDriver):
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
 
-        # A dictionary of object list names and three-element lists,
+        # A dictionary of object list names and two-element lists,
         # containing a SELECT statement (returning IDs of the objects to
         # fetch), and the list of its parameters.
         obj_list_queries = {
