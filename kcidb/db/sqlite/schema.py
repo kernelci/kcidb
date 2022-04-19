@@ -16,7 +16,23 @@ class Constraint(Enum):
 class Column:
     """A column description"""
 
-    def __init__(self, type, constraint=None, pack=None, unpack=None):
+    @staticmethod
+    def pack(value):
+        """
+        Pack the JSON representation of the column value into the SQLite
+        representation.
+        """
+        return value
+
+    @staticmethod
+    def unpack(value):
+        """
+        Unpack the SQLite representation of the column value into the JSON
+        representation.
+        """
+        return value
+
+    def __init__(self, type, constraint=None):
         """
         Initialize the column description.
 
@@ -26,19 +42,11 @@ class Column:
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
-            pack:           The function packing the JSON representation of
-                            column's values into the SQLite representation.
-            unpack:         The function unpacking the SQLite representation
-                            of column's values into the JSON representation.
         """
         assert isinstance(type, str)
         assert constraint is None or isinstance(constraint, Constraint)
-        assert pack is None or callable(pack)
-        assert unpack is None or callable(unpack)
         self.type = type
         self.constraint = constraint
-        self.pack = pack or (lambda x: x)
-        self.unpack = unpack or (lambda x: x)
 
     def format_nameless_def(self):
         """
@@ -57,6 +65,14 @@ class Column:
 class BoolColumn(Column):
     """A boolean column"""
 
+    @staticmethod
+    def unpack(value):
+        """
+        Unpack the SQLite representation of the column value into the JSON
+        representation.
+        """
+        return bool(value) if value is not None else None
+
     def __init__(self, constraint=None):
         """
         Initialize the column description.
@@ -67,16 +83,13 @@ class BoolColumn(Column):
                             meaning no constraint.
         """
         assert constraint is None or isinstance(constraint, Constraint)
-        super().__init__(
-            "INT", constraint=constraint,
-            unpack=lambda x: bool(x) if x is not None else None
-        )
+        super().__init__("INT", constraint=constraint)
 
 
 class TextColumn(Column):
     """A text column"""
 
-    def __init__(self, constraint=None, pack=None, unpack=None):
+    def __init__(self, constraint=None):
         """
         Initialize the column description.
 
@@ -84,20 +97,29 @@ class TextColumn(Column):
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
-            pack:           The function packing the JSON representation of
-                            column's values into the SQLite representation.
-            unpack:         The function unpacking the SQLite representation
-                            of column's values into the JSON representation.
         """
         assert constraint is None or isinstance(constraint, Constraint)
-        assert pack is None or callable(pack)
-        assert unpack is None or callable(unpack)
-        super().__init__("TEXT", constraint=constraint,
-                         pack=pack, unpack=unpack)
+        super().__init__("TEXT", constraint=constraint)
 
 
 class JSONColumn(TextColumn):
     """A JSON-encoded column"""
+
+    @staticmethod
+    def pack(value):
+        """
+        Pack the JSON representation of the column value into the SQLite
+        representation.
+        """
+        return json.dumps(value) if value is not None else None
+
+    @staticmethod
+    def unpack(value):
+        """
+        Unpack the SQLite representation of the column value into the JSON
+        representation.
+        """
+        return json.loads(value) if value is not None else None
 
     def __init__(self, constraint=None):
         """
@@ -110,10 +132,7 @@ class JSONColumn(TextColumn):
         """
         assert constraint is None or isinstance(constraint, Constraint)
 
-        super().__init__(
-            constraint=constraint,
-            pack=lambda x: json.dumps(x) if x is not None else None,
-            unpack=lambda x: json.loads(x) if x is not None else None)
+        super().__init__(constraint=constraint)
 
 
 # A map of table names to CREATE TABLE statements
