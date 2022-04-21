@@ -217,6 +217,23 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
             kcidb.orm.Pattern.parse(pattern_string)
         )
 
+    @staticmethod
+    def filter_valid(container):
+        """
+        Filter out the valid items in a container.
+        Args:
+            container:  A list whose items are object(s) that
+                        have "valid" property.
+
+        Returns:
+            The list of object(s) with valid property true.
+        """
+        assert all(hasattr(i, "valid") for i in container)
+        return list(filter(
+            lambda item: item.valid is True,
+            container
+        ))
+
     def assertContains(self, container, contents):
         """
         Check that a container has the specified contents.
@@ -456,3 +473,81 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
         self.assertFalse(revision.builds_valid)
 
         self.assertIsInstance(revision.tests_root, Node)
+
+    def test_traversing_valid_checkout_links(self):
+        """Check that valid checkout links are successfully traversed."""
+        checkouts = KCIDBTraversingTestCase.filter_valid(
+            self.query_str(
+                '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
+                '>checkout#'
+            )["checkout"]
+        )
+        self.assertContains(checkouts, (Checkout, 2))
+        self.assertEqual(
+            checkouts[0].get_parent_id("revision"),
+            checkouts[0].revision.get_id()
+        )
+        self.assertContains(checkouts[0].builds, (Build, 3))
+        self.assertContains(checkouts[0].tests, (Test, 6))
+        self.assertIsInstance(checkouts[0].tests_root, Node)
+
+    def test_traversing_valid_build_links(self):
+        """Check that valid build links are successfully traversed."""
+        builds = KCIDBTraversingTestCase.filter_valid(
+            self.query_str(
+                '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
+                '>checkout>build#'
+            )["build"]
+        )
+        self.assertContains(builds, (Build, 4))
+        self.assertEqual(
+            builds[3].get_parent_id("checkout"),
+            builds[3].checkout.get_id()
+        )
+        self.assertContains(builds[0].tests, (Test, 3))
+        self.assertIsInstance(builds[0].tests_root, Node)
+
+    def test_traversing_test_links(self):
+        """Check that test links are successfully traversed."""
+        tests = self.query_str(
+            '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
+            '>checkout>build>test#'
+        )["test"]
+        self.assertContains(tests, (Test, 12))
+        self.assertEqual(
+            tests[2].get_parent_id("build"),
+            tests[2].build.get_id()
+        )
+
+    def test_traversing_revision_root_test_node(self):
+        """
+        Check that valid revision's root test node links are
+        successfully traversed.
+        """
+        revision = self.query_str(
+            '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]#'
+        )['revision'][0]
+
+        self.assertEqual(
+            revision,
+            revision.tests_root.parent
+        )
+        self.assertContains(
+            revision.tests_root.tests,
+            (Test, 12)
+        )
+
+        path = []
+        for key in revision.tests_root.nodes:
+            node = revision.tests_root.nodes[key]
+            path.append(node.path)
+
+            self.assertEqual(node.parent, revision.tests_root)
+
+            self.assertContains(node.tests, (Test, 4))
+            # Check that each tests have the same path.
+            self.assertEqual(len({obj.path for obj in node.tests}), 1)
+
+            self.assertEqual(node.nodes, {})
+
+        self.assertEqual(path, ["pass1", "pass2", "fail"])
