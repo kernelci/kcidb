@@ -212,7 +212,6 @@ TABLES = dict(
             "build_id": TextColumn(constraint=Constraint.NOT_NULL),
             "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
             "origin": TextColumn(constraint=Constraint.NOT_NULL),
-            "environment.id": TextColumn(),
             "environment.comment": TextColumn(),
             "environment.misc": JSONColumn(),
             "path": TextColumn(),
