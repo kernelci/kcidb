@@ -228,7 +228,6 @@ class Driver(AbstractDriver):
                 cursor.close()
 
         if obj_num:
-            io.SCHEMA.validate_exactly(data)
             assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
             yield data
 
