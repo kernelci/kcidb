@@ -44,6 +44,7 @@ setuptools.setup(
         "google-cloud-pubsub",
         "google-cloud-firestore",
         "google-cloud-secret-manager",
+        "psycopg2",
         # TODO: remove with minimal requirement of Python 3.8
         "importlib_metadata",
         "jsonschema[format]",
