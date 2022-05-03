@@ -7,7 +7,7 @@ import kcidb.io as io
 import kcidb.orm
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS
-from kcidb.db import bigquery, sqlite, json, null, misc
+from kcidb.db import bigquery, postgresql, sqlite, json, null, misc
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
@@ -16,6 +16,7 @@ LOGGER = logging.getLogger(__name__)
 # A dictionary of known driver names and types
 DRIVER_TYPES = dict(
     bigquery=bigquery.Driver,
+    postgresql=postgresql.Driver,
     sqlite=sqlite.Driver,
     json=json.Driver,
     null=null.Driver,

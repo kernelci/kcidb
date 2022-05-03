@@ -4,6 +4,7 @@ google-cloud-bigquery
 google-cloud-pubsub
 google-cloud-firestore
 google-cloud-secret-manager
+psycopg2
 importlib_metadata
 jsonschema[format]
 requests
