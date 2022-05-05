@@ -316,6 +316,10 @@ class DeploymentEmailTestCase(unittest.TestCase):
     """Deployment email generation test case"""
 
     @deployment_only
+    @unittest.skipUnless(
+        os.environ.get("KCIDB_UPDATED_PUBLISH", ""),
+        "Updates about loaded data are disabled"
+    )
     def test_email_generated(self):
         """Check appropriate email is generated for "test" subscription"""
 

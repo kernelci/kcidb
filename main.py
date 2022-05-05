@@ -79,6 +79,8 @@ DB_CLIENT = kcidb.db.Client(DATABASE)
 OO_CLIENT = kcidb.oo.Client(DB_CLIENT)
 # The notification spool client
 SPOOL_CLIENT = kcidb.monitor.spool.Client(SPOOL_COLLECTION_PATH)
+# True if the database updates should be published to the updated queue
+UPDATED_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_PUBLISH", ""))
 # The publisher object for the queue with patterns matching objects updated by
 # loading submissions.
 UPDATED_QUEUE_PUBLISHER = kcidb.mq.ORMPatternPublisher(
@@ -99,13 +101,14 @@ def kcidb_load_message(event, context):
     LOGGER.debug("DATA: %s", json.dumps(data))
     # Store it in the database
     DB_CLIENT.load(data)
-    # Generate patterns matching all affected objects
-    pattern_set = set()
-    for pattern in kcidb.orm.Pattern.from_io(data):
-        # TODO Avoid formatting and parsing
-        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
-    # Publish patterns matching all affected objects
-    UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
+    if UPDATED_PUBLISH:
+        # Generate patterns matching all affected objects
+        pattern_set = set()
+        for pattern in kcidb.orm.Pattern.from_io(data):
+            # TODO Avoid formatting and parsing
+            pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
+        # Publish patterns matching all affected objects
+        UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
 
 
 def kcidb_load_queue(event, context):
@@ -153,15 +156,16 @@ def kcidb_load_queue(event, context):
         LOAD_QUEUE_SUBSCRIBER.ack(msg[0])
     LOGGER.debug("ACK'ed %u messages", len(msgs))
 
-    # Generate patterns matching all affected objects
-    pattern_set = set()
-    for pattern in kcidb.orm.Pattern.from_io(data):
-        # TODO Avoid formatting and parsing
-        pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
+    if UPDATED_PUBLISH:
+        # Generate patterns matching all affected objects
+        pattern_set = set()
+        for pattern in kcidb.orm.Pattern.from_io(data):
+            # TODO Avoid formatting and parsing
+            pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
 
-    # Publish patterns matching all affected objects
-    UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
-    LOGGER.info("Published updates made by %u loaded objects", obj_num)
+        # Publish patterns matching all affected objects
+        UPDATED_QUEUE_PUBLISHER.publish(pattern_set)
+        LOGGER.info("Published updates made by %u loaded objects", obj_num)
 
 
 def kcidb_spool_notifications(event, context):
