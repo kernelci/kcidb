@@ -527,7 +527,7 @@ function cloud_function_withdraw() {
     fi
 }
 
-# Output deployment environment YAML for Cloud Functions
+# Output deployment environment for Cloud Functions
 # Args: --format=yaml|sh
 #       --log-level=NAME
 #       --heavy-asserts=true|false
