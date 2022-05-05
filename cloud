@@ -532,7 +532,9 @@ function cloud_function_withdraw() {
 #       --log-level=NAME
 #       --heavy-asserts=true|false
 #       --new-topic=NAME --new-load-subscription=NAME
-#       --updated-topic=NAME --spool-collection-path=PATH
+#       --updated-publish=true|false
+#       --updated-topic=NAME
+#       --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --smtp-topic=NAME --smtp-subscription=NAME
@@ -542,7 +544,8 @@ function cloud_functions_env() {
                           log_level \
                           heavy_asserts \
                           new_topic new_load_subscription \
-                          updated_topic spool_collection_path \
+                          updated_publish updated_topic \
+                          spool_collection_path \
                           extra_cc \
                           smtp_to_addrs smtp_password_secret \
                           smtp_topic smtp_subscription \
@@ -581,6 +584,9 @@ function cloud_functions_env() {
         env[KCIDB_IO_HEAVY_ASSERTS]="1"
         env[KCIDB_HEAVY_ASSERTS]="1"
     fi
+    if "$updated_publish"; then
+        env[KCIDB_UPDATED_PUBLISH]="1"
+    fi
     if [ "$format" == "yaml" ]; then
         # Silly Python and its significant whitespace
         sed -E 's/^[[:blank:]]+//' <<<'
@@ -608,7 +614,8 @@ function cloud_functions_env() {
 #       --log-level=NAME
 #       --heavy-asserts=true|false
 #       --new-topic=NAME --new-load-subscription=NAME
-#       --updated-topic=NAME --spool-collection-path=PATH
+#       --updated-publish=true|false --updated-topic=NAME
+#       --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --smtp-topic=NAME --smtp-subscription=NAME
@@ -619,7 +626,8 @@ function cloud_functions_deploy() {
                           pick_notifications_trigger_topic \
                           log_level heavy_asserts \
                           new_topic new_load_subscription \
-                          updated_topic spool_collection_path \
+                          updated_publish updated_topic \
+                          spool_collection_path \
                           extra_cc \
                           smtp_to_addrs smtp_password_secret \
                           smtp_topic smtp_subscription \
@@ -638,6 +646,7 @@ function cloud_functions_deploy() {
                         --heavy-asserts="$heavy_asserts" \
                         --new-topic="$new_topic" \
                         --new-load-subscription="$new_load_subscription" \
+                        --updated-publish="$updated_publish" \
                         --updated-topic="$updated_topic" \
                         --spool-collection-path="$spool_collection_path" \
                         --extra-cc="$extra_cc" \
@@ -961,6 +970,7 @@ function sections_run() {
 #       --smtp-mocked=true|false
 #       --log-level=NAME
 #       --heavy-asserts=true|false
+#       --updated-publish=true|false
 #       --submitters=WORDS
 function execute_command() {
     params="$(getopt_vars command \
@@ -975,6 +985,7 @@ function execute_command() {
                           smtp_mocked \
                           log_level \
                           heavy_asserts \
+                          updated_publish \
                           submitters \
                           -- "$@")"
     eval "$params"
@@ -1004,6 +1015,7 @@ function execute_command() {
                             --heavy-asserts="$heavy_asserts" \
                             --new-topic="$new_topic" \
                             --new-load-subscription="$new_load_subscription" \
+                            --updated-publish="$updated_publish" \
                             --updated-topic="$updated_topic" \
                             --spool-collection-path="$spool_collection_path" \
                             --extra-cc="$extra_cc" \
@@ -1048,6 +1060,7 @@ function execute_command() {
             --heavy-asserts="$heavy_asserts" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
+            --updated-publish="$updated_publish" \
             --updated-topic="$updated_topic" \
             --spool-collection-path="$spool_collection_path" \
             --extra-cc="$extra_cc" \
@@ -1141,6 +1154,8 @@ function usage_deploy() {
     echo "              Default is INFO."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
+    echo "    --mute-updates"
+    echo "              Disable posting updates about loaded data."
     echo "    --submitter=NAME"
     echo "              Specify a service account to permit submissions for."
     echo "              Repeat to add more submitters."
@@ -1180,6 +1195,8 @@ function usage_env() {
     echo "              Default is INFO."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
+    echo "    --mute-updates"
+    echo "              Disable posting updates about loaded data."
     echo ""
     echo "Positional arguments:"
     echo ""
@@ -1283,7 +1300,7 @@ function execute() {
         fi
         if [[ $command == @(deploy|env) ]]; then
             getopt_longopts+=",extra-cc:,smtp-to-addrs:"
-            getopt_longopts+=",log-level:,heavy-asserts"
+            getopt_longopts+=",log-level:,heavy-asserts,mute-updates"
             if [[ $command == env ]]; then
                 getopt_longopts+=",format:"
             fi
@@ -1314,6 +1331,7 @@ function execute() {
     declare smtp_mocked="false"
     declare log_level="INFO"
     declare heavy_asserts="false"
+    declare updated_publish="true"
     declare -a submitters=()
     declare format="yaml"
     while true; do
@@ -1327,6 +1345,7 @@ function execute() {
             --smtp-mocked) smtp_mocked="true"; shift;;
             --log-level) log_level="$2"; shift 2;;
             --heavy-asserts) heavy_asserts="true"; shift;;
+            --mute-updates) updated_publish="false"; shift;;
             --format) format="$2"; shift 2;;
             --submitter) submitters+=("$2"); shift 2;;
             --) shift; break;;
@@ -1378,6 +1397,7 @@ function execute() {
                     --smtp-mocked="$smtp_mocked" \
                     --log-level="$log_level" \
                     --heavy-asserts="$heavy_asserts" \
+                    --updated-publish="$updated_publish" \
                     --submitters="${submitters[*]@Q}"
 }
 
