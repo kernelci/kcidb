@@ -742,15 +742,13 @@ function scheduler_job_pubsub_deploy() {
     declare -r message_body="$1"; shift
     exists=$(scheduler_job_exists "$project" "$name")
     if "$exists"; then
-        if (($#)); then
-            mute gcloud scheduler jobs update pubsub \
-                "${name}" \
-                --quiet \
-                --project="$project" \
-                --topic="$topic" \
-                --schedule="$schedule" \
-                --message-body="$message_body"
-        fi
+        mute gcloud scheduler jobs update pubsub \
+            "${name}" \
+            --quiet \
+            --project="$project" \
+            --topic="$topic" \
+            --schedule="$schedule" \
+            --message-body="$message_body"
     else
         mute gcloud scheduler jobs create pubsub \
             "${name}" \
