@@ -19,7 +19,7 @@ class Column:
     @staticmethod
     def pack(value):
         """
-        Pack the JSON representation of the column value into the SQLite
+        Pack the JSON representation of the column value into the PostgreSQL
         representation.
         """
         return value
@@ -27,7 +27,7 @@ class Column:
     @staticmethod
     def unpack(value):
         """
-        Unpack the SQLite representation of the column value into the JSON
+        Unpack the PostgreSQL representation of the column value into the JSON
         representation.
         """
         return value
@@ -37,8 +37,8 @@ class Column:
         Initialize the column schema.
 
         Args:
-            type:           The name of the SQLite type (affinity) to use for
-                            this column.
+            type:           The name of the PostgreSQL type (affinity) to use
+                            for this column.
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
@@ -143,7 +143,7 @@ class TimestampColumn(Column):
     @staticmethod
     def unpack(value):
         """
-        Unpack the SQLite representation of the column value into the JSON
+        Unpack the PostgreSQL representation of the column value into the JSON
         representation.
         """
         return value.isoformat()
