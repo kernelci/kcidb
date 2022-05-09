@@ -231,18 +231,17 @@ class Table:
 
     def format_insert(self, name, prio_db):
         """
-        Format the "INSERT" command template for loading a row into a
+        Format the "INSERT/UPDATE" command template for loading a row into a
         database, observing deduplication logic.
 
         Args:
             name:       The name of the target table of the command.
-            prio_db:    If the object being loaded is already in the database,
-                        prioritize the database values, if true, and the
-                        values being loaded otherwise.
-
+            prio_db:    If true, format the UPDATE part of the command so that
+                        the values already in the database take priority over
+                        the loaded ones, and vice versa otherwise.
         Returns:
-            The formatted "INSERT" command template, expecting parameters
-            packed by the pack() method.
+            The formatted "INSERT/UPDATE" command template, expecting
+            parameters packed by the pack() method.
         """
         assert isinstance(name, str)
         return \
