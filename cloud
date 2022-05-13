@@ -16,8 +16,27 @@ shopt -s extglob
 # The directory where all temporary files should be created
 export TMPDIR=$(mktemp -d -t "kcidb_cloud.XXXXXXXXXX")
 
+# Location of the PostgreSQL proxy binary we (could) download
+declare PSQL_PROXY_BINARY="$TMPDIR/cloud_sql_proxy"
+
+# Location of the PostgreSQL proxy socket directory
+declare PSQL_PROXY_DIR="$TMPDIR/cloud_sql_sockets"
+
+# File containing the PID of the PostgreSQL proxy, if started
+declare PSQL_PROXY_PID_FILE="$TMPDIR/cloud_sql_proxy.pid"
+
+# The .pgpass file for the command running through PostgreSQL proxy
+declare PSQL_PROXY_PGPASS="$TMPDIR/cloud_sql_proxy.pgpass"
+
 # Cleanup after the script
 function _cleanup() {
+    # Kill the cloud_sql_proxy, if started
+    if [ -e "$PSQL_PROXY_PID_FILE" ]; then
+        declare pid
+        pid=$(< "$PSQL_PROXY_PID_FILE")
+        kill "$pid" 2>/dev/null || true
+        rm -f "$PSQL_PROXY_PID_FILE"
+    fi
     # Remove the directory with all the temporary files
     rm -Rf "$TMPDIR"
 }
@@ -177,6 +196,364 @@ function services_enable() {
     mute gcloud services enable --quiet --project="$project" "${names[@]}"
 }
 
+# The name of the Cloud SQL instance we're creating/using
+# Specified statically as instance names have 7-day recycling period
+declare -r PSQL_INSTANCE="postgresql"
+
+# The region used to host our PostgreSQL instance
+declare -r PSQL_INSTANCE_REGION="us-central1"
+
+# The tier used for the automatically-created PostgreSQL instance
+declare -r PSQL_INSTANCE_TIER="db-f1-micro"
+
+# The name of the PostgreSQL viewer user. Granted read-only permissions for
+# all KCIDB databases to make it easier to switch the queried database in UI.
+declare -r PSQL_VIEWER="kcidb_viewer"
+
+# Check if a PostgreSQL instance exists.
+# Args: project name
+# Output: "true" if the instance exists, "false" otherwise.
+function psql_instance_exists() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    if output=$(
+            gcloud sql instances describe \
+                --quiet --project="$project" \
+                "$name" 2>&1
+       ); then
+        echo "true"
+    elif [[ $output == *\ instance\ does\ not\ exist.* ]]; then
+        echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Deploy a PostgreSQL instance if it doesn't exist
+# Args: project name viewer
+function psql_instance_deploy() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare -r viewer="$1"; shift
+    declare exists
+
+    exists=$(psql_instance_exists "$project" "$name")
+    if ! "$exists"; then
+        # Get and cache the password in the current shell first
+        password_get psql_superuser >/dev/null
+        # Create the instance with the cached password
+        # Where are your security best practices, Google?
+        mute gcloud sql instances create \
+            "$name" \
+            --quiet \
+            --project="$project" \
+            --region="$PSQL_INSTANCE_REGION" \
+            --tier="$PSQL_INSTANCE_TIER" \
+            --assign-ip \
+            --database-flags=cloudsql.iam_authentication=on \
+            --root-password="$(password_get psql_superuser)" \
+            --database-version=POSTGRES_14
+    fi
+
+    # Deploy the shared viewer user
+    exists=$(psql_user_exists "$project" "$name" "$viewer")
+    if ! "$exists" || password_is_specified psql_viewer; then
+        # Get and cache the password in the current shell first
+        password_get psql_viewer >/dev/null
+        # Create the user with the cached password
+        password_get psql_viewer |
+            psql_user_deploy "$project" "$name" "$viewer"
+    fi
+}
+
+# Execute a command with the PostgreSQL proxy providing the connection to a
+# database with the "postgres" user. Setup environment variables for
+# connection with an empty connection string, using libpq.
+# Args: project instance database command arg...
+function psql_proxy_session() {
+    # Source:
+    # https://cloud.google.com/sql/docs/postgres/connect-admin-proxy#install
+    declare -r url_base="https://dl.google.com/cloudsql/cloud_sql_proxy."
+    declare -r -A url_os_sfx=(
+        ["x86_64 GNU/Linux"]="linux.amd64"
+        ["i386 GNU/Linux"]="linux.386"
+    )
+    declare -r project="$1"; shift
+    declare -r instance="$1"; shift
+    declare -r database="$1"; shift
+    declare -r fq_instance="$project:$PSQL_INSTANCE_REGION:$instance"
+    # The default proxy binary, if installed
+    declare proxy="cloud_sql_proxy"
+    declare pid
+    declare pgpass
+
+    # If we don't have the proxy in our path
+    if ! command -v "$proxy" >/dev/null; then
+        # If we don't have the proxy binary downloaded yet
+        if ! [ -e "$PSQL_PROXY_BINARY" ]; then
+            declare -r url="${url_base}${url_os_sfx[$(uname -m -o)]}"
+            # Download the proxy binary
+            mute wget --quiet -O "$PSQL_PROXY_BINARY" "$url"
+            chmod 0755 "$PSQL_PROXY_BINARY"
+        fi
+        # Use the downloaded proxy
+        proxy="$PSQL_PROXY_BINARY"
+    fi
+
+    # If we don't have the socket directory created yet
+    if ! [ -e "$PSQL_PROXY_DIR" ]; then
+        # Create the temporary directory
+        mkdir "$PSQL_PROXY_DIR"
+    fi
+
+    # Start the proxy in background
+    mute "$proxy" "-instances=$fq_instance" "-dir=$PSQL_PROXY_DIR" &
+    pid="$!"
+    # Store the PID for errexit cleanup
+    echo -n "$pid" > "$PSQL_PROXY_PID_FILE"
+
+    # Create the .pgpass file
+    touch "$PSQL_PROXY_PGPASS"
+    chmod 0600 "$PSQL_PROXY_PGPASS"
+    password_get_pgpass psql_superuser postgres >| "$PSQL_PROXY_PGPASS"
+
+    # Run the command
+    PGHOST="$PSQL_PROXY_DIR/$fq_instance" \
+    PGDATABASE="$database" \
+    PGPASSFILE="$PSQL_PROXY_PGPASS" \
+    PGUSER="postgres" \
+        "$@"
+
+    # Remove the .pgpass file
+    rm "$PSQL_PROXY_PGPASS"
+
+    # Stop the proxy
+    kill "$pid" && wait "$pid" || true
+    rm "$PSQL_PROXY_PID_FILE"
+}
+
+# Check if a PostgreSQL database exists.
+# Args: project instance name
+# Output: "true" if the database exists, "false" otherwise.
+function psql_database_exists() {
+    declare -r project="$1"; shift
+    declare -r instance="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    if output=$(
+            gcloud sql databases describe \
+                --quiet --project="$project" \
+                --instance="$instance" \
+                "$name" 2>&1
+       ); then
+        echo "true"
+    elif [[ $output == *\ Not\ Found* ]]; then
+        echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Initialize a PostgreSQL database and its paraphernalia.
+# Expect the environment to be set up with variables permitting a libpq user
+# to connect to the database as a superuser, with an empty connection string.
+# Args: submitter viewer
+function _psql_database_init() {
+    declare -r submitter="$1"; shift
+    declare -r viewer="$1"; shift
+    mute kcidb-db-init -lDEBUG -d "postgresql" --ignore-initialized
+    # Deploy viewer and submitter permissions
+    mute psql -e <<<"
+        \\set ON_ERROR_STOP on
+        GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public
+        TO $submitter;
+        GRANT SELECT ON ALL TABLES IN SCHEMA public
+        TO $viewer;
+    "
+}
+
+# Cleanup a PostgreSQL database and its paraphernalia.
+# Expect the environment to be set up with variables permitting a libpq user
+# to connect to the database as a superuser, with an empty connection string.
+# Args: submitter viewer
+function _psql_database_cleanup() {
+    declare -r submitter="$1"; shift
+    declare -r viewer="$1"; shift
+    # Withdraw viewer and submitter permissions
+    mute psql -e <<<"
+        /* Do not stop on errors in case users are already removed */
+        REVOKE SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public
+        FROM $submitter;
+        REVOKE SELECT ON ALL TABLES IN SCHEMA public
+        FROM $viewer;
+        \\set ON_ERROR_STOP on
+        /* Terminate all connections to the database except this one */
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = :'DBNAME' AND pid <> pg_backend_pid();
+    "
+    mute kcidb-db-cleanup -lDEBUG -d "postgresql" \
+                          --ignore-not-initialized \
+                          --ignore-not-found
+}
+
+# Deploy a PostgreSQL database, if it doesn't exist
+# Args: project instance database submitter viewer
+function psql_database_deploy() {
+    declare -r project="$1"; shift
+    declare -r instance="$1"; shift
+    declare -r database="$1"; shift
+    declare -r submitter="$1"; shift
+    declare -r viewer="$1"; shift
+
+    # Create the database, if not exists
+    exists=$(psql_database_exists "$project" "$instance" "$database")
+    if ! "$exists"; then
+        mute gcloud sql databases create \
+            "$database" \
+            --quiet \
+            --project="$project" \
+            --instance="$instance"
+    fi
+
+    # Deploy the per-database submitter user
+    exists=$(psql_user_exists "$project" "$instance" "$submitter")
+    if ! "$exists" || password_is_specified psql_submitter; then
+        # Get and cache the password in the current shell first
+        password_get psql_submitter >/dev/null
+        # Create the user with the cached password
+        password_get psql_submitter |
+            psql_user_deploy "$project" "$instance" "$submitter"
+    fi
+
+    # NOTE: The viewer user is created per-instance
+
+    # Initialize the database
+    psql_proxy_session "$project" "$instance" "$database" \
+        _psql_database_init "$submitter" "$viewer"
+}
+
+# Withdraw a PostgreSQL database, if exists
+# Args: project instance name submitter viewer
+function psql_database_withdraw() {
+    declare -r project="$1"; shift
+    declare -r instance="$1"; shift
+    declare -r name="$1"; shift
+    declare -r submitter="$1"; shift
+    declare -r viewer="$1"; shift
+    exists=$(psql_database_exists "$project" "$instance" "$name")
+    if "$exists"; then
+        # Cleanup the database
+        psql_proxy_session "$project" "$instance" "$database" \
+            _psql_database_cleanup "$submitter" "$viewer"
+        # Withdraw the submitter user
+        psql_user_withdraw "$project" "$instance" "$submitter"
+        # NOTE: The viewer user is per-instance
+        # Delete the database
+        mute gcloud sql databases delete \
+            "$name" \
+            --quiet \
+            --project="$project" \
+            --instance="$instance"
+    fi
+}
+
+# Check if a PostgreSQL user exists
+# Args: project instance name
+function psql_user_exists() {
+    declare -r project="$1"; shift
+    declare -r instance="$1"; shift
+    declare -r name="$1"; shift
+    declare output
+    if output=$(
+            gcloud sql users list \
+                --quiet --project="$project" \
+                --instance="$instance" \
+                --filter "name=$name" 2>&1
+       ); then
+        # Skip header / "Listed 0 items." message
+        output=$(sed -e 1d <<<"$output")
+        [ -n "$output" ] && echo "true" || echo "false"
+    else
+        echo "$output" >&2
+        false
+    fi
+}
+
+# Deploy a PostgreSQL user
+# Args: project instance name
+# Input: password
+function psql_user_deploy() {
+    declare -r project="$1"; shift
+    declare -r instance="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(psql_user_exists "$project" "$instance" "$name")
+    if "$exists"; then
+        mute gcloud sql users set-password \
+            --quiet --project="$project" \
+            --instance="$instance" \
+            --prompt-for-password \
+            "$name"
+    else
+        # Where are your security best practices, Google?
+        mute gcloud sql users create \
+            --quiet --project="$project" \
+            --instance="$instance" \
+            --password="$(cat)" \
+            "$name"
+    fi
+    # Strip extra permissions added by gcloud by default
+    psql_proxy_session "$project" "$instance" "postgres" \
+        mute psql -e <<<"
+            \\set ON_ERROR_STOP on
+            REVOKE cloudsqlsuperuser FROM $name;
+            ALTER ROLE $name WITH NOCREATEROLE NOCREATEDB;
+        "
+}
+
+# Withdraw a PostgreSQL user
+# Args: project instance name
+function psql_user_withdraw() {
+    declare -r project="$1"; shift
+    declare -r instance="$1"; shift
+    declare -r name="$1"; shift
+    exists=$(psql_user_exists "$project" "$instance" "$name")
+    if "$exists"; then
+        mute gcloud sql users delete \
+            --quiet --project="$project" \
+            --instance="$instance" \
+            "$name"
+    fi
+}
+
+# Deploy (to) PostgreSQL
+# Args: project database submitter
+function psql_deploy() {
+    declare -r project="$1"; shift
+    declare -r database="$1"; shift
+    declare -r submitter="$1"; shift
+    # Deploy the instance
+    psql_instance_deploy "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER"
+    # Deploy the database
+    psql_database_deploy "$project" "$PSQL_INSTANCE" "$database" \
+        "$submitter" "$PSQL_VIEWER"
+}
+
+# Withdraw (from) PostgreSQL
+# Args: project database submitter
+function psql_withdraw() {
+    declare -r project="$1"; shift
+    declare -r database="$1"; shift
+    declare -r submitter="$1"; shift
+    psql_database_withdraw "$project" "$PSQL_INSTANCE" "$database" \
+        "$submitter" "$PSQL_VIEWER"
+    # NOTE: Leaving the instance behind. Its name has 7-day recycling period
+    # NOTE: Leaving the viewer user behind, as it's per-instance
+}
+
 # Deploy to BigQuery
 # Args: project dataset
 function bigquery_deploy() {
@@ -248,12 +625,18 @@ function app_deploy() {
 # A map of password names and their descriptions
 declare -r -A PASSWORD_DESCS=(
     [smtp]="SMTP"
+    [psql_superuser]="PostgreSQL superuser"
+    [psql_submitter]="PostgreSQL submitter user"
+    [psql_viewer]="PostgreSQL viewer user"
 )
 
 # A map of password names and their "can be auto-generated" flags.
 # The corresponding password will be auto-generated if the flag is "true", and
 # no source file nor secret was specified for it.
-declare -A PASSWORD_GENERATE=()
+declare -A PASSWORD_GENERATE=(
+    [psql_submitter]="true"
+    [psql_viewer]="true"
+)
 
 # A map of password names and their project and secret names, separated by a
 # colon. Used for retrieving passwords if they have no source files specified.
@@ -476,10 +859,23 @@ function secret_withdraw() {
 # The name of the shared SMTP password secret
 declare -r SMTP_PASSWORD_SECRET="kcidb_smtp_password"
 
+# The name of the shared secret with PostgreSQL superuser password
+declare -r PSQL_SUPERUSER_SECRET="kcidb_psql_superuser"
+
+# The name of the shared secret with PostgreSQL viewer password
+declare -r PSQL_VIEWER_SECRET="kcidb_psql_viewer"
+
 # Deploy secrets
 # Args: project
+#       psql_submitter_secret
+#       psql_submitter_pgpass_secret
+#       psql_submitter_username
 function secrets_deploy() {
     declare -r project="$1"; shift
+    declare -r psql_submitter_secret="$1"; shift
+    declare -r psql_submitter_pgpass_secret="$1"; shift
+    declare -r psql_submitter_username="$1"; shift
+    declare exists
 
     # Make sure the shared SMTP password secret is deployed
     exists=$(secret_exists "$project" "$SMTP_PASSWORD_SECRET")
@@ -496,13 +892,63 @@ function secrets_deploy() {
         --quiet --project="$project" "$SMTP_PASSWORD_SECRET" \
         --role roles/secretmanager.secretAccessor \
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
+
+    # Make sure the shared PostgreSQL's superuser password secret is deployed
+    exists=$(secret_exists "$project" "$PSQL_SUPERUSER_SECRET")
+    if ! "$exists" || password_is_specified psql_submitter; then
+        # Get and cache the password in the current shell first
+        password_get psql_superuser > /dev/null
+        # Deploy the cached password
+        password_get psql_superuser |
+            secret_deploy "$project" "$PSQL_SUPERUSER_SECRET"
+    fi
+
+    # DO NOT give Cloud Functions access to the superuser password secret
+
+    # Make sure PostgreSQL's submitter password/.pgpass secrets are deployed
+    exists=$(secret_exists "$project" "$psql_submitter_pgpass_secret")
+    if ! "$exists" || password_is_specified psql_submitter; then
+        # Get and cache the password in the current shell first
+        password_get psql_submitter > /dev/null
+        # Deploy the cached password
+        password_get psql_submitter |
+            secret_deploy "$project" "$psql_submitter_secret"
+        # Deploy the .pgpass with cached password
+        password_get_pgpass psql_submitter "$psql_submitter_username" |
+            secret_deploy "$project" "$psql_submitter_pgpass_secret"
+    fi
+
+    # Give Cloud Functions access to the .pgpass secret,
+    # but not the bare password secret
+    mute gcloud secrets add-iam-policy-binding \
+        --quiet --project="$project" "$psql_submitter_pgpass_secret" \
+        --role roles/secretmanager.secretAccessor \
+        --member "serviceAccount:$project@appspot.gserviceaccount.com"
+
+    # Make sure the shared PostgreSQL's viewer password secret is deployed
+    exists=$(secret_exists "$project" "$PSQL_VIEWER_SECRET")
+    if ! "$exists" || password_is_specified psql_viewer; then
+        # Get and cache the password in the current shell first
+        password_get psql_viewer >/dev/null
+        # Deploy the cached password
+        password_get psql_viewer |
+            secret_deploy "$project" "$PSQL_VIEWER_SECRET"
+    fi
+
+    # Do not give Cloud Functions access to the viewer password secret
 }
 
 # Withdraw secrets
 # Args: project
+#       psql_submitter_secret
+#       psql_submitter_pgpass_secret
 function secrets_withdraw() {
     declare -r project="$1"; shift
-    # NOTE: Not withdrawing the shared SMTP password secret
+    declare -r psql_submitter_secret="$1"; shift
+    declare -r psql_submitter_pgpass_secret="$1"; shift
+    secret_withdraw "$project" "$psql_submitter_secret"
+    secret_withdraw "$project" "$psql_submitter_pgpass_secret"
+    # NOTE: Not withdrawing the shared secrets
 }
 
 # Check if a Pub/Sub topic exists
@@ -744,6 +1190,7 @@ function cloud_function_withdraw() {
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --smtp-topic=NAME --smtp-subscription=NAME
+#       --pgpass-secret=NAME
 #       --database=SPEC
 function cloud_functions_env() {
     params="$(getopt_vars format \
@@ -755,6 +1202,7 @@ function cloud_functions_env() {
                           extra_cc \
                           smtp_to_addrs smtp_password_secret \
                           smtp_topic smtp_subscription \
+                          pgpass_secret \
                           database \
                           -- "$@")"
     eval "$params"
@@ -765,6 +1213,7 @@ function cloud_functions_env() {
         [KCIDB_LOAD_QUEUE_MSG_MAX]="256"
         [KCIDB_LOAD_QUEUE_OBJ_MAX]="8192"
         [KCIDB_LOAD_QUEUE_TIMEOUT_SEC]="30"
+        [KCIDB_PGPASS_SECRET]="$pgpass_secret"
         [KCIDB_DATABASE]="$database"
         [KCIDB_DATABASE_LOAD_PERIOD_SEC]="180"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
@@ -825,6 +1274,7 @@ function cloud_functions_env() {
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
 #       --smtp-topic=NAME --smtp-subscription=NAME
+#       --pgpass-secret=NAME
 #       --database=SPEC
 function cloud_functions_deploy() {
     params="$(getopt_vars project prefix source \
@@ -837,6 +1287,7 @@ function cloud_functions_deploy() {
                           extra_cc \
                           smtp_to_addrs smtp_password_secret \
                           smtp_topic smtp_subscription \
+                          pgpass_secret \
                           database \
                           -- "$@")"
     eval "$params"
@@ -857,6 +1308,7 @@ function cloud_functions_deploy() {
                         --smtp-password-secret="$smtp_password_secret" \
                         --smtp-topic="$smtp_topic" \
                         --smtp-subscription="$smtp_subscription" \
+                        --pgpass-secret="$pgpass_secret" \
                         --database="$database" \
                         >| "$env_yaml"
 
@@ -900,7 +1352,7 @@ function cloud_functions_deploy() {
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
                           --trigger-topic "${load_queue_trigger_topic}" \
-                          --memory 256MB \
+                          --memory 512MB \
                           --timeout 540
     # Remove the environment YAML
     rm "$env_yaml"
@@ -1085,6 +1537,7 @@ function submitters_withdraw() {
 # Sections of the installation
 declare -A -r SECTIONS=(
     ["bigquery"]="BigQuery dataset"
+    ["psql"]="PostgreSQL database"
     ["pubsub"]="Pub/Sub topics and subscriptions"
     ["secrets"]="Secrets"
     ["firestore"]="Firestore database"
@@ -1148,6 +1601,14 @@ function sections_run() {
     aterr_pop
 }
 
+# Escape backslashes and whitespace with backslashes in text.
+#
+# Input: The text to escape
+# Output: The escaped text
+function escape_whitespace() {
+    sed -e 's/\\\|\s/\\&/g'
+}
+
 # Execute a deploy/withdraw command
 # Args: --command=NAME
 #       --format=yaml|sh
@@ -1189,8 +1650,42 @@ function execute_command() {
     declare -r updated_topic="${prefix}updated"
     declare -r updated_debug_subscription="${prefix}updated_debug"
     declare -r spool_collection_path="${prefix}notifications"
-    declare -r dataset="${prefix}${version}"
-    declare -r database="bigquery:${project}.${dataset}"
+    declare -r smtp_password_secret="kcidb_smtp_password"
+
+    declare -r psql_connection=$(
+        echo -n "${project}:"
+        echo -n "${PSQL_INSTANCE_REGION}:"
+        echo -n "${PSQL_INSTANCE}"
+    )
+    declare -r psql_socket_dir="/cloudsql/${psql_connection}"
+    declare -r psql_database="${prefix}${version}"
+    declare -r psql_submitter="${psql_database}_submitter"
+    declare -r psql_submitter_secret="${prefix}psql_submitter"
+    declare -r psql_submitter_pgpass_secret="${prefix}psql_submitter_pgpass"
+    declare psql_kcidb_db=$(
+        echo -n "postgresql: "
+        echo -n "host=${psql_socket_dir}" | escape_whitespace
+        echo -n " "
+        echo -n "dbname=${psql_database}" | escape_whitespace
+        echo -n " "
+        echo -n "user=${psql_submitter}"
+    )
+
+    # Enable fetching PostgreSQL passwords from their secrets
+    password_set_secret "psql_superuser" "$project" "$PSQL_SUPERUSER_SECRET"
+    password_set_secret "psql_viewer" "$project" "$PSQL_VIEWER_SECRET"
+    password_set_secret "psql_submitter" "$project" "$psql_submitter_secret"
+
+    declare -r bigquery_dataset="${prefix}${version}"
+    declare -r bigquery_kcidb_db="bigquery:${project}.${bigquery_dataset}"
+
+    declare -r database=$(
+        echo -n "mux: "
+        echo -n "$psql_kcidb_db" | escape_whitespace
+        echo -n " "
+        echo -n "$bigquery_kcidb_db" | escape_whitespace
+    )
+
     declare -r smtp_topic=$("$smtp_mocked" && echo "${prefix}smtp" || true)
     declare -r smtp_subscription=$(
         "$smtp_mocked" && echo "${prefix}smtp_received" || true
@@ -1209,6 +1704,7 @@ function execute_command() {
         --smtp-password-secret="$SMTP_PASSWORD_SECRET"
         --smtp-topic="$smtp_topic"
         --smtp-subscription="$smtp_subscription"
+        --pgpass-secret="$psql_submitter_pgpass_secret"
         --database="$database"
     )
 
@@ -1221,11 +1717,25 @@ function execute_command() {
     # Make sure requisite services are enabled
     app_deploy "$project"
     services_enable "$project" appengine secretmanager cloudfunctions \
-                               cloudbuild cloudscheduler firestore
+                               cloudbuild cloudscheduler firestore \
+                               sqladmin
+
+    # Enable generating PostgreSQL superuser password (if not specified),
+    # if the instance doesn't exist yet
+    declare exists
+    exists=$(psql_instance_exists "$project" "$PSQL_INSTANCE")
+    if ! "$exists"; then
+        password_set_generate psql_superuser true
+    fi
 
     if [ "$command" == "deploy" ]; then
-        sections_run "$sections" secrets_deploy "$project"
-        sections_run "$sections" bigquery_deploy "$project" "$dataset"
+        sections_run "$sections" secrets_deploy "$project" \
+            "$psql_submitter_secret" "$psql_submitter_pgpass_secret" \
+            "$psql_submitter"
+        sections_run "$sections" bigquery_deploy "$project" \
+            "$bigquery_dataset"
+        sections_run "$sections" psql_deploy \
+            "$project" "$psql_database" "$psql_submitter"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
@@ -1271,8 +1781,12 @@ function execute_command() {
             --updated-debug-subscription="$updated_debug_subscription" \
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
-        sections_run "$sections" bigquery_withdraw "$project" "$dataset"
-        sections_run "$sections" secrets_withdraw "$project"
+        sections_run "$sections" psql_withdraw \
+            "$project" "$psql_database" "$psql_submitter"
+        sections_run "$sections" bigquery_withdraw "$project" \
+            "$bigquery_dataset"
+        sections_run "$sections" secrets_withdraw "$project" \
+            "$psql_submitter_secret" "$psql_submitter_pgpass_secret"
     fi
 }
 
@@ -1326,6 +1840,9 @@ function usage_deploy() {
     echo "              Post notification messages to a PubSub topic,"
     echo "              instead of sending them to the SMTP server."
     echo "              Used when testing deployments."
+    echo "    --psql-password-file=FILE"
+    echo "              Specify a file with the password for the PostgreSQL"
+    echo "              superuser, or \"-\" to read it from stdin."
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
@@ -1484,6 +2001,7 @@ function execute() {
         fi
         if [[ $command == @(deploy) ]]; then
             getopt_longopts+=",smtp-password-file:"
+            getopt_longopts+=",psql-password-file:"
         fi
     elif [ "$command" == "list-sections" ]; then
         :
@@ -1519,6 +2037,8 @@ function execute() {
             --smtp-to-addrs) smtp_to_addrs="$2"; shift 2;;
             --smtp-password-file) password_set_file smtp "$2"; shift 2;;
             --smtp-mocked) smtp_mocked="true"; shift;;
+            --psql-password-file)
+                password_set_file psql_superuser "$2"; shift 2;;
             --log-level) log_level="$2"; shift 2;;
             --heavy-asserts) heavy_asserts="true"; shift;;
             --mute-updates) updated_publish="false"; shift;;
