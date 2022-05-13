@@ -23,7 +23,7 @@ class Driver(AbstractDriver):
     DOC = textwrap.dedent("""\
         The PostgreSQL driver allows connection to a PostgreSQL database.
 
-        Parameters: <CONNECTION>
+        Parameters: [<CONNECTION>]
 
         <CONNECTION>    A libpq connection string described in
                         https://www.postgresql.org/docs/current/
@@ -48,7 +48,7 @@ class Driver(AbstractDriver):
         Args:
             params:         A parameter string describing the database to
                             access. See Driver.DOC for documentation.
-                            Cannot be None (must be specified).
+                            Assumed to be empty string, if None.
             load_prio_db:   If True, prioritize the database values for the
                             first load. If False - prioritize the loaded data.
                             If None, pick the priority at random. Each further
@@ -57,8 +57,7 @@ class Driver(AbstractDriver):
         """
         assert params is None or isinstance(params, str)
         if params is None:
-            raise Exception("Database parameters must be specified\n\n" +
-                            Driver.DOC)
+            params = ""
         # Create the connection
         self.conn = psycopg2.connect(
             params,
