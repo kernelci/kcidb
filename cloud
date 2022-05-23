@@ -247,6 +247,7 @@ function app_deploy() {
 
 # A map of password names and their descriptions
 declare -r -A PASSWORD_DESCS=(
+    [smtp]="SMTP"
 )
 
 # A map of password names and their "can be auto-generated" flags.
@@ -431,42 +432,23 @@ function secret_exists() {
 }
 
 # Deploy a secret
-# Args: project name description file
+# Args: project name
+# Input: value
 function secret_deploy() {
     declare -r project="$1"; shift
     declare -r name="$1"; shift
-    declare -r description="$1"; shift
-    declare file="$1"; shift
-    declare secret
+    declare exists
+
     exists=$(secret_exists "$project" "$name")
-
-    if [ -z "$file" ]; then
-        if "$exists"; then
-            return
-        else
-            file="-"
-        fi
+    if "$exists"; then
+        mute gcloud secrets versions add --quiet --project="$project" \
+                                         "$name" \
+                                         --data-file=-
+    else
+        mute gcloud secrets create --quiet --project="$project" "$name" \
+                                   --replication-policy automatic \
+                                   --data-file=-
     fi
-
-    {
-        if [ "$file" == "-" ]; then
-            read -p "Enter $description: " -r -s secret
-            echo "" >&2
-            echo -n "$secret"
-        else
-            cat "$file"
-        fi
-    } | {
-        if "$exists"; then
-            mute gcloud secrets versions add --quiet --project="$project" \
-                                             "$name" \
-                                             --data-file=-
-        else
-            mute gcloud secrets create --quiet --project="$project" "$name" \
-                                       --replication-policy automatic \
-                                       --data-file=-
-        fi
-    }
 }
 
 # Retrieve a secret
@@ -492,15 +474,20 @@ function secret_withdraw() {
 }
 
 # Deploy secrets
-# Args: project smtp_password_secret smtp_password_file
+# Args: project smtp_password_secret
 function secrets_deploy() {
     declare -r project="$1"; shift
     declare -r smtp_password_secret="$1"; shift
-    declare -r smtp_password_file="$1"; shift
 
-    # Deploy SMTP password
-    secret_deploy "$project" "$smtp_password_secret" \
-                  "SMTP password" "$smtp_password_file"
+    # Make sure SMTP password secret is deployed
+    exists=$(secret_exists "$project" "$smtp_password_secret")
+    if ! "$exists" || password_is_specified smtp; then
+        # Get and cache the password in the current shell first
+        password_get smtp > /dev/null
+        # Deploy the cached password
+        password_get smtp |
+            secret_deploy "$project" "$smtp_password_secret"
+    fi
 
     # Give Cloud Functions access to the SMTP password secret
     mute gcloud secrets add-iam-policy-binding \
@@ -1169,7 +1156,6 @@ function sections_run() {
 #       --version=STRING
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=STRING
-#       --smtp-password-file=STRING
 #       --smtp-mocked=true|false
 #       --log-level=NAME
 #       --heavy-asserts=true|false
@@ -1184,7 +1170,6 @@ function execute_command() {
                           version \
                           extra_cc \
                           smtp_to_addrs \
-                          smtp_password_file \
                           smtp_mocked \
                           log_level \
                           heavy_asserts \
@@ -1237,7 +1222,7 @@ function execute_command() {
 
     if [ "$command" == "deploy" ]; then
         sections_run "$sections" secrets_deploy \
-            "$project" "$smtp_password_secret" "$smtp_password_file"
+            "$project" "$smtp_password_secret"
         sections_run "$sections" bigquery_deploy "$project" "$dataset"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
@@ -1530,7 +1515,6 @@ function execute() {
     declare sections="*"
     declare extra_cc=""
     declare smtp_to_addrs=""
-    declare smtp_password_file=""
     declare smtp_mocked="false"
     declare log_level="INFO"
     declare heavy_asserts="false"
@@ -1544,7 +1528,7 @@ function execute() {
             -s|--sections) sections="$2"; shift 2;;
             --extra-cc) extra_cc="$2"; shift 2;;
             --smtp-to-addrs) smtp_to_addrs="$2"; shift 2;;
-            --smtp-password-file) smtp_password_file="$2"; shift 2;;
+            --smtp-password-file) password_set_file smtp "$2"; shift 2;;
             --smtp-mocked) smtp_mocked="true"; shift;;
             --log-level) log_level="$2"; shift 2;;
             --heavy-asserts) heavy_asserts="true"; shift;;
@@ -1596,7 +1580,6 @@ function execute() {
                     --version="$version" \
                     --extra-cc="$extra_cc" \
                     --smtp-to-addrs="$smtp_to_addrs" \
-                    --smtp-password-file="$smtp_password_file" \
                     --smtp-mocked="$smtp_mocked" \
                     --log-level="$log_level" \
                     --heavy-asserts="$heavy_asserts" \
