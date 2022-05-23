@@ -245,6 +245,172 @@ function app_deploy() {
     mute gcloud app create --quiet --project="$project" --region=us-central
 }
 
+# A map of password names and their descriptions
+declare -r -A PASSWORD_DESCS=(
+)
+
+# A map of password names and their "can be auto-generated" flags.
+# The corresponding password will be auto-generated if the flag is "true", and
+# no source file nor secret was specified for it.
+declare -A PASSWORD_GENERATE=()
+
+# A map of password names and their project and secret names, separated by a
+# colon. Used for retrieving passwords if they have no source files specified.
+declare -A PASSWORD_SECRETS=()
+
+# A map of password names and their source files
+declare -A PASSWORD_FILES=()
+
+# A map of password names and their strings
+declare -A PASSWORD_STRINGS=()
+
+# Ask the user to input a password with specified name.
+# Args: name
+# Output: The retrieved password
+function password_input() {
+    declare -r name="$1"; shift
+    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+        echo "Unknown password name ${name@Q}" >&2
+        exit 1
+    fi
+    declare password
+    read -p "Enter ${PASSWORD_DESCS[$name]:-a} password: " -r -s password
+    echo "" >&2
+    echo -n "$password"
+}
+
+# Get a password with specified name, either from the cache, from its source
+# file, from its secret, or from the user. Make sure the retrieved password is
+# cached.
+# Args: name
+# Output: The retrieved password
+function password_get() {
+    declare -r name="$1"; shift
+    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+        echo "Unknown password name ${name@Q}" >&2
+        exit 1
+    fi
+
+    declare password
+    declare -r password_file="${PASSWORD_FILES[$name]:-}"
+    declare -r password_secret="${PASSWORD_SECRETS[$name]:-}"
+    declare password_secret_exists
+    password_secret_exists=$(
+        if [ -n "$password_secret" ]; then
+            secret_exists "${password_secret%%:*}" "${password_secret#*:}"
+        else
+            echo "false"
+        fi
+    )
+    declare -r password_secret_exists
+    declare -r password_generate="${PASSWORD_GENERATE[$name]:-false}"
+
+    # If cached
+    if [[ -v PASSWORD_STRINGS[$name] ]]; then
+        password="${PASSWORD_STRINGS[$name]}"
+    # If file is specified
+    elif [ -n "$password_file" ]; then
+        # If asked to read from standard input
+        if [ "$password_file" == "-" ]; then
+            password=$(password_input "$name")
+        else
+            password=$(<"$password_file")
+        fi
+    # If secret exists
+    elif "$password_secret_exists"; then
+        password=$(
+            secret_get "${password_secret%%:*}" "${password_secret#*:}"
+        )
+    # If can be generated
+    elif "$password_generate"; then
+        password=$(dd if=/dev/random bs=32 count=1 status=none | base64)
+    # Else read from user
+    else
+        password=$(password_input "$name")
+    fi
+
+    PASSWORD_STRINGS[$name]="$password"
+
+    echo -n "$password"
+}
+
+# Get a password as a PostgreSQL's .pgpass file, generated with the specified
+# username.
+# Args: name username
+# Output: The generated .pgpass file
+function password_get_pgpass() {
+    declare -r name="$1"; shift
+    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+        echo "Unknown password name ${name@Q}" >&2
+        exit 1
+    fi
+    declare -r username="$1"; shift
+    declare -r -a escape_argv=(sed -e 's/[:\\]/\\&/g')
+
+    echo -n "*:*:*:"
+    echo -n "$username" | "${escape_argv[@]}"
+    echo -n ":"
+    password_get "$name" | "${escape_argv[@]}"
+}
+
+# Set the source file for a password with specified name. The file will be
+# used as the source of the password by password_get, if it wasn't already
+# retrieved (and cached) before. Can be specified as "-" to have password
+# requested from standard input.
+# Args: name file
+function password_set_file() {
+    declare -r name="$1"; shift
+    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+        echo "Unknown password name ${name@Q}" >&2
+        exit 1
+    fi
+    declare -r file="$1"; shift
+    PASSWORD_FILES[$name]="$file"
+}
+
+# Set the project and the name of the secret storing the password with
+# specified name. The password will be retrieved from the secret, if it wasn't
+# cached, and if its source file wasn't specified.
+# Args: name project secret
+function password_set_secret() {
+    declare -r name="$1"; shift
+    declare -r project="$1"; shift
+    declare -r secret="$1"; shift
+    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+        echo "Unknown password name ${name@Q}" >&2
+        exit 1
+    fi
+    if [[ "$project" = *:* ]]; then
+        echo "Invalid project name ${project@Q}" >&2
+        exit 1
+    fi
+    PASSWORD_SECRETS[$name]="$project:$secret"
+}
+
+# Specify the single-word command returning exit status specifying if the
+# password with specified name could be auto-generated or not.
+# Args: name generate
+function password_set_generate() {
+    declare -r name="$1"; shift
+    declare -r generate="$1"; shift
+    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+        echo "Unknown password name ${name@Q}" >&2
+        exit 1
+    fi
+    PASSWORD_GENERATE[$name]="$generate"
+}
+
+# Check if a password with the specified name is explicitly specified by the
+# command-line user. That is, if it has a source file.
+function password_is_specified() {
+    declare -r name="$1"; shift
+    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+        echo "Unknown password name ${name@Q}" >&2
+        exit 1
+    fi
+    [[ -v PASSWORD_FILES[$name] ]]
+}
+
 # Check if a secret exists
 # Args: project name
 # Output: "true" if the secret exists, "false" otherwise.
@@ -301,6 +467,17 @@ function secret_deploy() {
                                        --data-file=-
         fi
     }
+}
+
+# Retrieve a secret
+# Args: project name
+# Output: value
+function secret_get() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    gcloud secrets versions access latest \
+        --quiet --project="$project" --secret="$name" \
+        --format='get(payload.data)' | tr '_-' '/+' | base64 -d
 }
 
 # Delete a secret if it exists
