@@ -3,6 +3,8 @@
 import math
 import re
 import os
+import atexit
+import tempfile
 import sys
 import traceback
 import argparse
@@ -419,3 +421,24 @@ def get_secret(project_id, secret_id):
     return client.access_secret_version(
         request={"name": path}
     ).payload.data.decode()
+
+
+def get_secret_pgpass(project_id, secret_id):
+    """
+    Get the latest version of a secret containing a PostgreSQL's .pgpass file
+    from Google Secret Manager. Store that secret in a temporary file and
+    expose it via the PGPASSFILE environment variable for use by libpq-based
+    clients.
+
+    Args:
+        project_id: The ID of the Google Cloud project to fetch secrets from.
+        secret_id:  The ID of the secret to fetch latest version of.
+    """
+    assert isinstance(project_id, str) and project_id
+    assert isinstance(secret_id, str) and secret_id
+    pgpass = get_secret(project_id, secret_id)
+    (pgpass_fd, pgpass_filename) = tempfile.mkstemp(suffix=".pgpass")
+    with os.fdopen(pgpass_fd, mode="w", encoding="utf-8") as pgpass_file:
+        pgpass_file.write(pgpass)
+    os.environ["PGPASSFILE"] = pgpass_filename
+    atexit.register(os.remove, pgpass_filename)
