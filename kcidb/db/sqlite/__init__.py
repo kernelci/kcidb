@@ -150,7 +150,7 @@ class Driver(AbstractDriver):
         Returns:
             The datetime object representing the last modification time.
         """
-        return datetime.datetime.min
+        return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
 
     @staticmethod
     def _quote_column_name(name):

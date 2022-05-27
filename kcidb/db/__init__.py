@@ -3,6 +3,7 @@
 import sys
 import logging
 import argparse
+import datetime
 import kcidb.io as io
 import kcidb.orm
 import kcidb.misc
@@ -101,7 +102,10 @@ class Client(kcidb.orm.Source):
             The datetime object representing the last modification time.
         """
         assert self.is_initialized()
-        return self.driver.get_last_modified()
+        last_modified = self.driver.get_last_modified()
+        assert isinstance(last_modified, datetime.datetime)
+        assert last_modified.tzinfo
+        return last_modified
 
     def dump_iter(self, objects_per_report=0):
         """

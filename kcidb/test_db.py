@@ -2,6 +2,7 @@
 
 import re
 import textwrap
+import datetime
 import json
 from unittest.mock import Mock, patch
 import kcidb
@@ -284,6 +285,21 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
             ),
         ]
     }
+
+    def test_get_last_modified(self):
+        """
+        Check get_last_modified() can be called on all DB drivers we can
+        easily instantiate.
+        """
+        for database in ("null", "sqlite::memory:"):
+            print("Database:", database)
+            client = kcidb.db.Client(database)
+            if not client.is_initialized():
+                client.init()
+            timestamp = client.get_last_modified()
+            self.assertIsNotNone(timestamp)
+            self.assertIsInstance(timestamp, datetime.datetime)
+            self.assertIsNotNone(timestamp.tzinfo)
 
     def test_bigquery_load(self):
         """Check all possible I/O fields can be loaded into BigQuery"""
