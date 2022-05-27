@@ -175,7 +175,7 @@ class Driver(AbstractDriver):
         Returns:
             The datetime object representing the last modification time.
         """
-        return datetime.datetime.min
+        return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
 
     def dump_iter(self, objects_per_report):
         """
