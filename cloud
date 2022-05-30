@@ -473,25 +473,27 @@ function secret_withdraw() {
     fi
 }
 
+# The name of the shared SMTP password secret
+declare -r SMTP_PASSWORD_SECRET="kcidb_smtp_password"
+
 # Deploy secrets
-# Args: project smtp_password_secret
+# Args: project
 function secrets_deploy() {
     declare -r project="$1"; shift
-    declare -r smtp_password_secret="$1"; shift
 
-    # Make sure SMTP password secret is deployed
-    exists=$(secret_exists "$project" "$smtp_password_secret")
+    # Make sure the shared SMTP password secret is deployed
+    exists=$(secret_exists "$project" "$SMTP_PASSWORD_SECRET")
     if ! "$exists" || password_is_specified smtp; then
         # Get and cache the password in the current shell first
         password_get smtp > /dev/null
         # Deploy the cached password
         password_get smtp |
-            secret_deploy "$project" "$smtp_password_secret"
+            secret_deploy "$project" "$SMTP_PASSWORD_SECRET"
     fi
 
-    # Give Cloud Functions access to the SMTP password secret
+    # Give Cloud Functions access to the shared SMTP password secret
     mute gcloud secrets add-iam-policy-binding \
-        --quiet --project="$project" "$smtp_password_secret" \
+        --quiet --project="$project" "$SMTP_PASSWORD_SECRET" \
         --role roles/secretmanager.secretAccessor \
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
 }
@@ -500,8 +502,7 @@ function secrets_deploy() {
 # Args: project
 function secrets_withdraw() {
     declare -r project="$1"; shift
-    declare -r smtp_password_secret="$1"; shift
-    secret_withdraw "$project" "$smtp_password_secret"
+    # NOTE: Not withdrawing the shared SMTP password secret
 }
 
 # Check if a Pub/Sub topic exists
@@ -1188,7 +1189,6 @@ function execute_command() {
     declare -r updated_topic="${prefix}updated"
     declare -r updated_debug_subscription="${prefix}updated_debug"
     declare -r spool_collection_path="${prefix}notifications"
-    declare -r smtp_password_secret="${prefix}smtp_password"
     declare -r dataset="${prefix}${version}"
     declare -r database="bigquery:${project}.${dataset}"
     declare -r smtp_topic=$("$smtp_mocked" && echo "${prefix}smtp" || true)
@@ -1206,7 +1206,7 @@ function execute_command() {
         --spool-collection-path="$spool_collection_path"
         --extra-cc="$extra_cc"
         --smtp-to-addrs="$smtp_to_addrs"
-        --smtp-password-secret="$smtp_password_secret"
+        --smtp-password-secret="$SMTP_PASSWORD_SECRET"
         --smtp-topic="$smtp_topic"
         --smtp-subscription="$smtp_subscription"
         --database="$database"
@@ -1224,8 +1224,7 @@ function execute_command() {
                                cloudbuild cloudscheduler firestore
 
     if [ "$command" == "deploy" ]; then
-        sections_run "$sections" secrets_deploy \
-            "$project" "$smtp_password_secret"
+        sections_run "$sections" secrets_deploy "$project"
         sections_run "$sections" bigquery_deploy "$project" "$dataset"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
@@ -1273,8 +1272,7 @@ function execute_command() {
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
         sections_run "$sections" bigquery_withdraw "$project" "$dataset"
-        sections_run "$sections" secrets_withdraw \
-            "$project" "$smtp_password_secret"
+        sections_run "$sections" secrets_withdraw "$project"
     fi
 }
 
