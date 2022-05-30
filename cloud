@@ -1059,6 +1059,8 @@ function execute_command() {
                                cloudbuild cloudscheduler firestore
 
     if [ "$command" == "deploy" ]; then
+        sections_run "$sections" secrets_deploy \
+            "$project" "$smtp_password_secret" "$smtp_password_file"
         sections_run "$sections" bigquery_deploy "$project" "$dataset"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
@@ -1072,8 +1074,6 @@ function execute_command() {
               "$pick_notifications_trigger_topic" \
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
-        sections_run "$sections" secrets_deploy \
-            "$project" "$smtp_password_secret" "$smtp_password_file"
         sections_run "$sections" firestore_deploy "$project"
         sections_run "$sections" cloud_functions_deploy \
             --project="$project" \
@@ -1107,8 +1107,6 @@ function execute_command() {
         sections_run "$sections" cloud_functions_withdraw "$project" "$prefix"
         sections_run "$sections" firestore_withdraw \
             "$project" "$spool_collection_path"
-        sections_run "$sections" secrets_withdraw \
-            "$project" "$smtp_password_secret"
         sections_run "$sections" pubsub_withdraw \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
@@ -1122,6 +1120,8 @@ function execute_command() {
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
         sections_run "$sections" bigquery_withdraw "$project" "$dataset"
+        sections_run "$sections" secrets_withdraw \
+            "$project" "$smtp_password_secret"
     fi
 }
 
