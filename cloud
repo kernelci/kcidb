@@ -13,6 +13,18 @@
 set -euCo pipefail
 shopt -s extglob
 
+# The directory where all temporary files should be created
+export TMPDIR=$(mktemp -d -t "kcidb_cloud.XXXXXXXXXX")
+
+# Cleanup after the script
+function _cleanup() {
+    # Remove the directory with all the temporary files
+    rm -Rf "$TMPDIR"
+}
+
+# Cleanup on exit
+trap _cleanup EXIT
+
 # "true" if verbose output is enabled, "false" otherwise
 declare VERBOSE="false"
 
@@ -634,12 +646,9 @@ function cloud_functions_deploy() {
                           database \
                           -- "$@")"
     eval "$params"
-    declare -r old_trap=`trap -p RETURN EXIT`
     # Create empty environment YAML
     declare env_yaml
     env_yaml=`mktemp --tmpdir kcidb_cloud_env.XXXXXXXX`
-    # Remove it on function return / shell exit
-    trap "rm ${env_yaml@Q}; ${old_trap:-trap - RETURN EXIT}" RETURN EXIT
     # Generate environment YAML contents
     cloud_functions_env --format=yaml \
                         --log-level="$log_level" \
@@ -699,6 +708,8 @@ function cloud_functions_deploy() {
                           --trigger-topic "${load_queue_trigger_topic}" \
                           --memory 256MB \
                           --timeout 540
+    # Remove the environment YAML
+    rm "$env_yaml"
 }
 
 # Withdraw Cloud Functions
