@@ -1196,22 +1196,25 @@ function execute_command() {
         "$smtp_mocked" && echo "${prefix}smtp_received" || true
     )
 
+    declare -r -a env_args=(
+        --log-level="$log_level"
+        --heavy-asserts="$heavy_asserts"
+        --new-topic="$new_topic"
+        --new-load-subscription="$new_load_subscription"
+        --updated-publish="$updated_publish"
+        --updated-topic="$updated_topic"
+        --spool-collection-path="$spool_collection_path"
+        --extra-cc="$extra_cc"
+        --smtp-to-addrs="$smtp_to_addrs"
+        --smtp-password-secret="$smtp_password_secret"
+        --smtp-topic="$smtp_topic"
+        --smtp-subscription="$smtp_subscription"
+        --database="$database"
+    )
+
     # Handle "env" command, if specified
     if [ "$command" == "env" ]; then
-        cloud_functions_env --format="$format" \
-                            --log-level="$log_level" \
-                            --heavy-asserts="$heavy_asserts" \
-                            --new-topic="$new_topic" \
-                            --new-load-subscription="$new_load_subscription" \
-                            --updated-publish="$updated_publish" \
-                            --updated-topic="$updated_topic" \
-                            --spool-collection-path="$spool_collection_path" \
-                            --extra-cc="$extra_cc" \
-                            --smtp-to-addrs="$smtp_to_addrs" \
-                            --smtp-password-secret="$smtp_password_secret" \
-                            --smtp-topic="$smtp_topic" \
-                            --smtp-subscription="$smtp_subscription" \
-                            --database="$database"
+        cloud_functions_env --format="$format" "${env_args[@]}"
         return
     fi
 
@@ -1244,19 +1247,7 @@ function execute_command() {
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --pick-notifications-trigger-topic \
               "$pick_notifications_trigger_topic" \
-            --log-level="$log_level" \
-            --heavy-asserts="$heavy_asserts" \
-            --new-topic="$new_topic" \
-            --new-load-subscription="$new_load_subscription" \
-            --updated-publish="$updated_publish" \
-            --updated-topic="$updated_topic" \
-            --spool-collection-path="$spool_collection_path" \
-            --extra-cc="$extra_cc" \
-            --smtp-to-addrs="$smtp_to_addrs" \
-            --smtp-password-secret="$smtp_password_secret" \
-            --smtp-topic="$smtp_topic" \
-            --smtp-subscription="$smtp_subscription" \
-            --database="$database"
+            "${env_args[@]}"
         sections_run "$sections" scheduler_deploy \
             "$project" "$prefix" "$load_queue_trigger_topic" \
             "$pick_notifications_trigger_topic"
