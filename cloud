@@ -153,25 +153,17 @@ function getopt_vars() {
 
 # Execute a command, capturing both stdout and stderr, and only outputting
 # them both to stderr, if the command fails.
-# Args: command [arg...]
+# Args: [argv...]
 function mute() {
-    declare -r command="$1"; shift
-    declare output
-    declare status
-    # Execute command capturing output and preserving trailing newlines
-    set +e
-    output=$(
-        set -e
-        "$command" "$@" 2>&1 || s="$?"
-        echo -ne '\f'
-        exit "${s:-0}"
-    )
-    status="$?"
-    set -e
-    if ((status)); then
-        echo -n "${output::-1}" >&2
-        return "$status"
-    fi
+    declare output_file
+    output_file=$(mktemp -t "XXXXXXXXXX.output")
+    aterr_push """
+        cat ${output_file@Q} >&2 || true
+        rm -f ${output_file@Q}
+    """
+    "$@" >|"$output_file" 2>&1
+    rm -f "$output_file"
+    aterr_pop
 }
 
 # Enable Google Cloud services using their short names
@@ -986,17 +978,9 @@ function sections_run() {
 
     verbose printf "%s %-${SECTIONS_DESCRIPTION_LEN_MAX}s [%s]\\n" \
                    "${action^}" "${SECTIONS[$name]}" "$name"
-    set +e
-    (
-        set -e
-        "${command}" "$@"
-    )
-    status="$?"
-    set -e
-    if ((status)); then
-        echo "Failed ${action} ${SECTIONS[$name]} [$name]" >&2
-        return 1
-    fi
+    aterr_push "echo Failed ${action@Q} ${SECTIONS[$name]@Q} '['${name@Q}']'"
+    "${command}" "$@"
+    aterr_pop
 }
 
 # Execute a deploy/withdraw command
