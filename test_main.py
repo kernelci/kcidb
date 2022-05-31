@@ -3,7 +3,6 @@
 import os
 import subprocess
 import unittest
-from unittest.mock import patch
 from importlib import import_module
 import yaml
 from kcidb.unittest import local_only
@@ -20,15 +19,8 @@ class MainTestCase(unittest.TestCase):
                           "GOOGLE_APPLICATION_CREDENTIALS "
                           "environment variable")
 
-    @patch('kcidb.misc.get_secret')
-    @patch('kcidb.mq.ORMPatternPublisher')
-    @patch('kcidb.mq.IOSubscriber')
-    @patch('kcidb.monitor.spool.Client')
-    @patch('kcidb.db.Client')
-    @patch('kcidb.oo.Client')
     # pylint: disable=unused-argument,too-many-arguments
-    def test_import(self, oo_client, db_client, spool_client,
-                    mq_publisher, mq_subscriber, get_secret):
+    def test_import(self):
         """Check main.py can be loaded"""
         # Load deployment environment variables
         file_dir = os.path.dirname(os.path.abspath(__file__))
