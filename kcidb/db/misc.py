@@ -48,8 +48,6 @@ class Driver(ABC):
     NotFound exception when initializing.
     """
 
-    # Calm down, we're abstract, pylint: disable=no-self-use
-
     # A (multiline) string describing the driver
     # and documenting the format of its parameters
     DOC = None

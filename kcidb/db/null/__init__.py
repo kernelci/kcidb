@@ -14,7 +14,6 @@ class Driver(AbstractDriver):
         any query. This driver does not take parameters.
     """)
 
-    # Yes, it's a special driver, pylint: disable=no-self-use
     # Yes, it's an abstract class, pylint: disable=super-init-not-called
     def __init__(self, params):
         """

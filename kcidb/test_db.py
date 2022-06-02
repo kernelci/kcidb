@@ -287,7 +287,6 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
 
     def test_bigquery_load(self):
         """Check all possible I/O fields can be loaded into BigQuery"""
-        # Calm down, pylint: disable=no-self-use
         io_data = KCIDBDBClient.COMPREHENSIVE_IO_DATA
         dataset = Mock()
         dataset.labels = dict(version_major=io_data['version']['major'],
@@ -298,13 +297,14 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
              patch("google.cloud.bigquery.job.LoadJobConfig"):
             client = kcidb.db.Client("bigquery:dataset")
             client.load(io_data)
+        # Keep pylint happy without disabling any warnings
+        self.assertTrue(client)
 
     def test_sqlite_load_dump(self):
         """
         Check all possible I/O fields can be loaded into and dumped from
         SQLite.
         """
-        # Calm down, pylint: disable=no-self-use
         io_data = KCIDBDBClient.COMPREHENSIVE_IO_DATA
         client = kcidb.db.Client("sqlite::memory:")
         client.init()
