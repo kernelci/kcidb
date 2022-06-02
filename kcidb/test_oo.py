@@ -206,6 +206,7 @@ class KCIDBOOClientTestCase(kcidb.unittest.TestCase):
         )
 
 
+@local_only
 class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
     """Test case for traversing objects."""
 
