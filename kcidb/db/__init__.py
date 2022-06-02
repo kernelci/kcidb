@@ -29,14 +29,13 @@ class Client(kcidb.orm.Source):
 
     def __init__(self, database):
         """
-        Initialize a Kernel CI report database client.
+        Initialize the Kernel CI report database client.
 
         Args:
-            driver_params:  A string specifying the database to access,
-                            formatted as "<DRIVER>:<PARAMS>" or just
-                            "<DRIVER>". Where "<DRIVER>" is the driver name,
-                            and "<PARAMS>" is the optional driver-specific
-                            database parameter string.
+            database:   A string specifying the database to access, formatted
+                        as "<DRIVER>:<PARAMS>" or just "<DRIVER>". Where
+                        "<DRIVER>" is the driver name, and "<PARAMS>" is the
+                        optional driver-specific database parameter string.
 
         Raises:
             NotFound            - if the database does not exist;
