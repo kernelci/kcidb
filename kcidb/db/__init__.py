@@ -24,6 +24,53 @@ DRIVER_TYPES = dict(
 )
 
 
+def _driver_create(database):
+    """
+    Create an instance of a Kernel CI report database driver accessing a
+    database.
+
+    Args:
+        database:   A string specifying the database to access, formatted
+                    as "<DRIVER>:<PARAMS>" or just "<DRIVER>". Where
+                    "<DRIVER>" is the driver name, and "<PARAMS>" is the
+                    optional driver-specific database parameter string.
+
+    Return:
+        The created instance.
+
+    Raises:
+        NotFound            - if the database does not exist;
+        IncompatibleSchema  - if the database is not empty and its schema
+                              is incompatible with the current I/O schema.
+    """
+    assert isinstance(database, str)
+    try:
+        colon_pos = database.index(":")
+        driver_name = database[:colon_pos]
+        driver_params = database[colon_pos + 1:]
+    except ValueError:
+        driver_name = database
+        driver_params = None
+    try:
+        driver_type = DRIVER_TYPES[driver_name]
+    except KeyError:
+        raise Exception(f"Unknown driver {driver_name!r} in database "
+                        f"specification: {database!r}") from None
+    try:
+        driver = driver_type(driver_params)
+    except misc.NotFound:
+        raise
+    except Exception as exc:
+        raise Exception(
+            f"Failed connecting to {driver_name!r} database"
+        ) from exc
+    if driver.is_initialized():
+        major, minor = driver.get_schema_version()
+        if major != io.SCHEMA.major:
+            raise misc.IncompatibleSchema(major, minor)
+    return driver
+
+
 class Client(kcidb.orm.Source):
     """Kernel CI report database client"""
 
@@ -43,30 +90,7 @@ class Client(kcidb.orm.Source):
                                   is incompatible with the current I/O schema.
         """
         assert isinstance(database, str)
-        try:
-            colon_pos = database.index(":")
-            driver_name = database[:colon_pos]
-            driver_params = database[colon_pos + 1:]
-        except ValueError:
-            driver_name = database
-            driver_params = None
-        try:
-            driver_type = DRIVER_TYPES[driver_name]
-        except KeyError:
-            raise Exception(f"Unknown driver {driver_name!r} in database "
-                            f"specification: {database!r}") from None
-        try:
-            self.driver = driver_type(driver_params)
-        except misc.NotFound:
-            raise
-        except Exception as exc:
-            raise Exception(
-                f"Failed connecting to {driver_name!r} database"
-            ) from exc
-        if self.driver.is_initialized():
-            major, minor = self.driver.get_schema_version()
-            if major != io.SCHEMA.major:
-                raise misc.IncompatibleSchema(major, minor)
+        self.driver = _driver_create(database)
 
     def is_initialized(self):
         """
