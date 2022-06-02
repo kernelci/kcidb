@@ -3,6 +3,7 @@
 import sys
 import logging
 import argparse
+import textwrap
 import datetime
 import kcidb.io as io
 import kcidb.orm
@@ -14,6 +15,199 @@ from kcidb.db import bigquery, postgresql, sqlite, json, null, misc
 LOGGER = logging.getLogger(__name__)
 
 
+class MuxDriver(misc.Driver):
+    """Kernel CI multiplexing database driver"""
+
+    DOC = textwrap.dedent("""\
+        The mux driver allows loading data into multiple databases at once,
+        and querying one of them.
+
+        Parameters: <DATABASES>
+
+        <DATABASES> A whitespace-separated list of strings describing the
+                    multiplexed databases (<DRIVER>[:<PARAMS>] pairs). Any
+                    spaces or backslashes in database strings need to be
+                    escaped with backslashes. Each database will receive the
+                    loaded data, but only the first one will be queried.
+
+                    Example: postgresql bigquery:kcidb_01
+    """)
+
+    @staticmethod
+    def databases(params):
+        """
+        Create a generator parsing and returning database strings for member
+        drivers from the driver's parameter string. Account for and remove
+        backslash-escaping.
+
+        Args:
+            params: The parameter string to parse.
+
+        Returns:
+            The generator returning database strings for member drivers.
+        """
+        assert isinstance(params, str)
+
+        escape = False
+        database = ""
+        for char in params:
+            if char == "\\":
+                escape = True
+                continue
+            if escape:
+                database += char
+                escape = False
+                continue
+            if char.isspace():
+                if database:
+                    yield database
+                    database = ""
+                continue
+            database += char
+
+        if escape:
+            raise Exception(
+                f"Incomplete escape sequence at the end of params {params!r}"
+            )
+
+        if database:
+            yield database
+
+    # Yes, parent is an abstract class, pylint: disable=super-init-not-called
+    def __init__(self, params):
+        """
+        Initialize the multiplexing driver.
+
+        Args:
+            params: A parameter string describing the databases to
+                    access. See MuxDriver.DOC for documentation.
+                    Cannot be None (must be specified).
+
+        Raises:
+            NotFound            - if a database does not exist;
+            IncompatibleSchema  - if a database is not empty and its schema
+                                  is incompatible with the current I/O schema.
+        """
+        assert params is None or isinstance(params, str)
+        if params is None:
+            raise Exception("Database parameters must be specified\n\n" +
+                            MuxDriver.DOC)
+        self.drivers = [
+            _driver_create(db) for db in MuxDriver.databases(params)
+        ]
+
+    def is_initialized(self):
+        """
+        Check if at least one database is initialized (not empty).
+
+        Returns:
+            True if at least one database is initialized,
+            False if all are not.
+        """
+        return any(driver.is_initialized() for driver in self.drivers)
+
+    def get_schema_version(self):
+        """
+        Get the lowest version of the I/O schemas the database schemas
+        correspond to.
+
+        Returns:
+            Major and minor version numbers.
+        """
+        return min(driver.get_schema_version() for driver in self.drivers)
+
+    def init(self):
+        """
+        Initialize the member databases.
+        All the databases must be empty (uninitialized).
+        """
+        for driver in self.drivers:
+            driver.init()
+
+    def cleanup(self):
+        """
+        Cleanup (empty) the databases, removing all data.
+        All the databases must be initialized (not empty).
+        """
+        for driver in self.drivers:
+            driver.cleanup()
+
+    def get_last_modified(self):
+        """
+        Get the latest time the data in the databases was last modified.
+        All the databases must be initialized (not empty).
+
+        Returns:
+            The datetime object representing the last modification time.
+        """
+        return max(driver.get_last_modified() for driver in self.drivers)
+
+    def dump_iter(self, objects_per_report):
+        """
+        Dump all data from the first database in object number-limited chunks.
+
+        Args:
+            objects_per_report: An integer number of objects per each returned
+                                report data, or zero for no limit.
+
+        Returns:
+            An iterator returning report JSON data adhering to the current I/O
+            schema version, each containing at most the specified number of
+            objects.
+        """
+        yield from self.drivers[0].dump_iter(objects_per_report)
+
+    # We can live with this for now, pylint: disable=too-many-arguments
+    def query_iter(self, ids, children, parents, objects_per_report):
+        """
+        Match and fetch objects from the first database, in object
+        number-limited chunks.
+
+        Args:
+            ids:                A dictionary of object list names, and lists
+                                of IDs of objects to match. None means empty
+                                dictionary.
+            children:           True if children of matched objects should be
+                                matched as well.
+            parents:            True if parents of matched objects should be
+                                matched as well.
+            objects_per_report: An integer number of objects per each returned
+                                report data, or zero for no limit.
+
+        Returns:
+            An iterator returning report JSON data adhering to the current I/O
+            schema version, each containing at most the specified number of
+            objects.
+        """
+        yield from self.drivers[0].query_iter(
+            ids, children, parents, objects_per_report
+        )
+
+    def oo_query(self, pattern_set):
+        """
+        Query raw object-oriented data from the first database.
+
+        Args:
+            pattern_set:    A set of patterns ("kcidb.oo.data.Pattern"
+                            instances) matching objects to fetch.
+        Returns:
+            A dictionary of object type names and lists containing retrieved
+            objects of the corresponding type.
+        """
+        return self.drivers[0].oo_query(pattern_set)
+
+    def load(self, data):
+        """
+        Load data into the databases.
+
+        Args:
+            data:   The JSON data to load into the databases.
+                    Must adhere to the current version of I/O schema.
+        """
+        for driver in self.drivers:
+            driver.load(data)
+
+
 # A dictionary of known driver names and types
 DRIVER_TYPES = dict(
     bigquery=bigquery.Driver,
@@ -21,6 +215,7 @@ DRIVER_TYPES = dict(
     sqlite=sqlite.Driver,
     json=json.Driver,
     null=null.Driver,
+    mux=MuxDriver,
 )
 
 
