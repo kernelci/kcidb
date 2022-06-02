@@ -1256,6 +1256,8 @@ class Prefetcher(Source):
             obj_type = SCHEMA.types[obj_type_name]
             if not obj_type.parents and objs:
                 # TODO Get rid of formatting and parsing
+                # It isn't,
+                # pylint: disable=bad-option-value,unnecessary-dunder-call
                 prefetch_pattern_set |= Pattern.parse(
                     Pattern(None, True, obj_type,
                             {obj_type.get_id(obj) for obj in objs}).

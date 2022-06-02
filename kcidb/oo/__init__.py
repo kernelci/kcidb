@@ -397,6 +397,7 @@ class Checkout(Object, BuildContainer, TestContainer):
     # Force ABC to recognize abstract method definition
     @cached_property
     def builds(self):
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("builds")
 
     @cached_property
@@ -413,6 +414,7 @@ class Build(Object, TestContainer):
     # Force ABC to recognize abstract method definition
     @cached_property
     def tests(self):
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("tests")
 
 
