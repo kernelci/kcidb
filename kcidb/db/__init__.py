@@ -146,7 +146,9 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
-        return self.driver.dump_iter(objects_per_report=objects_per_report)
+        yield from self.driver.dump_iter(
+            objects_per_report=objects_per_report
+        )
 
     def dump(self):
         """
@@ -194,9 +196,11 @@ class Client(kcidb.orm.Source):
                    for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
-        return self.driver.query_iter(ids=ids,
-                                      children=children, parents=parents,
-                                      objects_per_report=objects_per_report)
+        yield from self.driver.query_iter(
+            ids=ids,
+            children=children, parents=parents,
+            objects_per_report=objects_per_report
+        )
 
     def query(self, ids=None, children=False, parents=False):
         """
