@@ -1352,7 +1352,7 @@ function cloud_functions_deploy() {
                           --env-vars-file "$env_yaml" \
                           --runtime python37 \
                           --trigger-topic "${load_queue_trigger_topic}" \
-                          --memory 512MB \
+                          --memory 1024MB \
                           --timeout 540
     # Remove the environment YAML
     rm "$env_yaml"
