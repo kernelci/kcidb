@@ -37,20 +37,24 @@
         reject("none") | join(" ") | default(test.id, true) -}}
 {% endmacro %}
 
+{% macro test_status(waived_status_nodes) %}
+    {% for waived, status_nodes in waived_status_nodes.items() %}
+        {% for status, nodes in status_nodes.items() %}
+            {% if nodes %}
+                {{- "  " + waived_status_emoji(waived, status) +
+                    " " + (nodes | length | string) -}}
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}
+
 {% macro container_summary(container, max_list_len) %}
     {% if container.tests %}
         {{- "\nTESTS" }}
         {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
         {{- "\n    Status" }}
             {{- "\n      " -}}
-            {% for waived, status_nodes in waived_status_nodes.items() %}
-                {% for status, nodes in status_nodes.items() %}
-                    {% if nodes %}
-                        {{- "  " + waived_status_emoji(waived, status) +
-                            " " + (nodes | length | string) -}}
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
+            {{ test_status(waived_status_nodes) }}
             {{- "" }}
         {% set errored_nodes = waived_status_nodes[false]["ERROR"] %}
         {% if errored_nodes %}
