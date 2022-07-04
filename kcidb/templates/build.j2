@@ -6,6 +6,24 @@
         reject("none") | join(" ") | default(build.id, true) -}}
 {% endmacro %}
 
+{%- macro get_build_format(space, invalid, valid, unknown) -%}
+    {{-
+        "%" + space + "s" +
+        (("  %s %" +
+          (invalid | string | length | string) + "s")
+         if invalid else
+         "%.0s%.0s") +
+        (("  %s %" +
+          (valid | string | length | string) + "s")
+         if valid else
+         "%.0s%.0s") +
+        (("  %s %" +
+          (unknown | string | length | string) + "s")
+         if unknown else
+         "%.0s%.0s")
+    -}}
+{% endmacro %}
+
 {% macro container_summary(container, max_list_len) %}
     {% if container.builds %}
         {{- "\nBUILDS" }}
@@ -19,23 +37,12 @@
             {% set invalid_build_count = invalid_builds | length %}
             {% set valid_build_count = valid_builds | length %}
             {% set unknown_build_count = unknown_builds | length %}
-            {% set build_fmt =
-                "%" +
-                ((8 + (container.architecture_valid_builds |
-                  map("default", "", true) | map("length") | max)) | string) +
-                "s" +
-                (("  %s %" +
-                  (invalid_build_count | string | length | string) + "s")
-                 if invalid_build_count else
-                 "%.0s%.0s") +
-                (("  %s %" +
-                  (valid_build_count | string | length | string) + "s")
-                 if valid_build_count else
-                 "%.0s%.0s") +
-                (("  %s %" +
-                  (unknown_build_count | string | length | string) + "s")
-                 if unknown_build_count else
-                 "%.0s%.0s")
+            {% set space = (( 8 + (container.architecture_valid_builds |
+                  map("default", "", true) | map("length") | max)) | string) %}
+            {% set build_fmt = get_build_format(space,
+                                               invalid_build_count,
+                                               valid_build_count,
+                                               unknown_build_count)
             %}
             {% macro status(architecture,
                             invalid_build_count,
