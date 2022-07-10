@@ -24,6 +24,43 @@
     -}}
 {% endmacro %}
 
+{%- macro status(architecture,
+                invalid_build_count,
+                valid_build_count,
+                unknown_build_count,
+                build_fmt) -%}
+   {{- build_fmt | format("?" if architecture is none
+                           else architecture,
+                           "❌" if invalid_build_count else "➖",
+                           (invalid_build_count | string)
+                           if invalid_build_count else "",
+                           "✅" if valid_build_count else "➖",
+                           (valid_build_count | string)
+                           if valid_build_count else "",
+                           "❓" if unknown_build_count else "➖",
+                           (unknown_build_count | string)
+                           if unknown_build_count else "") -}}
+{% endmacro %}
+
+{%- macro build_status(container, space="") -%}
+    {% set invalid_build_count =
+             container | selectattr("valid", "false") | list | length %}
+    {% set valid_build_count =
+             container | selectattr("valid", "true") | list | length %}
+    {% set unknown_build_count =
+             container | selectattr("valid", "none") | list | length %}
+    {% set build_fmt = get_build_format(space,
+                                        invalid_build_count,
+                                        valid_build_count,
+                                        unknown_build_count)
+    %}
+    {{- status("",
+               invalid_build_count,
+               valid_build_count,
+               unknown_build_count,
+               build_fmt) -}}
+{% endmacro %}
+
 {% macro container_summary(container, max_list_len) %}
     {% if container.builds %}
         {{- "\nBUILDS" }}
@@ -34,43 +71,20 @@
         {% set unknown_builds =
                 container.builds | selectattr("valid", "none") | list %}
         {{- "\n    Status" }}
-            {% set invalid_build_count = invalid_builds | length %}
-            {% set valid_build_count = valid_builds | length %}
-            {% set unknown_build_count = unknown_builds | length %}
             {% set space = (( 8 + (container.architecture_valid_builds |
                   map("default", "", true) | map("length") | max)) | string) %}
-            {% set build_fmt = get_build_format(space,
-                                               invalid_build_count,
-                                               valid_build_count,
-                                               unknown_build_count)
-            %}
-            {% macro status(architecture,
-                            invalid_build_count,
-                            valid_build_count,
-                            unknown_build_count) %}
-                {{- build_fmt | format("?" if architecture is none
-                                       else architecture,
-                                       "❌" if invalid_build_count else "➖",
-                                       (invalid_build_count | string)
-                                       if invalid_build_count else "",
-                                       "✅" if valid_build_count else "➖",
-                                       (valid_build_count | string)
-                                       if valid_build_count else "",
-                                       "❓" if unknown_build_count else "➖",
-                                       (unknown_build_count | string)
-                                       if unknown_build_count else "") -}}
-            {% endmacro %}
-            {{- status("",
-                       invalid_build_count,
-                       valid_build_count,
-                       unknown_build_count) }}
+            {{- build_status(container.builds, space) }}
         {{- "\n    Architectures" }}
-            {% for architecture, valid_builds
+            {% for architecture, arch_valid_builds
                in container.architecture_valid_builds.items() %}
                 {{- status(architecture,
-                           valid_builds[false] | length,
-                           valid_builds[true] | length,
-                           valid_builds[none] | length) }}
+                           arch_valid_builds[false] | length,
+                           arch_valid_builds[true] | length,
+                           arch_valid_builds[none] | length,
+                           get_build_format(space,
+                                            invalid_builds | length,
+                                            valid_builds | length,
+                                            unknown_builds | length)) }}
             {% endfor %}
         {% if invalid_builds %}
             {{- "    Failures" }}
