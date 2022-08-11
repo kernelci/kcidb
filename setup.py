@@ -15,6 +15,9 @@
 """Install kcidb using setuptools."""
 import setuptools
 
+# Ignore long lines with package URLs
+# noqa: E501
+
 with open("README.md", "r", encoding='utf8') as fh:
     LONG_DESCRIPTION = fh.read()
 
