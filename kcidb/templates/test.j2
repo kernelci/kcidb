@@ -57,6 +57,15 @@
         reject("none") | join(" ") | default(test.id, true) -}}
 {% endmacro %}
 
+{% macro container_emoji_counts(emoji_counts, container) %}
+    {% for (waived, status), emoji in WAIVED_STATUS_EMOJIS.items() %}
+        {% set _ = emoji_counts.__setitem__(
+            emoji,
+            container.tests_root.waived_status_nodes[waived][status] | length
+           ) %}
+    {% endfor -%}
+{% endmacro %}
+
 {% macro container_summary(container, max_list_len) %}
     {% if container.tests %}
         {{- "\nTESTS" }}
