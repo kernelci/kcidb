@@ -13,6 +13,11 @@ from kcidb.unittest import local_only
 class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     """Test case for main functions"""
 
+    def test_schemas_main(self):
+        """Check kcidb-db-schemas works"""
+        argv = ["kcidb.db.schemas_main", "-d", "sqlite::memory:"]
+        self.assertExecutes("", *argv, stdout_re=r"4\.0: 4\.0\n")
+
     def test_init_main(self):
         """Check kcidb-db-init works"""
         argv = ["kcidb.db.init_main", "-d", "bigquery:project.dataset"]
@@ -131,8 +136,11 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     def test_load_main(self):
         """Check kcidb-db-load works"""
         driver_source = textwrap.dedent("""
-            from unittest.mock import patch
-            with patch("kcidb.db.Client"):
+            from unittest.mock import patch, Mock
+            from kcidb_io.schema import V4
+            client = Mock()
+            client.get_schema = Mock(return_value=((1, 0), V4))
+            with patch("kcidb.db.Client", return_value=client):
                 return function()
         """)
         argv = ["kcidb.db.load_main", "-d", "bigquery:project.dataset"]
@@ -147,7 +155,9 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
+            from kcidb_io.schema import V4
             client = Mock()
+            client.get_schema = Mock(return_value=((1, 0), V4))
             client.load = Mock()
             with patch("kcidb.db.Client", return_value=client) as Client:
                 status = function()
@@ -160,7 +170,9 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock, call
+            from kcidb_io.schema import V4
             client = Mock()
+            client.get_schema = Mock(return_value=((1, 0), V4))
             client.load = Mock()
             with patch("kcidb.db.Client", return_value=client) as Client:
                 status = function()
@@ -305,8 +317,7 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
         """Check all possible I/O fields can be loaded into BigQuery"""
         io_data = KCIDBDBClientTestCase.COMPREHENSIVE_IO_DATA
         dataset = Mock()
-        dataset.labels = dict(version_major=io_data['version']['major'],
-                              version_minor=io_data['version']['minor'])
+        dataset.labels = dict(version_major=4, version_minor=0)
         client = Mock()
         client.get_dataset = Mock(return_value=dataset)
         with patch("google.cloud.bigquery.Client", return_value=client), \

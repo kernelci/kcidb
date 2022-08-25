@@ -332,13 +332,16 @@ def ingest_main():
     if not db_client.is_initialized():
         db_client.init()
     oo_client = oo.Client(db_client, sort=True)
+    io_schema = db_client.get_schema()[1]
 
     # For each JSON object in stdin
     for data in misc.json_load_stream_fd(sys.stdin.fileno()):
-        # Validate and upgrade the data
-        data = io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
+        # Validate and upgrade the data to the database's I/O schema
+        data = io_schema.upgrade(io_schema.validate(data), copy=False)
         # Load into the database
         db_client.load(data)
+        # Possibly upgrade the data further, to be compatible with ORM
+        data = io.SCHEMA.upgrade(data, copy=False)
         # Record patterns matching the loaded objects and all their parents
         pattern_set = set()
         for pattern in orm.Pattern.from_io(data):
