@@ -3,16 +3,24 @@
 import textwrap
 import datetime
 import kcidb.io as io
-from kcidb.db.misc import Driver as AbstractDriver
+from kcidb.db.abstract import Driver as AbstractDriver
 
 
 class Driver(AbstractDriver):
     """Kernel CI null database driver"""
 
-    DOC = textwrap.dedent("""\
-        The null driver discards any loaded data and returns nothing for
-        any query. This driver does not take parameters.
-    """)
+    @classmethod
+    def get_doc(cls):
+        """
+        Get driver documentation.
+
+        Returns:
+            The driver documentation string.
+        """
+        return textwrap.dedent("""\
+            The null driver discards any loaded data and returns nothing for
+            any query. This driver does not take parameters.
+        """)
 
     # Yes, it's an abstract class, pylint: disable=super-init-not-called
     def __init__(self, params):
@@ -35,20 +43,56 @@ class Driver(AbstractDriver):
         """
         return True
 
-    def get_schema_version(self):
+    def get_schema(self):
         """
-        Get the version of the I/O schema the dataset schema corresponds to.
+        Get a tuple with the driven database schema's major and minor version
+        numbers, and the I/O schema supported by it. The database must be
+        initialized.
 
         Returns:
-            Major and minor version numbers.
+            A tuple of the major and minor version numbers (both non-negative
+            integers) of the database schema, and the I/O schema (a
+            kcidb_io.schema.abstract.Version) supported by it (allowed for
+            loading).
         """
-        return io.SCHEMA.major, io.SCHEMA.minor
+        return (0, 0), io.SCHEMA
 
-    def init(self):
+    def get_schemas(self):
         """
-        Initialize the database.
-        The database must be empty (uninitialized).
+        Retrieve available database schemas: a dictionary of tuples containing
+        major and minor version numbers of the schemas (both non-negative
+        integers), and corresponding I/O schemas
+        (kcidb_io.schema.abstract.Version instances) supported by them.
+
+        Returns:
+            The schema dictionary, sorted by ascending version numbers.
         """
+        return dict((self.get_schema(),))
+
+    def upgrade(self, target_version):
+        """
+        Upgrade the database to the specified schema.
+        The database must be initialized.
+
+        Args:
+            target_version: A tuple of the major and minor version numbers of
+                            the schema to upgrade to (must be one of the
+                            database's available schema versions, newer than
+                            the current one).
+        """
+        assert target_version == self.get_schema()[0]
+
+    def init(self, version):
+        """
+        Initialize the driven database. The database must be uninitialized.
+
+        Args:
+            version:    A tuple of the major and minor version numbers (both
+                        non-negative integers) of the schema to initialize the
+                        database to (must be one of the driver's available
+                        schema versions)
+        """
+        assert version == self.get_schema()[0]
 
     def cleanup(self):
         """
@@ -58,11 +102,14 @@ class Driver(AbstractDriver):
 
     def get_last_modified(self):
         """
-        Get the time the data in the database was last modified.
-        The database must be initialized (not empty).
+        Get the time the data in the driven database was last modified.
+        Can return the minimum timestamp constant, if the database is not
+        initialized, or its data loading interface is not limited in the
+        amount of load() method calls.
 
         Returns:
-            The datetime object representing the last modification time.
+            A timezone-aware datetime object representing the last
+            modification time.
         """
         return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
 
@@ -79,6 +126,7 @@ class Driver(AbstractDriver):
             schema version, each containing at most the specified number of
             objects.
         """
+        del objects_per_report
         yield io.SCHEMA.new()
 
     # We can live with this for now, pylint: disable=too-many-arguments
@@ -103,6 +151,7 @@ class Driver(AbstractDriver):
             schema version, each containing at most the specified number of
             objects.
         """
+        del ids, children, parents, objects_per_report
         yield io.SCHEMA.new()
 
     def oo_query(self, pattern_set):
@@ -116,6 +165,7 @@ class Driver(AbstractDriver):
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
+        del pattern_set
         return {}
 
     def load(self, data):
