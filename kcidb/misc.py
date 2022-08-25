@@ -223,6 +223,29 @@ def iso_timestamp(string):
     return value
 
 
+def version(string):
+    """
+    Parse a version string into a tuple with major and minor version numbers
+    (both non-negative integers). Matches the argparse type function
+    interface.
+
+    Args:
+        string: The string representing the version to parse.
+
+    Returns:
+        A tuple containing major and minor version numbers.
+
+    Raises:
+        ValueError if the string was not representing a version.
+    """
+    match = re.fullmatch(r"([0-9]+)\.([0-9]+)", string)
+    if not match:
+        raise argparse.ArgumentTypeError(
+            f"Invalid version: {string!r}"
+        )
+    return int(match.group(1)), int(match.group(2))
+
+
 def argparse_output_add_args(parser):
     """
     Add JSON output arguments to a command-line argument parser.
@@ -320,6 +343,7 @@ def argparse_schema_add_args(parser, version_verb):
                 f"Invalid major version number: {string!r}"
             )
         major = int(string)
+        # It's OK, pylint: disable=redefined-outer-name
         version = io.SCHEMA
         while version and version.major != major:
             version = version.previous

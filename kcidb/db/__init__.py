@@ -3,209 +3,42 @@
 import sys
 import logging
 import argparse
-import textwrap
 import datetime
 import kcidb.io as io
 import kcidb.orm
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS
-from kcidb.db import bigquery, postgresql, sqlite, json, null, misc
+from kcidb.db import abstract, schematic, mux, \
+    bigquery, postgresql, sqlite, json, null, misc  # noqa: F401
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
 
 
-class MuxDriver(misc.Driver):
+class MuxDriver(mux.Driver):
     """Kernel CI multiplexing database driver"""
 
-    DOC = textwrap.dedent("""\
-        The mux driver allows loading data into multiple databases at once,
-        and querying one of them.
-
-        Parameters: <DATABASES>
-
-        <DATABASES> A whitespace-separated list of strings describing the
-                    multiplexed databases (<DRIVER>[:<PARAMS>] pairs). Any
-                    spaces or backslashes in database strings need to be
-                    escaped with backslashes. Each database will receive the
-                    loaded data, but only the first one will be queried.
-
-                    Example: postgresql bigquery:kcidb_01
-    """)
-
-    @staticmethod
-    def databases(params):
+    @classmethod
+    def get_doc(cls):
         """
-        Create a generator parsing and returning database strings for member
-        drivers from the driver's parameter string. Account for and remove
-        backslash-escaping.
-
-        Args:
-            params: The parameter string to parse.
+        Get driver documentation.
 
         Returns:
-            The generator returning database strings for member drivers.
+            The driver documentation string.
         """
-        assert isinstance(params, str)
+        return super().get_doc() + \
+            "\n            Example: postgresql bigquery:kcidb_01"
 
-        escape = False
-        database = ""
-        for char in params:
-            if char == "\\":
-                escape = True
-                continue
-            if escape:
-                database += char
-                escape = False
-                continue
-            if char.isspace():
-                if database:
-                    yield database
-                    database = ""
-                continue
-            database += char
-
-        if escape:
-            raise Exception(
-                f"Incomplete escape sequence at the end of params {params!r}"
-            )
-
-        if database:
-            yield database
-
-    # Yes, parent is an abstract class, pylint: disable=super-init-not-called
-    def __init__(self, params):
+    @classmethod
+    def get_drivers(cls):
         """
-        Initialize the multiplexing driver.
-
-        Args:
-            params: A parameter string describing the databases to
-                    access. See MuxDriver.DOC for documentation.
-                    Cannot be None (must be specified).
-
-        Raises:
-            NotFound            - if a database does not exist;
-            IncompatibleSchema  - if a database is not empty and its schema
-                                  is incompatible with the current I/O schema.
-        """
-        assert params is None or isinstance(params, str)
-        if params is None:
-            raise Exception("Database parameters must be specified\n\n" +
-                            MuxDriver.DOC)
-        self.drivers = [
-            _driver_create(db) for db in MuxDriver.databases(params)
-        ]
-
-    def is_initialized(self):
-        """
-        Check if at least one database is initialized (not empty).
+        Retrieve a dictionary of driver names and types available for driver's
+        control.
 
         Returns:
-            True if at least one database is initialized,
-            False if all are not.
+            A driver dictionary.
         """
-        return any(driver.is_initialized() for driver in self.drivers)
-
-    def get_schema_version(self):
-        """
-        Get the lowest version of the I/O schemas the database schemas
-        correspond to.
-
-        Returns:
-            Major and minor version numbers.
-        """
-        return min(driver.get_schema_version() for driver in self.drivers)
-
-    def init(self):
-        """
-        Initialize the member databases.
-        All the databases must be empty (uninitialized).
-        """
-        for driver in self.drivers:
-            driver.init()
-
-    def cleanup(self):
-        """
-        Cleanup (empty) the databases, removing all data.
-        All the databases must be initialized (not empty).
-        """
-        for driver in self.drivers:
-            driver.cleanup()
-
-    def get_last_modified(self):
-        """
-        Get the latest time the data in the databases was last modified.
-        All the databases must be initialized (not empty).
-
-        Returns:
-            The datetime object representing the last modification time.
-        """
-        return max(driver.get_last_modified() for driver in self.drivers)
-
-    def dump_iter(self, objects_per_report):
-        """
-        Dump all data from the first database in object number-limited chunks.
-
-        Args:
-            objects_per_report: An integer number of objects per each returned
-                                report data, or zero for no limit.
-
-        Returns:
-            An iterator returning report JSON data adhering to the current I/O
-            schema version, each containing at most the specified number of
-            objects.
-        """
-        yield from self.drivers[0].dump_iter(objects_per_report)
-
-    # We can live with this for now, pylint: disable=too-many-arguments
-    def query_iter(self, ids, children, parents, objects_per_report):
-        """
-        Match and fetch objects from the first database, in object
-        number-limited chunks.
-
-        Args:
-            ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match. None means empty
-                                dictionary.
-            children:           True if children of matched objects should be
-                                matched as well.
-            parents:            True if parents of matched objects should be
-                                matched as well.
-            objects_per_report: An integer number of objects per each returned
-                                report data, or zero for no limit.
-
-        Returns:
-            An iterator returning report JSON data adhering to the current I/O
-            schema version, each containing at most the specified number of
-            objects.
-        """
-        yield from self.drivers[0].query_iter(
-            ids, children, parents, objects_per_report
-        )
-
-    def oo_query(self, pattern_set):
-        """
-        Query raw object-oriented data from the first database.
-
-        Args:
-            pattern_set:    A set of patterns ("kcidb.oo.data.Pattern"
-                            instances) matching objects to fetch.
-        Returns:
-            A dictionary of object type names and lists containing retrieved
-            objects of the corresponding type.
-        """
-        return self.drivers[0].oo_query(pattern_set)
-
-    def load(self, data):
-        """
-        Load data into the databases.
-
-        Args:
-            data:   The JSON data to load into the databases.
-                    Must adhere to the current version of I/O schema.
-        """
-        for driver in self.drivers:
-            driver.load(data)
+        return DRIVER_TYPES
 
 
 # A dictionary of known driver names and types
@@ -259,10 +92,6 @@ def _driver_create(database):
         raise Exception(
             f"Failed connecting to {driver_name!r} database"
         ) from exc
-    if driver.is_initialized():
-        major, minor = driver.get_schema_version()
-        if major != io.SCHEMA.major:
-            raise misc.IncompatibleSchema(major, minor)
     return driver
 
 
@@ -286,6 +115,9 @@ class Client(kcidb.orm.Source):
         """
         assert isinstance(database, str)
         self.driver = _driver_create(database)
+        assert all(io_schema <= io.SCHEMA
+                   for io_schema in self.driver.get_schemas().values()), \
+            "Driver has I/O schemas newer than the current package I/O schema"
 
     def is_initialized(self):
         """
@@ -296,12 +128,26 @@ class Client(kcidb.orm.Source):
         """
         return self.driver.is_initialized()
 
-    def init(self):
+    def init(self, version=None):
         """
-        Initialize the database. The database must be empty (not initialized).
+        Initialize the driven database. The database must be uninitialized.
+
+        Args:
+            version:    A tuple of the major and minor version numbers (both
+                        non-negative integers) of the schema to initialize the
+                        database to (must be one of the database's available
+                        schema versions), or None to initialize to the latest
+                        schema.
         """
         assert not self.is_initialized()
-        self.driver.init()
+        if version is None:
+            version = list(self.get_schemas())[-1]
+        assert isinstance(version, tuple) and len(version) == 2
+        assert isinstance(version[0], int) and version[0] >= 0
+        assert isinstance(version[1], int) and version[1] >= 0
+        assert version in self.get_schemas(), \
+            "Schema version is not available"
+        self.driver.init(version)
 
     def cleanup(self):
         """
@@ -313,17 +159,86 @@ class Client(kcidb.orm.Source):
 
     def get_last_modified(self):
         """
-        Get the time the data in the database was last modified.
-        The database must be initialized (not empty).
+        Get the time the data in the connected database was last modified.
+        Can return the minimum timestamp constant, if the database is not
+        initialized or its data loading interface is not limited in the amount
+        of load() method calls.
 
         Returns:
-            The datetime object representing the last modification time.
+            A timezone-aware datetime object representing the last
+            modification time.
         """
-        assert self.is_initialized()
         last_modified = self.driver.get_last_modified()
         assert isinstance(last_modified, datetime.datetime)
         assert last_modified.tzinfo
         return last_modified
+
+    def get_schemas(self):
+        """
+        Retrieve available database schemas: a dictionary of tuples containing
+        major and minor version numbers of the schemas (both non-negative
+        integers), and corresponding I/O schemas
+        (kcidb_io.schema.abstract.Version instances) supported by them.
+
+        Returns:
+            The schema dictionary, sorted by ascending version numbers.
+        """
+        schemas = self.driver.get_schemas()
+        assert isinstance(schemas, dict)
+        assert len(schemas) > 0
+        prev_version = None
+        prev_io_version = None
+        for version, io_version in schemas.items():
+            assert isinstance(version, tuple) and len(version) == 2
+            assert isinstance(version[0], int) and version[0] >= 0
+            assert isinstance(version[1], int) and version[1] >= 0
+            assert prev_version is None or version > prev_version
+            assert issubclass(io_version, io.schema.VA)
+            assert prev_io_version is None or io_version > prev_io_version
+        return schemas
+
+    def get_schema(self):
+        """
+        Get a tuple with the driven database schema's major and minor version
+        numbers, and the I/O schema supported by it. The database must be
+        initialized.
+
+        Returns:
+            A tuple of the major and minor version numbers (both non-negative
+            integers) of the database schema, and the I/O schema (a
+            kcidb_io.schema.abstract.Version) supported by it (allowed for
+            loading).
+        """
+        assert self.is_initialized()
+        version, io_version = self.driver.get_schema()
+        assert isinstance(version, tuple) and len(version) == 2
+        assert isinstance(version[0], int) and version[0] >= 0
+        assert isinstance(version[1], int) and version[1] >= 0
+        assert issubclass(io_version, io.schema.VA)
+        assert (version, io_version) in self.get_schemas().items()
+        return version, io_version
+
+    def upgrade(self, target_version=None):
+        """
+        Upgrade the database to the latest (or specified) schema.
+        The database must be initialized.
+
+        Args:
+            target_version: A tuple of the major and minor version numbers of
+                            the schema to upgrade to (must be one of the
+                            database's available schema versions, newer than
+                            the current one), or None to upgrade to the latest
+                            schema.
+        """
+        assert self.is_initialized()
+        if target_version is None:
+            target_version = list(self.get_schemas())[-1]
+        assert target_version in self.get_schemas(), \
+            "Target schema version is not available"
+        current_version = self.get_schema()[0]
+        assert target_version >= current_version, \
+            "Target schema is older than the current schema"
+        self.driver.upgrade(target_version)
 
     def dump_iter(self, objects_per_report=0):
         """
@@ -450,11 +365,14 @@ class Client(kcidb.orm.Source):
 
         Args:
             data:   The JSON data to load into the database.
-                    Must adhere to a version of I/O schema.
+                    Must adhere to the database's supported I/O schema
+                    version, or an earlier one.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
-        assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
-        self.driver.load(io.SCHEMA.upgrade(data))
+        io_schema = self.get_schema()[1]
+        assert io_schema.is_compatible_directly(data)
+        assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
+        self.driver.load(data)
 
 
 class DBHelpAction(argparse.Action):
@@ -497,7 +415,7 @@ class DBHelpAction(argparse.Action):
         for name, driver in DRIVER_TYPES.items():
             print(f"\n{name!r} driver\n" +
                   "-" * (len(name) + 9) + "\n" +
-                  driver.DOC)
+                  driver.get_doc())
         parser.exit()
 
 
@@ -692,9 +610,33 @@ def load_main():
     client = Client(args.database)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
+    io_schema = client.get_schema()[1]
     for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno()):
-        data = io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
+        data = io_schema.upgrade(io_schema.validate(data), copy=False)
         client.load(data)
+
+
+def schemas_main():
+    """Execute the kcidb-db-schemas command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = 'kcidb-db-schemas - List available database schemas ' \
+        '(as <DB>: <I/O>)'
+    parser = ArgumentParser(description=description)
+    args = parser.parse_args()
+    client = Client(args.database)
+    curr_version = client.get_schema()[0] if client.is_initialized() else None
+    lines = []
+    widths = [0, 0]
+    for version, io_version in client.get_schemas().items():
+        marker = "*" if version == curr_version else ""
+        lines.append((f"{marker}{version[0]}.{version[1]}",
+                      f"{io_version.major}.{io_version.minor}"))
+        # pylint: disable=consider-using-enumerate
+        for i in range(len(widths)):
+            widths[i] = max(widths[i], len(lines[-1][i]))
+    for line in lines:
+        # Considered, pylint: disable=consider-using-f-string
+        print("%*s: %s" % (widths[0], line[0], line[1]))
 
 
 def init_main():
@@ -707,12 +649,62 @@ def init_main():
         help='Do not fail if the database is already initialized.',
         action='store_true'
     )
+    parser.add_argument(
+        '-s', '--schema',
+        metavar="VERSION",
+        help="Specify database schema VERSION to initialize to "
+             "(a first column value from kcidb-db-schemas output). "
+             "Default is the latest version.",
+        type=kcidb.misc.version
+    )
+    args = parser.parse_args()
+    client = Client(args.database)
+    if args.schema is not None:
+        if args.schema not in client.get_schemas():
+            raise Exception(
+                f"Schema version {args.schema[0]}.{args.schema[1]} "
+                f"is not available for database {args.database!r}"
+            )
+    if not client.is_initialized():
+        client.init(args.schema)
+    elif not args.ignore_initialized:
+        raise Exception(f"Database {args.database!r} is already initialized")
+
+
+def upgrade_main():
+    """Execute the kcidb-db-upgrade command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = 'kcidb-db-upgrade - Upgrade database schema'
+    parser = ArgumentParser(description=description)
+    parser.add_argument(
+        '-s', '--schema',
+        metavar="VERSION",
+        help="Specify database schema VERSION (<major>.<minor> - a left-side "
+             "value from kcidb-db-schemas output) to upgrade to. "
+             "Default is the latest version. "
+             "Increases in the major number introduce "
+             "backwards-incompatible changes, in the minor - "
+             "backwards-compatible.",
+        type=kcidb.misc.version
+    )
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
-        client.init()
-    elif not args.ignore_initialized:
-        raise Exception(f"Database {args.database!r} is already initialized")
+        raise Exception(f"Database {args.database!r} is not initialized")
+    if args.schema is not None:
+        if args.schema not in client.get_schemas():
+            raise Exception(
+                f"Schema version {args.schema[0]}.{args.schema[1]} "
+                f"is not available for database {args.database!r}"
+            )
+        curr_schema = client.get_schema()[0]
+        if args.schema < curr_schema:
+            raise Exception(
+                f"Schema version {args.schema[0]}.{args.schema[1]} "
+                f"is older than version {curr_schema[0]}.{curr_schema[1]} "
+                f"currently used by database {args.database!r}"
+            )
+    client.upgrade(args.schema)
 
 
 def cleanup_main():
