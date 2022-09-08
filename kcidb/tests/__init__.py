@@ -22,4 +22,4 @@ def validate_main():
     schema.validate(catalog)
     if args.urls:
         for test in catalog.values():
-            requests.head(test['home']).raise_for_status()
+            requests.head(test['home'], timeout=60).raise_for_status()
