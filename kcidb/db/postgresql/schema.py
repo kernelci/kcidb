@@ -218,14 +218,24 @@ class Table:
             TableColumn(name, column)
             for name, column in columns.items()
         ]
-        # Column list definition for CREATE TABLE command,
-        # with one column per line.
-        self.columns_def = ",\n".join(
-            column.name + " " + column.schema.format_nameless_def()
-            for column in self.columns
-        )
         # A string of comma-separated column names for use in commands
         self.columns_list = ", ".join(column.name for column in self.columns)
+
+    def format_create(self, name):
+        """
+        Format the "CREATE" command for the table.
+
+        Args:
+            name:       The name of the target table of the command.
+
+        Returns:
+            The formatted "CREATE" command.
+        """
+        return "CREATE TABLE IF NOT EXISTS " + name + \
+            " (\n    " + ",\n".join(
+                column.name + " " + column.schema.format_nameless_def()
+                for column in self.columns
+            ) + "\n)"
 
     def format_insert(self, name, prio_db):
         """

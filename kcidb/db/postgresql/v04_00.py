@@ -363,12 +363,7 @@ class Schema(AbstractSchema):
         with self.conn, self.conn.cursor() as cursor:
             for table_name, table_schema in self.TABLES.items():
                 try:
-                    cursor.execute(
-                        "CREATE TABLE IF NOT EXISTS " + table_name +
-                        " (\n" +
-                        textwrap.indent(table_schema.columns_def, " " * 4) +
-                        "\n)"
-                    )
+                    cursor.execute(table_schema.format_create(table_name))
                 except Exception as exc:
                     raise Exception(
                         f"Failed creating table {table_name!r}"
