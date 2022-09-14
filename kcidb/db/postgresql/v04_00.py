@@ -163,7 +163,7 @@ class Schema(AbstractSchema):
     # The I/O schema the database schema supports
     io = io.schema.V4_0
 
-    # A map of table names to CREATE TABLE statements
+    # A map of table names to table definitions
     TABLES = dict(
         checkouts=Table({
             "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
