@@ -53,7 +53,7 @@ class Column:
         Returns: The formatted column definition.
         """
         nameless_def = self.type
-        if self.constraint:
+        if self.constraint and self.constraint != Constraint.PRIMARY_KEY:
             nameless_def += " " + self.constraint.value
         return nameless_def
 
@@ -199,13 +199,18 @@ class TableColumn:
 class Table:
     """A table schema"""
 
-    def __init__(self, columns):
+    def __init__(self, columns, primary_key=None):
         """
         Initialize the table schema.
 
         Args:
-            columns:    A dictionary of column names consisting of
-                        dot-separated parts (keys), and the column schemas.
+            columns:        A dictionary of column names consisting of
+                            dot-separated parts (keys), and the column
+                            schemas. Columns cannot specify PRIMARY_KEY
+                            constraint, if primary_key_columns is specified.
+            primary_key:    A list of names of columns constituting the
+                            primary key. None to use the column with the
+                            PRIMARY_KEY constraint instead.
         """
         assert isinstance(columns, dict)
         assert all(
@@ -213,6 +218,12 @@ class Table:
             isinstance(column, Column)
             for name, column in columns.items()
         )
+        assert primary_key is None or \
+            isinstance(primary_key, list) and \
+            all(isinstance(column_name, str) and
+                column_name in columns and
+                columns[column_name].constraint != Constraint.PRIMARY_KEY
+                for column_name in primary_key)
         # Column list
         self.columns = [
             TableColumn(name, column)
@@ -220,6 +231,17 @@ class Table:
         ]
         # A string of comma-separated column names for use in commands
         self.columns_list = ", ".join(column.name for column in self.columns)
+        # A list of columns in the primary key
+        self.primary_key = []
+        if primary_key is None:
+            for column in self.columns:
+                if column.schema.constraint == Constraint.PRIMARY_KEY:
+                    self.primary_key.append(column)
+        else:
+            for column_name in primary_key:
+                for column in self.columns:
+                    if column.name == column_name:
+                        self.primary_key.append(column)
 
     def format_create(self, name):
         """
@@ -231,11 +253,18 @@ class Table:
         Returns:
             The formatted "CREATE" command.
         """
+        items = [
+            column.name + " " + column.schema.format_nameless_def()
+            for column in self.columns
+        ]
+        if self.primary_key:
+            items.append(
+                "PRIMARY KEY(" +
+                ", ".join(column.name for column in self.primary_key) +
+                ")"
+            )
         return "CREATE TABLE IF NOT EXISTS " + name + \
-            " (\n    " + ",\n".join(
-                column.name + " " + column.schema.format_nameless_def()
-                for column in self.columns
-            ) + "\n)"
+            " (\n    " + ",\n    ".join(items) + "\n)"
 
     def format_insert(self, name, prio_db):
         """
