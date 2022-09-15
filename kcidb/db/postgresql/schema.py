@@ -159,6 +159,22 @@ class TimestampColumn(Column):
         super().__init__("TIMESTAMP WITH TIME ZONE", constraint=constraint)
 
 
+class IntegerColumn(Column):
+    """An integer number column schema"""
+
+    def __init__(self, constraint=None):
+        """
+        Initialize the column schema.
+
+        Args:
+            constraint:     The column's constraint.
+                            A member of the Constraint enum, or None,
+                            meaning no constraint.
+        """
+        assert constraint is None or isinstance(constraint, Constraint)
+        super().__init__("INTEGER", constraint=constraint)
+
+
 class FloatColumn(Column):
     """A floating-point number column schema"""
 
