@@ -8,8 +8,17 @@ def match_revision(revision):
     """Match revisions of interest to Mark Brown"""
     # Repos we're interested in
     repo_urls = {
-        "https://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux.git",
-        "https://git.kernel.org/pub/scm/linux/kernel/git/soc/soc.git",
+        f"https://git.kernel.org/pub/scm/linux/kernel/git/{r}.git"
+        for r in (
+            "arm64/linux",
+            "soc/soc",
+            "broonie/ci",
+            "broonie/misc",
+            "broonie/regmap",
+            "broonie/regulator",
+            "broonie/sound",
+            "broonie/spi",
+        )
     }
     # If the revision is not from one of our repos,
     # or there are no finished builds
