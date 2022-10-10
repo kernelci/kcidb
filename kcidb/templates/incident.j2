@@ -1,0 +1,26 @@
+{# Incident template macros #}
+
+{% macro summary(incident) %}
+    {%- if incident.test -%}
+        {{- "Incident in " +
+            (incident.test.path | default("an unknown test")) +
+            " on " +
+            (incident.test.build.architecture |
+             default("an unknown architecture")) -}}
+        {%- if incident.issue.comment -%}
+            {{- ": " + incident.issue.comment -}}
+        {%- endif -%}
+    {%- elif incident.build -%}
+        {{- "Incident in " +
+            (incident.build.architecture |
+             default("an unknown-architecture")) +
+            " build" -}}
+        {%- if incident.issue.comment -%}
+            {{- ": " + incident.issue.comment -}}
+        {%- endif -%}
+    {%- elif incident.issue.comment -%}
+        {{- "Incident: " + incident.issue.comment -}}
+    {%- else -%}
+        {{- "Incident " + incident.id -}}
+    {%- endif -%}
+{% endmacro %}

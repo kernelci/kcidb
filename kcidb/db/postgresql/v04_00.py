@@ -14,7 +14,7 @@ from kcidb.db.schematic import \
     Schema as AbstractSchema, \
     Connection as AbstractConnection
 from kcidb.db.postgresql.schema import \
-    Constraint, BoolColumn, FloatColumn, TimestampColumn, \
+    Constraint, BoolColumn, FloatColumn, IntegerColumn, TimestampColumn, \
     VarcharColumn, TextColumn, JSONColumn, Table
 
 # Module's logger
@@ -352,6 +352,45 @@ class Schema(AbstractSchema):
                 start_time=TimestampColumn(),
                 duration=FloatColumn(),
                 output_files=JSONColumn(),
+                comment=TextColumn(),
+                misc=JSONColumn(),
+            )),
+        ),
+        bug=dict(
+            statement="SELECT NULL as url WHERE FALSE",
+            schema=Table(dict(
+                url=TextColumn(),
+                culprit_code=BoolColumn(),
+                culprit_tool=BoolColumn(),
+                culprit_harness=BoolColumn(),
+                comment=TextColumn(),
+            )),
+        ),
+        issue=dict(
+            statement="SELECT NULL as id, NULL as version WHERE FALSE",
+            schema=Table(dict(
+                id=TextColumn(),
+                version=IntegerColumn(),
+                origin=TextColumn(),
+                report_url=TextColumn(),
+                culprit_code=BoolColumn(),
+                culprit_tool=BoolColumn(),
+                culprit_harness=BoolColumn(),
+                build_valid=BoolColumn(),
+                test_status=TextColumn(),
+                comment=TextColumn(),
+                misc=JSONColumn(),
+            )),
+        ),
+        incident=dict(
+            statement="SELECT NULL as id WHERE FALSE",
+            schema=Table(dict(
+                id=TextColumn(),
+                origin=TextColumn(),
+                issue_id=TextColumn(),
+                issue_version=IntegerColumn(),
+                build_id=TextColumn(),
+                test_id=TextColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),
