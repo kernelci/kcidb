@@ -1,0 +1,62 @@
+{# Issue template macros #}
+
+{% macro summary(issue) %}
+    {{- issue.report_url -}}
+{% endmacro %}
+
+{% macro stats(issue, max_list_len) %}
+    Concerns
+{%- set sep = " " -%}
+{%- if issue.culprit_code -%}
+    {{- sep + "the kernel code" -}}
+    {%- set sep = ", " -%}
+{%- endif -%}
+{%- if issue.culprit_tool -%}
+    {{- sep + "a test/toolchain" -}}
+    {%- set sep = ", " -%}
+{%- endif -%}
+{%- if issue.culprit_harness -%}
+    {{- sep + "a CI system" -}}
+    {%- set sep = ", " -%}
+{%- endif -%}
+{%- if sep == " " -%}
+    {{- " nothing" -}}
+{%- endif %}
+
+
+{% if issue.incidents %}
+    Detected {{ issue.incidents | count }} times in
+    {%- set sep = " " -%}
+    {%- if issue.builds -%}
+        {{- sep -}}{{- issue.builds | count }} builds
+        {%- set sep = ", " -%}
+    {%- endif -%}
+    {%- if issue.tests -%}
+        {{- sep -}}{{- issue.tests | count }} test runs
+        {%- set sep = ", " -%}
+    {%- endif %}
+
+    {% set branches = issue.checkouts |
+                        map(attribute="git_repository_url_branch") |
+                        unique | list %}
+    In {{ branches | length -}}
+    {{- " branch" if (branches | length) == 1 else " branches" }}:
+        {% for branch in branches[:max_list_len] %}
+            {{- "        " + branch[0] + " " + branch[1] }}
+        {% endfor %}
+        {% if (branches | length) > max_list_len %}
+            {{- "        ..." }}
+        {% endif %}
+    By {{ issue.incidents | map(attribute="origin") |
+          unique | sort | join(", ") }}
+{%- else %}
+    Not detected anywhere yet
+{%- endif -%}
+{% endmacro %}
+
+{% macro overview(issue, max_list_len) %}
+    {{ issue.report_subject }}
+    {{ issue.report_url }}
+
+{{ stats(issue, max_list_len) -}}
+{% endmacro %}

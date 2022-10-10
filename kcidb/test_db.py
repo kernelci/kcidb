@@ -16,7 +16,8 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
     def test_schemas_main(self):
         """Check kcidb-db-schemas works"""
         argv = ["kcidb.db.schemas_main", "-d", "sqlite::memory:"]
-        self.assertExecutes("", *argv, stdout_re=r"4\.0: 4\.0\n")
+        self.assertExecutes("", *argv,
+                            stdout_re=r"4\.0: 4\.0\n4\.1: 4\.1\n")
 
     def test_init_main(self):
         """Check kcidb-db-init works"""
@@ -137,9 +138,9 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         """Check kcidb-db-load works"""
         driver_source = textwrap.dedent("""
             from unittest.mock import patch, Mock
-            from kcidb_io.schema import V4
+            from kcidb_io.schema import V4_1
             client = Mock()
-            client.get_schema = Mock(return_value=((1, 0), V4))
+            client.get_schema = Mock(return_value=((1, 0), V4_1))
             with patch("kcidb.db.Client", return_value=client):
                 return function()
         """)
@@ -155,9 +156,9 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock
-            from kcidb_io.schema import V4
+            from kcidb_io.schema import V4_1
             client = Mock()
-            client.get_schema = Mock(return_value=((1, 0), V4))
+            client.get_schema = Mock(return_value=((1, 0), V4_1))
             client.load = Mock()
             with patch("kcidb.db.Client", return_value=client) as Client:
                 status = function()
@@ -170,9 +171,9 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
         driver_source = textwrap.dedent(f"""
             from unittest.mock import patch, Mock, call
-            from kcidb_io.schema import V4
+            from kcidb_io.schema import V4_1
             client = Mock()
-            client.get_schema = Mock(return_value=((1, 0), V4))
+            client.get_schema = Mock(return_value=((1, 0), V4_1))
             client.load = Mock()
             with patch("kcidb.db.Client", return_value=client) as Client:
                 status = function()
@@ -189,6 +190,11 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 @local_only
 class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
     """Test case for the Client class"""
+
+    def setUp(self):
+        """Setup tests"""
+        # pylint: disable=invalid-name
+        self.maxDiff = None
 
     # I/O data containing all possible fields
     COMPREHENSIVE_IO_DATA = {
@@ -295,6 +301,43 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
                     baz=42
                 ),
             ),
+        ],
+        "issues": [
+            dict(
+                id="origin:1",
+                version=1,
+                origin="origin",
+                report_url="https://bugzilla/1298712",
+                report_subject="Printing doesn't work",
+                culprit=dict(
+                    code=False,
+                    tool=True,
+                    harness=False,
+                ),
+                build_valid=True,
+                test_status="FAIL",
+                comment="Match printing failures",
+                misc=dict(
+                    foo="bar",
+                    baz=42
+                ),
+            )
+        ],
+        "incidents": [
+            dict(
+                id="origin:1",
+                origin="origin",
+                issue_id="origin:1",
+                issue_version=1,
+                build_id="origin:1",
+                test_id="origin:1",
+                present=True,
+                comment="It crashed",
+                misc=dict(
+                    foo="bar",
+                    baz=42
+                ),
+            )
         ]
     }
 
@@ -317,7 +360,7 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
         """Check all possible I/O fields can be loaded into BigQuery"""
         io_data = KCIDBDBClientTestCase.COMPREHENSIVE_IO_DATA
         dataset = Mock()
-        dataset.labels = dict(version_major=4, version_minor=0)
+        dataset.labels = dict(version_major=4, version_minor=1)
         client = Mock()
         client.get_dataset = Mock(return_value=dataset)
         with patch("google.cloud.bigquery.Client", return_value=client), \
@@ -337,3 +380,221 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
         client.init()
         client.load(io_data)
         self.assertEqual(io_data, client.dump())
+
+    def test_upgrade(self):
+        """
+        Test database schema upgrade affects accepted I/O schema, and doesn't
+        affect ORM results.
+        """
+        db_client = kcidb.db.Client("sqlite::memory:")
+        db_client.init((4, 0))
+        self.assertEqual(db_client.get_schema(),
+                         ((4, 0), kcidb.io.schema.V4_0))
+        # NOTE: Having only one element per list to ensure comparison
+        v4_0_data = {
+            "version": {"major": 4, "minor": 0},
+            "checkouts": [
+                {
+                    "id": "_:kernelci:5acb9c2a7bc836e"
+                          "9e5172bbcd2311499c5b4e5f1",
+                    "origin": "kernelci",
+                    "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                       "cd2311499c5b4e5f1",
+                    "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_hash": ""
+                },
+            ],
+            "builds": [
+                {
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "origin": "google",
+                    "checkout_id": "_:google:bd355732283c23a365f7c"
+                                   "55206c0385100d1c389"
+                },
+            ],
+            "tests": [
+                {
+                    "id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "build_id": "google:google.org:a1d993c3n4c448b2"
+                                "j0l1hbf1",
+                    "origin": "google",
+                },
+            ]
+        }
+        v4_1_data = {
+            "version": {"major": 4, "minor": 1},
+            "issues": [
+                {
+                    "id": "redhat:878234322",
+                    "version": 3,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit": {
+                        "code": True,
+                        "tool": False,
+                        "harness": False,
+                    },
+                    "comment": "Match USB Bidirectional printer dev",
+                },
+            ],
+            "incidents": [
+                {
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "origin": "redhat",
+                    "test_id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "present": True,
+                },
+            ],
+        }
+        v4_0_oo_data = {
+            "revision": [
+                {
+                    "contacts": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_name":
+                        "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_files": None,
+                    "patchset_hash": "",
+                }
+            ],
+            "checkout": [
+                {
+                    "comment": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_repository_branch": None,
+                    "git_repository_url": None,
+                    "id":
+                        "_:kernelci:5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "message_id": None,
+                    "misc": None,
+                    "origin": "kernelci",
+                    "patchset_hash": "",
+                    "start_time": None,
+                    "tree_name": None,
+                    "valid": None,
+                }
+            ],
+            "build": [
+                {
+                    "architecture": None,
+                    "checkout_id":
+                        "_:google:bd355732283c23a365f7c55206c0385100d1c389",
+                    "command": None,
+                    "comment": None,
+                    "compiler": None,
+                    "config_name": None,
+                    "config_url": None,
+                    "duration": None,
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "input_files": None,
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "start_time": None,
+                    "valid": None,
+                }
+            ],
+            "test": [
+                {
+                    "build_id":
+                        "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "comment": None,
+                    "duration": None,
+                    "environment_comment": None,
+                    "environment_misc": None,
+                    "id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "path": None,
+                    "start_time": None,
+                    "status": None,
+                    "waived": None,
+                }
+            ],
+            "bug": [],
+            "issue": [],
+            "incident": [],
+        }
+        v4_1_oo_data = kcidb.misc.merge_dicts(
+            v4_0_oo_data,
+            bug=[
+                {
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "url":
+                        "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
+                    "subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                }
+            ],
+            issue=[
+                {
+                    "comment": "Match USB Bidirectional printer dev",
+                    "id": "redhat:878234322",
+                    "misc": None,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "build_valid": None,
+                    "test_status": None,
+                    "version": 3,
+                }
+            ],
+            incident=[
+                {
+                    "build_id": None,
+                    "comment": None,
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "misc": None,
+                    "origin": "redhat",
+                    "test_id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                }
+            ],
+        )
+
+        db_client.load(v4_0_data)
+        self.assertEqual(db_client.dump(), v4_0_data)
+        self.assertEqual(db_client.oo_query(kcidb.orm.Pattern.parse(">*#")),
+                         v4_0_oo_data)
+        with self.assertRaises(AssertionError):
+            db_client.load(v4_1_data)
+        db_client.upgrade((4, 1))
+        self.assertEqual(db_client.get_schema(),
+                         ((4, 1), kcidb.io.schema.V4_1))
+        self.assertEqual(db_client.oo_query(kcidb.orm.Pattern.parse(">*#")),
+                         v4_0_oo_data)
+        # Shouldn't raise an assertion, SHOULDN'T IT? <----
+        db_client.load(v4_0_data)
+        upgraded_v4_0_data = kcidb.io.schema.V4_1.upgrade(v4_0_data)
+        self.assertEqual(db_client.dump(), upgraded_v4_0_data)
+        db_client.load(v4_1_data)
+        merged_data = {**upgraded_v4_0_data, **v4_1_data}
+        self.assertEqual(db_client.dump(), merged_data)
+        self.assertEqual(db_client.oo_query(kcidb.orm.Pattern.parse(">*#")),
+                         v4_1_oo_data)

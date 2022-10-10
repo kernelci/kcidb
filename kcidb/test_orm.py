@@ -40,7 +40,8 @@ SCHEMA = kcidb.orm.Schema(
             id_fields=("id",),
             children=dict(
                 test=("build_id",),
-                build_test_environment=("build_id",)
+                build_test_environment=("build_id",),
+                incident=("build_id",),
             ),
         ),
         test_environment=dict(
@@ -70,6 +71,44 @@ SCHEMA = kcidb.orm.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
+            id_fields=("id",),
+            children=dict(
+                incident=("test_id",),
+            ),
+        ),
+        bug=dict(
+            field_json_schemas=dict(
+                url=dict(type="string"),
+            ),
+            required_fields={'url'},
+            id_fields=("url",),
+            children=dict(
+                issue=("report_url",),
+            ),
+        ),
+        issue=dict(
+            field_json_schemas=dict(
+                id=dict(type="string"),
+                version=dict(type="integer"),
+                origin=dict(type="string"),
+                report_url=dict(type="string"),
+            ),
+            required_fields={'id', 'version', 'origin'},
+            id_fields=("id",),
+            children=dict(
+                incident=("issue_id",),
+            ),
+        ),
+        incident=dict(
+            field_json_schemas=dict(
+                id=dict(type="string"),
+                origin=dict(type="string"),
+                issue_id=dict(type="string"),
+                issue_version=dict(type="integer"),
+                build_id=dict(type="string"),
+                test_id=dict(type="string"),
+            ),
+            required_fields={'id', 'origin', 'issue_id', 'issue_version'},
             id_fields=("id",),
         ),
     )
@@ -168,6 +207,10 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                 ),
                 pattern(
                     pattern(None, True, "build"),
+                    True, "incident"
+                ),
+                pattern(
+                    pattern(None, True, "build"),
                     True, "build_test_environment"
                 ),
                 pattern(
@@ -176,7 +219,24 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                         True, "build_test_environment"
                     ),
                     True, "test"
-                )
+                ),
+                pattern(
+                    pattern(
+                        pattern(None, True, "build"),
+                        True, "test"
+                    ),
+                    True, "incident"
+                ),
+                pattern(
+                    pattern(
+                        pattern(
+                            pattern(None, True, "build"),
+                            True, "build_test_environment"
+                        ),
+                        True, "test"
+                    ),
+                    True, "incident"
+                ),
             }
         )
         self.assertEqual(
@@ -189,6 +249,10 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                 ),
                 pattern(
                     pattern(None, True, "build"),
+                    True, "incident"
+                ),
+                pattern(
+                    pattern(None, True, "build"),
                     True, "build_test_environment"
                 ),
                 pattern(
@@ -197,7 +261,24 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                         True, "build_test_environment"
                     ),
                     True, "test"
-                )
+                ),
+                pattern(
+                    pattern(
+                        pattern(None, True, "build"),
+                        True, "test"
+                    ),
+                    True, "incident"
+                ),
+                pattern(
+                    pattern(
+                        pattern(
+                            pattern(None, True, "build"),
+                            True, "build_test_environment"
+                        ),
+                        True, "test"
+                    ),
+                    True, "incident"
+                ),
             }
         )
         self.assertEqual(
@@ -222,8 +303,17 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
         )
         checkout_pattern = pattern(revision_pattern, True, "checkout")
         build_pattern = pattern(checkout_pattern, True, "build")
-        build_test_environment_pattern = pattern(
+        environment_pattern = pattern(
             build_pattern, True, "build_test_environment"
+        )
+        build_test_pattern = pattern(build_pattern, True, "test")
+        environment_test_pattern = pattern(environment_pattern, True, "test")
+        environment_test_incident_pattern = pattern(
+                environment_test_pattern, True, "incident"
+        )
+        build_incident_pattern = pattern(build_pattern, True, "incident")
+        build_test_incident_pattern = pattern(
+            build_test_pattern, True, "incident"
         )
         self.assertEqual(
             parse(">build%<*$>*#", [{("abc",)}]),
@@ -231,11 +321,12 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
                 revision_pattern,
                 checkout_pattern,
                 build_pattern,
-                pattern(build_pattern, True, "test"),
-                build_test_environment_pattern,
-                pattern(
-                    build_test_environment_pattern, True, "test"
-                ),
+                build_incident_pattern,
+                build_test_pattern,
+                build_test_incident_pattern,
+                environment_pattern,
+                environment_test_pattern,
+                environment_test_incident_pattern,
             }
         )
 
@@ -443,6 +534,55 @@ class KCIDBORMPatternTestCase(kcidb.unittest.TestCase):
             pattern(None, True, "test", {("origin:3",)}),
         })
 
+        io_data = {
+            "checkouts": [
+                {
+                    "git_commit_hash":
+                    "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
+                    "patchset_hash": "",
+                    "id": "origin:1",
+                    "origin": "origin",
+                },
+            ],
+            "builds": [
+                {
+                    "checkout_id": "origin:1",
+                    "id": "origin:2",
+                    "origin": "origin",
+                },
+            ],
+            "tests": [
+                {
+                    "build_id": "origin:2",
+                    "id": "origin:3",
+                    "origin": "origin",
+                },
+            ],
+            "issues": [
+                {
+                    "id": "origin:4",
+                    "version": 2,
+                    "origin": "origin",
+                },
+            ],
+            "incidents": [
+                {
+                    "id": "origin:5",
+                    "origin": "origin",
+                    "issue_id": "origin:4",
+                    "issue_version": 2,
+                },
+            ],
+            **kcidb.io.SCHEMA.new()
+        }
+        self.assertEqual(from_io(io_data), {
+            pattern(None, True, "checkout", {("origin:1",)}),
+            pattern(None, True, "build", {("origin:2",)}),
+            pattern(None, True, "test", {("origin:3",)}),
+            pattern(None, True, "issue", {("origin:4",)}),
+            pattern(None, True, "incident", {("origin:5",)}),
+        })
+
     def test_repr(self):
         """Check various patterns can be converted to strings"""
         self.assertEqual(repr(pattern(None, True, "revision")),
@@ -529,6 +669,21 @@ def raw_revision(**kwargs):
     return raw_data("revision", **kwargs)
 
 
+def raw_bug(**kwargs):
+    """Generate raw data for a bug from values for some fields."""
+    return raw_data("bug", **kwargs)
+
+
+def raw_issue(**kwargs):
+    """Generate raw data for an issue from values for some fields."""
+    return raw_data("issue", **kwargs)
+
+
+def raw_incident(**kwargs):
+    """Generate raw data for an incident from values for some fields."""
+    return raw_data("incident", **kwargs)
+
+
 @local_only
 class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
     """Test case for orm.Source"""
@@ -540,9 +695,9 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         )
 
     def load_data(self):
-        """Load data of v4 schema."""
+        """Load data of v5 schema."""
         self.source.load({
-            "version": {"major": 4, "minor": 0},
+            "version": {"major": 4, "minor": 1},
             "checkouts": [
                 {
                     "id": "_:kernelci:5acb9c2a7bc836e"
@@ -730,7 +885,117 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                     "start_time": "2021-11-23T03:52:13.666000+00:00",
                     "path": "baseline.dmesg.crit"
                 }
-            ]
+            ],
+            "issues": [
+                {
+                    "id": "redhat:987987da98798f987c",
+                    "origin": "redhat",
+                    "version": 80,
+                    "report_url": "https://bugzilla/207065",
+                    "report_subject": "Plintel doesn't plint",
+                },
+                {
+                    "id": "redhat:987987da98798f987c",
+                    "origin": "redhat",
+                    "version": 100,
+                    "report_url": "https://bugzilla/207065",
+                    "report_subject": "Printer doesn't print",
+                },
+                {
+                    "id": "kernelci:1987934987",
+                    "origin": "kernelci",
+                    "version": 1,
+                    "report_url": "https://bugzilla/207065",
+                    "report_subject": "Printing doesn't work",
+                },
+                {
+                    "id": "redhat:987987da98798aa233",
+                    "origin": "redhat",
+                    "version": 10,
+                    "report_url": "https://bugzilla/1201011",
+                    "report_subject": "Compiler compiles wrong",
+                },
+                {
+                    "id": "kernelci:1209203344",
+                    "origin": "kernelci",
+                    "version": 0,
+                    "report_url": "https://maillist/498232",
+                    "report_subject": "LED boesn't link",
+                },
+                {
+                    "id": "kernelci:1209203344",
+                    "origin": "kernelci",
+                    "version": 1,
+                    "report_url": "https://maillist/498232",
+                    "report_subject": "LED doesn't blink",
+                },
+            ],
+            "incidents": [
+                {
+                    "id": "redhat:987987da98798aa233-12",
+                    "origin": "redhat",
+                    "issue_id": "redhat:987987da98798aa233",
+                    "issue_version": 10,
+                    "build_id": "redhat:redhat.org:619c65f9709de72e90f2efd0",
+                    "test_id": "redhat:redhat.org:b9d8be63bc2abca63165"
+                    "de5fd74f0f6d2f0b0d1c",
+                    "present": True,
+                },
+                {
+                    "id": "redhat:987987da98798f987c-29874",
+                    "origin": "redhat",
+                    "issue_id": "redhat:987987da98798f987c",
+                    "issue_version": 100,
+                    "test_id": "redhat:redhat.org:b9d8be63bc2abca63165"
+                    "de5fd74f0f6d2f0b0d1c",
+                    "present": True,
+                },
+                {
+                    "id": "_:2987d298712",
+                    "origin": "_",
+                    "issue_id": "kernelci:1987934987",
+                    "issue_version": 1,
+                    "test_id": "redhat:redhat.org:b9d8be63bc2abca63165"
+                    "de5fd74f0f6d2f0b0d1c",
+                    "present": True,
+                },
+                {
+                    "id": "kernelci:29871398212",
+                    "origin": "kernelci",
+                    "issue_id": "kernelci:1209203344",
+                    "issue_version": 1,
+                    "test_id": "kernelci:kernelci.org:b9d8be63bc2abca63165"
+                    "de5fd74f0f6d2f0b0e2b",
+                    "present": True,
+                },
+                {
+                    "id": "kernelci:29871398232",
+                    "origin": "kernelci",
+                    "issue_id": "kernelci:1209203344",
+                    "issue_version": 1,
+                    "test_id": "kernelci:kernelci.org:"
+                    "619c656de1fb4af479f2efae",
+                    "present": True,
+                },
+                {
+                    "id": "_:908812340982340",
+                    "origin": "_",
+                    "issue_id": "kernelci:1209203344",
+                    "issue_version": 0,
+                    "test_id": "redhat:redhat.org:b9d8be63bc2abca63165"
+                    "de5fd74f0f6d2f0b0d1c",
+                    "present": True,
+                },
+                {
+                    "id": "_:908812340982345",
+                    "origin": "_",
+                    "issue_id": "kernelci:1209203344",
+                    "issue_version": 1,
+                    "test_id": "redhat:redhat.org:b9d8be63bc2abca63165"
+                    "de5fd74f0f6d2f0b0d1c",
+                    "present": False,
+                },
+            ],
         })
 
     def setUp(self):
@@ -738,6 +1003,8 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.source = kcidb.db.Client('sqlite:!:memory:')
         self.source.init()
         self.load_data()
+        # pylint: disable=invalid-name
+        self.maxDiff = None
 
     def test_source_variable(self):
         """Check instance of source variable"""
@@ -847,6 +1114,24 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             ]
         })
 
+        self.assertEqual(
+            self.query_str(
+                '>test["redhat:redhat.org:'
+                'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c"]'
+                '>incident<issue<bug#'
+            ),
+            dict(bug=[
+                raw_bug(
+                    url="https://bugzilla/1201011",
+                    subject="Compiler compiles wrong",
+                ),
+                raw_bug(
+                    url="https://bugzilla/207065",
+                    subject="Printer doesn't print",
+                ),
+            ])
+        )
+
     def test_build(self):
         """Check data returned from query that starts with '>build' """
 
@@ -917,6 +1202,17 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                     origin="kernelci")
             ]
         })
+
+        self.assertEqual(
+            self.query_str(
+                '>build["redhat:redhat.org:619c65f9709de72e90f2efd0"]'
+                '>incident<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                url="https://bugzilla/1201011",
+                subject="Compiler compiles wrong",
+            )])
+        )
 
     def test_checkout(self):
         """Check data returned from query that starts with '>checkout' """
@@ -1164,4 +1460,737 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
             '>checkout>build>test#')["test"],
             test_of_revision_dollar_sign
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
+                '>checkout>build>test>incident<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                url="https://maillist/498232",
+                subject="LED doesn't blink",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>revision["82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896", ""]'
+                '>checkout>build>test>incident<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                url="https://maillist/498232",
+                subject="LED doesn't blink",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>revision["82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896", ""; '
+                '"5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
+                '>checkout>build>test>incident<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                url="https://maillist/498232",
+                subject="LED doesn't blink",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>revision["82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896", ""; '
+                '"5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
+                '>checkout>build>incident<issue<bug#'
+            ),
+            dict(bug=[])
+        )
+
+    def test_bug(self):
+        """Check data returned from query that starts with '>bug'"""
+
+        self.assertEqual(
+            self.query_str('>bug["noone:non-existent"]#'),
+            {"bug": []}
+        )
+
+        self.assertEqual(
+            self.query_str('>bug["https://bugzilla/207065"]#'),
+            {
+                "bug": [
+                    raw_bug(
+                        url="https://bugzilla/207065",
+                        subject="Printer doesn't print",
+                    )
+                ]
+            },
+        )
+
+        self.assertEqual(
+            self.query_str('>bug["https://maillist/498232"]#'),
+            {
+                "bug": [
+                    raw_bug(
+                        url="https://maillist/498232",
+                        subject="LED doesn't blink",
+                    )
+                ]
+            },
+        )
+
+        self.assertEqual(
+            self.query_str('>bug["https://maillist/498232"]>issue#'),
+            {
+                "issue": [
+                    raw_issue(
+                        id="kernelci:1209203344",
+                        origin="kernelci",
+                        report_url="https://maillist/498232",
+                        report_subject="LED doesn't blink",
+                        version=1,
+                    )
+                ]
+            },
+        )
+
+        data = self.query_str('>bug["https://bugzilla/207065"]>issue#')
+        self.assertEqual(["issue"], list(data.keys()))
+        issues = data["issue"]
+        self.assertEqual(len(issues), 2)
+        self.assertIn(
+            raw_issue(
+                id="kernelci:1987934987",
+                origin="kernelci",
+                report_url="https://bugzilla/207065",
+                report_subject="Printing doesn't work",
+                version=1,
+            ),
+            issues
+        )
+        self.assertIn(
+            raw_issue(
+                id="redhat:987987da98798f987c",
+                origin="redhat",
+                report_url="https://bugzilla/207065",
+                report_subject="Printer doesn't print",
+                version=100,
+            ),
+            issues
+        )
+
+        self.assertEqual(
+            self.query_str('>bug["https://bugzilla/1201011"]>issue#'),
+            {
+                "issue": [
+                    raw_issue(
+                        id="redhat:987987da98798aa233",
+                        origin="redhat",
+                        report_url="https://bugzilla/1201011",
+                        report_subject="Compiler compiles wrong",
+                        version=10,
+                    )
+                ]
+            },
+        )
+
+        data = self.query_str(
+            '>bug["https://bugzilla/207065"]>issue>incident#'
+        )
+        self.assertEqual(["incident"], list(data.keys()))
+        incidents = data["incident"]
+        self.assertEqual(len(incidents), 2)
+        self.assertIn(
+            raw_incident(
+                id="_:2987d298712",
+                issue_id="kernelci:1987934987",
+                issue_version=1,
+                origin="_",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            ),
+            incidents,
+        )
+        self.assertIn(
+            raw_incident(
+                id="redhat:987987da98798f987c-29874",
+                issue_id="redhat:987987da98798f987c",
+                issue_version=100,
+                origin="redhat",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            ),
+            incidents,
+        )
+
+        data = self.query_str(
+            '>bug["https://maillist/498232"]>issue>incident#'
+        )
+        self.assertEqual(["incident"], list(data.keys()))
+        incidents = data["incident"]
+        self.assertEqual(len(incidents), 2)
+        self.assertIn(
+            raw_incident(
+                id="kernelci:29871398212",
+                issue_id="kernelci:1209203344",
+                issue_version=1,
+                origin="kernelci",
+                test_id="kernelci:kernelci.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            ),
+            incidents
+        )
+        self.assertIn(
+            raw_incident(
+                id="kernelci:29871398232",
+                issue_id="kernelci:1209203344",
+                issue_version=1,
+                origin="kernelci",
+                test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+            ),
+            incidents
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>bug["https://bugzilla/1201011"]>issue>incident#'
+            ),
+            dict(incident=[raw_incident(
+                id="redhat:987987da98798aa233-12",
+                issue_id="redhat:987987da98798aa233",
+                issue_version=10,
+                origin="redhat",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>bug["https://bugzilla/207065"]>issue>incident<test#'
+            ),
+            dict(test=[raw_test(
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                origin="redhat",
+                status="DONE",
+                waived=True,
+            )]),
+        )
+
+        data = self.query_str(
+            '>bug["https://maillist/498232"]>issue>incident<test#'
+        )
+        self.assertEqual(["test"], list(data.keys()))
+        tests = data["test"]
+        self.assertEqual(len(tests), 2)
+        self.assertIn(
+            raw_test(
+                build_id="kernelci:kernelci.org:619c64b1712847eccbf2efac",
+                id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+                origin="kernelci",
+                path="baseline.dmesg.emerg",
+                start_time="2021-11-23T03:52:13.671000+00:00",
+                status="PASS",
+                waived=False,
+            ),
+            tests
+        )
+        self.assertIn(
+            raw_test(
+                build_id="kernelci:kernelci.org:619c65d3c1b0a764f3f2efa0",
+                id="kernelci:kernelci.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+                origin="kernelci",
+                path="baseline.dmesg.crit",
+                start_time="2021-11-23T03:52:13.666000+00:00",
+                status="PASS",
+                waived=False,
+            ),
+            tests
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>bug["https://bugzilla/1201011"]>issue>incident<test#'
+            ),
+            dict(test=[raw_test(
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                origin="redhat",
+                status="DONE",
+                waived=True,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>bug["https://bugzilla/1201011"]>issue>incident<build#'
+            ),
+            dict(build=[raw_build(
+                checkout_id="_:redhat:"
+                "5acb9c2a7bc836e9619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                origin="redhat",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>bug["https://maillist/498232"]>issue>incident'
+                '<test<build<checkout<revision#'
+            ),
+            dict(revision=[
+                raw_revision(
+                    git_commit_hash="5acb9c2a7bc836e9e51"
+                    "72bbcd2311499c5b4e5f1",
+                    git_commit_name="v5.15-4077-g5acb9c2a7bc8",
+                    patchset_hash="",
+                ),
+                raw_revision(
+                    git_commit_hash="82bcf49e5e6ad570ff6"
+                    "1ffcd210cf85c5ec8d896",
+                    patchset_hash="",
+                )
+            ])
+        )
+
+    def test_issue(self):
+        """Check data returned from query that starts with '>issue'"""
+
+        self.assertEqual(
+            self.query_str('>issue["noone:non-existent"]#'),
+            {"issue": []}
+        )
+
+        self.assertEqual(
+            self.query_str('>issue["kernelci:1209203344"]#'),
+            dict(issue=[raw_issue(
+                id="kernelci:1209203344",
+                origin="kernelci",
+                report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
+                version=1,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>issue["kernelci:1987934987"]#'),
+            dict(issue=[raw_issue(
+                id="kernelci:1987934987",
+                origin="kernelci",
+                report_url="https://bugzilla/207065",
+                report_subject="Printing doesn't work",
+                version=1,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>issue["redhat:987987da98798f987c"]#'),
+            dict(issue=[raw_issue(
+                id="redhat:987987da98798f987c",
+                origin="redhat",
+                report_url="https://bugzilla/207065",
+                report_subject="Printer doesn't print",
+                version=100,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>issue["redhat:987987da98798aa233"]#'),
+            dict(issue=[raw_issue(
+                id="redhat:987987da98798aa233",
+                origin="redhat",
+                report_url="https://bugzilla/1201011",
+                report_subject="Compiler compiles wrong",
+                version=10,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>issue["kernelci:1987934987"]>incident#'
+            ),
+            dict(incident=[raw_incident(
+                id="_:2987d298712",
+                issue_id="kernelci:1987934987",
+                issue_version=1,
+                origin="_",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            )])
+        )
+
+        data = self.query_str(
+            '>issue["kernelci:1209203344"]>incident#'
+        )
+        self.assertEqual(["incident"], list(data.keys()))
+        incidents = data["incident"]
+        self.assertEqual(len(incidents), 2)
+        self.assertIn(
+            raw_incident(
+                id="kernelci:29871398212",
+                issue_id="kernelci:1209203344",
+                issue_version=1,
+                origin="kernelci",
+                test_id="kernelci:kernelci.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            ),
+            incidents
+        )
+        self.assertIn(
+            raw_incident(
+                id="kernelci:29871398232",
+                issue_id="kernelci:1209203344",
+                issue_version=1,
+                origin="kernelci",
+                test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+            ),
+            incidents
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>issue["redhat:987987da98798aa233"]>incident#'
+            ),
+            dict(incident=[raw_incident(
+                id="redhat:987987da98798aa233-12",
+                issue_id="redhat:987987da98798aa233",
+                issue_version=10,
+                origin="redhat",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>issue["kernelci:1209203344"]<bug#'),
+            dict(bug=[raw_bug(
+                url="https://maillist/498232",
+                subject="LED doesn't blink",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>issue["kernelci:1987934987"; "redhat:987987da98798f987c"]'
+                '<bug#'
+            ),
+            dict(bug=[raw_bug(
+                url="https://bugzilla/207065",
+                subject="Printer doesn't print",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>issue["redhat:987987da98798aa233"]<bug#'),
+            dict(bug=[raw_bug(
+                url="https://bugzilla/1201011",
+                subject="Compiler compiles wrong",
+            )])
+        )
+
+    def test_incident(self):
+        """Check data returned from query that starts with '>incident'"""
+
+        self.assertEqual(
+            self.query_str('>incident["noone:non-existent"]#'),
+            {"incident": []}
+        )
+
+        # Old incidents shouldn't be returned
+        self.assertEqual(
+            self.query_str(
+                '>incident["_:908812340982340"; "_:908812340982340"]#'
+            ),
+            dict(incident=[])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["_:2987d298712"]#'),
+            dict(incident=[raw_incident(
+                id="_:2987d298712",
+                issue_id="kernelci:1987934987",
+                issue_version=1,
+                origin="_",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["redhat:987987da98798f987c-29874"]#'),
+            dict(incident=[raw_incident(
+                id="redhat:987987da98798f987c-29874",
+                issue_id="redhat:987987da98798f987c",
+                issue_version=100,
+                origin="redhat",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398212"]#'),
+            dict(incident=[raw_incident(
+                id="kernelci:29871398212",
+                issue_id="kernelci:1209203344",
+                issue_version=1,
+                origin="kernelci",
+                test_id="kernelci:kernelci.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398232"]#'),
+            dict(incident=[raw_incident(
+                id="kernelci:29871398232",
+                issue_id="kernelci:1209203344",
+                issue_version=1,
+                origin="kernelci",
+                test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["redhat:987987da98798aa233-12"]#'),
+            dict(incident=[raw_incident(
+                id="redhat:987987da98798aa233-12",
+                issue_id="redhat:987987da98798aa233",
+                issue_version=10,
+                origin="redhat",
+                test_id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["redhat:987987da98798aa233-12"]<test#'),
+            dict(test=[raw_test(
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                origin="redhat",
+                status="DONE",
+                waived=True,
+            )]),
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398232"]<test#'),
+            dict(test=[raw_test(
+                build_id="kernelci:kernelci.org:619c64b1712847eccbf2efac",
+                id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+                origin="kernelci",
+                path="baseline.dmesg.emerg",
+                start_time="2021-11-23T03:52:13.671000+00:00",
+                status="PASS",
+                waived=False,
+            )]),
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398212"]<test#'),
+            dict(test=[raw_test(
+                build_id="kernelci:kernelci.org:619c65d3c1b0a764f3f2efa0",
+                id="kernelci:kernelci.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+                origin="kernelci",
+                path="baseline.dmesg.crit",
+                start_time="2021-11-23T03:52:13.666000+00:00",
+                status="PASS",
+                waived=False,
+            )]),
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["_:2987d298712"]<test#'),
+            dict(test=[raw_test(
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                origin="redhat",
+                status="DONE",
+                waived=True,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["redhat:987987da98798f987c-29874"]<test#'
+            ),
+            dict(test=[raw_test(
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                origin="redhat",
+                status="DONE",
+                waived=True,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["redhat:987987da98798aa233-12"; '
+                '"_:2987d298712"; "redhat:987987da98798f987c-29874"]<test#'
+            ),
+            dict(test=[raw_test(
+                build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:"
+                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+                origin="redhat",
+                status="DONE",
+                waived=True,
+            )]),
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["redhat:987987da98798aa233-12"]<build#'),
+            dict(build=[raw_build(
+                checkout_id="_:redhat:"
+                "5acb9c2a7bc836e9619c65f9709de72e90f2efd0",
+                id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+                origin="redhat",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["redhat:987987da98798aa233-12"]<issue#'),
+            dict(issue=[raw_issue(
+                id="redhat:987987da98798aa233",
+                origin="redhat",
+                report_url="https://bugzilla/1201011",
+                report_subject="Compiler compiles wrong",
+                version=10,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398232"]<issue#'),
+            dict(issue=[raw_issue(
+                id="kernelci:1209203344",
+                origin="kernelci",
+                report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
+                version=1,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398212"]<issue#'),
+            dict(issue=[raw_issue(
+                id="kernelci:1209203344",
+                origin="kernelci",
+                report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
+                version=1,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["kernelci:29871398212"; '
+                '"kernelci:29871398232"]<issue#'
+            ),
+            dict(issue=[raw_issue(
+                id="kernelci:1209203344",
+                origin="kernelci",
+                report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
+                version=1,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["_:2987d298712"]<issue#'),
+            dict(issue=[raw_issue(
+                id="kernelci:1987934987",
+                origin="kernelci",
+                report_url="https://bugzilla/207065",
+                report_subject="Printing doesn't work",
+                version=1,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["redhat:987987da98798f987c-29874"]<issue#'
+            ),
+            dict(issue=[raw_issue(
+                id="redhat:987987da98798f987c",
+                origin="redhat",
+                report_url="https://bugzilla/207065",
+                report_subject="Printer doesn't print",
+                version=100,
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["redhat:987987da98798aa233-12"]<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                subject="Compiler compiles wrong",
+                url="https://bugzilla/1201011",
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398232"]<issue<bug#'),
+            dict(bug=[raw_bug(
+                subject="LED doesn't blink",
+                url="https://maillist/498232"
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["kernelci:29871398212"]<issue<bug#'),
+            dict(bug=[raw_bug(
+                subject="LED doesn't blink",
+                url="https://maillist/498232"
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["kernelci:29871398232"; '
+                '"kernelci:29871398212"]<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                subject="LED doesn't blink",
+                url="https://maillist/498232"
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str('>incident["_:2987d298712"]<issue<bug#'),
+            dict(bug=[raw_bug(
+                subject="Printer doesn't print",
+                url="https://bugzilla/207065"
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["redhat:987987da98798f987c-29874"]<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                subject="Printer doesn't print",
+                url="https://bugzilla/207065"
+            )])
+        )
+
+        self.assertEqual(
+            self.query_str(
+                '>incident["_:2987d298712"; '
+                '"redhat:987987da98798f987c-29874"]<issue<bug#'
+            ),
+            dict(bug=[raw_bug(
+                subject="Printer doesn't print",
+                url="https://bugzilla/207065"
+            )])
         )

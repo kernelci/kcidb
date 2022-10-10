@@ -531,6 +531,37 @@ class Schema(AbstractSchema):
              "    comment,\n"
              "    misc\n"
              "FROM tests",
+        bug='SELECT\n'
+            '    ""    AS url,\n'
+            '    ""    AS subject,\n'
+            '    FALSE AS culprit_code,\n'
+            '    FALSE AS culprit_tool,\n'
+            '    FALSE AS culprit_harness\n'
+            'FROM UNNEST([])',
+        issue='SELECT\n'
+              '    ""    AS id,\n'
+              '    0     AS version,\n'
+              '    ""    AS origin,\n'
+              '    ""    AS report_url,\n'
+              '    ""    AS report_subject,\n'
+              '    FALSE AS culprit_code,\n'
+              '    FALSE AS culprit_tool,\n'
+              '    FALSE AS culprit_harness,\n'
+              '    FALSE AS build_valid,\n'
+              '    ""    AS test_status,\n'
+              '    ""    AS comment,\n'
+              '    ""    AS misc\n'
+              'FROM UNNEST([])',
+        incident='SELECT\n'
+                 '    "" AS id,\n'
+                 '    "" AS origin,\n'
+                 '    "" AS issue_id,\n'
+                 '    0  AS issue_version,\n'
+                 '    "" AS build_id,\n'
+                 '    "" AS test_id,\n'
+                 '    "" AS comment,\n'
+                 '    "" AS misc\n'
+                 'FROM UNNEST([])',
     )
 
     @classmethod

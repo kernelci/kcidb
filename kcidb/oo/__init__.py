@@ -208,7 +208,77 @@ class BuildTestContainer(BuildContainer, TestContainer):
                       [])
 
 
-class Node:
+class BugContainer(ABC):
+    """Abstract bug container"""
+    @abstractmethod
+    def bugs(self):
+        """A list of reports for the issues incident to this container"""
+
+    @property
+    def code_bugs(self):
+        """A list of reports for code issues incident to this container"""
+        return [bug for bug in self.bugs if bug.culprit_code]
+
+    @property
+    def tool_bugs(self):
+        """A list of reports for tool issues incident to this container"""
+        return [bug for bug in self.bugs if bug.culprit_tool]
+
+    @property
+    def harness_bugs(self):
+        """A list of reports for harness issues incident to this container"""
+        return [bug for bug in self.bugs if bug.culprit_harness]
+
+
+class IssueContainer(ABC):
+    """Abstract issue container"""
+    @abstractmethod
+    def issues(self):
+        """A list of issues incident to this container"""
+
+    @property
+    def code_issues(self):
+        """A list of code issues incident to this container"""
+        return [issue for issue in self.issues if issue.culprit_code]
+
+    @property
+    def tool_issues(self):
+        """A list of tool issues incident to this container"""
+        return [issue for issue in self.issues if issue.culprit_tool]
+
+    @property
+    def harness_issues(self):
+        """A list of harness issues incident to this container"""
+        return [issue for issue in self.issues if issue.culprit_harness]
+
+
+class IncidentContainer(ABC):
+    """Abstract incident container"""
+    @abstractmethod
+    def incidents(self):
+        """A list of incidents of this container"""
+
+
+class IncidentIssueBugContainer(IncidentContainer, IssueContainer,
+                                BugContainer):
+    """Abstract incident container, exposing linked issues and bugs"""
+
+    @cached_property
+    def issues(self):
+        """A list of issues incident to this container"""
+        return list({
+            incident.issue for incident in self.incidents if incident.issue
+        })
+
+    @cached_property
+    def bugs(self):
+        """A list of reports for the issues incident to this container"""
+        return list({
+            issue.bug for issue in self.issues if issue.bug
+        })
+
+
+class Node(IncidentIssueBugContainer):
     """A test node"""
 
     def __init__(self, parent, name):
@@ -248,6 +318,13 @@ class Node:
                 test.path.startswith(self.path + ".")
             )
         ]
+
+    @cached_property
+    def incidents(self):
+        """A list of incidents for this and all child nodes"""
+        return reduce(lambda x, y: x + y,
+                      (test.incidents for test in self.tests),
+                      [])
 
     @property
     def waived(self):
@@ -335,7 +412,8 @@ class Node:
                 yield name
 
 
-class Revision(Object, BuildTestContainer):
+# We'll fix it, pylint: disable=too-many-ancestors
+class Revision(Object, BuildTestContainer, IncidentIssueBugContainer):
     """An OO-representation of a revision"""
 
     @cached_property
@@ -381,6 +459,14 @@ class Revision(Object, BuildTestContainer):
                       [])
 
     @cached_property
+    def incidents(self):
+        """A list of incidents of this revisions's builds and tests"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return reduce(lambda x, y: x + y,
+                      (checkout.incidents for checkout in self.checkouts),
+                      [])
+
+    @cached_property
     def checkouts_valid(self):
         """
         Status of this revision's checkouts.
@@ -395,7 +481,8 @@ class Revision(Object, BuildTestContainer):
         )
 
 
-class Checkout(Object, BuildTestContainer):
+# We'll fix it, pylint: disable=too-many-ancestors
+class Checkout(Object, BuildTestContainer, IncidentIssueBugContainer):
     """An OO-representation of a checkout"""
 
     # Force ABC to recognize abstract method definition
@@ -404,8 +491,23 @@ class Checkout(Object, BuildTestContainer):
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("builds")
 
+    @cached_property
+    def incidents(self):
+        """A list of incidents of this checkout's builds and tests"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return reduce(lambda x, y: x + y,
+                      (build.incidents for build in self.builds),
+                      [])
 
-class Build(Object, TestContainer):
+    @property
+    def git_repository_url_branch(self):
+        """A tuple containing both the git repository URL and the branch"""
+        return self.git_repository_url, self.git_repository_branch
+
+
+# We'll fix it, pylint: disable=too-many-ancestors
+class Build(Object, TestContainer,
+            IncidentContainer, IssueContainer, BugContainer):
     """An OO-representation of a build"""
 
     # Force ABC to recognize abstract method definition
@@ -414,12 +516,183 @@ class Build(Object, TestContainer):
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("tests")
 
+    @cached_property
+    def incidents(self):
+        """A list of incidents of this build and its tests"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return self.build_incidents + self.test_incidents
 
-class Test(Object):
+    @cached_property
+    def issues(self):
+        """A list of issues incident to this build and its tests"""
+        return list(set(self.build_issues) | set(self.test_issues))
+
+    @cached_property
+    def bugs(self):
+        """
+        A list of reports for the issues incident to this build and its tests.
+        """
+        return list(set(self.build_bugs) | set(self.test_bugs))
+
+    @cached_property
+    def build_incidents(self):
+        """A list of build incidents of this build"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return self.__getattr__("incidents")
+
+    @cached_property
+    def build_issues(self):
+        """A list of issues incident to this build"""
+        return list({i.issue for i in self.build_incidents if i.issue})
+
+    @cached_property
+    def build_bugs(self):
+        """A list of reports for the issues incident to this build"""
+        return list({i.bug for i in self.build_issues if i.bug})
+
+    @cached_property
+    def test_incidents(self):
+        """A list of incidents of this build's tests"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return reduce(lambda x, y: x + y,
+                      (test.incidents for test in self.tests),
+                      [])
+
+    @cached_property
+    def test_issues(self):
+        """A list of issues incident to build's tests"""
+        return list({i.issue for i in self.test_incidents if i.issue})
+
+    @cached_property
+    def test_bugs(self):
+        """A list of reports for the issues incident to build's tests"""
+        return list({i.bug for i in self.test_issues if i.bug})
+
+    @cached_property
+    def valid(self):
+        """The "valid" value with incidents accounted"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        valid = min(
+            (issue.build_valid for issue in self.build_issues),
+            key=lambda v: VALID_PRIORITY[v], default=None
+        )
+        return self.__getattr__("valid") if valid is None else valid
+
+
+class Test(Object, IncidentIssueBugContainer):
     """An OO-representation of a test"""
 
     # prevent class from being collected by unittest.
     __test__ = False
+
+    # Force ABC to recognize abstract method definition
+    @cached_property
+    def incidents(self):
+        """A list of incidents of this container"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return self.__getattr__("incidents")
+
+    @cached_property
+    def status(self):
+        """The "status" value with incidents accounted"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        status = min(
+            (issue.test_status for issue in self.issues),
+            key=lambda s: TEST_STATUS_PRIORITY[s], default=None
+        )
+        return self.__getattr__("status") if status is None else status
+
+
+class Bug(Object, IssueContainer, IncidentContainer):
+    """An OO-representation of an issue report"""
+
+    # Force ABC to recognize abstract method definition
+    @cached_property
+    def issues(self):
+        """A list of issues incident to this container"""
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return self.__getattr__("issues")
+
+    @cached_property
+    def incidents(self):
+        """A list of incidents of this container"""
+        return reduce(lambda x, y: x + y,
+                      (issue.incidents for issue in self.issues),
+                      [])
+
+    @cached_property
+    def builds(self):
+        """A list of builds with this bug"""
+        return list(reduce(lambda x, y: x | y,
+                    (set(issue.builds) for issue in self.issues),
+                    set()))
+
+    @cached_property
+    def tests(self):
+        """A list of test runs with this bug"""
+        return list(reduce(lambda x, y: x | y,
+                    (set(issue.tests) for issue in self.issues),
+                    set()))
+
+    @cached_property
+    def checkouts(self):
+        """A list of checkouts with this bug"""
+        return list(reduce(lambda x, y: x | y,
+                    (set(issue.checkouts) for issue in self.issues),
+                    set()))
+
+    @cached_property
+    def revisions(self):
+        """A list of revisions with this bug"""
+        return list(reduce(lambda x, y: x | y,
+                    (set(issue.revisions) for issue in self.issues),
+                    set()))
+
+
+class Issue(Object, IncidentContainer, BuildContainer, TestContainer):
+    """An OO-representation of an issue"""
+
+    # Force ABC to recognize abstract method definition
+    @cached_property
+    def incidents(self):
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return self.__getattr__("incidents")
+
+    @cached_property
+    def builds(self):
+        """A list of builds with this issue"""
+        return list({
+            incident.build for incident in self.incidents if incident.build
+        })
+
+    @cached_property
+    def tests(self):
+        """A list of test runs with this issue"""
+        return list({
+            incident.test for incident in self.incidents if incident.test
+        })
+
+    @cached_property
+    def checkouts(self):
+        """A list of checkouts with this issue"""
+        return list(
+            {build.checkout for build in self.builds
+             if build.checkout} |
+            {test.build.checkout for test in self.tests
+             if test.build and test.build.checkout}
+        )
+
+    @cached_property
+    def revisions(self):
+        """A list of revisions with this issue"""
+        return list({
+            checkout.revision for checkout in self.checkouts
+            if checkout.revision
+        })
+
+
+class Incident(Object):
+    """An OO-representation of an incident"""
 
 
 # A map of object type names and Object-derived classes handling their data
@@ -428,6 +701,9 @@ CLASSES = dict(
     checkout=Checkout,
     build=Build,
     test=Test,
+    bug=Bug,
+    issue=Issue,
+    incident=Incident,
 )
 
 assert set(CLASSES) == set(SCHEMA.types)
