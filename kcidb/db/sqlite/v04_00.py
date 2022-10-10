@@ -13,7 +13,7 @@ from kcidb.db.schematic import \
     Schema as AbstractSchema, \
     Connection as AbstractConnection
 from kcidb.db.sqlite.schema import \
-    Constraint, Column, BoolColumn, TextColumn, \
+    Constraint, Column, BoolColumn, IntegerColumn, TextColumn, \
     JSONColumn, TimestampColumn, Table
 
 
@@ -337,6 +337,72 @@ class Schema(AbstractSchema):
                 start_time=TimestampColumn(),
                 duration=Column("REAL"),
                 output_files=JSONColumn(),
+                comment=TextColumn(),
+                misc=JSONColumn(),
+            )),
+        ),
+        bug=dict(
+            statement="SELECT\n"
+                      "    NULL AS url,\n"
+                      "    NULL AS culprit_code,\n"
+                      "    NULL AS culprit_tool,\n"
+                      "    NULL AS culprit_harness,\n"
+                      "    NULL AS comment\n"
+                      "WHERE 0",
+            schema=Table(dict(
+                url=TextColumn(),
+                culprit_code=BoolColumn(),
+                culprit_tool=BoolColumn(),
+                culprit_harness=BoolColumn(),
+                comment=TextColumn(),
+            )),
+        ),
+        issue=dict(
+            statement="SELECT\n"
+                      "    NULL AS id,\n"
+                      "    NULL AS version,\n"
+                      "    NULL AS origin,\n"
+                      "    NULL AS report_url,\n"
+                      "    NULL AS culprit_code,\n"
+                      "    NULL AS culprit_tool,\n"
+                      "    NULL AS culprit_harness,\n"
+                      "    NULL AS build_valid,\n"
+                      "    NULL AS test_status,\n"
+                      "    NULL AS comment,\n"
+                      "    NULL AS misc\n"
+                      "WHERE 0",
+            schema=Table(dict(
+                id=TextColumn(),
+                version=IntegerColumn(),
+                origin=TextColumn(),
+                report_url=TextColumn(),
+                culprit_code=BoolColumn(),
+                culprit_tool=BoolColumn(),
+                culprit_harness=BoolColumn(),
+                build_valid=BoolColumn(),
+                test_status=TextColumn(),
+                comment=TextColumn(),
+                misc=JSONColumn(),
+            )),
+        ),
+        incident=dict(
+            statement="SELECT\n"
+                      "    NULL AS id,\n"
+                      "    NULL AS origin,\n"
+                      "    NULL AS issue_id,\n"
+                      "    NULL AS issue_version,\n"
+                      "    NULL AS build_id,\n"
+                      "    NULL AS test_id,\n"
+                      "    NULL AS comment,\n"
+                      "    NULL AS misc\n"
+                      "WHERE 0",
+            schema=Table(dict(
+                id=TextColumn(),
+                origin=TextColumn(),
+                issue_id=TextColumn(),
+                issue_version=IntegerColumn(),
+                build_id=TextColumn(),
+                test_id=TextColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),

@@ -531,6 +531,9 @@ class Schema(AbstractSchema):
              "    comment,\n"
              "    misc\n"
              "FROM tests",
+        bug="SELECT * FROM UNNEST([])",
+        issue="SELECT * FROM UNNEST([])",
+        incident="SELECT * FROM UNNEST([])",
     )
 
     @classmethod

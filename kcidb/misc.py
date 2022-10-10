@@ -466,3 +466,20 @@ def get_secret_pgpass(project_id, secret_id):
         pgpass_file.write(pgpass)
     os.environ["PGPASSFILE"] = pgpass_filename
     atexit.register(os.remove, pgpass_filename)
+
+
+def merge_dicts(*args, **kwargs):
+    """
+    Merge dictionaries together.
+
+    @param args     The list of dictionaries to merge together.
+    @param kwargs   The last dictionary to merge on top of the result.
+
+    @return The merged dictionary.
+    """
+    assert(all(isinstance(arg, dict) for arg in args))
+    args = [*args, kwargs]
+    result = {}
+    for arg in args:
+        result.update(arg)
+    return result

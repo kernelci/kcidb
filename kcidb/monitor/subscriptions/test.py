@@ -43,3 +43,25 @@ def match_test(test):
     if test.origin == "test":
         return (generate_message(test),)
     return ()
+
+
+def match_bug(bug):
+    """Match bugs"""
+    for issue in bug.issues:
+        if issue.origin == "test":
+            return (generate_message(bug),)
+    return ()
+
+
+def match_issue(issue):
+    """Match issues"""
+    if issue.origin == "test":
+        return (generate_message(issue),)
+    return ()
+
+
+def match_incident(incident):
+    """Match incidents"""
+    if incident.origin == "test":
+        return (generate_message(incident),)
+    return ()
