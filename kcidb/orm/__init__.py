@@ -321,6 +321,12 @@ _CHECKOUT = _DEFS['checkout']['properties']
 _BUILD = _DEFS['build']['properties']
 # Test properties from the current I/O schema
 _TEST = _DEFS['test']['properties']
+# Issue properties from the current I/O schema
+_ISSUE = _DEFS['issue']['properties']
+# Issue culprit properties from the current I/O schema
+_ISSUE_CULPRIT = _ISSUE['culprit']['properties']
+# Incident properties from the current I/O schema
+_INCIDENT = _DEFS['incident']['properties']
 # Test environment properties from the current I/O schema
 _TEST_ENVIRONMENT = _TEST['environment']['properties']
 
@@ -389,6 +395,7 @@ SCHEMA = Schema(
             id_fields=("id",),
             children=dict(
                 test=("build_id",),
+                incident=("build_id",),
             ),
         ),
         test=dict(
@@ -410,6 +417,58 @@ SCHEMA = Schema(
                 misc=_TEST['misc'],
             ),
             required_fields={'id', 'origin', 'build_id'},
+            id_fields=("id",),
+            children=dict(
+                incident=("test_id",),
+            ),
+        ),
+        bug=dict(
+            field_json_schemas=dict(
+                url=_ISSUE['report_url'],
+                subject=_ISSUE['report_subject'],
+                culprit_code=_ISSUE_CULPRIT['code'],
+                culprit_tool=_ISSUE_CULPRIT['tool'],
+                culprit_harness=_ISSUE_CULPRIT['harness'],
+            ),
+            required_fields={'url'},
+            id_fields=("url",),
+            children=dict(
+                issue=("report_url",),
+            ),
+        ),
+        issue=dict(
+            field_json_schemas=dict(
+                id=_ISSUE['id'],
+                version=_ISSUE['version'],
+                origin=_ISSUE['origin'],
+                report_url=_ISSUE['report_url'],
+                report_subject=_ISSUE['report_subject'],
+                culprit_code=_ISSUE_CULPRIT['code'],
+                culprit_tool=_ISSUE_CULPRIT['tool'],
+                culprit_harness=_ISSUE_CULPRIT['harness'],
+                build_valid=_ISSUE['build_valid'],
+                test_status=_ISSUE['test_status'],
+                comment=_ISSUE['comment'],
+                misc=_ISSUE['misc'],
+            ),
+            required_fields={'id', 'version', 'origin'},
+            id_fields=("id",),
+            children=dict(
+                incident=("issue_id",),
+            ),
+        ),
+        incident=dict(
+            field_json_schemas=dict(
+                id=_INCIDENT['id'],
+                origin=_INCIDENT['origin'],
+                issue_id=_INCIDENT['issue_id'],
+                issue_version=_INCIDENT['issue_version'],
+                build_id=_INCIDENT['build_id'],
+                test_id=_INCIDENT['test_id'],
+                comment=_INCIDENT['comment'],
+                misc=_INCIDENT['misc'],
+            ),
+            required_fields={'id', 'origin', 'issue_id', 'issue_version'},
             id_fields=("id",),
         ),
     )

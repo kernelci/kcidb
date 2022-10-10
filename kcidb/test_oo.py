@@ -2,7 +2,7 @@
 
 import kcidb
 from kcidb.unittest import local_only
-from kcidb.oo import Checkout, Build, Test, Node
+from kcidb.oo import Checkout, Build, Test, Node, Bug, Issue, Incident
 
 
 @local_only
@@ -44,7 +44,7 @@ class KCIDBOOClientTestCase(kcidb.unittest.TestCase):
             {
                 "version": {
                     "major": 4,
-                    "minor": 0
+                    "minor": 1
                 },
                 "checkouts": [
                     {
@@ -288,7 +288,7 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
         source.init()
         source.load(
             {
-                "version": {"major": 4, "minor": 0},
+                "version": {"major": 4, "minor": 1},
                 "checkouts": [
                     {
                         "id": "_:valid1",
@@ -427,7 +427,57 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
                         "build_id": "redhat:valid2",
                         "origin": "redhat", "status": "FAIL", "path": "fail",
                     },
-                ]
+                ],
+                "issues": [
+                    {
+                        "id": "kernelci:1",
+                        "origin": "kernelci",
+                        "version": 1,
+                        "report_url": "https://kernelci.org/issue/1",
+                        "report_subject": "Bad issue",
+                    },
+                    {
+                        "id": "redhat:1",
+                        "origin": "redhat",
+                        "version": 1,
+                        "report_url": "https://bugzilla.redhat.com/1",
+                        "report_subject": "Worse issue",
+                    },
+                ],
+                "incidents": [
+                    {
+                        "id": "kernelci:valid1_1_1",
+                        "origin": "kernelci",
+                        "issue_id": "kernelci:1",
+                        "issue_version": 1,
+                        "present": True,
+                        "test_id": "kernelci:valid1_1",
+                    },
+                    {
+                        "id": "kernelci:valid1_3_1",
+                        "origin": "kernelci",
+                        "issue_id": "kernelci:1",
+                        "issue_version": 1,
+                        "present": True,
+                        "test_id": "kernelci:valid1_3",
+                    },
+                    {
+                        "id": "redhat:valid1",
+                        "origin": "redhat",
+                        "issue_id": "redhat:1",
+                        "issue_version": 1,
+                        "present": True,
+                        "build_id": "redhat:valid1",
+                    },
+                    {
+                        "id": "redhat:valid2",
+                        "origin": "redhat",
+                        "issue_id": "redhat:1",
+                        "issue_version": 1,
+                        "present": True,
+                        "build_id": "redhat:valid2",
+                    },
+                ],
             }
         )
         self.client = kcidb.oo.Client(source)
@@ -475,6 +525,24 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
 
         self.assertIsInstance(revision.tests_root, Node)
 
+        self.assertContains(revision.bugs, (Bug, 2))
+        self.assertEqual({revision.bugs[0].url,
+                          revision.bugs[1].url},
+                         {"https://bugzilla.redhat.com/1",
+                          "https://kernelci.org/issue/1"})
+        self.assertEqual({revision.bugs[0].subject,
+                          revision.bugs[1].subject},
+                         {"Bad issue", "Worse issue"})
+
+        self.assertContains(revision.issues, (Issue, 2))
+        self.assertEqual({revision.issues[0].id, revision.issues[1].id},
+                         {"redhat:1", "kernelci:1"})
+
+        self.assertContains(revision.incidents, (Incident, 4))
+        self.assertEqual({i.id for i in revision.incidents},
+                         {"kernelci:valid1_1_1", "kernelci:valid1_3_1",
+                          "redhat:valid1", "redhat:valid2"})
+
     def test_traversing_valid_checkout_links(self):
         """Check that valid checkout links are successfully traversed."""
         checkouts = KCIDBTraversingTestCase.filter_valid(
@@ -491,6 +559,25 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
         self.assertContains(checkouts[0].builds, (Build, 3))
         self.assertContains(checkouts[0].tests, (Test, 6))
         self.assertIsInstance(checkouts[0].tests_root, Node)
+
+        self.assertContains(checkouts[0].bugs, (Bug, 1))
+        self.assertContains(checkouts[1].bugs, (Bug, 1))
+        self.assertEqual({checkouts[0].bugs[0].url,
+                          checkouts[1].bugs[0].url},
+                         {"https://kernelci.org/issue/1",
+                          "https://bugzilla.redhat.com/1"})
+
+        self.assertContains(checkouts[0].issues, (Issue, 1))
+        self.assertContains(checkouts[1].issues, (Issue, 1))
+        self.assertEqual({checkouts[0].issues[0].id,
+                          checkouts[1].issues[0].id},
+                         {"redhat:1", "kernelci:1"})
+
+        self.assertContains(checkouts[0].incidents, (Incident, 2))
+        self.assertContains(checkouts[1].incidents, (Incident, 2))
+        self.assertEqual({i.id for c in checkouts for i in c.incidents},
+                         {"kernelci:valid1_1_1", "kernelci:valid1_3_1",
+                          "redhat:valid1", "redhat:valid2"})
 
     def test_traversing_valid_build_links(self):
         """Check that valid build links are successfully traversed."""

@@ -2,7 +2,7 @@
 
 import textwrap
 from kcidb.db.schematic import Driver as SchematicDriver
-from kcidb.db.sqlite.v04_00 import Schema as LatestSchema
+from kcidb.db.sqlite.v04_01 import Schema as LatestSchema
 
 
 class Driver(SchematicDriver):

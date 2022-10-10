@@ -1,0 +1,26 @@
+{# Bug description template #}
+{%- import "incident.j2" as incident_macros -%}
+{%- import "build.j2" as build_macros -%}
+{%- import "test.j2" as test_macros -%}
+Below is the summary of results Kernel CI database has recorded
+for this incident so far. See complete and up-to-date report at:
+
+    https://kcidb.kernelci.org/d/incident/incident?orgId=1&var-id={{incident.id | urlencode }}
+
+OVERVIEW
+
+    Issue
+        {{ incident.issue.report_subject }}
+        {{ incident.issue.report_url }}
+
+{% if incident.build %}
+    Detected in {{ build_macros.summary(incident.build) }} build
+{% endif %}
+{% if incident.test %}
+    Detected in {{ test_macros.summary(incident.test) }} test
+{% endif %}
+
+See complete and up-to-date report at:
+
+    https://kcidb.kernelci.org/d/incident/incident?orgId=1&var-id={{incident.id | urlencode }}
+{# Force git commit hook to ignore trailing newline #}

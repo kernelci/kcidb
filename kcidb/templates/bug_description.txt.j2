@@ -1,0 +1,17 @@
+{# Bug description template #}
+{%- import "bug.j2" as bug_macros -%}
+{# Maximum length of a list of things (builds/tests/etc.) #}
+{% set max_list_len = 5 %}
+Below is the summary of results Kernel CI database has recorded
+for this bug so far. See complete and up-to-date report at:
+
+    https://kcidb.kernelci.org/d/bug/bug?orgId=1&var-url={{bug.url | urlencode }}
+
+OVERVIEW
+
+{{ bug_macros.overview(bug, max_list_len) }}
+
+See complete and up-to-date report at:
+
+    https://kcidb.kernelci.org/d/bug/bug?orgId=1&var-url={{bug.url | urlencode }}
+{# Force git commit hook to ignore trailing newline #}

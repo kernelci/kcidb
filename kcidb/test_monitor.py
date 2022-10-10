@@ -206,8 +206,44 @@ class MatchTestCase(unittest.TestCase):
                     "waived": True
                 },
             ],
+            "issues": [
+                {
+                    "id": "test:1",
+                    "version": 1,
+                    "origin": "test",
+                    "report_url": "https://test.com/bug/1",
+                    "report_subject": "Bug in kernel",
+                    "culprit": {"code": True},
+                },
+                {
+                    "id": "non_test:1",
+                    "version": 1,
+                    "origin": "non_test",
+                    "report_url": "https://non-test.com/bug/1",
+                    "report_subject": "Another bug in kernel",
+                    "culprit": {"tool": True},
+                },
+            ],
+            "incidents": [
+                {
+                    "id": "test:1",
+                    "issue_id": "test:1",
+                    "issue_version": 1,
+                    "origin": "test",
+                    "test_id": "test:1",
+                    "present": True,
+                },
+                {
+                    "id": "non_test:1",
+                    "issue_id": "non_test:1",
+                    "issue_version": 1,
+                    "origin": "non_test",
+                    "test_id": "non_test:1",
+                    "present": True,
+                },
+            ]
         })
-        self.assertEqual(len(notifications), 4)
+        self.assertEqual(len(notifications), 7)
         for notification in notifications:
             obj_type_name = notification.obj.get_type().name
             self.assertIsInstance(notification, monitor.output.Notification)
@@ -234,7 +270,7 @@ class MatchTestCase(unittest.TestCase):
         notifications = self.match({
             "version": {
                 "major": 4,
-                "minor": 0
+                "minor": 1
             },
             "checkouts": [
                 {
@@ -335,7 +371,7 @@ class DeploymentEmailTestCase(unittest.TestCase):
         io_data = {
             "version": {
                 "major": 4,
-                "minor": 0
+                "minor": 1
             },
             "checkouts": [
                 {

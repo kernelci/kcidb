@@ -1,0 +1,13 @@
+{# Bug template macros #}
+{% import "issue.j2" as issue_macros %}
+
+{% macro summary(bug) %}
+    {{- bug.subject -}}
+{% endmacro %}
+
+{% macro overview(bug, max_list_len) %}
+    {{ bug.subject }}
+    {{ bug.url }}
+
+{{ issue_macros.stats(bug, max_list_len) -}}
+{% endmacro %}
