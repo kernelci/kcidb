@@ -201,8 +201,7 @@ class Schema:
             isinstance(info["required_fields"], set) and
             "id_fields" in info and
             isinstance(info["id_fields"], tuple) and
-            (set(info["id_fields"]) ==
-             set(info["id_fields"]) & set(info["field_json_schemas"])) and
+            (set(info["id_fields"]) <= set(info["field_json_schemas"])) and
             all(isinstance(f, str) for f in info["id_fields"]) and
             ("children" not in info or (
                 isinstance(info["children"], dict) and
