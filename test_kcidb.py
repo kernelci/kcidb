@@ -171,7 +171,8 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_validate_main(self):
         """Check kcidb-validate works"""
-        empty = json.dumps(dict(version=dict(major=4, minor=0))) + "\n"
+        empty = json.dumps(dict(version=dict(major=SCHEMA.major,
+                                             minor=SCHEMA.minor))) + "\n"
         second_empty = json.dumps(dict(version=dict(major=3, minor=0))) + "\n"
         third_empty = json.dumps(dict(version=dict(major=2, minor=0))) + "\n"
         dirty_empty = json.dumps(dict(version=dict(major=3, minor=1))) + "\n"
@@ -280,7 +281,8 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
     def test_merge_main(self):
         """Check kcidb-merge works"""
-        empty = json.dumps(dict(version=dict(major=4, minor=0))) + "\n"
+        empty = json.dumps(dict(version=dict(major=SCHEMA.major,
+                                             minor=SCHEMA.minor))) + "\n"
 
         self.assertExecutes('', "kcidb.merge_main", "--indent=0",
                             stdout_re=re.escape(empty))
@@ -294,7 +296,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             stdout_re=re.escape(empty))
 
         report_a = dict(
-            version=dict(major=4, minor=0),
+            version=dict(major=SCHEMA.major, minor=SCHEMA.minor),
             checkouts=[
                 dict(id="test:checkout:1", origin="test")
             ],
@@ -308,7 +310,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         )
 
         report_b = dict(
-            version=dict(major=4, minor=0),
+            version=dict(major=SCHEMA.major, minor=SCHEMA.minor),
             checkouts=[
                 dict(id="test:checkout:1", origin="test")
             ],
@@ -321,7 +323,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
             ]
         )
         merged_report = dict(
-            version=dict(major=4, minor=0),
+            version=dict(major=SCHEMA.major, minor=SCHEMA.minor),
             checkouts=report_a["checkouts"] + report_b["checkouts"],
             builds=report_a["builds"] + report_b["builds"],
             tests=report_a["tests"] + report_b["tests"],
@@ -340,7 +342,8 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         self.assertExecutes('{}', "kcidb.notify_main", ">*#",
                             status=1, stderr_re=".*ValidationError.*")
 
-        empty = json.dumps(dict(version=dict(major=4, minor=0)))
+        empty = json.dumps(dict(version=dict(major=SCHEMA.major,
+                                             minor=SCHEMA.minor)))
         self.assertExecutes(empty, "kcidb.notify_main", ">*#")
         self.assertExecutes(empty + empty, "kcidb.notify_main", ">*#")
 
@@ -348,7 +351,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         git_commit_hash2 = "fe3fc1bc47d6333d7d06bc530c6e0c1044bab536"
 
         one_of_everything = json.dumps(dict(
-            version=dict(major=4, minor=0),
+            version=dict(major=SCHEMA.major, minor=SCHEMA.minor),
             checkouts=[
                 dict(id="test:checkout:1",
                      git_commit_hash=git_commit_hash1,
@@ -377,7 +380,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                                       "Subject: Test test: .*\x00")
 
         two_of_everything = json.dumps(dict(
-            version=dict(major=4, minor=0),
+            version=dict(major=SCHEMA.major, minor=SCHEMA.minor),
             checkouts=[
                 dict(id="test:checkout:1",
                      git_commit_hash=git_commit_hash1,
