@@ -162,7 +162,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
                             "kcidb.schema_main", "0",
                             status=2,
                             stderr_re=".*Invalid major version number: '0'\n")
-        self.assertExecutes('{"version":{"major":4,"minor":0}}',
+        self.assertExecutes("",
                             "kcidb.schema_main",
                             str(SCHEMA.major + 1),
                             status=2,
