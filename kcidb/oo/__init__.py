@@ -197,6 +197,17 @@ class TestContainer(ABC):
         return Node(self, "")
 
 
+class BuildTestContainer(BuildContainer, TestContainer):
+    """Abstract build container, exposing linked tests"""
+
+    @cached_property
+    def tests(self):
+        """A list of tests for this container"""
+        return reduce(lambda x, y: x + y,
+                      (build.tests for build in self.builds),
+                      [])
+
+
 class Node:
     """A test node"""
 
@@ -324,7 +335,7 @@ class Node:
                 yield name
 
 
-class Revision(Object, BuildContainer, TestContainer):
+class Revision(Object, BuildTestContainer):
     """An OO-representation of a revision"""
 
     @cached_property
@@ -370,13 +381,6 @@ class Revision(Object, BuildContainer, TestContainer):
                       [])
 
     @cached_property
-    def tests(self):
-        """A list of tests for this revision"""
-        return reduce(lambda x, y: x + y,
-                      (checkout.tests for checkout in self.checkouts),
-                      [])
-
-    @cached_property
     def checkouts_valid(self):
         """
         Status of this revision's checkouts.
@@ -391,7 +395,7 @@ class Revision(Object, BuildContainer, TestContainer):
         )
 
 
-class Checkout(Object, BuildContainer, TestContainer):
+class Checkout(Object, BuildTestContainer):
     """An OO-representation of a checkout"""
 
     # Force ABC to recognize abstract method definition
@@ -399,13 +403,6 @@ class Checkout(Object, BuildContainer, TestContainer):
     def builds(self):
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("builds")
-
-    @cached_property
-    def tests(self):
-        """A list of tests for this checkout"""
-        return reduce(lambda x, y: x + y,
-                      (build.tests for build in self.builds),
-                      [])
 
 
 class Build(Object, TestContainer):
