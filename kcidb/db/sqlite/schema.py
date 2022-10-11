@@ -101,6 +101,22 @@ class TextColumn(Column):
         super().__init__("TEXT", constraint=constraint)
 
 
+class IntegerColumn(Column):
+    """An integer column"""
+
+    def __init__(self, constraint=None):
+        """
+        Initialize the column description.
+
+        Args:
+            constraint:     The column's constraint.
+                            A member of the Constraint enum, or None,
+                            meaning no constraint.
+        """
+        assert constraint is None or isinstance(constraint, Constraint)
+        super().__init__("INTEGER", constraint=constraint)
+
+
 class JSONColumn(TextColumn):
     """A JSON-encoded column"""
 
