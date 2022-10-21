@@ -2,6 +2,7 @@
 Kernel CI report database - generic SQL schema definitions
 """
 
+import re
 from enum import Enum
 
 
@@ -60,6 +61,26 @@ class Column:
 
 class TableColumn:
     """A column within a table schema"""
+
+    # Regular expression fully-matching column names, which don't need quoting
+    NAME_RE = re.compile("[a-zA-Z_][a-zA-Z0-9_]*")
+
+    @classmethod
+    def quote_name(cls, name):
+        """
+        Quote the name of a column for safe use within SQL statements.
+
+        Args:
+            name:   The name to quote.
+
+        Returns: The quoted name.
+        """
+        if name:
+            if cls.NAME_RE.fullmatch(name):
+                return name
+            return re.sub(r'(^|$|")', r'"\1', name)
+        return '""'
+
     def __init__(self, name, schema, key_sep):
         """
         Initialize the table schema column.
@@ -77,7 +98,7 @@ class TableColumn:
         # Name parts (keys)
         self.keys = name.split(".")
         # Column name within the table
-        self.name = key_sep.join(self.keys)
+        self.name = self.quote_name(key_sep.join(self.keys))
         # Column schema
         self.schema = schema
 
