@@ -553,7 +553,7 @@ class Schema(AbstractSchema):
         Cleanup (empty) the database, removing all data.
         The database must be initialized (not empty).
         """
-        for table_name, _ in self.TABLE_MAP.items():
+        for table_name in self.TABLE_MAP:
             view_ref = self.conn.dataset_ref.table(table_name)
             try:
                 self.conn.client.delete_table(view_ref)
