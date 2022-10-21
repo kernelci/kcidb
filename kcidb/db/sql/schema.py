@@ -60,21 +60,24 @@ class Column:
 
 class TableColumn:
     """A column within a table schema"""
-    def __init__(self, name, schema):
+    def __init__(self, name, schema, key_sep):
         """
         Initialize the table schema column.
 
         Args:
-            name:   The name of the column consisting of dot-separated parts
-                    (keys).
-            schema: The column's schema (an instance of Column).
+            name:       The name of the column consisting of dot-separated
+                        parts ("keys").
+            schema:     The column's schema (an instance of Column).
+            key_sep:    String used to replace dots in column names ("key"
+                        separator)
         """
         assert isinstance(name, str)
         assert isinstance(schema, Column)
+        assert isinstance(key_sep, str)
         # Name parts (keys)
         self.keys = name.split(".")
         # Column name within the table
-        self.name = "_".join(self.keys)
+        self.name = key_sep.join(self.keys)
         # Column schema
         self.schema = schema
 
@@ -82,7 +85,7 @@ class TableColumn:
 class Table:
     """A table schema"""
 
-    def __init__(self, columns, primary_key=None):
+    def __init__(self, columns, primary_key=None, key_sep="_"):
         """
         Initialize the table schema.
 
@@ -94,6 +97,8 @@ class Table:
             primary_key:    A list of names of columns constituting the
                             primary key. None to use the column with the
                             PRIMARY_KEY constraint instead.
+            key_sep:        String used to replace dots in column names ("key"
+                            separator)
         """
         assert isinstance(columns, dict)
         assert all(
@@ -107,9 +112,10 @@ class Table:
                 column_name in columns and
                 columns[column_name].constraint != Constraint.PRIMARY_KEY
                 for column_name in primary_key)
+        assert isinstance(key_sep, str)
         # Column list
         self.columns = [
-            TableColumn(name, column)
+            TableColumn(name, column, key_sep)
             for name, column in columns.items()
         ]
         # A string of comma-separated column names for use in commands
