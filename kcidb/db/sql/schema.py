@@ -106,11 +106,13 @@ class TableColumn:
 class Table:
     """A table schema"""
 
-    def __init__(self, columns, primary_key=None, key_sep="_"):
+    def __init__(self, placeholder, columns, primary_key=None, key_sep="_"):
         """
         Initialize the table schema.
 
         Args:
+            placeholder:    The query parameter placeholder string to use in
+                            queries.
             columns:        A dictionary of column names consisting of
                             dot-separated parts (keys), and the column
                             schemas. Columns cannot specify PRIMARY_KEY
@@ -121,6 +123,7 @@ class Table:
             key_sep:        String used to replace dots in column names ("key"
                             separator)
         """
+        assert isinstance(placeholder, str) and str
         assert isinstance(columns, dict)
         assert all(
             isinstance(name, str) and
@@ -142,6 +145,8 @@ class Table:
                 for column_name in primary_key) and \
             len(primary_key_columns) == 0
         assert isinstance(key_sep, str)
+        # Query parameter placeholder
+        self.placeholder = placeholder
         # Column list
         self.columns = [
             TableColumn(name, column, key_sep)
@@ -199,7 +204,7 @@ class Table:
             f"INSERT INTO {name} (\n" + \
             ",\n".join(f"    {c.name}" for c in self.columns) + \
             "\n)\nVALUES (\n    " + \
-            ", ".join(("%s", ) * len(self.columns)) + \
+            ", ".join((self.placeholder, ) * len(self.columns)) + \
             "\n)\nON CONFLICT (" + \
             ", ".join(
                 c.name for c in self.columns
