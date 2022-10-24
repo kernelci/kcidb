@@ -462,6 +462,13 @@ class Schema(AbstractSchema):
         ]
     )
 
+    # A map of table names and their "primary key" fields
+    KEY_MAP = dict(
+        checkouts=("id",),
+        builds=("id",),
+        tests=("id",),
+    )
+
     # Queries for each type of raw object-oriented data
     OO_QUERIES = dict(
         revision="SELECT\n"
@@ -542,10 +549,12 @@ class Schema(AbstractSchema):
             view.view_query = \
                 "SELECT " + \
                 ", ".join(
-                    f"ANY_VALUE(`{n}`) AS `{n}`" if n != "id" else f"`{n}`"
+                    f"`{n}`" if n in self.KEY_MAP[table_name]
+                    else f"ANY_VALUE(`{n}`) AS `{n}`"
                     for n in (f.name for f in table_schema)
                 ) + \
-                f" FROM `{table_ref}` GROUP BY id"
+                f" FROM `{table_ref}` GROUP BY " + \
+                ", ".join(self.KEY_MAP[table_name])
             self.conn.client.create_table(view)
 
     def cleanup(self):
