@@ -127,12 +127,20 @@ class Table:
             isinstance(column, Column)
             for name, column in columns.items()
         )
-        assert primary_key is None or \
+        # A map of columns with PRIMARY_KEY constraint set
+        primary_key_columns = {
+            name: column
+            for name, column in columns.items()
+            if column.constraint == Constraint.PRIMARY_KEY
+        }
+        assert \
+            len(primary_key_columns) <= 1 \
+            if primary_key is None else \
             isinstance(primary_key, list) and \
             all(isinstance(column_name, str) and
-                column_name in columns and
-                columns[column_name].constraint != Constraint.PRIMARY_KEY
-                for column_name in primary_key)
+                column_name in columns
+                for column_name in primary_key) and \
+            len(primary_key_columns) == 0
         assert isinstance(key_sep, str)
         # Column list
         self.columns = [
