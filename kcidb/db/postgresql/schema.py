@@ -2,8 +2,7 @@
 Kernel CI PostgreSQL report database - misc schema definitions
 """
 import json
-# Our users will use it, pylint: disable=unused-import
-from kcidb.db.sql.schema import Constraint, Column, Table  # noqa: F401
+from kcidb.db.sql.schema import Constraint, Column, Table as _SQLTable
 
 
 class BoolColumn(Column):
@@ -137,3 +136,22 @@ class FloatColumn(Column):
         """
         assert constraint is None or isinstance(constraint, Constraint)
         super().__init__("DOUBLE PRECISION", constraint=constraint)
+
+
+class Table(_SQLTable):
+    """A table schema"""
+    def __init__(self, columns, primary_key=None):
+        """
+        Initialize the table schema.
+
+        Args:
+            columns:        A dictionary of column names consisting of
+                            dot-separated parts (keys), and the column
+                            schemas. Columns cannot specify PRIMARY_KEY
+                            constraint, if primary_key_columns is specified.
+            primary_key:    A list of names of columns constituting the
+                            primary key. None to use the column with the
+                            PRIMARY_KEY constraint instead.
+        """
+        # TODO: Switch to hardcoding "_" key_sep in base class
+        super().__init__("%s", columns, primary_key, key_sep="_")
