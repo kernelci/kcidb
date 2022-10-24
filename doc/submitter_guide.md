@@ -417,6 +417,6 @@ reporting faster!
 [releases]: https://github.com/kernelci/kcidb/releases
 [datetime_format]: https://tools.ietf.org/html/rfc3339#section-5.6
 [tests]: https://github.com/kernelci/kcidb/blob/master/tests.yaml
-[dashboard]: https://staging.kernelci.org:3000/
+[dashboard]: https://kcidb.kernelci.org/
 [pub_sub_libraries]: https://cloud.google.com/pubsub/docs/reference/libraries
 [pub_sub_apis]: https://cloud.google.com/pubsub/docs/reference/service_apis_overview
