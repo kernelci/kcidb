@@ -2,63 +2,8 @@
 Kernel CI SQLite report database miscellaneous schema definitions.
 """
 import json
-from enum import Enum
 import dateutil.parser
-
-
-class Constraint(Enum):
-    """A column's constraint"""
-    PRIMARY_KEY = "PRIMARY KEY"
-    NOT_NULL = "NOT NULL"
-
-
-class Column:
-    """A column description"""
-
-    @staticmethod
-    def pack(value):
-        """
-        Pack the JSON representation of the column value into the SQLite
-        representation.
-        """
-        return value
-
-    @staticmethod
-    def unpack(value):
-        """
-        Unpack the SQLite representation of the column value into the JSON
-        representation.
-        """
-        return value
-
-    def __init__(self, type, constraint=None):
-        """
-        Initialize the column description.
-
-        Args:
-            type:           The name of the SQLite type (affinity) to use for
-                            this column.
-            constraint:     The column's constraint.
-                            A member of the Constraint enum, or None,
-                            meaning no constraint.
-        """
-        assert isinstance(type, str)
-        assert constraint is None or isinstance(constraint, Constraint)
-        self.type = type
-        self.constraint = constraint
-
-    def format_nameless_def(self):
-        """
-        Format the "column-def" part of SQLite's "CREATE TABLE" statement
-        (https://sqlite.org/syntax/column-def.html) without the "column-name"
-        part.
-
-        Returns: The formatted (nameless) "column-def".
-        """
-        nameless_def = self.type
-        if self.constraint:
-            nameless_def += " " + self.constraint.value
-        return nameless_def
+from kcidb.db.sql.schema import Constraint, Column, Table as _SQLTable
 
 
 class BoolColumn(Column):
@@ -175,3 +120,34 @@ class TimestampColumn(TextColumn):
         assert constraint is None or isinstance(constraint, Constraint)
 
         super().__init__(constraint=constraint)
+
+
+class Table(_SQLTable):
+    """A table schema"""
+    def __init__(self, columns, primary_key=None):
+        """
+        Initialize the table schema.
+
+        Args:
+            columns:        A dictionary of column names consisting of
+                            dot-separated parts (keys), and the column
+                            schemas. Columns cannot specify PRIMARY_KEY
+                            constraint, if primary_key_columns is specified.
+            primary_key:    A list of names of columns constituting the
+                            primary key. None to use the column with the
+                            PRIMARY_KEY constraint instead.
+        """
+        # TODO: Switch to using "_" key_sep, and hardcoding it in base class
+        super().__init__("?", columns, primary_key, key_sep=".")
+
+    def format_create(self, name):
+        """
+        Format the "CREATE" command for the table.
+
+        Args:
+            name:       The name of the target table of the command.
+
+        Returns:
+            The formatted "CREATE" command.
+        """
+        return super().format_create(name) + " WITHOUT ROWID"
