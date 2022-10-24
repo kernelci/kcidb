@@ -13,7 +13,8 @@ from kcidb.db.schematic import \
     Schema as AbstractSchema, \
     Connection as AbstractConnection
 from kcidb.db.sqlite.schema import \
-    Constraint, Column, BoolColumn, TextColumn, JSONColumn, TimestampColumn
+    Constraint, Column, BoolColumn, TextColumn, \
+    JSONColumn, TimestampColumn, Table
 
 
 # Module's logger
@@ -150,67 +151,61 @@ class Schema(AbstractSchema):
 
     # A map of table names and descriptions
     TABLES = dict(
-        checkouts=dict(
-            columns={
-                "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
-                "origin": TextColumn(constraint=Constraint.NOT_NULL),
-                "tree_name": TextColumn(),
-                "git_repository_url": TextColumn(),
-                "git_commit_hash": TextColumn(),
-                "git_commit_name": TextColumn(),
-                "git_repository_branch": TextColumn(),
-                "patchset_files": JSONColumn(),
-                "patchset_hash": TextColumn(),
-                "message_id": TextColumn(),
-                "comment": TextColumn(),
-                "start_time": TimestampColumn(),
-                "contacts": JSONColumn(),
-                "log_url": TextColumn(),
-                "log_excerpt": TextColumn(),
-                "valid": BoolColumn(),
-                "misc": JSONColumn(),
-            }
-        ),
-        builds=dict(
-            columns={
-                "checkout_id": TextColumn(constraint=Constraint.NOT_NULL),
-                "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
-                "origin": TextColumn(constraint=Constraint.NOT_NULL),
-                "comment": TextColumn(),
-                "start_time": TimestampColumn(),
-                "duration": Column("REAL"),
-                "architecture": TextColumn(),
-                "command": TextColumn(),
-                "compiler": TextColumn(),
-                "input_files": JSONColumn(),
-                "output_files": JSONColumn(),
-                "config_name": TextColumn(),
-                "config_url": TextColumn(),
-                "log_url": TextColumn(),
-                "log_excerpt": TextColumn(),
-                "valid": BoolColumn(),
-                "misc": JSONColumn(),
-            },
-        ),
-        tests=dict(
-            columns={
-                "build_id": TextColumn(constraint=Constraint.NOT_NULL),
-                "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
-                "origin": TextColumn(constraint=Constraint.NOT_NULL),
-                "environment.comment": TextColumn(),
-                "environment.misc": JSONColumn(),
-                "path": TextColumn(),
-                "comment": TextColumn(),
-                "log_url": TextColumn(),
-                "log_excerpt": TextColumn(),
-                "status": TextColumn(),
-                "waived": BoolColumn(),
-                "start_time": TimestampColumn(),
-                "duration": Column("REAL"),
-                "output_files": JSONColumn(),
-                "misc": JSONColumn()
-            },
-        ),
+        checkouts=Table({
+            "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
+            "origin": TextColumn(constraint=Constraint.NOT_NULL),
+            "tree_name": TextColumn(),
+            "git_repository_url": TextColumn(),
+            "git_commit_hash": TextColumn(),
+            "git_commit_name": TextColumn(),
+            "git_repository_branch": TextColumn(),
+            "patchset_files": JSONColumn(),
+            "patchset_hash": TextColumn(),
+            "message_id": TextColumn(),
+            "comment": TextColumn(),
+            "start_time": TimestampColumn(),
+            "contacts": JSONColumn(),
+            "log_url": TextColumn(),
+            "log_excerpt": TextColumn(),
+            "valid": BoolColumn(),
+            "misc": JSONColumn(),
+        }),
+        builds=Table({
+            "checkout_id": TextColumn(constraint=Constraint.NOT_NULL),
+            "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
+            "origin": TextColumn(constraint=Constraint.NOT_NULL),
+            "comment": TextColumn(),
+            "start_time": TimestampColumn(),
+            "duration": Column("REAL"),
+            "architecture": TextColumn(),
+            "command": TextColumn(),
+            "compiler": TextColumn(),
+            "input_files": JSONColumn(),
+            "output_files": JSONColumn(),
+            "config_name": TextColumn(),
+            "config_url": TextColumn(),
+            "log_url": TextColumn(),
+            "log_excerpt": TextColumn(),
+            "valid": BoolColumn(),
+            "misc": JSONColumn(),
+        }),
+        tests=Table({
+            "build_id": TextColumn(constraint=Constraint.NOT_NULL),
+            "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
+            "origin": TextColumn(constraint=Constraint.NOT_NULL),
+            "environment.comment": TextColumn(),
+            "environment.misc": JSONColumn(),
+            "path": TextColumn(),
+            "comment": TextColumn(),
+            "log_url": TextColumn(),
+            "log_excerpt": TextColumn(),
+            "status": TextColumn(),
+            "waived": BoolColumn(),
+            "start_time": TimestampColumn(),
+            "duration": Column("REAL"),
+            "output_files": JSONColumn(),
+            "misc": JSONColumn()
+        }),
     )
 
     # Queries and their columns for each type of raw object-oriented data.
@@ -226,13 +221,13 @@ class Schema(AbstractSchema):
                       "    contacts\n"
                       "FROM checkouts\n"
                       "GROUP BY git_commit_hash, patchset_hash",
-            columns=dict(
+            schema=Table(dict(
                 git_commit_hash=TextColumn(),
                 patchset_hash=TextColumn(),
                 patchset_files=JSONColumn(),
                 git_commit_name=TextColumn(),
                 contacts=JSONColumn(),
-            ),
+            )),
         ),
         checkout=dict(
             statement="SELECT\n"
@@ -251,7 +246,7 @@ class Schema(AbstractSchema):
                       "    valid,\n"
                       "    misc\n"
                       "FROM checkouts",
-            columns=dict(
+            schema=Table(dict(
                 id=TextColumn(),
                 git_commit_hash=TextColumn(),
                 patchset_hash=TextColumn(),
@@ -266,7 +261,7 @@ class Schema(AbstractSchema):
                 comment=TextColumn(),
                 valid=BoolColumn(),
                 misc=JSONColumn(),
-            ),
+            )),
         ),
         build=dict(
             statement="SELECT\n"
@@ -288,7 +283,7 @@ class Schema(AbstractSchema):
                       "    valid,\n"
                       "    misc\n"
                       "FROM builds",
-            columns=dict(
+            schema=Table(dict(
                 id=TextColumn(),
                 checkout_id=TextColumn(),
                 origin=TextColumn(),
@@ -306,7 +301,7 @@ class Schema(AbstractSchema):
                 comment=TextColumn(),
                 valid=BoolColumn(),
                 misc=JSONColumn(),
-            ),
+            )),
         ),
         test=dict(
             statement="SELECT\n"
@@ -326,7 +321,7 @@ class Schema(AbstractSchema):
                       "    comment,\n"
                       "    misc\n"
                       "FROM tests",
-            columns=dict(
+            schema=Table(dict(
                 id=TextColumn(),
                 build_id=TextColumn(),
                 origin=TextColumn(),
@@ -342,7 +337,7 @@ class Schema(AbstractSchema):
                 output_files=JSONColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
-            ),
+            )),
         ),
     )
 
@@ -353,20 +348,12 @@ class Schema(AbstractSchema):
         with self.conn:
             cursor = self.conn.cursor()
             try:
-                for name, table in self.TABLES.items():
+                for table_name, table_schema in self.TABLES.items():
                     try:
-                        cursor.execute(
-                            "CREATE TABLE " + name + " (\n" +
-                            ",\n".join(
-                                '    "' + name + '" ' +
-                                column.format_nameless_def()
-                                for name, column in table["columns"].items()
-                            ) +
-                            "\n) WITHOUT ROWID"
-                        )
+                        cursor.execute(table_schema.format_create(table_name))
                     except Exception as exc:
                         raise Exception(
-                            f"Failed creating table {name!r}"
+                            f"Failed creating table {table_name!r}"
                         ) from exc
             finally:
                 cursor.close()
@@ -383,32 +370,6 @@ class Schema(AbstractSchema):
                     cursor.execute(f"DROP TABLE IF EXISTS {name}")
             finally:
                 cursor.close()
-
-    @staticmethod
-    def _quote_column_name(name):
-        """
-        Quote a column name for use in an SQL statement.
-
-        Args:
-            name:   A column name to quote.
-
-        Returns:
-            The quoted column name.
-        """
-        return '"' + name + '"'
-
-    @staticmethod
-    def _quote_column_names(names):
-        """
-        Quote a list of column names for use in an SQL statement.
-
-        Args:
-            names:  A list of column names to quote.
-
-        Returns:
-            The list of quoted column names.
-        """
-        return [Schema._quote_column_name(n) for n in names]
 
     def dump_iter(self, objects_per_report):
         """
@@ -431,22 +392,16 @@ class Schema(AbstractSchema):
         with self.conn:
             cursor = self.conn.cursor()
             try:
-                for name, table in self.TABLES.items():
-                    table_columns = table["columns"]
+                for table_name, table_schema in self.TABLES.items():
                     result = cursor.execute(
-                        "SELECT " + ", ".join(
-                            Schema._quote_column_names(table_columns)
-                        ) +
-                        " FROM " + name
+                        table_schema.format_dump(table_name)
                     )
                     obj_list = None
-                    for columns in result:
+                    for obj in table_schema.unpack_iter(result):
                         if obj_list is None:
                             obj_list = []
-                            data[name] = obj_list
-                        obj_list.append(
-                            Schema._unpack_fields(table_columns, columns)
-                        )
+                            data[table_name] = obj_list
+                        obj_list.append(obj)
                         obj_num += 1
                         if objects_per_report and \
                                 obj_num >= objects_per_report:
@@ -568,24 +523,20 @@ class Schema(AbstractSchema):
             cursor = self.conn.cursor()
             try:
                 for obj_list_name, query in obj_list_queries.items():
-                    table_columns = self.TABLES[obj_list_name]["columns"]
+                    table_schema = self.TABLES[obj_list_name]
                     query_parameters = query[1]
                     query_string = \
-                        "SELECT " + ", ".join(
-                            Schema._quote_column_names(table_columns)
-                        ) + \
+                        f"SELECT {table_schema.columns_list}\n" \
                         f" FROM {obj_list_name} INNER JOIN (\n" + \
                         textwrap.indent(query[0], " " * 4) + \
                         ") USING(id)\n"
+                    result = cursor.execute(query_string, query_parameters)
                     obj_list = None
-                    for columns in cursor.execute(query_string,
-                                                  query_parameters):
+                    for obj in table_schema.unpack_iter(result):
                         if obj_list is None:
                             obj_list = []
                             data[obj_list_name] = obj_list
-                        obj_list.append(
-                            Schema._unpack_fields(table_columns, columns)
-                        )
+                        obj_list.append(obj)
                         obj_num += 1
                         if objects_per_report and \
                                 obj_num >= objects_per_report:
@@ -718,97 +669,17 @@ class Schema(AbstractSchema):
                         ") AS ids USING(" + ", ".join(obj_type.id_fields) + ")"
                     query_parameters = reduce(lambda x, y: x + y,
                                               (q[1] for q in queries))
-                    objs[obj_type.name] = [
-                        Schema._unpack_fields(
-                            self.OO_QUERIES[obj_type.name]["columns"],
-                            columns, drop_null=False
+                    objs[obj_type.name] = list(
+                        self.OO_QUERIES[obj_type.name]["schema"].unpack_iter(
+                            cursor.execute(query_string, query_parameters),
+                            drop_null=False
                         )
-                        for columns in
-                        cursor.execute(query_string, query_parameters)
-                    ]
+                    )
             finally:
                 cursor.close()
 
         assert LIGHT_ASSERTS or orm.SCHEMA.is_valid(objs)
         return objs
-
-    @staticmethod
-    def _pack_fields(column_vals, column_defs, pfx, fields):
-        """
-        Pack a dictionary of (sub-)fields into a dictionary of columns in
-        SQLite-compatible representation for a particular table.
-
-        Args:
-            column_vals:    The dictionary to output the packed columns into.
-            column_defs:    Dictionary of column names and definitions
-                            (instances of kcidb.db.sqlite.schema.misc.Column).
-            pfx:            The string prefix to add to field names to produce
-                            the target column names.
-            fields:         The dictionary of fields to pack into columns.
-
-        Returns:
-            The dictionary supplied in "column_vals" with newly-packed columns
-            added.
-        """
-        assert isinstance(column_vals, dict)
-        assert isinstance(column_defs, dict)
-        assert LIGHT_ASSERTS or all(
-            isinstance(name, str) and isinstance(column, Column)
-            for name, column in column_defs.items()
-        )
-        assert isinstance(pfx, str)
-        assert isinstance(fields, dict)
-
-        for field_name, field_value in fields.items():
-            column_name = pfx + field_name
-            if column_name in column_defs:
-                column_vals[column_name] = \
-                    column_defs[column_name].pack(field_value)
-            else:
-                assert isinstance(field_value, dict), \
-                    f"Field {pfx + field_name!r} value is not a dict: " \
-                    f"{field_value!r}"
-                Schema._pack_fields(column_vals, column_defs,
-                                    pfx + field_name + ".", field_value)
-        return column_vals
-
-    @staticmethod
-    def _unpack_fields(column_defs, column_vals, drop_null=True):
-        """
-        Unpack a tuple of SQLite table column values into a dictionary of JSON
-        fields.
-
-        Args:
-            column_defs:    Dictionary of column names and definitions
-                            (instances of kcidb.db.sqlite.schema.misc.Column).
-            column_vals:    A tuple containing packed column values, in the
-                            order the columns are listed in `column_defs`.
-            drop_null:      Drop fields with NULL values, if true.
-                            Keep them otherwise.
-
-        Returns:
-            The dictionary of unpacked fields.
-        """
-        assert isinstance(column_defs, dict)
-        assert LIGHT_ASSERTS or all(
-            isinstance(name, str) and isinstance(column, Column)
-            for name, column in column_defs.items()
-        )
-        assert isinstance(column_vals, tuple)
-
-        fields = {}
-        for name, column, value in \
-                zip(column_defs.keys(), column_defs.values(), column_vals):
-            if value is None and drop_null:
-                continue
-            node = fields
-            keys = name.split(".")
-            for key in keys[:-1]:
-                if key not in node:
-                    node[key] = {}
-                node = node[key]
-            node[keys[-1]] = column.unpack(value)
-        return fields
 
     def load(self, data):
         """
@@ -822,56 +693,14 @@ class Schema(AbstractSchema):
         with self.conn:
             cursor = self.conn.cursor()
             try:
-                for name, table in self.TABLES.items():
-                    if name not in data:
-                        continue
-                    for obj in data[name]:
-                        columns = Schema._pack_fields(
-                            {}, table["columns"], "", obj
+                for table_name, table_schema in self.TABLES.items():
+                    if table_name in data:
+                        cursor.executemany(
+                            table_schema.format_insert(
+                                table_name, self.conn.load_prio_db
+                            ),
+                            table_schema.pack_iter(data[table_name])
                         )
-                        quoted_columns = {}
-                        quoted_key_columns = {}
-                        quoted_data_columns = {}
-                        for column_name, column_value in columns.items():
-                            quoted_column_name = \
-                                Schema._quote_column_name(column_name)
-                            quoted_columns[quoted_column_name] = column_value
-                            if table["columns"][column_name].constraint is \
-                                    Constraint.PRIMARY_KEY:
-                                quoted_key_columns[quoted_column_name] = \
-                                    column_value
-                            else:
-                                quoted_data_columns[quoted_column_name] = \
-                                    column_value
-
-                        # TODO: Switch to executemany()
-                        # TODO: Switch to UPSERT if we ever upgrade to Python
-                        #       with SQLite 3.24.0 or later
-                        try:
-                            cursor.execute(
-                                "INSERT INTO " + name + " " +
-                                "(" + ', '.join(quoted_columns) + ')\n' +
-                                "VALUES (" +
-                                ", ".join("?" * len(columns)) +
-                                ")",
-                                list(quoted_columns.values())
-                            )
-                        except sqlite3.IntegrityError:
-                            cursor.execute(
-                                "UPDATE " + name + " SET\n" + ",\n".join(
-                                    "    " + quoted_name +
-                                    (' = coalesce(' + quoted_name + ', ?)'
-                                     if self.conn.load_prio_db else
-                                     ' = coalesce(?, ' + quoted_name + ')')
-                                    for quoted_name in quoted_data_columns
-                                ) + "\n" +
-                                "WHERE " + " AND ".join(
-                                    quoted_name + ' == ?'
-                                    for quoted_name in quoted_key_columns
-                                ),
-                                list(quoted_data_columns.values()) +
-                                list(quoted_key_columns.values())
-                            )
             finally:
                 cursor.close()
         # Flip priority for the next load to maintain (rough)
