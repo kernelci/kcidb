@@ -54,7 +54,7 @@ class Column:
         Returns: The formatted column definition.
         """
         nameless_def = self.type
-        if self.constraint and self.constraint != Constraint.PRIMARY_KEY:
+        if self.constraint:
             nameless_def += " " + self.constraint.value
         return nameless_def
 
@@ -149,17 +149,13 @@ class Table:
         ]
         # A string of comma-separated column names for use in commands
         self.columns_list = ", ".join(column.name for column in self.columns)
-        # A list of columns in the primary key
-        self.primary_key = []
-        if primary_key is None:
-            for column in self.columns:
-                if column.schema.constraint == Constraint.PRIMARY_KEY:
-                    self.primary_key.append(column)
-        else:
-            for column_name in primary_key:
-                for column in self.columns:
-                    if column.name == column_name:
-                        self.primary_key.append(column)
+        # A list of columns in the explicitly-specified primary key
+        self.primary_key = None if primary_key is None else [
+            column
+            for column_name in primary_key
+            for column in self.columns
+            if column.name == column_name
+        ]
 
     def format_create(self, name):
         """
