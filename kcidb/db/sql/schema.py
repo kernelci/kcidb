@@ -114,7 +114,7 @@ class Table:
             columns:        A dictionary of column names consisting of
                             dot-separated parts (keys), and the column
                             schemas. Columns cannot specify PRIMARY_KEY
-                            constraint, if primary_key_columns is specified.
+                            constraint, if primary_key is specified.
             primary_key:    A list of names of columns constituting the
                             primary key. None to use the column with the
                             PRIMARY_KEY constraint instead.
