@@ -380,7 +380,7 @@ class Schema(AbstractSchema):
             cursor = self.conn.cursor()
             try:
                 for name in self.TABLES:
-                    cursor.execute(f"DROP TABLE {name}")
+                    cursor.execute(f"DROP TABLE IF EXISTS {name}")
             finally:
                 cursor.close()
 
