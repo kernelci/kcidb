@@ -677,7 +677,7 @@ class Schema(AbstractSchema):
                     ),
                 ],
             ]
-            for obj_list_name in self.io.tree if obj_list_name
+            for obj_list_name in self.io.graph if obj_list_name
         }
 
         # Add referenced parents if requested
@@ -686,7 +686,7 @@ class Schema(AbstractSchema):
                 """Add parent IDs to query results"""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
-                for child_list_name in self.io.tree[obj_list_name]:
+                for child_list_name in self.io.graph[obj_list_name]:
                     add_parents(child_list_name)
                     child_query = obj_list_queries[child_list_name]
                     query[0] += \
@@ -698,7 +698,7 @@ class Schema(AbstractSchema):
                         ") USING(id)\n"
                     query[1] += child_query[1]
 
-            for obj_list_name in self.io.tree[""]:
+            for obj_list_name in self.io.graph[""]:
                 add_parents(obj_list_name)
 
         # Add referenced children if requested
@@ -707,7 +707,7 @@ class Schema(AbstractSchema):
                 """Add child IDs to query results"""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
-                for child_list_name in self.io.tree[obj_list_name]:
+                for child_list_name in self.io.graph[obj_list_name]:
                     child_query = obj_list_queries[child_list_name]
                     child_query[0] += \
                         f"UNION DISTINCT\n" \
@@ -721,7 +721,7 @@ class Schema(AbstractSchema):
                     child_query[1] += query[1]
                     add_children(child_list_name)
 
-            for obj_list_name in self.io.tree[""]:
+            for obj_list_name in self.io.graph[""]:
                 add_children(obj_list_name)
 
         # Fetch the data
