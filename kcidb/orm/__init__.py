@@ -1188,7 +1188,6 @@ class Pattern:
             set(k[:-1] for k in io.SCHEMA.tree if k), \
             "Specified OO types are not a superset of I/O types"
         pattern_set = set()
-        # Assume each I/O object is identified by a required "id" field
         for obj_list_name in io.SCHEMA.tree:
             if not obj_list_name:
                 continue
@@ -1196,9 +1195,13 @@ class Pattern:
             obj_list = io_data.get(obj_list_name, [])
             if not obj_list:
                 continue
+            obj_type = schema.types[obj_list_name[:-1]]
+            id_fields = obj_type.id_fields
             pattern_set.add(
-                Pattern(None, True, schema.types[obj_list_name[:-1]],
-                        {(o["id"],) for o in obj_list})
+                Pattern(None, True, obj_type, {
+                    tuple(o[id_field] for id_field in id_fields)
+                    for o in obj_list
+                })
             )
         return pattern_set
 
