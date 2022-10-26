@@ -416,11 +416,11 @@ SCHEMA = Schema(
     )
 )
 
-assert all(k.endswith("s") for k in io.SCHEMA.tree if k), \
+assert all(k.endswith("s") for k in io.SCHEMA.graph if k), \
     "Not all I/O object list names end with 's'"
 
 assert set(SCHEMA.types) >= \
-    set(k[:-1] for k in io.SCHEMA.tree if k), \
+    set(k[:-1] for k in io.SCHEMA.graph if k), \
     "OO types are not a superset of I/O types"
 
 # A (verbose) regular expression pattern matching an unquoted ID field
@@ -1185,10 +1185,10 @@ class Pattern:
             schema = SCHEMA
         # Assert all I/O object lists are represented in the OO schema
         assert set(schema.types) >= \
-            set(k[:-1] for k in io.SCHEMA.tree if k), \
+            set(k[:-1] for k in io.SCHEMA.graph if k), \
             "Specified OO types are not a superset of I/O types"
         pattern_set = set()
-        for obj_list_name in io.SCHEMA.tree:
+        for obj_list_name in io.SCHEMA.graph:
             if not obj_list_name:
                 continue
             assert obj_list_name.endswith("s")
