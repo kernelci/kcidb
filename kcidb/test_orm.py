@@ -21,8 +21,6 @@ SCHEMA = kcidb.orm.Schema(
             children=dict(
                 checkout=("git_commit_hash", "patchset_hash",)
             ),
-            summary_template=EMPTY_TEMPLATE,
-            description_template=EMPTY_TEMPLATE,
         ),
         checkout=dict(
             field_json_schemas=dict(
@@ -33,8 +31,6 @@ SCHEMA = kcidb.orm.Schema(
             children=dict(
                 build=("checkout_id",)
             ),
-            summary_template=EMPTY_TEMPLATE,
-            description_template=EMPTY_TEMPLATE,
         ),
         build=dict(
             field_json_schemas=dict(
@@ -46,8 +42,6 @@ SCHEMA = kcidb.orm.Schema(
                 test=("build_id",),
                 build_test_environment=("build_id",)
             ),
-            summary_template=EMPTY_TEMPLATE,
-            description_template=EMPTY_TEMPLATE,
         ),
         test_environment=dict(
             field_json_schemas=dict(
@@ -59,8 +53,6 @@ SCHEMA = kcidb.orm.Schema(
                 test=("environment_id",),
                 build_test_environment=("environment_id",),
             ),
-            summary_template=EMPTY_TEMPLATE,
-            description_template=EMPTY_TEMPLATE,
         ),
         build_test_environment=dict(
             field_json_schemas=dict(
@@ -72,8 +64,6 @@ SCHEMA = kcidb.orm.Schema(
             children=dict(
                 test=("build_id", "environment_id"),
             ),
-            summary_template=EMPTY_TEMPLATE,
-            description_template=EMPTY_TEMPLATE,
         ),
         test=dict(
             field_json_schemas=dict(
@@ -81,8 +71,6 @@ SCHEMA = kcidb.orm.Schema(
             ),
             required_fields=set(),
             id_fields=("id",),
-            summary_template=EMPTY_TEMPLATE,
-            description_template=EMPTY_TEMPLATE,
         ),
     )
 )
