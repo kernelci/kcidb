@@ -596,7 +596,7 @@ class Schema(AbstractSchema):
 
         if pattern.base:
             base_query_string, base_query_parameters = \
-                Schema._oo_query_render(pattern.base)
+                cls._oo_query_render(pattern.base)
             base_obj_type = pattern.base.obj_type
             if pattern.child:
                 column_pairs = zip(
@@ -644,7 +644,7 @@ class Schema(AbstractSchema):
                     if obj_type not in obj_type_queries:
                         obj_type_queries[obj_type] = []
                     obj_type_queries[obj_type]. \
-                        append(Schema._oo_query_render(pattern))
+                        append(self._oo_query_render(pattern))
 
         # Execute all the queries
         with self.conn:
