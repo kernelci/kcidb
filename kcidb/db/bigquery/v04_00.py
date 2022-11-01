@@ -589,8 +589,8 @@ class Schema(AbstractSchema):
             except GoogleNotFound:
                 pass
 
-    @staticmethod
-    def _unpack_node(node, drop_null=True):
+    @classmethod
+    def _unpack_node(cls, node, drop_null=True):
         """
         Unpack a retrieved data node (and all its children) to
         the JSON-compatible and schema-complying representation.
@@ -609,7 +609,7 @@ class Schema(AbstractSchema):
             node = node.isoformat()
         elif isinstance(node, list):
             for index, value in enumerate(node):
-                node[index] = Schema._unpack_node(value)
+                node[index] = cls._unpack_node(value)
         elif isinstance(node, dict):
             for key, value in list(node.items()):
                 if value is None:
@@ -618,7 +618,7 @@ class Schema(AbstractSchema):
                 elif key == "misc" or key.endswith("_misc"):
                     node[key] = json.loads(value)
                 else:
-                    node[key] = Schema._unpack_node(value)
+                    node[key] = cls._unpack_node(value)
         return node
 
     def dump_iter(self, objects_per_report):
@@ -647,7 +647,7 @@ class Schema(AbstractSchema):
                 if obj_list is None:
                     obj_list = []
                     data[obj_list_name] = obj_list
-                obj_list.append(Schema._unpack_node(dict(row.items())))
+                obj_list.append(self._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
                     assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
@@ -763,7 +763,7 @@ class Schema(AbstractSchema):
                 if obj_list is None:
                     obj_list = []
                     data[obj_list_name] = obj_list
-                obj_list.append(Schema._unpack_node(dict(row.items())))
+                obj_list.append(self._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
                     assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
@@ -893,15 +893,15 @@ class Schema(AbstractSchema):
                                       (q[1] for q in queries))
             job = self.conn.query_create(query_string, query_parameters)
             objs[obj_type.name] = [
-                Schema._unpack_node(dict(row.items()), drop_null=False)
+                self._unpack_node(dict(row.items()), drop_null=False)
                 for row in job.result()
             ]
 
         assert LIGHT_ASSERTS or orm.SCHEMA.is_valid(objs)
         return objs
 
-    @staticmethod
-    def _pack_node(node):
+    @classmethod
+    def _pack_node(cls, node):
         """
         Pack a loaded data node (and all its children) to
         the BigQuery storage-compatible representation.
@@ -915,7 +915,7 @@ class Schema(AbstractSchema):
         if isinstance(node, list):
             node = node.copy()
             for index, value in enumerate(node):
-                node[index] = Schema._pack_node(value)
+                node[index] = cls._pack_node(value)
         elif isinstance(node, dict):
             node = node.copy()
             for key, value in list(node.items()):
@@ -923,7 +923,7 @@ class Schema(AbstractSchema):
                 if key == "misc":
                     node[key] = json.dumps(value)
                 else:
-                    node[key] = Schema._pack_node(value)
+                    node[key] = cls._pack_node(value)
         return node
 
     def load(self, data):
@@ -939,7 +939,7 @@ class Schema(AbstractSchema):
         # Load the data
         for obj_list_name, table_schema in self.TABLE_MAP.items():
             if obj_list_name in data:
-                obj_list = Schema._pack_node(data[obj_list_name])
+                obj_list = self._pack_node(data[obj_list_name])
                 if not LIGHT_ASSERTS:
                     validate_json_obj_list(table_schema, obj_list)
                 job_config = bigquery.job.LoadJobConfig(autodetect=False,
