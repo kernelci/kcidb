@@ -533,29 +533,44 @@ class Schema(AbstractSchema):
              "FROM tests",
     )
 
+    @classmethod
+    def _create_table(cls, conn, table_name, table_schema):
+        """
+        Create a table and its view.
+
+        Args:
+            conn:           The connection to create the table with.
+            table_name:     Name of the table being created.
+            table_schema:   Schema of the table being created.
+        """
+        assert isinstance(conn, cls.Connection)
+        assert isinstance(table_name, str)
+        assert isinstance(table_schema, list)
+        # Create raw table with duplicate records
+        table_ref = conn.dataset_ref.table("_" + table_name)
+        table = bigquery.table.Table(table_ref, schema=table_schema)
+        conn.client.create_table(table)
+        # Create a view deduplicating the table records
+        view_ref = conn.dataset_ref.table(table_name)
+        view = bigquery.table.Table(view_ref)
+        view.view_query = \
+            "SELECT " + \
+            ", ".join(
+                f"`{n}`" if n in cls.KEY_MAP[table_name]
+                else f"ANY_VALUE(`{n}`) AS `{n}`"
+                for n in (f.name for f in table_schema)
+            ) + \
+            f" FROM `{table_ref}` GROUP BY " + \
+            ", ".join(cls.KEY_MAP[table_name])
+        conn.client.create_table(view)
+
     def init(self):
         """
         Initialize the database. The database must be empty (uninitialized).
         """
         # Create tables and corresponding views
         for table_name, table_schema in self.TABLE_MAP.items():
-            # Create raw table with duplicate records
-            table_ref = self.conn.dataset_ref.table("_" + table_name)
-            table = bigquery.table.Table(table_ref, schema=table_schema)
-            self.conn.client.create_table(table)
-            # Create a view deduplicating the table records
-            view_ref = self.conn.dataset_ref.table(table_name)
-            view = bigquery.table.Table(view_ref)
-            view.view_query = \
-                "SELECT " + \
-                ", ".join(
-                    f"`{n}`" if n in self.KEY_MAP[table_name]
-                    else f"ANY_VALUE(`{n}`) AS `{n}`"
-                    for n in (f.name for f in table_schema)
-                ) + \
-                f" FROM `{table_ref}` GROUP BY " + \
-                ", ".join(self.KEY_MAP[table_name])
-            self.conn.client.create_table(view)
+            self._create_table(self.conn, table_name, table_schema)
 
     def cleanup(self):
         """
