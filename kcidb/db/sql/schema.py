@@ -203,7 +203,8 @@ class Table:
             "\n)\nON CONFLICT (" + \
             ", ".join(
                 c.name for c in self.columns
-                if c.schema.constraint == Constraint.PRIMARY_KEY
+                if c.schema.constraint == Constraint.PRIMARY_KEY or
+                c in (self.primary_key or [])
             ) + ") DO UPDATE SET\n" + \
             ",\n".join(
                 f"    {c.name} = COALESCE(" + (
@@ -212,7 +213,8 @@ class Table:
                     f"excluded.{c.name}, {name}.{c.name}"
                 ) + ")"
                 for c in self.columns
-                if c.schema.constraint != Constraint.PRIMARY_KEY
+                if c.schema.constraint != Constraint.PRIMARY_KEY and
+                c not in (self.primary_key or [])
             )
 
     def format_dump(self, name):
