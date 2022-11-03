@@ -202,7 +202,7 @@ def submit_main():
         sys.stdout.flush()
 
     client.submit_iter(
-        (io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
+        (io.SCHEMA.validate(data)
          for data in misc.json_load_stream_fd(sys.stdin.fileno())),
         done_cb=print_submission_id
     )
