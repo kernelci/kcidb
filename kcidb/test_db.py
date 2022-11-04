@@ -175,7 +175,7 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
 
 
 @local_only
-class KCIDBDBClient(kcidb.unittest.TestCase):
+class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
     """Test case for the Client class"""
 
     # I/O data containing all possible fields
@@ -303,7 +303,7 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
 
     def test_bigquery_load(self):
         """Check all possible I/O fields can be loaded into BigQuery"""
-        io_data = KCIDBDBClient.COMPREHENSIVE_IO_DATA
+        io_data = KCIDBDBClientTestCase.COMPREHENSIVE_IO_DATA
         dataset = Mock()
         dataset.labels = dict(version_major=io_data['version']['major'],
                               version_minor=io_data['version']['minor'])
@@ -321,7 +321,7 @@ class KCIDBDBClient(kcidb.unittest.TestCase):
         Check all possible I/O fields can be loaded into and dumped from
         SQLite.
         """
-        io_data = KCIDBDBClient.COMPREHENSIVE_IO_DATA
+        io_data = KCIDBDBClientTestCase.COMPREHENSIVE_IO_DATA
         client = kcidb.db.Client("sqlite::memory:")
         client.init()
         client.load(io_data)
