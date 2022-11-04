@@ -17,7 +17,7 @@ class Driver(AbstractDriver):
     # Yes, it's an abstract class, pylint: disable=super-init-not-called
     def __init__(self, params):
         """
-        Initialize the BigQuery driver.
+        Initialize the driver.
 
         Args:
             params:        Must be None (not specified).

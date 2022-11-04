@@ -24,7 +24,7 @@ class Driver(SQLiteDriver):
 
     def __init__(self, params):
         """
-        Initialize the BigQuery driver.
+        Initialize the driver.
 
         Args:
             params: A path to a file containing I/O JSON to read as database
