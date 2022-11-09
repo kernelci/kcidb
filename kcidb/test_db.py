@@ -598,3 +598,178 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
         self.assertEqual(db_client.dump(), merged_data)
         self.assertEqual(db_client.oo_query(kcidb.orm.Pattern.parse(">*#")),
                          v4_1_oo_data)
+
+    def test_query(self):
+        """Test the query() method retrieves objects correctly"""
+        client = kcidb.db.Client("sqlite::memory:")
+        client.init()
+        client.load(dict(
+            version=dict(major=4, minor=1),
+            checkouts=[
+                dict(id="_:1", origin="_"),
+                dict(id="_:2", origin="_"),
+            ],
+            builds=[
+                dict(id="_:1", origin="_", checkout_id="_:1"),
+                dict(id="_:2", origin="_", checkout_id="_:2"),
+            ],
+            tests=[
+                dict(id="_:1", origin="_", build_id="_:1"),
+                dict(id="_:2", origin="_", build_id="_:2"),
+            ],
+            issues=[
+                dict(id="_:1", origin="_", version=1),
+                dict(id="_:2", origin="_", version=1),
+                dict(id="_:3", origin="_", version=1),
+                dict(id="_:4", origin="_", version=1),
+            ],
+            incidents=[
+                dict(id="_:1", origin="_", issue_id="_:1", issue_version=1,
+                     build_id="_:1"),
+                dict(id="_:2", origin="_", issue_id="_:2", issue_version=1,
+                     test_id="_:1"),
+                dict(id="_:3", origin="_", issue_id="_:3", issue_version=1,
+                     build_id="_:2", test_id="_:2"),
+                dict(id="_:4", origin="_", issue_id="_:4", issue_version=1,
+                     test_id="_:1"),
+                dict(id="_:5", origin="_", issue_id="_:4", issue_version=1,
+                     test_id="_:2"),
+            ],
+        ))
+        self.assertEqual(
+            client.query(ids=dict(checkouts=["_:1"]), children=True),
+            {
+                "version": {"major": 4, "minor": 1},
+                "checkouts": [
+                    {"id": "_:1", "origin": "_"}
+                ],
+                "builds": [
+                    {"checkout_id": "_:1", "id": "_:1", "origin": "_"}
+                ],
+                "tests": [
+                    {"build_id": "_:1", "id": "_:1", "origin": "_"}
+                ],
+                "incidents": [
+                    {
+                        "build_id": "_:1",
+                        "id": "_:1",
+                        "issue_id": "_:1",
+                        "issue_version": 1,
+                        "origin": "_",
+                    },
+                    {
+                        "id": "_:2",
+                        "issue_id": "_:2",
+                        "issue_version": 1,
+                        "origin": "_",
+                        "test_id": "_:1",
+                    },
+                    {
+                        'id': '_:4',
+                        'issue_id': '_:4',
+                        'issue_version': 1,
+                        'origin': '_',
+                        'test_id': '_:1',
+                    },
+                ],
+            },
+        )
+
+        self.assertEqual(
+            client.query(ids=dict(checkouts=["_:2"]), children=True),
+            {
+                "version": {"major": 4, "minor": 1},
+                "checkouts": [
+                    {"id": "_:2", "origin": "_"}
+                ],
+                "builds": [
+                    {"checkout_id": "_:2", "id": "_:2", "origin": "_"}
+                ],
+                "tests": [
+                    {"build_id": "_:2", "id": "_:2", "origin": "_"}
+                ],
+                "incidents": [
+                    {
+                        "build_id": "_:2",
+                        "id": "_:3",
+                        "issue_id": "_:3",
+                        "issue_version": 1,
+                        "origin": "_",
+                        "test_id": "_:2",
+                    },
+                    {
+                        "id": "_:5",
+                        "issue_id": "_:4",
+                        "issue_version": 1,
+                        "origin": "_",
+                        "test_id": "_:2",
+                    },
+                ],
+            },
+        )
+
+        self.assertEqual(
+            client.query(ids=dict(incidents=["_:3"]), parents=True),
+            {
+                "version": {"major": 4, "minor": 1},
+                "checkouts": [
+                    {"id": "_:2", "origin": "_"}
+                ],
+                "builds": [
+                    {"checkout_id": "_:2", "id": "_:2", "origin": "_"}
+                ],
+                "tests": [
+                    {"build_id": "_:2", "id": "_:2", "origin": "_"}
+                ],
+                "issues": [
+                    {"id": "_:3", "origin": "_", "version": 1}
+                ],
+                "incidents": [
+                    {
+                        "build_id": "_:2",
+                        "id": "_:3",
+                        "issue_id": "_:3",
+                        "issue_version": 1,
+                        "origin": "_",
+                        "test_id": "_:2",
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(
+            client.query(ids=dict(incidents=["_:3"]),
+                         parents=True, children=True),
+            {
+                "version": {"major": 4, "minor": 1},
+                "checkouts": [
+                    {"id": "_:2", "origin": "_"}
+                ],
+                "builds": [
+                    {"checkout_id": "_:2", "id": "_:2", "origin": "_"}
+                ],
+                "tests": [
+                    {"build_id": "_:2", "id": "_:2", "origin": "_"}
+                ],
+                "issues": [
+                    {"id": "_:3", "origin": "_", "version": 1}
+                ],
+                "incidents": [
+                    {
+                        "build_id": "_:2",
+                        "id": "_:3",
+                        "issue_id": "_:3",
+                        "issue_version": 1,
+                        "origin": "_",
+                        "test_id": "_:2",
+                    },
+                    {
+                        "id": "_:5",
+                        "issue_id": "_:4",
+                        "issue_version": 1,
+                        "origin": "_",
+                        "test_id": "_:2",
+                    },
+                ],
+            }
+        )
