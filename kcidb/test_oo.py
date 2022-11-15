@@ -1,5 +1,7 @@
 """kcidb.oo test module"""
 
+import sys
+import json
 import kcidb
 from kcidb.unittest import local_only
 from kcidb.oo import Checkout, Build, Test, Node, Bug, Issue, Incident
@@ -639,3 +641,213 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
             self.assertEqual(node.nodes, {})
 
         self.assertEqual(path, ["pass1", "pass2", "fail"])
+
+
+@local_only
+class KCIDBOOStatusTestCase(kcidb.unittest.TestCase):
+    """Test case for querying test and build statuses"""
+
+    def setUp(self):
+        """Setup database and create oo.Client object"""
+        # It's about consistency, pylint: disable=use-dict-literal
+        data = {
+            "version": {"major": 4, "minor": 1},
+            "checkouts": [
+                {
+                    "id": "_:1",
+                    "origin": "_",
+                    "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                       "cd2311499c5b4e5f1",
+                    "patchset_hash": "",
+                    "git_repository_branch": "valid1",
+                    "git_repository_url": "https://repo_valid",
+                    "valid": True
+                },
+            ],
+            "builds": [
+                {
+                    "id": f"_:valid_{valid}_incident_{incident}",
+                    "origin": "_",
+                    "checkout_id": "_:1",
+                    "architecture": "x86_64",
+                    **fields
+                }
+                for valid, fields in (("none", dict()),
+                                      ("false", dict(valid=False)),
+                                      ("true", dict(valid=True)))
+                for incident in ("none", "broken", "null", "false", "true")
+            ],
+            "tests": [
+                {
+                    "id":
+                    f"_:status_{test_status}_waived_{test_waived}"
+                    f"_incident_{incident_test_status}",
+                    "build_id": "_:valid_true_incident_none",
+                    "origin": "_",
+                    "path": "test",
+                    **test_status_fields,
+                    **test_waived_fields,
+                }
+                for test_status, test_status_fields in (
+                    ("none", dict()),
+                    ("pass", dict(status="PASS")),
+                    ("fail", dict(status="FAIL")),
+                    ("error", dict(status="ERROR")),
+                )
+                for test_waived, test_waived_fields in (
+                    ("none", dict()),
+                    ("false", dict(waived=False)),
+                    ("true", dict(waived=True)),
+                )
+                for incident_test_status in
+                ("none", "broken", "null", "pass", "fail", "error")
+            ],
+            "issues": [
+                {
+                    "id": f"_:build_{build_valid}_test_{test_status}",
+                    "origin": "_",
+                    "version": 1,
+                    "report_url": "https://kernelci.org/bug",
+                    **build_fields,
+                    **test_fields,
+                }
+                for build_valid, build_fields in (
+                    ("none", dict()),
+                    ("false", dict(build_valid=False)),
+                    ("true", dict(build_valid=True))
+                )
+                for test_status, test_fields in (
+                    ("none", dict()),
+                    ("pass", dict(test_status="PASS")),
+                    ("fail", dict(test_status="FAIL")),
+                    ("error", dict(test_status="ERROR")),
+                )
+            ],
+            "incidents": [
+                {
+                    "id":
+                    f"_:build_valid_{build_valid}_"
+                    f"incident_{incident_build_valid}",
+                    "origin": "_",
+                    "issue_id":
+                    "_:missing" if issue_build_valid is None else
+                    f"_:build_{issue_build_valid}_test_none",
+                    "issue_version": 1,
+                    "build_id":
+                    f"_:valid_{build_valid}_"
+                    f"incident_{incident_build_valid}",
+                    "present": True,
+                }
+                for build_valid in ("none", "false", "true")
+                for issue_build_valid, incident_build_valid in (
+                    (None, "broken"),
+                    ("none", "null"),
+                    ("false", "false"),
+                    ("true", "true")
+                )
+            ] + [
+                {
+                    "id":
+                    f"_:test_status_{test_status}_"
+                    f"waived_{test_waived}_"
+                    f"incident_{incident_test_status}",
+                    "origin": "_",
+                    "issue_id":
+                    "_:missing" if issue_test_status is None else
+                    f"_:build_none_test_{issue_test_status}",
+                    "issue_version": 1,
+                    "test_id":
+                    f"_:status_{test_status}_"
+                    f"waived_{test_waived}_"
+                    f"incident_{incident_test_status}",
+                    "present": True,
+                }
+                for test_status in ("none", "pass", "fail", "error")
+                for test_waived in ("none", "false", "true")
+                for issue_test_status, incident_test_status in (
+                    (None, "broken"),
+                    ("none", "null"),
+                    ("pass", "pass"),
+                    ("fail", "fail"),
+                    ("error", "error"),
+                )
+            ],
+        }
+        print("DATA:")
+        json.dump(data, sys.stdout, indent=4)
+        print("")
+        source = kcidb.db.Client("sqlite::memory:")
+        source.init()
+        source.load(data)
+        self.client = kcidb.oo.Client(source)
+
+    def test_builds(self):
+        """Check build status effects"""
+        for build_valid_name, build_valid_value in (
+            ("none", None),
+            ("false", False),
+            ("true", True),
+        ):
+            for incident_valid_name, result_valid_value in (
+                ("none", build_valid_value),
+                ("broken", build_valid_value),
+                ("null", build_valid_value),
+                ("false", False),
+                ("true", True),
+            ):
+                build_id = f"_:valid_{build_valid_name}_" \
+                    f"incident_{incident_valid_name}"
+                result = self.client.query(kcidb.orm.Pattern.parse(
+                    ">build%#", [{(build_id,)}]
+                ))
+                self.assertEqual(set(result.keys()), {"build"},
+                                 "Unexpected object types returned")
+                self.assertEqual(len(result["build"]), 1,
+                                 "Incorrect number of builds returned "
+                                 f"for ID {build_id!r}")
+                build = result["build"][0]
+                self.assertEqual(build.valid, result_valid_value,
+                                 f"Build {build_id!r} has incorrect "
+                                 f"\"valid\" value {build.valid!r}")
+
+    def test_tests(self):
+        """Check test status effects"""
+
+        for test_status_name, test_status_value in (
+            ("none", None),
+            ("pass", "PASS"),
+            ("fail", "FAIL"),
+            ("error", "ERROR"),
+        ):
+            for test_waived_name, test_waived_value in (
+                ("none", None),
+                ("false", False),
+                ("true", True),
+            ):
+                for incident_status_name, result_status_value, \
+                        result_waived_value in (
+                            ("none", test_status_value, test_waived_value),
+                            ("broken", test_status_value, test_waived_value),
+                            ("null", test_status_value, test_waived_value),
+                            ("pass", "PASS", test_waived_value),
+                            ("fail", "FAIL", test_waived_value),
+                            ("error", "ERROR", test_waived_value),
+                        ):
+                    test_id = f"_:status_{test_status_name}_" \
+                        f"waived_{test_waived_name}_" \
+                        f"incident_{incident_status_name}"
+                    result = self.client.query(kcidb.orm.Pattern.parse(
+                        ">test%#", [{(test_id,)}]
+                    ))
+                    self.assertEqual(set(result.keys()), {"test"},
+                                     "Unexpected object types returned")
+                    self.assertEqual(len(result["test"]), 1,
+                                     "Incorrect number of tests returned "
+                                     f"for ID {test_id!r}")
+                    test = result["test"][0]
+                    self.assertEqual(test.status, result_status_value,
+                                     f"Test {test_id!r} has incorrect "
+                                     f"\"status\" value {test.status!r}")
+                    self.assertEqual(test.waived, result_waived_value,
+                                     f"Test {test_id!r} has incorrect "
+                                     f"\"waived\" value {test.waived!r}")
