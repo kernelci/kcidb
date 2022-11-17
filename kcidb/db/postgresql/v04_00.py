@@ -44,9 +44,13 @@ class Connection(AbstractConnection):
                         Environment variables are consulted as described in
                         https://www.postgresql.org/docs/current/
                         libpq-envars.html
+
+                        If starts with an exclamation mark ('!'), the
+                        in-database data is prioritized explicitly initially,
+                        instead of randomly. Double to include one literally.
     """)
 
-    def __init__(self, params, load_prio_db=None):
+    def __init__(self, params):
         """
         Initialize a PostgreSQL connection.
 
@@ -55,14 +59,17 @@ class Connection(AbstractConnection):
                             connect to. See Connection._PARAMS_DOC for
                             documentation. Assumed to be empty string, if
                             None.
-            load_prio_db:   If True, prioritize the database values for the
-                            first load. If False - prioritize the loaded data.
-                            If None, pick the priority at random. Each further
-                            load flips the priority.
         """
         assert params is None or isinstance(params, str)
         if params is None:
             params = ""
+
+        self.load_prio_db = bool(random.randint(0, 1))
+        if params.startswith("!"):
+            if not params.startswith("!!"):
+                self.load_prio_db = True
+            params = params[1:]
+
         super().__init__(params)
         # Create the connection
         self.conn = psycopg2.connect(
@@ -72,10 +79,6 @@ class Connection(AbstractConnection):
         # Specify the logger to the LoggingConnection
         # It logs with DEBUG level, judging from the source (but not the docs)
         self.conn.initialize(LOGGER)
-        if load_prio_db is None:
-            self.load_prio_db = bool(random.randint(0, 1))
-        else:
-            self.load_prio_db = load_prio_db
 
     def __getattr__(self, name):
         """
