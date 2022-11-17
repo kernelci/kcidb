@@ -735,7 +735,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
 
     def setUp(self):
         """Setup, initialize and load data into the database"""
-        self.source = kcidb.db.Client('sqlite::memory:')
+        self.source = kcidb.db.Client('sqlite:!:memory:')
         self.source.init()
         self.load_data()
 
