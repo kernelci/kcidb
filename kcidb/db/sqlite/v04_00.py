@@ -35,9 +35,13 @@ class Connection(AbstractConnection):
                         relative to the current working directory) of the
                         database file to be opened. Use ":memory:" to create
                         and use an in-memory database.
+
+                        If starts with an exclamation mark ('!'), the
+                        in-database data is prioritized explicitly initially,
+                        instead of randomly. Double to include one literally.
     """)
 
-    def __init__(self, params, load_prio_db=None):
+    def __init__(self, params):
         """
         Initialize an SQLite connection.
 
@@ -45,16 +49,18 @@ class Connection(AbstractConnection):
             params:         A parameter string describing the database to
                             access. See Connection._PARAMS_DOC for
                             documentation. Cannot be None (must be specified).
-            load_prio_db:   If True, prioritize the database values for the
-                            first load. If False - prioritize the loaded data.
-                            If None, pick the priority at random. Each further
-                            load flips the priority.
         """
         assert params is None or isinstance(params, str)
-        assert load_prio_db is None or isinstance(params, bool)
         if params is None:
             raise Exception("Parameters must be specified\n\n" +
                             self._PARAMS_DOC)
+
+        self.load_prio_db = bool(random.randint(0, 1))
+        if params.startswith("!"):
+            if not params.startswith("!!"):
+                self.load_prio_db = True
+            params = params[1:]
+
         super().__init__(params)
 
         # Create the connection
@@ -62,10 +68,6 @@ class Connection(AbstractConnection):
         self.conn.set_trace_callback(
             lambda s: LOGGER.debug("Executing:\n%s", s)
         )
-        if load_prio_db is None:
-            self.load_prio_db = bool(random.randint(0, 1))
-        else:
-            self.load_prio_db = load_prio_db
 
     def __getattr__(self, name):
         """Retrieve missing attributes from the SQLite connection object"""
