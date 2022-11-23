@@ -892,42 +892,42 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                     "origin": "redhat",
                     "version": 80,
                     "report_url": "https://bugzilla/207065",
-                    "comment": "Plintel doesn't plint",
+                    "report_subject": "Plintel doesn't plint",
                 },
                 {
                     "id": "redhat:987987da98798f987c",
                     "origin": "redhat",
                     "version": 100,
                     "report_url": "https://bugzilla/207065",
-                    "comment": "Printer doesn't print",
+                    "report_subject": "Printer doesn't print",
                 },
                 {
                     "id": "kernelci:1987934987",
                     "origin": "kernelci",
                     "version": 1,
                     "report_url": "https://bugzilla/207065",
-                    "comment": "Printing doesn't work",
+                    "report_subject": "Printing doesn't work",
                 },
                 {
                     "id": "redhat:987987da98798aa233",
                     "origin": "redhat",
                     "version": 10,
                     "report_url": "https://bugzilla/1201011",
-                    "comment": "Compiler compiles wrong",
+                    "report_subject": "Compiler compiles wrong",
                 },
                 {
                     "id": "kernelci:1209203344",
                     "origin": "kernelci",
                     "version": 0,
                     "report_url": "https://maillist/498232",
-                    "comment": "LED boesn't link",
+                    "report_subject": "LED boesn't link",
                 },
                 {
                     "id": "kernelci:1209203344",
                     "origin": "kernelci",
                     "version": 1,
                     "report_url": "https://maillist/498232",
-                    "comment": "LED doesn't blink",
+                    "report_subject": "LED doesn't blink",
                 },
             ],
             "incidents": [
@@ -1122,12 +1122,12 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             ),
             dict(bug=[
                 raw_bug(
-                    comment="Compiler compiles wrong",
                     url="https://bugzilla/1201011",
+                    subject="Compiler compiles wrong",
                 ),
                 raw_bug(
-                    comment="Printer doesn't print",
                     url="https://bugzilla/207065",
+                    subject="Printer doesn't print",
                 ),
             ])
         )
@@ -1210,7 +1210,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             ),
             dict(bug=[raw_bug(
                 url="https://bugzilla/1201011",
-                comment="Compiler compiles wrong",
+                subject="Compiler compiles wrong",
             )])
         )
 
@@ -1468,8 +1468,8 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '>checkout>build>test>incident<issue<bug#'
             ),
             dict(bug=[raw_bug(
-                comment="LED doesn't blink",
                 url="https://maillist/498232",
+                subject="LED doesn't blink",
             )])
         )
 
@@ -1479,8 +1479,8 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '>checkout>build>test>incident<issue<bug#'
             ),
             dict(bug=[raw_bug(
-                comment="LED doesn't blink",
                 url="https://maillist/498232",
+                subject="LED doesn't blink",
             )])
         )
 
@@ -1491,8 +1491,8 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '>checkout>build>test>incident<issue<bug#'
             ),
             dict(bug=[raw_bug(
-                comment="LED doesn't blink",
                 url="https://maillist/498232",
+                subject="LED doesn't blink",
             )])
         )
 
@@ -1519,7 +1519,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 "bug": [
                     raw_bug(
                         url="https://bugzilla/207065",
-                        comment="Printer doesn't print",
+                        subject="Printer doesn't print",
                     )
                 ]
             },
@@ -1531,7 +1531,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 "bug": [
                     raw_bug(
                         url="https://maillist/498232",
-                        comment="LED doesn't blink",
+                        subject="LED doesn't blink",
                     )
                 ]
             },
@@ -1542,10 +1542,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             {
                 "issue": [
                     raw_issue(
-                        comment="LED doesn't blink",
                         id="kernelci:1209203344",
                         origin="kernelci",
                         report_url="https://maillist/498232",
+                        report_subject="LED doesn't blink",
                         version=1,
                     )
                 ]
@@ -1558,20 +1558,20 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(len(issues), 2)
         self.assertIn(
             raw_issue(
-                comment="Printing doesn't work",
                 id="kernelci:1987934987",
                 origin="kernelci",
                 report_url="https://bugzilla/207065",
+                report_subject="Printing doesn't work",
                 version=1,
             ),
             issues
         )
         self.assertIn(
             raw_issue(
-                comment="Printer doesn't print",
                 id="redhat:987987da98798f987c",
                 origin="redhat",
                 report_url="https://bugzilla/207065",
+                report_subject="Printer doesn't print",
                 version=100,
             ),
             issues
@@ -1582,10 +1582,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             {
                 "issue": [
                     raw_issue(
-                        comment="Compiler compiles wrong",
                         id="redhat:987987da98798aa233",
                         origin="redhat",
                         report_url="https://bugzilla/1201011",
+                        report_subject="Compiler compiles wrong",
                         version=10,
                     )
                 ]
@@ -1767,10 +1767,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>issue["kernelci:1209203344"]#'),
             dict(issue=[raw_issue(
-                comment="LED doesn't blink",
                 id="kernelci:1209203344",
                 origin="kernelci",
                 report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
                 version=1,
             )])
         )
@@ -1778,10 +1778,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>issue["kernelci:1987934987"]#'),
             dict(issue=[raw_issue(
-                comment="Printing doesn't work",
                 id="kernelci:1987934987",
                 origin="kernelci",
                 report_url="https://bugzilla/207065",
+                report_subject="Printing doesn't work",
                 version=1,
             )])
         )
@@ -1789,10 +1789,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>issue["redhat:987987da98798f987c"]#'),
             dict(issue=[raw_issue(
-                comment="Printer doesn't print",
                 id="redhat:987987da98798f987c",
                 origin="redhat",
                 report_url="https://bugzilla/207065",
+                report_subject="Printer doesn't print",
                 version=100,
             )])
         )
@@ -1800,10 +1800,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>issue["redhat:987987da98798aa233"]#'),
             dict(issue=[raw_issue(
-                comment="Compiler compiles wrong",
                 id="redhat:987987da98798aa233",
                 origin="redhat",
                 report_url="https://bugzilla/1201011",
+                report_subject="Compiler compiles wrong",
                 version=10,
             )])
         )
@@ -1869,7 +1869,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             self.query_str('>issue["kernelci:1209203344"]<bug#'),
             dict(bug=[raw_bug(
                 url="https://maillist/498232",
-                comment="LED doesn't blink",
+                subject="LED doesn't blink",
             )])
         )
 
@@ -1880,7 +1880,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             ),
             dict(bug=[raw_bug(
                 url="https://bugzilla/207065",
-                comment="Printer doesn't print",
+                subject="Printer doesn't print",
             )])
         )
 
@@ -1888,7 +1888,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
             self.query_str('>issue["redhat:987987da98798aa233"]<bug#'),
             dict(bug=[raw_bug(
                 url="https://bugzilla/1201011",
-                comment="Compiler compiles wrong",
+                subject="Compiler compiles wrong",
             )])
         )
 
@@ -2061,10 +2061,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>incident["redhat:987987da98798aa233-12"]<issue#'),
             dict(issue=[raw_issue(
-                comment="Compiler compiles wrong",
                 id="redhat:987987da98798aa233",
                 origin="redhat",
                 report_url="https://bugzilla/1201011",
+                report_subject="Compiler compiles wrong",
                 version=10,
             )])
         )
@@ -2072,10 +2072,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>incident["kernelci:29871398232"]<issue#'),
             dict(issue=[raw_issue(
-                comment="LED doesn't blink",
                 id="kernelci:1209203344",
                 origin="kernelci",
                 report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
                 version=1,
             )])
         )
@@ -2083,10 +2083,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>incident["kernelci:29871398212"]<issue#'),
             dict(issue=[raw_issue(
-                comment="LED doesn't blink",
                 id="kernelci:1209203344",
                 origin="kernelci",
                 report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
                 version=1,
             )])
         )
@@ -2097,10 +2097,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '"kernelci:29871398232"]<issue#'
             ),
             dict(issue=[raw_issue(
-                comment="LED doesn't blink",
                 id="kernelci:1209203344",
                 origin="kernelci",
                 report_url="https://maillist/498232",
+                report_subject="LED doesn't blink",
                 version=1,
             )])
         )
@@ -2108,10 +2108,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>incident["_:2987d298712"]<issue#'),
             dict(issue=[raw_issue(
-                comment="Printing doesn't work",
                 id="kernelci:1987934987",
                 origin="kernelci",
                 report_url="https://bugzilla/207065",
+                report_subject="Printing doesn't work",
                 version=1,
             )])
         )
@@ -2121,10 +2121,10 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '>incident["redhat:987987da98798f987c-29874"]<issue#'
             ),
             dict(issue=[raw_issue(
-                comment="Printer doesn't print",
                 id="redhat:987987da98798f987c",
                 origin="redhat",
                 report_url="https://bugzilla/207065",
+                report_subject="Printer doesn't print",
                 version=100,
             )])
         )
@@ -2134,7 +2134,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '>incident["redhat:987987da98798aa233-12"]<issue<bug#'
             ),
             dict(bug=[raw_bug(
-                comment="Compiler compiles wrong",
+                subject="Compiler compiles wrong",
                 url="https://bugzilla/1201011",
             )])
         )
@@ -2142,7 +2142,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>incident["kernelci:29871398232"]<issue<bug#'),
             dict(bug=[raw_bug(
-                comment="LED doesn't blink",
+                subject="LED doesn't blink",
                 url="https://maillist/498232"
             )])
         )
@@ -2150,7 +2150,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>incident["kernelci:29871398212"]<issue<bug#'),
             dict(bug=[raw_bug(
-                comment="LED doesn't blink",
+                subject="LED doesn't blink",
                 url="https://maillist/498232"
             )])
         )
@@ -2161,7 +2161,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '"kernelci:29871398212"]<issue<bug#'
             ),
             dict(bug=[raw_bug(
-                comment="LED doesn't blink",
+                subject="LED doesn't blink",
                 url="https://maillist/498232"
             )])
         )
@@ -2169,7 +2169,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
         self.assertEqual(
             self.query_str('>incident["_:2987d298712"]<issue<bug#'),
             dict(bug=[raw_bug(
-                comment="Printer doesn't print",
+                subject="Printer doesn't print",
                 url="https://bugzilla/207065"
             )])
         )
@@ -2179,7 +2179,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '>incident["redhat:987987da98798f987c-29874"]<issue<bug#'
             ),
             dict(bug=[raw_bug(
-                comment="Printer doesn't print",
+                subject="Printer doesn't print",
                 url="https://bugzilla/207065"
             )])
         )
@@ -2190,7 +2190,7 @@ class KCIDBORMSourceTestCase(kcidb.unittest.TestCase):
                 '"redhat:987987da98798f987c-29874"]<issue<bug#'
             ),
             dict(bug=[raw_bug(
-                comment="Printer doesn't print",
+                subject="Printer doesn't print",
                 url="https://bugzilla/207065"
             )])
         )

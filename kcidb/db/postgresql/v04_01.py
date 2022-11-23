@@ -28,6 +28,7 @@ class Schema(PreviousSchema):
             "version": IntegerColumn(constraint=Constraint.NOT_NULL),
             "origin": TextColumn(constraint=Constraint.NOT_NULL),
             "report_url": TextColumn(),
+            "report_subject": TextColumn(),
             "culprit.code": BoolColumn(),
             "culprit.tool": BoolColumn(),
             "culprit.harness": BoolColumn(),
@@ -58,17 +59,17 @@ class Schema(PreviousSchema):
             PreviousSchema.OO_QUERIES["bug"],
             statement="SELECT\n"
                       "    report_url AS url,\n"
+                      "    FIRST(report_subject) AS subject,\n"
                       "    MAX(culprit_code) AS culprit_code,\n"
                       "    MAX(culprit_tool) AS culprit_tool,\n"
-                      "    MAX(culprit_harness) AS culprit_harness,\n"
-                      "    comment\n"
+                      "    MAX(culprit_harness) AS culprit_harness\n"
                       "FROM (\n"
                       "    SELECT\n"
                       "        report_url,\n"
+                      "        report_subject,\n"
                       "        culprit_code,\n"
                       "        culprit_tool,\n"
                       "        culprit_harness,\n"
-                      "        comment,\n"
                       "        ROW_NUMBER() OVER (\n"
                       "            PARTITION BY id\n"
                       "            ORDER BY version DESC\n"
@@ -85,6 +86,7 @@ class Schema(PreviousSchema):
                       "    version,\n"
                       "    origin,\n"
                       "    report_url,\n"
+                      "    report_subject,\n"
                       "    culprit_code,\n"
                       "    culprit_tool,\n"
                       "    culprit_harness,\n"
@@ -98,6 +100,7 @@ class Schema(PreviousSchema):
                       "        version,\n"
                       "        origin,\n"
                       "        report_url,\n"
+                      "        report_subject,\n"
                       "        culprit_code,\n"
                       "        culprit_tool,\n"
                       "        culprit_harness,\n"

@@ -433,13 +433,15 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
                         "id": "kernelci:1",
                         "origin": "kernelci",
                         "version": 1,
-                        "report_url": "https://kernelci.org/issue/1"
+                        "report_url": "https://kernelci.org/issue/1",
+                        "report_subject": "Bad issue",
                     },
                     {
                         "id": "redhat:1",
                         "origin": "redhat",
                         "version": 1,
-                        "report_url": "https://bugzilla.redhat.com/1"
+                        "report_url": "https://bugzilla.redhat.com/1",
+                        "report_subject": "Worse issue",
                     },
                 ],
                 "incidents": [
@@ -528,6 +530,9 @@ class KCIDBTraversingTestCase(kcidb.unittest.TestCase):
                           revision.bugs[1].url},
                          {"https://bugzilla.redhat.com/1",
                           "https://kernelci.org/issue/1"})
+        self.assertEqual({revision.bugs[0].subject,
+                          revision.bugs[1].subject},
+                         {"Bad issue", "Worse issue"})
 
         self.assertContains(revision.issues, (Issue, 2))
         self.assertEqual({revision.issues[0].id, revision.issues[1].id},

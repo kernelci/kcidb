@@ -212,6 +212,7 @@ class MatchTestCase(unittest.TestCase):
                     "version": 1,
                     "origin": "test",
                     "report_url": "https://test.com/bug/1",
+                    "report_subject": "Bug in kernel",
                     "culprit": {"code": True},
                 },
                 {
@@ -219,6 +220,7 @@ class MatchTestCase(unittest.TestCase):
                     "version": 1,
                     "origin": "non_test",
                     "report_url": "https://non-test.com/bug/1",
+                    "report_subject": "Another bug in kernel",
                     "culprit": {"tool": True},
                 },
             ],

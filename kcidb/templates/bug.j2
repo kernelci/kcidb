@@ -2,11 +2,11 @@
 {% import "issue.j2" as issue_macros %}
 
 {% macro summary(bug) %}
-    {{- bug.comment -}}
+    {{- bug.subject -}}
 {% endmacro %}
 
 {% macro overview(bug, max_list_len) %}
-    {{ bug.comment }}
+    {{ bug.subject }}
     {{ bug.url }}
 
 {{ issue_macros.stats(bug, max_list_len) -}}

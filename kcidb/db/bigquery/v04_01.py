@@ -56,7 +56,11 @@ class Schema(PreviousSchema):
             ),
             Field(
                 "report_url", "STRING",
-                description="The URL of the issue report.",
+                description="The URL of a report of the issue.",
+            ),
+            Field(
+                "report_subject", "STRING",
+                description="The subject of the issue report.",
             ),
             Field(
                 "culprit", "RECORD", fields=CULPRIT_FIELDS,
@@ -147,6 +151,7 @@ class Schema(PreviousSchema):
         PreviousSchema.OO_QUERIES,
         bug="SELECT\n"
             "    report_url AS url,\n"
+            "    ANY_VALUE(report_subject) AS subject,\n"
             "    MAX(culprit.code) AS culprit_code,\n"
             "    MAX(culprit.tool) AS culprit_tool,\n"
             "    MAX(culprit.harness) AS culprit_harness,\n"
@@ -154,6 +159,7 @@ class Schema(PreviousSchema):
             "FROM (\n"
             "    SELECT\n"
             "        report_url,\n"
+            "        report_subject,\n"
             "        culprit,\n"
             "        comment,\n"
             "        ROW_NUMBER() OVER (\n"
@@ -169,6 +175,7 @@ class Schema(PreviousSchema):
               "    version,\n"
               "    origin,\n"
               "    report_url,\n"
+              "    report_subject,\n"
               "    culprit.code AS culprit_code,\n"
               "    culprit.tool AS culprit_tool,\n"
               "    culprit.harness AS culprit_harness,\n"
@@ -182,6 +189,7 @@ class Schema(PreviousSchema):
               "        version,\n"
               "        origin,\n"
               "        report_url,\n"
+              "        report_subject,\n"
               "        culprit,\n"
               "        build_valid,\n"
               "        test_status,\n"
