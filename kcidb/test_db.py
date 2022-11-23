@@ -308,6 +308,7 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
                 version=1,
                 origin="origin",
                 report_url="https://bugzilla/1298712",
+                report_subject="Printing doesn't work",
                 culprit=dict(
                     code=False,
                     tool=True,
@@ -315,7 +316,7 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
                 ),
                 build_valid=True,
                 test_status="FAIL",
-                comment="Printing doesn't work",
+                comment="Match printing failures",
                 misc=dict(
                     foo="bar",
                     baz=42
@@ -429,12 +430,15 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
                     "origin": "redhat",
                     "report_url":
                         "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
                     "culprit": {
                         "code": True,
                         "tool": False,
                         "harness": False,
                     },
-                    "comment": "usb printer doesn't print",
+                    "comment": "Match USB Bidirectional printer dev",
                 },
             ],
             "incidents": [
@@ -531,22 +535,27 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
             v4_0_oo_data,
             bug=[
                 {
-                    "comment": "usb printer doesn't print",
                     "culprit_code": True,
                     "culprit_tool": False,
                     "culprit_harness": False,
                     "url":
                         "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
+                    "subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
                 }
             ],
             issue=[
                 {
-                    "comment": "usb printer doesn't print",
+                    "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
                     "origin": "redhat",
                     "report_url":
                         "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
                     "culprit_code": True,
                     "culprit_tool": False,
                     "culprit_harness": False,

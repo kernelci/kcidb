@@ -360,10 +360,10 @@ class Schema(AbstractSchema):
             statement="SELECT NULL as url WHERE FALSE",
             schema=Table(dict(
                 url=TextColumn(),
+                subject=TextColumn(),
                 culprit_code=BoolColumn(),
                 culprit_tool=BoolColumn(),
                 culprit_harness=BoolColumn(),
-                comment=TextColumn(),
             )),
         ),
         issue=dict(
@@ -373,6 +373,7 @@ class Schema(AbstractSchema):
                 version=IntegerColumn(),
                 origin=TextColumn(),
                 report_url=TextColumn(),
+                report_subject=TextColumn(),
                 culprit_code=BoolColumn(),
                 culprit_tool=BoolColumn(),
                 culprit_harness=BoolColumn(),

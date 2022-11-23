@@ -344,17 +344,17 @@ class Schema(AbstractSchema):
         bug=dict(
             statement="SELECT\n"
                       "    NULL AS url,\n"
+                      "    NULL AS subject,\n"
                       "    NULL AS culprit_code,\n"
                       "    NULL AS culprit_tool,\n"
-                      "    NULL AS culprit_harness,\n"
-                      "    NULL AS comment\n"
+                      "    NULL AS culprit_harness\n"
                       "WHERE 0",
             schema=Table(dict(
                 url=TextColumn(),
+                subject=TextColumn(),
                 culprit_code=BoolColumn(),
                 culprit_tool=BoolColumn(),
                 culprit_harness=BoolColumn(),
-                comment=TextColumn(),
             )),
         ),
         issue=dict(
@@ -363,6 +363,7 @@ class Schema(AbstractSchema):
                       "    NULL AS version,\n"
                       "    NULL AS origin,\n"
                       "    NULL AS report_url,\n"
+                      "    NULL AS report_subject,\n"
                       "    NULL AS culprit_code,\n"
                       "    NULL AS culprit_tool,\n"
                       "    NULL AS culprit_harness,\n"
@@ -376,6 +377,7 @@ class Schema(AbstractSchema):
                 version=IntegerColumn(),
                 origin=TextColumn(),
                 report_url=TextColumn(),
+                report_subject=TextColumn(),
                 culprit_code=BoolColumn(),
                 culprit_tool=BoolColumn(),
                 culprit_harness=BoolColumn(),
