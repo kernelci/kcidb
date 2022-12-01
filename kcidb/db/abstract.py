@@ -59,7 +59,7 @@ class Driver(ABC):
     @abstractmethod
     def cleanup(self):
         """
-        Cleanup (empty) the driven database, removing all data.
+        Cleanup (deinitialize) the driven database, removing all data.
         The database must be initialized.
         """
         assert self.is_initialized()

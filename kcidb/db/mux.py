@@ -117,7 +117,7 @@ class Driver(AbstractDriver):
 
         Raises:
             NotFound            - if a database does not exist;
-            UnsupportedSchema   - if a database is not empty and its schema
+            UnsupportedSchema   - if a database is initialized and its schema
                                   is not supported by its driver
         """
         assert params is None or isinstance(params, str)
@@ -206,7 +206,7 @@ class Driver(AbstractDriver):
 
     def is_initialized(self):
         """
-        Check if at least one database is initialized (not empty).
+        Check if at least one database is initialized.
 
         Returns:
             True if at least one database is initialized,
@@ -217,7 +217,7 @@ class Driver(AbstractDriver):
     def init(self, version):
         """
         Initialize the member databases.
-        All the databases must be empty (uninitialized).
+        All the databases must be uninitialized.
 
         Args:
             version:    A tuple of the major and minor version numbers (both
@@ -233,8 +233,8 @@ class Driver(AbstractDriver):
 
     def cleanup(self):
         """
-        Cleanup (empty) the databases, removing all data.
-        All the databases must be initialized (not empty).
+        Cleanup (deinitialize) the databases, removing all data.
+        All the databases must be initialized.
         """
         for driver in self.drivers:
             driver.cleanup()
