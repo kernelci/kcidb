@@ -68,7 +68,7 @@ def _driver_create(database):
 
     Raises:
         NotFound            - if the database does not exist;
-        IncompatibleSchema  - if the database is not empty and its schema
+        IncompatibleSchema  - if the database is initialized and its schema
                               is incompatible with the current I/O schema.
     """
     assert isinstance(database, str)
@@ -110,7 +110,7 @@ class Client(kcidb.orm.Source):
 
         Raises:
             NotFound            - if the database does not exist;
-            IncompatibleSchema  - if the database is not empty and its schema
+            IncompatibleSchema  - if the database is initialized and its schema
                                   is incompatible with the current I/O schema.
         """
         assert isinstance(database, str)
@@ -121,7 +121,7 @@ class Client(kcidb.orm.Source):
 
     def is_initialized(self):
         """
-        Check if the database is initialized (not empty).
+        Check if the database is initialized.
 
         Returns:
             True if the database is initialized, False otherwise.
@@ -151,8 +151,8 @@ class Client(kcidb.orm.Source):
 
     def cleanup(self):
         """
-        Cleanup (empty) the database, removing all data.
-        The database must be initialized (not empty).
+        Cleanup (deinitialize) the database, removing all data.
+        The database must be initialized.
         """
         assert self.is_initialized()
         self.driver.cleanup()

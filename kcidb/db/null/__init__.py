@@ -36,7 +36,7 @@ class Driver(AbstractDriver):
 
     def is_initialized(self):
         """
-        Check if the database is initialized (not empty).
+        Check if the database is initialized.
 
         Returns:
             True if the database is initialized, False otherwise.
@@ -96,8 +96,8 @@ class Driver(AbstractDriver):
 
     def cleanup(self):
         """
-        Cleanup (empty) the database, removing all data.
-        The database must be initialized (not empty).
+        Cleanup (deinitialize) the database, removing all data.
+        The database must be initialized.
         """
 
     def get_last_modified(self):
