@@ -93,7 +93,7 @@ class Connection(ABC, metaclass=MetaConnection):
 
     def is_initialized(self):
         """
-        Check if the connected database is initialized (not empty).
+        Check if the connected database is initialized.
 
         Returns:
             True if the database is initialized, False otherwise.
@@ -224,13 +224,13 @@ class Schema(ABC, metaclass=MetaSchema):
     @abstractmethod
     def init(self):
         """
-        Initialize the database. The database must be empty (uninitialized).
+        Initialize the database. The database must be uninitialized.
         """
 
     @abstractmethod
     def cleanup(self):
         """
-        Cleanup (empty) the database, removing all data.
+        Cleanup (deinitialize) the database, removing all data.
         The database must be initialized.
         """
 
@@ -417,7 +417,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def cleanup(self):
         """
-        Cleanup (empty) the driven database, removing all data.
+        Cleanup (deinitialize) the driven database, removing all data.
         The database must be initialized.
         """
         assert self.is_initialized()

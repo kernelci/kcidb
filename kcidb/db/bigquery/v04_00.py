@@ -569,7 +569,7 @@ class Schema(AbstractSchema):
 
     def init(self):
         """
-        Initialize the database. The database must be empty (uninitialized).
+        Initialize the database. The database must be uninitialized.
         """
         # Create tables and corresponding views
         for table_name, table_schema in self.TABLE_MAP.items():
@@ -577,8 +577,8 @@ class Schema(AbstractSchema):
 
     def cleanup(self):
         """
-        Cleanup (empty) the database, removing all data.
-        The database must be initialized (not empty).
+        Cleanup (deinitialize) the database, removing all data.
+        The database must be initialized.
         """
         for table_name in self.TABLE_MAP:
             view_ref = self.conn.dataset_ref.table(table_name)
