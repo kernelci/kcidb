@@ -413,7 +413,7 @@ class Schema(AbstractSchema):
 
     def init(self):
         """
-        Initialize the database. The database must be empty (uninitialized).
+        Initialize the database. The database must be empty uninitialized.
         """
         with self.conn:
             cursor = self.conn.cursor()
@@ -430,7 +430,7 @@ class Schema(AbstractSchema):
 
     def cleanup(self):
         """
-        Cleanup (empty) the database, removing all data.
+        Cleanup (deinitialize) the database, removing all data.
         The database must be initialized.
         """
         with self.conn:

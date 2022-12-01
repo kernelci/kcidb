@@ -401,7 +401,7 @@ class Schema(AbstractSchema):
     def init(self):
         """
         Initialize the database.
-        The database must be empty (uninitialized).
+        The database must be uninitialized.
         """
         with self.conn, self.conn.cursor() as cursor:
             for table_name, table_schema in self.TABLES.items():
@@ -429,8 +429,8 @@ class Schema(AbstractSchema):
 
     def cleanup(self):
         """
-        Cleanup (empty) the database, removing all data.
-        The database must be initialized (not empty).
+        Cleanup (deinitialize) the database, removing all data.
+        The database must be initialized.
         """
         with self.conn, self.conn.cursor() as cursor:
             cursor.execute("DROP AGGREGATE IF EXISTS first(anyelement)")
