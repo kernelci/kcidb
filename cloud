@@ -357,14 +357,18 @@ function psql_database_exists() {
     fi
 }
 
-# Initialize a PostgreSQL database and its paraphernalia.
+# Setup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
 # to connect to the database as a superuser, with an empty connection string.
-# Args: submitter viewer
-function _psql_database_init() {
+# Args: init submitter viewer
+function _psql_database_setup() {
+    declare -r init="$1"; shift
     declare -r submitter="$1"; shift
     declare -r viewer="$1"; shift
-    mute kcidb-db-init -lDEBUG -d "postgresql" --ignore-initialized
+    # Initialize the database, if requested
+    if "$init"; then
+        mute kcidb-db-init -lDEBUG -d "postgresql" --ignore-initialized
+    fi
     # Deploy viewer and submitter permissions
     mute psql -e <<<"
         \\set ON_ERROR_STOP on
@@ -401,6 +405,7 @@ function _psql_database_cleanup() {
 }
 
 # Deploy PostgreSQL databases, if they don't exist
+# Do not initialize databases that are prepended with the hash sign ('#').
 # Args: project instance viewer [database submitter]...
 function psql_databases_deploy() {
     declare -r project="$1"; shift
@@ -408,10 +413,19 @@ function psql_databases_deploy() {
     declare -r viewer="$1"; shift
     declare database
     declare submitter
+    declare init
 
     while (($#)); do
         database="$1"; shift
         submitter="$1"; shift
+
+        # Handle possible leading hash sign
+        if [[ $database == \#* ]]; then
+            database="${database:1}"
+            init=false
+        else
+            init=true
+        fi
 
         # Create the database, if not exists
         exists=$(psql_database_exists "$project" "$instance" "$database")
@@ -435,13 +449,14 @@ function psql_databases_deploy() {
 
         # NOTE: The viewer user is created per-instance
 
-        # Initialize the database
+        # Setup the database
         psql_proxy_session "$project" "$instance" "$database" \
-            _psql_database_init "$submitter" "$viewer"
+            _psql_database_setup "$init" "$submitter" "$viewer"
     done
 }
 
 # Withdraw PostgreSQL databases, if they exist
+# Cleanup all databases, even those prepended with the hash sign ('#').
 # Args: project instance viewer [database submitter]...
 function psql_databases_withdraw() {
     declare -r project="$1"; shift
@@ -454,7 +469,8 @@ function psql_databases_withdraw() {
     # Cleanup and remove the databases
     set -- "${databases_and_submitters[@]}"
     while (($#)); do
-        database="$1"; shift
+        # Ignore possible leading hash sign
+        database="${1###}"; shift
         submitter="$1"; shift
         exists=$(psql_database_exists "$project" "$instance" "$database")
         if "$exists"; then
@@ -550,7 +566,8 @@ function psql_user_withdraw() {
     fi
 }
 
-# Deploy (to) PostgreSQL
+# Deploy (to) PostgreSQL.
+# Do not initialize databases that are prepended with the hash sign ('#').
 # Args: project [database submitter]...
 function psql_deploy() {
     declare -r project="$1"; shift
@@ -561,6 +578,7 @@ function psql_deploy() {
 }
 
 # Withdraw (from) PostgreSQL
+# Cleanup all databases, even those prepended with the hash sign ('#').
 # Args: project [database submitter]...
 function psql_withdraw() {
     declare -r project="$1"; shift
@@ -570,23 +588,37 @@ function psql_withdraw() {
 }
 
 # Deploy to BigQuery
+# Do not initialize datasets that are prepended with the hash sign ('#').
 # Args: project dataset...
 function bigquery_deploy() {
     declare -r project="$1"; shift
     declare dataset
+    declare init
     for dataset in "$@"; do
+        # Handle possible leading hash sign
+        if [[ $dataset == \#* ]]; then
+            dataset="${dataset:1}"
+            init=false
+        else
+            init=true
+        fi
         mute bq mk --project_id="$project" --force "$dataset"
-        kcidb-db-init -lDEBUG -d "bigquery:${project}.${dataset}" \
-                      --ignore-initialized
+        if "$init"; then
+            kcidb-db-init -lDEBUG -d "bigquery:${project}.${dataset}" \
+                          --ignore-initialized
+        fi
     done
 }
 
 # Withdraw from BigQuery
+# Cleanup all datasets, even those prepended with the hash sign ('#').
 # Args: project dataset...
 function bigquery_withdraw() {
     declare -r project="$1"; shift
     declare dataset
     for dataset in "$@"; do
+        # Ignore possible leading hash sign
+        dataset="${dataset###}"
         kcidb-db-cleanup -lDEBUG -d "bigquery:${project}.${dataset}" \
                          --ignore-not-initialized \
                          --ignore-not-found
