@@ -401,13 +401,13 @@ function _psql_database_cleanup() {
 }
 
 # Deploy a PostgreSQL database, if it doesn't exist
-# Args: project instance database submitter viewer
+# Args: project instance viewer database submitter
 function psql_database_deploy() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
+    declare -r viewer="$1"; shift
     declare -r database="$1"; shift
     declare -r submitter="$1"; shift
-    declare -r viewer="$1"; shift
 
     # Create the database, if not exists
     exists=$(psql_database_exists "$project" "$instance" "$database")
@@ -437,13 +437,13 @@ function psql_database_deploy() {
 }
 
 # Withdraw a PostgreSQL database, if exists
-# Args: project instance database submitter viewer
+# Args: project instance viewer database submitter
 function psql_database_withdraw() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
+    declare -r viewer="$1"; shift
     declare -r database="$1"; shift
     declare -r submitter="$1"; shift
-    declare -r viewer="$1"; shift
     exists=$(psql_database_exists "$project" "$instance" "$database")
     if "$exists"; then
         # Cleanup the database
@@ -538,8 +538,8 @@ function psql_deploy() {
     # Deploy the instance
     psql_instance_deploy "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER"
     # Deploy the database
-    psql_database_deploy "$project" "$PSQL_INSTANCE" "$database" \
-        "$submitter" "$PSQL_VIEWER"
+    psql_database_deploy "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" \
+        "$database" "$submitter"
 }
 
 # Withdraw (from) PostgreSQL
@@ -548,8 +548,8 @@ function psql_withdraw() {
     declare -r project="$1"; shift
     declare -r database="$1"; shift
     declare -r submitter="$1"; shift
-    psql_database_withdraw "$project" "$PSQL_INSTANCE" "$database" \
-        "$submitter" "$PSQL_VIEWER"
+    psql_database_withdraw "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" \
+        "$database" "$submitter"
     # NOTE: Leaving the instance behind. Its name has 7-day recycling period
     # NOTE: Leaving the viewer user behind, as it's per-instance
 }
