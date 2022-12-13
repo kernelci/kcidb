@@ -400,65 +400,86 @@ function _psql_database_cleanup() {
                           --ignore-not-found
 }
 
-# Deploy a PostgreSQL database, if it doesn't exist
-# Args: project instance viewer database submitter
-function psql_database_deploy() {
+# Deploy PostgreSQL databases, if they don't exist
+# Args: project instance viewer [database submitter]...
+function psql_databases_deploy() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
-    declare -r database="$1"; shift
-    declare -r submitter="$1"; shift
+    declare database
+    declare submitter
 
-    # Create the database, if not exists
-    exists=$(psql_database_exists "$project" "$instance" "$database")
-    if ! "$exists"; then
-        mute gcloud sql databases create \
-            "$database" \
-            --quiet \
-            --project="$project" \
-            --instance="$instance"
-    fi
+    while (($#)); do
+        database="$1"; shift
+        submitter="$1"; shift
 
-    # Deploy the per-database submitter user
-    exists=$(psql_user_exists "$project" "$instance" "$submitter")
-    if ! "$exists" || password_is_specified psql_submitter; then
-        # Get and cache the password in the current shell first
-        password_get psql_submitter >/dev/null
-        # Create the user with the cached password
-        password_get psql_submitter |
-            psql_user_deploy "$project" "$instance" "$submitter"
-    fi
+        # Create the database, if not exists
+        exists=$(psql_database_exists "$project" "$instance" "$database")
+        if ! "$exists"; then
+            mute gcloud sql databases create \
+                "$database" \
+                --quiet \
+                --project="$project" \
+                --instance="$instance"
+        fi
 
-    # NOTE: The viewer user is created per-instance
+        # Deploy the per-database submitter user
+        exists=$(psql_user_exists "$project" "$instance" "$submitter")
+        if ! "$exists" || password_is_specified psql_submitter; then
+            # Get and cache the password in the current shell first
+            password_get psql_submitter >/dev/null
+            # Create the user with the cached password
+            password_get psql_submitter |
+                psql_user_deploy "$project" "$instance" "$submitter"
+        fi
 
-    # Initialize the database
-    psql_proxy_session "$project" "$instance" "$database" \
-        _psql_database_init "$submitter" "$viewer"
+        # NOTE: The viewer user is created per-instance
+
+        # Initialize the database
+        psql_proxy_session "$project" "$instance" "$database" \
+            _psql_database_init "$submitter" "$viewer"
+    done
 }
 
-# Withdraw a PostgreSQL database, if exists
-# Args: project instance viewer database submitter
-function psql_database_withdraw() {
+# Withdraw PostgreSQL databases, if they exist
+# Args: project instance viewer [database submitter]...
+function psql_databases_withdraw() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
-    declare -r database="$1"; shift
-    declare -r submitter="$1"; shift
-    exists=$(psql_database_exists "$project" "$instance" "$database")
-    if "$exists"; then
-        # Cleanup the database
-        psql_proxy_session "$project" "$instance" "$database" \
-            _psql_database_cleanup "$submitter" "$viewer"
+    declare -a -r databases_and_submitters=("$@")
+    declare database
+    declare submitter
+
+    # Cleanup and remove the databases
+    set -- "${databases_and_submitters[@]}"
+    while (($#)); do
+        database="$1"; shift
+        submitter="$1"; shift
+        exists=$(psql_database_exists "$project" "$instance" "$database")
+        if "$exists"; then
+            # Cleanup the database
+            psql_proxy_session "$project" "$instance" "$database" \
+                _psql_database_cleanup "$submitter" "$viewer"
+            # Delete the database
+            mute gcloud sql databases delete \
+                "$database" \
+                --quiet \
+                --project="$project" \
+                --instance="$instance"
+        fi
+    done
+
+    # Remove the users afterwards as they could be shared by databases
+    set -- "${databases_and_submitters[@]}"
+    while (($#)); do
+        # Discard the database name
+        shift
+        submitter="$1"; shift
         # Withdraw the submitter user
         psql_user_withdraw "$project" "$instance" "$submitter"
         # NOTE: The viewer user is per-instance
-        # Delete the database
-        mute gcloud sql databases delete \
-            "$database" \
-            --quiet \
-            --project="$project" \
-            --instance="$instance"
-    fi
+    done
 }
 
 # Check if a PostgreSQL user exists
@@ -530,49 +551,47 @@ function psql_user_withdraw() {
 }
 
 # Deploy (to) PostgreSQL
-# Args: project database submitter
+# Args: project [database submitter]...
 function psql_deploy() {
     declare -r project="$1"; shift
-    declare -r database="$1"; shift
-    declare -r submitter="$1"; shift
     # Deploy the instance
     psql_instance_deploy "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER"
-    # Deploy the database
-    psql_database_deploy "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" \
-        "$database" "$submitter"
+    # Deploy the databases
+    psql_databases_deploy "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" "$@"
 }
 
 # Withdraw (from) PostgreSQL
-# Args: project database submitter
+# Args: project [database submitter]...
 function psql_withdraw() {
     declare -r project="$1"; shift
-    declare -r database="$1"; shift
-    declare -r submitter="$1"; shift
-    psql_database_withdraw "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" \
-        "$database" "$submitter"
+    psql_databases_withdraw "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" "$@"
     # NOTE: Leaving the instance behind. Its name has 7-day recycling period
     # NOTE: Leaving the viewer user behind, as it's per-instance
 }
 
 # Deploy to BigQuery
-# Args: project dataset
+# Args: project dataset...
 function bigquery_deploy() {
     declare -r project="$1"; shift
-    declare -r dataset="$1"; shift
-    mute bq mk --project_id="$project" --force "$dataset"
-    kcidb-db-init -lDEBUG -d "bigquery:${project}.${dataset}" \
-                  --ignore-initialized
+    declare dataset
+    for dataset in "$@"; do
+        mute bq mk --project_id="$project" --force "$dataset"
+        kcidb-db-init -lDEBUG -d "bigquery:${project}.${dataset}" \
+                      --ignore-initialized
+    done
 }
 
 # Withdraw from BigQuery
-# Args: project dataset
+# Args: project dataset...
 function bigquery_withdraw() {
     declare -r project="$1"; shift
-    declare -r dataset="$1"; shift
-    kcidb-db-cleanup -lDEBUG -d "bigquery:${project}.${dataset}" \
-                     --ignore-not-initialized \
-                     --ignore-not-found
-    mute bq rm --project_id="$project" --force "$dataset"
+    declare dataset
+    for dataset in "$@"; do
+        kcidb-db-cleanup -lDEBUG -d "bigquery:${project}.${dataset}" \
+                         --ignore-not-initialized \
+                         --ignore-not-found
+        mute bq rm --project_id="$project" --force "$dataset"
+    done
 }
 
 # Deploy to Firestore.
