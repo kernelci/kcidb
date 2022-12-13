@@ -157,6 +157,14 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         self.driver.cleanup()
 
+    def empty(self):
+        """
+        Empty the database, removing all data.
+        The database must be initialized.
+        """
+        assert self.is_initialized()
+        self.driver.empty()
+
     def get_last_modified(self):
         """
         Get the time the data in the connected database was last modified.
@@ -732,4 +740,18 @@ def cleanup_main():
     if client.is_initialized():
         client.cleanup()
     elif not args.ignore_not_initialized:
+        raise Exception(f"Database {args.database!r} is not initialized")
+
+
+def empty_main():
+    """Execute the kcidb-db-empty command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = 'kcidb-db-empty - Remove all data from a ' \
+        'Kernel CI report database'
+    parser = ArgumentParser(description=description)
+    args = parser.parse_args()
+    client = Client(args.database)
+    if client.is_initialized():
+        client.empty()
+    else:
         raise Exception(f"Database {args.database!r} is not initialized")

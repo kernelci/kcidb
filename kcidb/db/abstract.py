@@ -65,6 +65,14 @@ class Driver(ABC):
         assert self.is_initialized()
 
     @abstractmethod
+    def empty(self):
+        """
+        Empty the driven database, removing all data.
+        The database must be initialized.
+        """
+        assert self.is_initialized()
+
+    @abstractmethod
     def get_last_modified(self):
         """
         Get the time the data in the driven database was last modified.

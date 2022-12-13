@@ -236,6 +236,20 @@ class Table:
         assert isinstance(name, str)
         return f"SELECT {self.columns_list} FROM {name}"
 
+    def format_delete(self, name):
+        """
+        Format the "DELETE" command for emptying the table (removing all
+        rows).
+
+        Args:
+            name:   The name of the target table of the command.
+
+        Returns:
+            The formatted "DELETE" command.
+        """
+        assert isinstance(name, str)
+        return f"DELETE FROM {name}"
+
     def pack(self, obj):
         """
         Pack a JSON object into its database representation for use with the
