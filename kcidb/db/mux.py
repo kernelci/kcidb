@@ -239,6 +239,14 @@ class Driver(AbstractDriver):
         for driver in self.drivers:
             driver.cleanup()
 
+    def empty(self):
+        """
+        Empty the driven databases, removing all data.
+        All the databases must be initialized.
+        """
+        for driver in self.drivers:
+            driver.empty()
+
     def get_last_modified(self):
         """
         Get the time the data in the driven databases was last modified.

@@ -441,6 +441,19 @@ class Schema(AbstractSchema):
             finally:
                 cursor.close()
 
+    def empty(self):
+        """
+        Empty the database, removing all data.
+        The database must be initialized.
+        """
+        with self.conn:
+            cursor = self.conn.cursor()
+            try:
+                for name, schema in self.TABLES.items():
+                    cursor.execute(schema.format_delete(name))
+            finally:
+                cursor.close()
+
     def dump_iter(self, objects_per_report):
         """
         Dump all data from the database in object number-limited chunks.
