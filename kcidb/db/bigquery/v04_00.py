@@ -620,6 +620,16 @@ class Schema(AbstractSchema):
             except GoogleNotFound:
                 pass
 
+    def empty(self):
+        """
+        Empty the database, removing all data.
+        The database must be initialized.
+        """
+        for table_name in self.TABLE_MAP:
+            self.conn.query_create(
+                f"DELETE FROM `_{table_name}` WHERE TRUE"
+            ).result()
+
     @classmethod
     def _unpack_node(cls, node, drop_null=True):
         """

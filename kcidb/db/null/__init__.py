@@ -100,6 +100,12 @@ class Driver(AbstractDriver):
         The database must be initialized.
         """
 
+    def empty(self):
+        """
+        Empty the driven database, removing all data.
+        The database must be initialized.
+        """
+
     def get_last_modified(self):
         """
         Get the time the data in the driven database was last modified.

@@ -53,6 +53,23 @@ class KCIDBDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         """)
         self.assertExecutes("", *argv, driver_source=driver_source)
 
+    def test_empty_main(self):
+        """Check kcidb-db-empty works"""
+        argv = ["kcidb.db.empty_main", "-d", "bigquery:project.dataset"]
+        driver_source = textwrap.dedent("""
+            from unittest.mock import patch, Mock
+            client = Mock()
+            client.empty = Mock()
+            client.is_initialized = Mock(return_value=True)
+            with patch("kcidb.db.Client", return_value=client) as \
+                    Client:
+                status = function()
+            Client.assert_called_once_with("bigquery:project.dataset")
+            client.empty.assert_called_once()
+            return status
+        """)
+        self.assertExecutes("", *argv, driver_source=driver_source)
+
     def test_dump_main(self):
         """Check kcidb-db-dump works"""
         empty = kcidb.io.SCHEMA.new()
@@ -773,3 +790,13 @@ class KCIDBDBClientTestCase(kcidb.unittest.TestCase):
                 ],
             }
         )
+
+    def test_empty(self):
+        """Test the empty() method removes all data"""
+        io_data = KCIDBDBClientTestCase.COMPREHENSIVE_IO_DATA
+        client = kcidb.db.Client("sqlite::memory:")
+        client.init()
+        client.load(io_data)
+        self.assertEqual(io_data, client.dump())
+        client.empty()
+        self.assertEqual(kcidb.io.SCHEMA.new(), client.dump())
