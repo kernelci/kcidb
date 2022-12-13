@@ -235,6 +235,13 @@ class Schema(ABC, metaclass=MetaSchema):
         """
 
     @abstractmethod
+    def empty(self):
+        """
+        Empty the database, removing all data.
+        The database must be initialized.
+        """
+
+    @abstractmethod
     def dump_iter(self, objects_per_report):
         """
         Dump all data from the database in object number-limited chunks.
@@ -424,6 +431,14 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         self.schema.conn.set_schema_version(None)
         self.schema.cleanup()
         self.schema = None
+
+    def empty(self):
+        """
+        Empty the driven database, removing all data.
+        The database must be initialized.
+        """
+        assert self.is_initialized()
+        self.schema.empty()
 
     def get_last_modified(self):
         """
