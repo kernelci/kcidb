@@ -1243,6 +1243,8 @@ function cloud_function_withdraw() {
 #       --smtp-topic=NAME --smtp-subscription=NAME
 #       --pgpass-secret=NAME
 #       --database=SPEC
+#       --clean-test-databases=SPEC_LIST
+#       --empty-test-databases=SPEC_LIST
 function cloud_functions_env() {
     params="$(getopt_vars format \
                           log_level \
@@ -1255,6 +1257,8 @@ function cloud_functions_env() {
                           smtp_topic smtp_subscription \
                           pgpass_secret \
                           database \
+                          clean_test_databases \
+                          empty_test_databases \
                           -- "$@")"
     eval "$params"
     declare -A env=(
@@ -1267,6 +1271,8 @@ function cloud_functions_env() {
         [KCIDB_PGPASS_SECRET]="$pgpass_secret"
         [KCIDB_DATABASE]="$database"
         [KCIDB_DATABASE_LOAD_PERIOD_SEC]="180"
+        [KCIDB_CLEAN_TEST_DATABASES]="$clean_test_databases"
+        [KCIDB_EMPTY_TEST_DATABASES]="$empty_test_databases"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
         [KCIDB_SELECTED_SUBSCRIPTIONS]=""
         [KCIDB_SPOOL_COLLECTION_PATH]="$spool_collection_path"
@@ -1642,6 +1648,7 @@ function escape_whitespace() {
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=STRING
 #       --smtp-mocked=true|false
+#       --test=true|false
 #       --log-level=NAME
 #       --heavy-asserts=true|false
 #       --updated-publish=true|false
@@ -1656,6 +1663,7 @@ function execute_command() {
                           extra_cc \
                           smtp_to_addrs \
                           smtp_mocked \
+                          test \
                           log_level \
                           heavy_asserts \
                           updated_publish \
@@ -1682,17 +1690,36 @@ function execute_command() {
     )
     declare -r psql_socket_dir="/cloudsql/${psql_connection}"
     declare -r psql_database="${prefix}${version}"
+    declare -r psql_clean_test_database="${prefix}${version}_clean_test"
+    declare -r psql_empty_test_database="${prefix}${version}_empty_test"
     declare -r psql_submitter="${psql_database}_submitter"
     declare -r psql_submitter_secret="${prefix}psql_submitter"
     declare -r psql_submitter_pgpass_secret="${prefix}psql_submitter_pgpass"
-    declare psql_kcidb_db=$(
+    declare -r psql_kcidb_db=$(
         echo -n "postgresql: "
         echo -n "host=${psql_socket_dir}" | escape_whitespace
         echo -n " "
-        echo -n "dbname=${psql_database}" | escape_whitespace
-        echo -n " "
         echo -n "user=${psql_submitter}"
+        echo -n " "
+        echo -n "dbname=${psql_database}" | escape_whitespace
     )
+    declare -r psql_clean_test_kcidb_db=$(
+        echo -n "postgresql:"
+        echo -n "dbname=${psql_clean_test_database}" | escape_whitespace
+    )
+    declare -r psql_empty_test_kcidb_db=$(
+        echo -n "postgresql:"
+        echo -n "dbname=${psql_empty_test_database}" | escape_whitespace
+    )
+    declare -a psql_args=("$project" "$psql_database" "$psql_submitter")
+    if "$test"; then
+        psql_args+=(
+            # Do not initialize the clean database
+            "#$psql_clean_test_database" "$psql_submitter"
+            "$psql_empty_test_database" "$psql_submitter"
+        )
+    fi
+    declare -a -r psql_args
 
     # Enable fetching PostgreSQL passwords from their secrets
     password_set_secret "psql_superuser" "$project" "$PSQL_SUPERUSER_SECRET"
@@ -1700,7 +1727,22 @@ function execute_command() {
     password_set_secret "psql_submitter" "$project" "$psql_submitter_secret"
 
     declare -r bigquery_dataset="${prefix}${version}"
+    declare -r bigquery_clean_test_dataset="${prefix}${version}_clean_test"
+    declare -r bigquery_empty_test_dataset="${prefix}${version}_empty_test"
     declare -r bigquery_kcidb_db="bigquery:${project}.${bigquery_dataset}"
+    declare bigquery_clean_test_kcidb_db="bigquery:${project}."
+    declare -r bigquery_clean_test_kcidb_db+="${bigquery_clean_test_dataset}"
+    declare bigquery_empty_test_kcidb_db="bigquery:${project}."
+    declare -r bigquery_empty_test_kcidb_db+="${bigquery_empty_test_dataset}"
+    declare -a bigquery_args=("$project" "$bigquery_dataset")
+    if "$test"; then
+        bigquery_args+=(
+            # Do not initialize the clean dataset
+            "#$bigquery_clean_test_dataset"
+            "$bigquery_empty_test_dataset"
+        )
+    fi
+    declare -a -r bigquery_args
 
     declare -r database=$(
         echo -n "mux: "
@@ -1708,6 +1750,44 @@ function execute_command() {
         echo -n " "
         echo -n "$bigquery_kcidb_db" | escape_whitespace
     )
+
+    if "$test"; then
+        declare -r sqlite_clean_test_file="$TMPDIR/clean.sqlite3"
+        touch "$sqlite_clean_test_file"
+        declare clean_test_databases=$(
+            echo -n "sqlite:$sqlite_clean_test_file" | escape_whitespace
+            echo -n " "
+            echo -n "$psql_clean_test_kcidb_db" | escape_whitespace
+            echo -n " "
+            echo -n "$bigquery_clean_test_kcidb_db" | escape_whitespace
+        )
+        declare -r clean_test_databases=$(
+            echo -n "$clean_test_databases"
+            echo -n " "
+            echo -n "mux:$clean_test_databases" | escape_whitespace
+        )
+    else
+        declare -r clean_test_databases=""
+    fi
+
+    if "$test"; then
+        declare -r sqlite_empty_test_kcidb_db="sqlite:$TMPDIR/empty.sqlite3"
+        mute kcidb-db-init -lDEBUG -d "$sqlite_empty_test_kcidb_db"
+        declare empty_test_databases=$(
+            echo -n "$sqlite_empty_test_kcidb_db" | escape_whitespace
+            echo -n " "
+            echo -n "$psql_empty_test_kcidb_db" | escape_whitespace
+            echo -n " "
+            echo -n "$bigquery_empty_test_kcidb_db" | escape_whitespace
+        )
+        declare -r empty_test_databases=$(
+            echo -n "$empty_test_databases"
+            echo -n " "
+            echo -n "mux:$empty_test_databases" | escape_whitespace
+        )
+    else
+        declare -r empty_test_databases=""
+    fi
 
     declare -r smtp_topic=$("$smtp_mocked" && echo "${prefix}smtp" || true)
     declare -r smtp_subscription=$(
@@ -1729,6 +1809,8 @@ function execute_command() {
         --smtp-subscription="$smtp_subscription"
         --pgpass-secret="$psql_submitter_pgpass_secret"
         --database="$database"
+        --clean-test-databases="$clean_test_databases"
+        --empty-test-databases="$empty_test_databases"
     )
 
     # Handle "env" command, if specified
@@ -1759,10 +1841,8 @@ function execute_command() {
         sections_run "$sections" secrets_deploy "$project" \
             "$psql_submitter_secret" "$psql_submitter_pgpass_secret" \
             "$psql_submitter"
-        sections_run "$sections" bigquery_deploy "$project" \
-            "$bigquery_dataset"
-        sections_run "$sections" psql_deploy \
-            "$project" "$psql_database" "$psql_submitter"
+        sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
+        sections_run "$sections" psql_deploy "${psql_args[@]}"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
@@ -1810,10 +1890,8 @@ function execute_command() {
             --updated-debug-subscription="$updated_debug_subscription" \
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
-        sections_run "$sections" psql_withdraw \
-            "$project" "$psql_database" "$psql_submitter"
-        sections_run "$sections" bigquery_withdraw "$project" \
-            "$bigquery_dataset"
+        sections_run "$sections" psql_withdraw "${psql_args[@]}"
+        sections_run "$sections" bigquery_withdraw "${bigquery_args[@]}"
         sections_run "$sections" secrets_withdraw "$project" \
             "$psql_submitter_secret" "$psql_submitter_pgpass_secret"
     fi
@@ -1879,6 +1957,8 @@ function usage_deploy() {
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
     echo "              Disable posting updates about loaded data."
+    echo "    --test"
+    echo "              Deploy test resources in various sections."
     echo "    --submitter=NAME"
     echo "              Specify a service account to permit submissions for."
     echo "              Repeat to add more submitters."
@@ -1920,6 +2000,8 @@ function usage_env() {
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
     echo "              Disable posting updates about loaded data."
+    echo "    --test"
+    echo "              Enable various test resources."
     echo ""
     echo "Positional arguments:"
     echo ""
@@ -1950,6 +2032,8 @@ function usage_withdraw() {
     echo "              Withdraw the PubSub topic receiving notification"
     echo "              messages instead of the SMTP server"
     echo "              Used when testing deployments."
+    echo "    --test"
+    echo "              Withdraw test resources from various sections."
     echo "    --submitter=NAME"
     echo "              Specify a service account to deny submissions for."
     echo "              Repeat to add more submitters."
@@ -2016,7 +2100,7 @@ function execute() {
     declare getopt_longopts="help"
 
     if [[ $command == @(deploy|env|withdraw) ]]; then
-        getopt_longopts+=",smtp-mocked"
+        getopt_longopts+=",smtp-mocked,test"
         if [[ $command == @(deploy|withdraw) ]]; then
             getopt_shortopts+="vs:"
             getopt_longopts+=",verbose,sections:,submitter:"
@@ -2052,6 +2136,7 @@ function execute() {
     declare extra_cc=""
     declare smtp_to_addrs=""
     declare smtp_mocked="false"
+    declare test="false"
     declare log_level="INFO"
     declare heavy_asserts="false"
     declare updated_publish="true"
@@ -2071,6 +2156,7 @@ function execute() {
             --log-level) log_level="$2"; shift 2;;
             --heavy-asserts) heavy_asserts="true"; shift;;
             --mute-updates) updated_publish="false"; shift;;
+            --test) test="true"; shift;;
             --format) format="$2"; shift 2;;
             --submitter) submitters+=("$2"); shift 2;;
             --) shift; break;;
@@ -2119,6 +2205,7 @@ function execute() {
                     --extra-cc="$extra_cc" \
                     --smtp-to-addrs="$smtp_to_addrs" \
                     --smtp-mocked="$smtp_mocked" \
+                    --test="$test" \
                     --log-level="$log_level" \
                     --heavy-asserts="$heavy_asserts" \
                     --updated-publish="$updated_publish" \
