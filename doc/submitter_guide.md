@@ -80,15 +80,6 @@ execute an empty query on the database:
 
 ```console
 $ kcidb-query -d bigquery:playground_kcidb_01
-{
-    "builds": [],
-    "checkouts": [],
-    "tests": [],
-    "version": {
-        "major": 4,
-        "minor": 0
-    }
-}
 ```
 
 and submit an empty report:
@@ -98,7 +89,8 @@ $ echo '{"version":{"major":4,"minor":0}}' |
         kcidb-submit -p kernelci-production -t playground_kcidb_new
 ```
 
-Both should execute without errors and finish with zero exit status.
+Both should execute without errors, produce no output, and finish with zero
+exit status.
 
 3\. Generate some report data
 -----------------------------
