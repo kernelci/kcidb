@@ -216,7 +216,7 @@ class KCIDBMainFunctionsTestCase(kcidb.unittest.TestCase):
         minor = SCHEMA.minor
 
         prev_version = \
-            json.dumps(dict(version=dict(major=major - 1, minor=minor))) + "\n"
+            json.dumps(dict(version=dict(major=major - 1, minor=0))) + "\n"
         latest_version = \
             json.dumps(dict(version=dict(major=major, minor=minor))) + "\n"
 
