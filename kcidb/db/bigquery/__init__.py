@@ -85,7 +85,7 @@ class Driver(AbstractDriver):
         if set(tli.table_id for tli in
                self.client.list_tables(self.dataset_ref)) == \
            {"revisions", "builds", "tests"}:
-            return io.schema.V1.major, io.schema.V1.minor
+            return io.schema.V1_1.major, io.schema.V1_1.minor
         return None, None
 
     def is_initialized(self):
