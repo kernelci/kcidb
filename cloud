@@ -1317,51 +1317,23 @@ function cloud_functions_env() {
 # Args: --project=NAME --prefix=PREFIX --source=PATH
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
-#       --log-level=NAME
-#       --heavy-asserts=true|false
-#       --new-topic=NAME --new-load-subscription=NAME
-#       --updated-publish=true|false --updated-topic=NAME
+#       --updated-topic=NAME
 #       --spool-collection-path=PATH
-#       --extra-cc=ADDRS
-#       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
-#       --smtp-topic=NAME --smtp-subscription=NAME
-#       --pgpass-secret=NAME
-#       --database=SPEC
+#       --env-yaml=YAML
 function cloud_functions_deploy() {
     params="$(getopt_vars project prefix source \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
-                          log_level heavy_asserts \
-                          new_topic new_load_subscription \
-                          updated_publish updated_topic \
+                          updated_topic \
                           spool_collection_path \
-                          extra_cc \
-                          smtp_to_addrs smtp_password_secret \
-                          smtp_topic smtp_subscription \
-                          pgpass_secret \
-                          database \
+                          env_yaml \
                           -- "$@")"
     eval "$params"
     # Create empty environment YAML
-    declare env_yaml
-    env_yaml=`mktemp --tmpdir kcidb_cloud_env.XXXXXXXX`
-    # Generate environment YAML contents
-    cloud_functions_env --format=yaml \
-                        --log-level="$log_level" \
-                        --heavy-asserts="$heavy_asserts" \
-                        --new-topic="$new_topic" \
-                        --new-load-subscription="$new_load_subscription" \
-                        --updated-publish="$updated_publish" \
-                        --updated-topic="$updated_topic" \
-                        --spool-collection-path="$spool_collection_path" \
-                        --extra-cc="$extra_cc" \
-                        --smtp-to-addrs="$smtp_to_addrs" \
-                        --smtp-password-secret="$smtp_password_secret" \
-                        --smtp-topic="$smtp_topic" \
-                        --smtp-subscription="$smtp_subscription" \
-                        --pgpass-secret="$pgpass_secret" \
-                        --database="$database" \
-                        >| "$env_yaml"
+    declare env_yaml_file
+    env_yaml_file=`mktemp --tmpdir kcidb_cloud_env.XXXXXXXX`
+    # Store environment YAML
+    echo -n "$env_yaml" >| "$env_yaml_file"
 
     # Deploy functions back-to-front pipeline-wise,
     # so compatibility is preserved in the process
@@ -1372,7 +1344,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$project" "${prefix}pick_notifications" \
                           "$source" \
                           --entry-point kcidb_pick_notifications\
-                          --env-vars-file "$env_yaml" \
+                          --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-topic "${pick_notifications_trigger_topic}" \
                           --memory 256MB \
@@ -1380,7 +1352,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$project" "${prefix}send_notification" \
                           "$source" \
                           --entry-point kcidb_send_notification \
-                          --env-vars-file "$env_yaml" \
+                          --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-event "${trigger_event}" \
                           --trigger-resource "${trigger_resource}" \
@@ -1391,7 +1363,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$project" "${prefix}spool_notifications" \
                           "$source" \
                           --entry-point kcidb_spool_notifications \
-                          --env-vars-file "$env_yaml" \
+                          --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-topic "${updated_topic}" \
                           --memory 2048MB \
@@ -1400,13 +1372,13 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$project" "${prefix}load_queue" \
                           "$source" \
                           --entry-point kcidb_load_queue \
-                          --env-vars-file "$env_yaml" \
+                          --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-topic "${load_queue_trigger_topic}" \
                           --memory 1024MB \
                           --timeout 540
-    # Remove the environment YAML
-    rm "$env_yaml"
+    # Remove the environment YAML file
+    rm "$env_yaml_file"
 }
 
 # Withdraw Cloud Functions
@@ -1765,6 +1737,10 @@ function execute_command() {
         return
     fi
 
+    declare -r -a env_yaml=$(
+        cloud_functions_env --format=yaml "${env_args[@]}"
+    )
+
     # Make sure requisite services are enabled
     app_deploy "$project"
     services_enable "$project" appengine secretmanager cloudfunctions \
@@ -1807,7 +1783,9 @@ function execute_command() {
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --pick-notifications-trigger-topic \
               "$pick_notifications_trigger_topic" \
-            "${env_args[@]}"
+            --updated-topic="$updated_topic" \
+            --spool-collection-path="$spool_collection_path" \
+            --env-yaml="${env_yaml}"
         sections_run "$sections" scheduler_deploy \
             "$project" "$prefix" "$load_queue_trigger_topic" \
             "$pick_notifications_trigger_topic"
