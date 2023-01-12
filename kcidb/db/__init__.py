@@ -52,49 +52,6 @@ DRIVER_TYPES = dict(
 )
 
 
-def _driver_create(database):
-    """
-    Create an instance of a Kernel CI report database driver accessing a
-    database.
-
-    Args:
-        database:   A string specifying the database to access, formatted
-                    as "<DRIVER>:<PARAMS>" or just "<DRIVER>". Where
-                    "<DRIVER>" is the driver name, and "<PARAMS>" is the
-                    optional driver-specific database parameter string.
-
-    Return:
-        The created instance.
-
-    Raises:
-        NotFound            - if the database does not exist;
-        IncompatibleSchema  - if the database is initialized and its schema
-                              is incompatible with the current I/O schema.
-    """
-    assert isinstance(database, str)
-    try:
-        colon_pos = database.index(":")
-        driver_name = database[:colon_pos]
-        driver_params = database[colon_pos + 1:]
-    except ValueError:
-        driver_name = database
-        driver_params = None
-    try:
-        driver_type = DRIVER_TYPES[driver_name]
-    except KeyError:
-        raise Exception(f"Unknown driver {driver_name!r} in database "
-                        f"specification: {database!r}") from None
-    try:
-        driver = driver_type(driver_params)
-    except misc.NotFound:
-        raise
-    except Exception as exc:
-        raise Exception(
-            f"Failed connecting to {driver_name!r} database"
-        ) from exc
-    return driver
-
-
 class Client(kcidb.orm.Source):
     """Kernel CI report database client"""
 
@@ -109,12 +66,15 @@ class Client(kcidb.orm.Source):
                         optional driver-specific database parameter string.
 
         Raises:
-            NotFound            - if the database does not exist;
-            IncompatibleSchema  - if the database is initialized and its schema
-                                  is incompatible with the current I/O schema.
+            UnknownDriver       - an unknown (sub-)driver encountered in the
+                                  specification string for a (component)
+                                  database
+            NotFound            - a database does not exist
+            UnsupportedSchema   - a database schema is not supported by a
+                                  driver
         """
         assert isinstance(database, str)
-        self.driver = _driver_create(database)
+        self.driver = misc.instantiate_spec(DRIVER_TYPES, database)
         assert all(io_schema <= io.SCHEMA
                    for io_schema in self.driver.get_schemas().values()), \
             "Driver has I/O schemas newer than the current package I/O schema"

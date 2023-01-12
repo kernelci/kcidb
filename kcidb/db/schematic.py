@@ -374,7 +374,12 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
                     or None, if not required by the particular driver.
 
         Raises:
-            NotFound        - the database does not exist,
+            UnknownDriver       - an unknown sub-driver encountered in the
+                                  specification string for a component
+                                  database
+            NotFound            - the database does not exist
+            UnsupportedSchema   - the database schema is not supported by the
+                                  driver
         """
         assert params is None or isinstance(params, str)
         super().__init__(params)
