@@ -335,18 +335,18 @@ function psql_proxy_session() {
 }
 
 # Check if a PostgreSQL database exists.
-# Args: project instance name
+# Args: project instance database
 # Output: "true" if the database exists, "false" otherwise.
 function psql_database_exists() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
-    declare -r name="$1"; shift
+    declare -r database="$1"; shift
     declare output
     if output=$(
             gcloud sql databases describe \
                 --quiet --project="$project" \
                 --instance="$instance" \
-                "$name" 2>&1
+                "$database" 2>&1
        ); then
         echo "true"
     elif [[ $output == *\ Not\ Found* ]]; then
@@ -437,14 +437,14 @@ function psql_database_deploy() {
 }
 
 # Withdraw a PostgreSQL database, if exists
-# Args: project instance name submitter viewer
+# Args: project instance database submitter viewer
 function psql_database_withdraw() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
-    declare -r name="$1"; shift
+    declare -r database="$1"; shift
     declare -r submitter="$1"; shift
     declare -r viewer="$1"; shift
-    exists=$(psql_database_exists "$project" "$instance" "$name")
+    exists=$(psql_database_exists "$project" "$instance" "$database")
     if "$exists"; then
         # Cleanup the database
         psql_proxy_session "$project" "$instance" "$database" \
@@ -454,7 +454,7 @@ function psql_database_withdraw() {
         # NOTE: The viewer user is per-instance
         # Delete the database
         mute gcloud sql databases delete \
-            "$name" \
+            "$database" \
             --quiet \
             --project="$project" \
             --instance="$instance"
