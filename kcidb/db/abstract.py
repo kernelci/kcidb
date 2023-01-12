@@ -28,7 +28,12 @@ class Driver(ABC):
                     or None, if not required by the particular driver.
 
         Raises:
-            NotFound        - the database does not exist,
+            UnknownDriver       - an unknown sub-driver encountered in the
+                                  specification string for a component
+                                  database
+            NotFound            - a database does not exist
+            UnsupportedSchema   - a database schema is not supported by a
+                                  driver
         """
         assert params is None or isinstance(params, str)
 

@@ -3,6 +3,7 @@
 import textwrap
 from abc import abstractmethod
 import kcidb.io as io
+import kcidb.db.misc
 from kcidb.db.abstract import Driver as AbstractDriver
 
 
@@ -42,70 +43,6 @@ class Driver(AbstractDriver):
                         queried.
         """)
 
-    @staticmethod
-    def databases(params):
-        """
-        Create a generator parsing and returning database strings for member
-        drivers from the driver's parameter string. Account for and remove
-        backslash-escaping.
-
-        Args:
-            params: The parameter string to parse.
-
-        Returns:
-            The generator returning database strings for member drivers.
-        """
-        assert isinstance(params, str)
-
-        escape = False
-        database = ""
-        for char in params:
-            if char == "\\":
-                escape = True
-                continue
-            if escape:
-                database += char
-                escape = False
-                continue
-            if char.isspace():
-                if database:
-                    yield database
-                    database = ""
-                continue
-            database += char
-
-        if escape:
-            raise Exception(
-                f"Incomplete escape sequence at the end of params {params!r}"
-            )
-
-        if database:
-            yield database
-
-    @classmethod
-    def create_drivers(cls, params):
-        """
-        Create a generator returning driver instances created from a parameter
-        string, picking driver types from those listed by get_drivers().
-
-        Args:
-            params: The driver's parameter string.
-
-        Returns:
-            A generator returning the created driver instances.
-        """
-        assert isinstance(params, str)
-        driver_dict = cls.get_drivers()
-        for database in Driver.databases(params):
-            database_parts = database.split(":", 1)
-            name = database_parts[0]
-            params = database_parts[1] if len(database_parts) > 1 else None
-            if name in driver_dict:
-                yield driver_dict[name](params)
-            else:
-                raise Exception(f"Unknown driver {name!r} in database "
-                                f"specification: {database!r}")
-
     def __init__(self, params):
         """
         Initialize the multiplexing driver.
@@ -116,16 +53,21 @@ class Driver(AbstractDriver):
                     Cannot be None (must be specified).
 
         Raises:
-            NotFound            - if a database does not exist;
-            UnsupportedSchema   - if a database is initialized and its schema
-                                  is not supported by its driver
+            UnknownDriver       - an unknown sub-driver encountered in the
+                                  specification string for a component
+                                  database
+            NotFound            - a database does not exist
+            UnsupportedSchema   - a database schema is not supported by a
+                                  driver
         """
         assert params is None or isinstance(params, str)
         super().__init__(params)
         if params is None:
             raise Exception("Database parameters must be specified\n\n" +
                             self.get_doc())
-        self.drivers = list(self.create_drivers(params))
+        self.drivers = list(
+            kcidb.db.misc.instantiate_spec_list(self.get_drivers(), params)
+        )
 
         # A dictionary of drivers and lists of tuples, each containing a
         # driver's (major, minor) version tuple and the corresponding I/O
