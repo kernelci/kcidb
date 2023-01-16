@@ -38,50 +38,72 @@ class Driver(AbstractDriver):
             <DATABASES> A whitespace-separated list of strings describing the
                         multiplexed databases (<DRIVER>[:<PARAMS>] pairs). Any
                         spaces or backslashes in database strings need to be
-                        escaped with backslashes. Each database will receive
-                        the loaded data, but only the first one will be
-                        queried.
+                        escaped with backslashes. All databases have to either
+                        be initialized or not, at the same time. Each database
+                        will receive the loaded data, but only the first one
+                        will be queried.
         """)
 
-    def __init__(self, params):
+    @staticmethod
+    def _drivers_are_initialized(drivers):
         """
-        Initialize the multiplexing driver.
+        Check if all databases driven by a list of drivers are initialized.
 
         Args:
-            params: A parameter string describing the databases to
-                    access. See MuxDriver.DOC for documentation.
-                    Cannot be None (must be specified).
+            drivers:    The drivers for the driven databases to check.
 
-        Raises:
-            UnknownDriver       - an unknown sub-driver encountered in the
-                                  specification string for a component
-                                  database
-            NotFound            - a database does not exist
-            UnsupportedSchema   - a database schema is not supported by a
-                                  driver
+        Returns:
+            True if all the driven databases are initialized,
+            False if none of the driven databases are initialized,
+            None if some of the driven databases are initialized and some are
+            not, or there are no driven databases.
         """
-        assert params is None or isinstance(params, str)
-        super().__init__(params)
-        if params is None:
-            raise Exception("Database parameters must be specified\n\n" +
-                            self.get_doc())
-        self.drivers = list(
-            kcidb.db.misc.instantiate_spec_list(self.get_drivers(), params)
+        results = set(
+            driver.is_initialized()
+            for driver in drivers
         )
+        return bool(results.pop()) if len(results) == 1 else None
+
+    @staticmethod
+    def _drivers_get_schemas(drivers):
+        """
+        Generate a dictionary of the driver's schema version numbers and
+        corresponding I/O schema and schema version numbers of specified member
+        drivers. All databases driven by the drivers should either be
+        initialized, or not initialized, at the same time.
+
+        The driver's schema version numbers start with 0.0, corresponding to
+        the schema versions currently used by the drivers, if all databases
+        are initialized, or to the minimum schema versions, if all databases
+        are not initialized.
+
+        Args:
+            drivers:    The member drivers to generate the dictionary for.
+
+        Returns:
+            A dictionary of tuples, containing major and minor version numbers
+            of the driver's schema versions, and tuples containing the
+            supported I/O schema version, and a dictionary of member drivers
+            and their (major, minor) schema version tuples to be used.
+        """
+        initialized = Driver._drivers_are_initialized(drivers)
+        assert initialized is not None
 
         # A dictionary of drivers and lists of tuples, each containing a
         # driver's (major, minor) version tuple and the corresponding I/O
         # schema, sorted lowest driver versions first
         driver_schemas = {
             driver: list(driver.get_schemas().items())
-            for driver in self.drivers
+            for driver in drivers
         }
         # A dictionary of drivers and indices into driver_schemas lists
         # representing the currently-processed schema combination,
-        # initialized to the currently-used schemas
+        # initialized to the currently-used schemas, or to the first one, if
+        # none
         driver_indices = {
             driver: driver_schemas[driver].index(driver.get_schema())
-            for driver in self.drivers
+            if driver.is_initialized() else 0
+            for driver in drivers
         }
         # A list of tuples, each containing an I/O version supported by the
         # mux driver, and a dictionary of member drivers and their schema
@@ -129,7 +151,7 @@ class Driver(AbstractDriver):
         # of the mux driver's schema versions, and tuples containing the
         # supported I/O schema version, and a dictionary of member drivers and
         # their (major, minor) schema version tuples to be used.
-        self.schemas = {}
+        versioned_schemas = {}
         major = 0
         minor = 0
         for i, (io_version, driver_versions) in enumerate(schemas):
@@ -140,21 +162,56 @@ class Driver(AbstractDriver):
                     if driver_versions[driver][0] > prev_version[0]:
                         major += 1
                         minor = 0
-            self.schemas[(major, minor)] = (io_version, driver_versions)
+            versioned_schemas[(major, minor)] = (io_version, driver_versions)
             minor += 1
 
+        return versioned_schemas
+
+    def __init__(self, params):
+        """
+        Initialize the multiplexing driver.
+
+        Args:
+            params: A parameter string describing the databases to
+                    access. See MuxDriver.DOC for documentation.
+                    Cannot be None (must be specified).
+
+        Raises:
+            UnknownDriver       - an unknown sub-driver encountered in the
+                                  specification string for a component
+                                  database
+            NotFound            - a database does not exist
+            UnsupportedSchema   - a database schema is not supported by a
+                                  driver, or not all databases are
+                                  (not)initialized at the same time.
+        """
+        assert params is None or isinstance(params, str)
+        super().__init__(params)
+        if params is None:
+            raise Exception("Database parameters must be specified\n\n" +
+                            self.get_doc())
+        self.drivers = list(
+            kcidb.db.misc.instantiate_spec_list(self.get_drivers(), params)
+        )
+        initialized = Driver._drivers_are_initialized(self.drivers)
+        if initialized is None:
+            raise kcidb.db.misc.UnsupportedSchema(None, None)
+        # The driver's available schemas, starting with the currently-used
+        # by the drivers, or with the minimum ones, if none,
+        # pointed to by v0.0
+        self.schemas = Driver._drivers_get_schemas(self.drivers)
         # The current (first) schema version
-        self.version = (0, 0)
+        self.version = (0, 0) if initialized else None
 
     def is_initialized(self):
         """
-        Check if at least one database is initialized.
+        Check if all member databases are initialized.
 
         Returns:
-            True if at least one database is initialized,
+            True if all member database are initialized,
             False if all are not.
         """
-        return any(driver.is_initialized() for driver in self.drivers)
+        return self.version is not None
 
     def init(self, version):
         """
@@ -172,6 +229,7 @@ class Driver(AbstractDriver):
         schema = self.schemas[version]
         for driver in self.drivers:
             driver.init(version=schema[1][driver])
+        self.version = version
 
     def cleanup(self):
         """
