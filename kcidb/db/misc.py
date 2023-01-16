@@ -1,5 +1,7 @@
 """Kernel CI reporting database - misc definitions"""
 
+import re
+
 
 class Error(Exception):
     """An abstract error"""
@@ -39,6 +41,23 @@ class UnsupportedSchema(Error):
             minor:  Database schema minor version number
         """
         super().__init__(f"Database schema v{major}.{minor} is unsupported")
+
+
+def format_spec_list(specs):
+    """
+    Format a database specification list string out of a list of specification
+    strings.
+
+    Args:
+        specs   An iterable of database specification strings to format.
+
+    Returns:
+        The formatted specification list string.
+    """
+    return " ".join(
+        re.sub(r"(\\|\s)", r"\\\1", spec)
+        for spec in specs
+    )
 
 
 def parse_spec_list(spec_list_str):
