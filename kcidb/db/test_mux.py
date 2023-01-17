@@ -2,8 +2,9 @@
 
 from itertools import zip_longest
 import textwrap
+import pytest
 from kcidb_io.schema import V1_1, V2_0, V3_0, V4_0, V4_1
-from kcidb.unittest import TestCase, local_only
+from kcidb.unittest import local_only
 from kcidb.db.mux import Driver as MuxDriver
 from kcidb.db.null import Driver as NullDriver
 from kcidb.db.misc import UnsupportedSchema
@@ -183,263 +184,257 @@ class DummyMuxDriver(MuxDriver):
 
 
 @local_only
-class MuxDriverTestCase(TestCase):
-    """Test case for the Mux driver"""
+def test_param_parsing():
+    """Check that parameters are parsed correctly"""
+    # Single driver without parameters
+    driver = DummyMuxDriver("dummy")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0, (3, 0): V4_0,
+        (4, 0): V4_1
+    }
+    # Two drivers without parameters
+    driver = DummyMuxDriver("dummy dummy")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
+        (8, 0): V4_1
+    }
+    # Single driver with parameters
+    driver = DummyMuxDriver("dummy:1:3")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0
+    }
+    # Two drivers with parameters
+    driver = DummyMuxDriver("dummy:1:3 dummy:1:3")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0
+    }
+    # First driver with parameters
+    driver = DummyMuxDriver("dummy:1:3 dummy")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0
+    }
+    # Second driver with parameters
+    driver = DummyMuxDriver("dummy dummy:1:3")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0
+    }
 
-    def setUp(self):
-        """Setup tests"""
-        # pylint: disable=invalid-name
-        self.maxDiff = None
+    # Newline separation
+    driver = DummyMuxDriver("dummy\ndummy")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
+        (8, 0): V4_1
+    }
 
-    def test_param_parsing(self):
-        """Check that parameters are parsed correctly"""
-        # Single driver without parameters
-        driver = DummyMuxDriver("dummy")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0, (3, 0): V4_0,
-            (4, 0): V4_1
-        })
-        # Two drivers without parameters
-        driver = DummyMuxDriver("dummy dummy")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
-            (8, 0): V4_1
-        })
-        # Single driver with parameters
-        driver = DummyMuxDriver("dummy:1:3")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0
-        })
-        # Two drivers with parameters
-        driver = DummyMuxDriver("dummy:1:3 dummy:1:3")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0
-        })
-        # First driver with parameters
-        driver = DummyMuxDriver("dummy:1:3 dummy")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0
-        })
-        # Second driver with parameters
-        driver = DummyMuxDriver("dummy dummy:1:3")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0
-        })
+    # Long separation
+    driver = DummyMuxDriver("dummy \r\n\t\vdummy")
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
+        (8, 0): V4_1
+    }
 
-        # Newline separation
-        driver = DummyMuxDriver("dummy\ndummy")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
-            (8, 0): V4_1
-        })
 
-        # Long separation
-        driver = DummyMuxDriver("dummy \r\n\t\vdummy")
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
-            (8, 0): V4_1
-        })
+@local_only
+def test_initialized():
+    """Check that initialization status is handled correctly"""
 
-    def test_initialized(self):
-        """Check that initialization status is handled correctly"""
-        self.maxDiff = None  # pylint: disable=invalid-name
+    # All databases initialized
+    assert DummyMuxDriver("dummy").is_initialized()
+    assert DummyMuxDriver("""
+        dummy
+        dummy
+    """).is_initialized()
 
-        # All databases initialized
-        assert DummyMuxDriver("dummy").is_initialized()
-        assert DummyMuxDriver("""
-            dummy
-            dummy
-        """).is_initialized()
+    # All databases uninitialized
+    assert not DummyMuxDriver("dummy:1:4:1:1:-1").is_initialized()
+    assert not DummyMuxDriver("""
+        dummy:1:4:1:1:-1
+        dummy:1:4:1:1:-1
+    """).is_initialized()
 
-        # All databases uninitialized
-        assert not DummyMuxDriver("dummy:1:4:1:1:-1").is_initialized()
-        assert not DummyMuxDriver("""
-            dummy:1:4:1:1:-1
-            dummy:1:4:1:1:-1
-        """).is_initialized()
-
-        # Some databases initialized, some not
-        with self.assertRaises(UnsupportedSchema):
-            DummyMuxDriver("""
-                dummy:1:4:1:1:0
-                dummy:1:4:1:1:-1
-            """)
-
-        # Get schemas of a single uninitialized member driver
-        driver = DummyMuxDriver("""
-            dummy:1:4:1:1:-1
-        """)
-        assert not driver.is_initialized()
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0, (3, 0): V4_0,
-            (4, 0): V4_1,
-        })
-        # Initialize a single-member driver to the first version
-        driver.init((0, 0))
-        assert driver.is_initialized()
-        self.assertEqual(driver.get_schema(), ((0, 0), V1_1))
-
-        # Initialize a single-member driver to the last version
-        driver = DummyMuxDriver("""
-            dummy:1:4:1:1:-1
-        """)
-        driver.init((4, 0))
-        assert driver.is_initialized()
-        self.assertEqual(driver.get_schema(), ((4, 0), V4_1))
-
-        # Get schemas of an uninitialized two-member driver
-        driver = DummyMuxDriver("""
-            dummy:1:4:1:1:-1
-            dummy:1:4:1:1:-1
-        """)
-        assert not driver.is_initialized()
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
-            (8, 0): V4_1,
-        })
-        # Initialize a two-member driver to the first version
-        driver.init((0, 0))
-        assert driver.is_initialized()
-        self.assertEqual(driver.get_schema(), ((0, 0), V1_1))
-
-        # Initialize a two-member driver to the last version
-        driver = DummyMuxDriver("""
-            dummy:1:4:1:1:-1
-            dummy:1:4:1:1:-1
-        """)
-        driver.init((8, 0))
-        assert driver.is_initialized()
-        self.assertEqual(driver.get_schema(), ((8, 0), V4_1))
-
-        # Initialize a two-member driver to a middle version
-        driver = DummyMuxDriver("""
-            dummy:1:4:1:1:-1
-            dummy:1:4:1:1:-1
-        """)
-        driver.init((4, 0))
-        assert driver.is_initialized()
-        self.assertEqual(driver.get_schema(), ((4, 0), V3_0))
-
-    def test_schemas(self):  # It's OK, pylint: disable=too-many-branches
-        """Check that schemas are enumerated and are upgradable"""
-        self.maxDiff = None  # pylint: disable=invalid-name
-
-        # Single driver with simple version history
-        driver = DummyMuxDriver("dummy")
-        self.assertEqual(driver.get_schema(), ((0, 0), V1_1))
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0, (3, 0): V4_0,
-            (4, 0): V4_1,
-        })
-        for version in driver.get_schemas():
-            if version > driver.get_schema()[0]:
-                driver.upgrade(version)
-        self.assertEqual(driver.get_schema(), ((4, 0), V4_1))
-
-        # Multiple drivers starting with different I/O versions
-        driver = DummyMuxDriver("""
-            dummy:1:5:1:1:0
-            dummy:1:5:2:1:2
-            dummy:1:5:3:1:6
-        """)
-        self.assertEqual(driver.get_schema(), ((0, 0), V1_1))
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0, (7, 0): V3_0,
-            (8, 0): V3_0, (9, 0): V3_0, (10, 0): V4_0, (11, 0): V4_0,
-            (12, 0): V4_0, (13, 0): V4_0, (14, 0): V4_0, (15, 0): V4_0,
-            (16, 0): V4_1, (17, 0): V4_1, (18, 0): V4_1, (19, 0): V4_1,
-        })
-        for version in driver.get_schemas():
-            if version > driver.get_schema()[0]:
-                driver.upgrade(version)
-        self.assertEqual(driver.get_schema(), ((19, 0), V4_1))
-
-        # Staggered driver schema version numbers
-        driver = DummyMuxDriver("""
-            dummy:1:5:1:3:0
-            dummy:1:5:2:2:4
-            dummy:1:5:3:1:6
-        """)
-        self.assertEqual(driver.get_schema(), ((0, 0), V1_1))
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0, (7, 0): V3_0,
-            (8, 0): V3_0, (9, 0): V3_0, (10, 0): V4_0, (11, 0): V4_0,
-            (12, 0): V4_0, (13, 0): V4_0, (14, 0): V4_0, (15, 0): V4_0,
-            (16, 0): V4_1, (17, 0): V4_1, (18, 0): V4_1, (19, 0): V4_1,
-        })
-        for version in driver.get_schemas():
-            if version > driver.get_schema()[0]:
-                driver.upgrade(version)
-        self.assertEqual(driver.get_schema(), ((19, 0), V4_1))
-
-        # Misaligned I/O version histories
-        driver = DummyMuxDriver("""
-            dummy:2:5:1:1:0
+    # Some databases initialized, some not
+    with pytest.raises(UnsupportedSchema):
+        DummyMuxDriver("""
             dummy:1:4:1:1:0
-            dummy:2:3:1:1:0
+            dummy:1:4:1:1:-1
         """)
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0, (3, 0): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0, (7, 0): V3_0,
-            (8, 0): V3_0
-        })
-        for version in driver.get_schemas():
-            if version > driver.get_schema()[0]:
-                driver.upgrade(version)
-        self.assertEqual(driver.get_schema(), ((8, 0), V3_0))
 
-        # Disconnected I/O version histories
-        driver = DummyMuxDriver("""
-            dummy:1:2:1:1:0
-            dummy:4:5:1:1:0
-        """)
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0
-        })
-        for version in driver.get_schemas():
-            if version > driver.get_schema()[0]:
-                driver.upgrade(version)
-        self.assertEqual(driver.get_schema(), ((2, 0), V2_0))
+    # Get schemas of a single uninitialized member driver
+    driver = DummyMuxDriver("""
+        dummy:1:4:1:1:-1
+    """)
+    assert not driver.is_initialized()
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0, (3, 0): V4_0,
+        (4, 0): V4_1,
+    }
+    # Initialize a single-member driver to the first version
+    driver.init((0, 0))
+    assert driver.is_initialized()
+    assert driver.get_schema() == ((0, 0), V1_1)
 
-        # Multiple minor versions
-        driver = DummyMuxDriver("""
-            dummy:1:5:1:1:0:0:1
-            dummy:1:5:1:1:0:0:2
-        """)
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (1, 0): V1_1, (1, 1): V1_1,
-            (2, 0): V2_0, (3, 0): V2_0, (3, 1): V2_0,
-            (4, 0): V3_0, (5, 0): V3_0, (5, 1): V3_0,
-            (6, 0): V4_0, (7, 0): V4_0, (7, 1): V4_0,
-            (8, 0): V4_1, (8, 1): V4_1,
-        })
-        for version in driver.get_schemas():
-            if version > driver.get_schema()[0]:
-                driver.upgrade(version)
-        self.assertEqual(driver.get_schema(), ((8, 1), V4_1))
+    # Initialize a single-member driver to the last version
+    driver = DummyMuxDriver("""
+        dummy:1:4:1:1:-1
+    """)
+    driver.init((4, 0))
+    assert driver.is_initialized()
+    assert driver.get_schema() == ((4, 0), V4_1)
 
-        # Multiple minor versions
-        driver = DummyMuxDriver("""
-            dummy:1:5:1:1:0:0:2
-            dummy:1:5:1:1:0:0:1
-        """)
-        self.assertEqual(driver.get_schemas(), {
-            (0, 0): V1_1, (0, 1): V1_1,
-            (1, 0): V1_1, (2, 0): V2_0, (2, 1): V2_0,
-            (3, 0): V2_0, (4, 0): V3_0, (4, 1): V3_0,
-            (5, 0): V3_0, (6, 0): V4_0, (6, 1): V4_0,
-            (7, 0): V4_0, (8, 0): V4_1, (8, 1): V4_1,
-        })
-        for version in driver.get_schemas():
-            if version > driver.get_schema()[0]:
-                driver.upgrade(version)
-        self.assertEqual(driver.get_schema(), ((8, 1), V4_1))
+    # Get schemas of an uninitialized two-member driver
+    driver = DummyMuxDriver("""
+        dummy:1:4:1:1:-1
+        dummy:1:4:1:1:-1
+    """)
+    assert not driver.is_initialized()
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V4_0, (7, 0): V4_0,
+        (8, 0): V4_1,
+    }
+    # Initialize a two-member driver to the first version
+    driver.init((0, 0))
+    assert driver.is_initialized()
+    assert driver.get_schema() == ((0, 0), V1_1)
+
+    # Initialize a two-member driver to the last version
+    driver = DummyMuxDriver("""
+        dummy:1:4:1:1:-1
+        dummy:1:4:1:1:-1
+    """)
+    driver.init((8, 0))
+    assert driver.is_initialized()
+    assert driver.get_schema() == ((8, 0), V4_1)
+
+    # Initialize a two-member driver to a middle version
+    driver = DummyMuxDriver("""
+        dummy:1:4:1:1:-1
+        dummy:1:4:1:1:-1
+    """)
+    driver.init((4, 0))
+    assert driver.is_initialized()
+    assert driver.get_schema() == ((4, 0), V3_0)
+
+
+@local_only
+def test_schemas():  # It's OK, pylint: disable=too-many-branches
+    """Check that schemas are enumerated and are upgradable"""
+
+    # Single driver with simple version history
+    driver = DummyMuxDriver("dummy")
+    assert driver.get_schema() == ((0, 0), V1_1)
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V3_0, (3, 0): V4_0,
+        (4, 0): V4_1,
+    }
+    for version in driver.get_schemas():
+        if version > driver.get_schema()[0]:
+            driver.upgrade(version)
+    assert driver.get_schema() == ((4, 0), V4_1)
+
+    # Multiple drivers starting with different I/O versions
+    driver = DummyMuxDriver("""
+        dummy:1:5:1:1:0
+        dummy:1:5:2:1:2
+        dummy:1:5:3:1:6
+    """)
+    assert driver.get_schema() == ((0, 0), V1_1)
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0, (7, 0): V3_0,
+        (8, 0): V3_0, (9, 0): V3_0, (10, 0): V4_0, (11, 0): V4_0,
+        (12, 0): V4_0, (13, 0): V4_0, (14, 0): V4_0, (15, 0): V4_0,
+        (16, 0): V4_1, (17, 0): V4_1, (18, 0): V4_1, (19, 0): V4_1,
+    }
+    for version in driver.get_schemas():
+        if version > driver.get_schema()[0]:
+            driver.upgrade(version)
+    assert driver.get_schema() == ((19, 0), V4_1)
+
+    # Staggered driver schema version numbers
+    driver = DummyMuxDriver("""
+        dummy:1:5:1:3:0
+        dummy:1:5:2:2:4
+        dummy:1:5:3:1:6
+    """)
+    assert driver.get_schema() == ((0, 0), V1_1)
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0, (7, 0): V3_0,
+        (8, 0): V3_0, (9, 0): V3_0, (10, 0): V4_0, (11, 0): V4_0,
+        (12, 0): V4_0, (13, 0): V4_0, (14, 0): V4_0, (15, 0): V4_0,
+        (16, 0): V4_1, (17, 0): V4_1, (18, 0): V4_1, (19, 0): V4_1,
+    }
+    for version in driver.get_schemas():
+        if version > driver.get_schema()[0]:
+            driver.upgrade(version)
+    assert driver.get_schema() == ((19, 0), V4_1)
+
+    # Misaligned I/O version histories
+    driver = DummyMuxDriver("""
+        dummy:2:5:1:1:0
+        dummy:1:4:1:1:0
+        dummy:2:3:1:1:0
+    """)
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0, (3, 0): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (6, 0): V3_0, (7, 0): V3_0,
+        (8, 0): V3_0
+    }
+    for version in driver.get_schemas():
+        if version > driver.get_schema()[0]:
+            driver.upgrade(version)
+    assert driver.get_schema() == ((8, 0), V3_0)
+
+    # Disconnected I/O version histories
+    driver = DummyMuxDriver("""
+        dummy:1:2:1:1:0
+        dummy:4:5:1:1:0
+    """)
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V2_0, (2, 0): V2_0
+    }
+    for version in driver.get_schemas():
+        if version > driver.get_schema()[0]:
+            driver.upgrade(version)
+    assert driver.get_schema() == ((2, 0), V2_0)
+
+    # Multiple minor versions
+    driver = DummyMuxDriver("""
+        dummy:1:5:1:1:0:0:1
+        dummy:1:5:1:1:0:0:2
+    """)
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (1, 0): V1_1, (1, 1): V1_1,
+        (2, 0): V2_0, (3, 0): V2_0, (3, 1): V2_0,
+        (4, 0): V3_0, (5, 0): V3_0, (5, 1): V3_0,
+        (6, 0): V4_0, (7, 0): V4_0, (7, 1): V4_0,
+        (8, 0): V4_1, (8, 1): V4_1,
+    }
+    for version in driver.get_schemas():
+        if version > driver.get_schema()[0]:
+            driver.upgrade(version)
+    assert driver.get_schema() == ((8, 1), V4_1)
+
+    # Multiple minor versions
+    driver = DummyMuxDriver("""
+        dummy:1:5:1:1:0:0:2
+        dummy:1:5:1:1:0:0:1
+    """)
+    assert driver.get_schemas() == {
+        (0, 0): V1_1, (0, 1): V1_1,
+        (1, 0): V1_1, (2, 0): V2_0, (2, 1): V2_0,
+        (3, 0): V2_0, (4, 0): V3_0, (4, 1): V3_0,
+        (5, 0): V3_0, (6, 0): V4_0, (6, 1): V4_0,
+        (7, 0): V4_0, (8, 0): V4_1, (8, 1): V4_1,
+    }
+    for version in driver.get_schemas():
+        if version > driver.get_schema()[0]:
+            driver.upgrade(version)
+    assert driver.get_schema() == ((8, 1), V4_1)
