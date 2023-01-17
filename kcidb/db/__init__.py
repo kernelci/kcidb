@@ -96,17 +96,27 @@ class Client(kcidb.orm.Source):
             version:    A tuple of the major and minor version numbers (both
                         non-negative integers) of the schema to initialize the
                         database to (must be one of the database's available
-                        schema versions), or None to initialize to the latest
-                        schema.
+                        schema versions), an I/O version object to pick the
+                        latest schema supporting it, or None to initialize to
+                        the latest schema.
         """
         assert not self.is_initialized()
+        schemas = self.get_schemas()
         if version is None:
-            version = list(self.get_schemas())[-1]
+            version = list(schemas)[-1]
+        elif isinstance(version, type) and \
+                issubclass(version, io.schema.VA):
+            for schema_version, schema_io_version in \
+                    reversed(list(schemas.items())):
+                if schema_io_version is version:
+                    version = schema_version
+                    break
+            else:
+                assert False, "I/O version not supported by driver schemas"
         assert isinstance(version, tuple) and len(version) == 2
         assert isinstance(version[0], int) and version[0] >= 0
         assert isinstance(version[1], int) and version[1] >= 0
-        assert version in self.get_schemas(), \
-            "Schema version is not available"
+        assert version in schemas, "Schema version is not available"
         self.driver.init(version)
 
     def cleanup(self):
@@ -195,13 +205,25 @@ class Client(kcidb.orm.Source):
             target_version: A tuple of the major and minor version numbers of
                             the schema to upgrade to (must be one of the
                             database's available schema versions, newer than
-                            the current one), or None to upgrade to the latest
-                            schema.
+                            the current one), an I/O version object to pick
+                            the latest schema supporting it, or None to
+                            upgrade to the latest schema.
         """
         assert self.is_initialized()
+        schemas = self.get_schemas()
         if target_version is None:
-            target_version = list(self.get_schemas())[-1]
-        assert target_version in self.get_schemas(), \
+            target_version = list(schemas)[-1]
+        elif isinstance(target_version, type) and \
+                issubclass(target_version, io.schema.VA):
+            for schema_version, schema_io_version in \
+                    reversed(list(schemas.items())):
+                if schema_io_version is target_version:
+                    target_version = schema_version
+                    break
+            else:
+                assert False, \
+                    "Target I/O version not supported by driver schemas"
+        assert target_version in schemas, \
             "Target schema version is not available"
         current_version = self.get_schema()[0]
         assert target_version >= current_version, \
