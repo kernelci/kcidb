@@ -104,38 +104,3 @@ def assert_executes(stdin, name, *args,
                       f"{textwrap.indent(result.stderr, '    ')}")
     if errors:
         raise AssertionError("\n".join(errors))
-
-
-class TestCase(unittest.TestCase):
-    """KCIDB test case"""
-
-    # Gotta conform to unittest conventions, pylint: disable=invalid-name
-    def assertExecutes(self, stdin, name, *args,
-                       driver_source="return function()",
-                       stdout_re="", stderr_re="", status=0):
-        """
-        Assert a KCIDB executable produces certain stdout, stderr, and exit
-        status, provided the specified standard input and arguments.
-
-        Args:
-            stdin:          A string to pass to the standard input of the
-                            executable.
-            name:           The fully-qualified name of the executable's main
-                            function. Must end with "_main".
-            args:           Command-line arguments to the executable.
-            driver_source:  The Python source code for the function's driver
-                            (execution setup/teardown) to be interpreted
-                            within the executable. Must use four-space indent.
-                            Will have the function to call in a local variable
-                            called "function".
-            stdout_re:      A regular expression the executable's stdout must
-                            match.
-            stderr_re:      A regular expression the executable's stderr must
-                            match.
-            status:         The exit status the executable should produce.
-        """
-        assert_executes(stdin, name, *args,
-                        driver_source=driver_source,
-                        stdout_re=stdout_re,
-                        stderr_re=stderr_re,
-                        status=status)
