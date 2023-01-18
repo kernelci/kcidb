@@ -665,10 +665,9 @@ def raw_incident(**kwargs):
 
 
 @pytest.fixture
-def source():
+def source(empty_database):
     """An ORM source with data loaded"""
-    source = kcidb.db.Client('sqlite:!:memory:')
-    source.init()
+    source = empty_database
     source.load({
         "version": {"major": 4, "minor": 1},
         "checkouts": [
@@ -980,7 +979,6 @@ def query_str(source, pattern_string):
     )
 
 
-@local_only
 def test_run(source):
     """Check data returned from query that starts with '>test' """
 
@@ -1111,7 +1109,6 @@ def test_run(source):
         ])
 
 
-@local_only
 def test_build(source):
     """Check data returned from query that starts with '>build' """
 
@@ -1207,7 +1204,6 @@ def test_build(source):
         )])
 
 
-@local_only
 def test_checkout(source):
     """Check data returned from query that starts with '>checkout' """
 
@@ -1389,7 +1385,6 @@ def test_checkout(source):
     assert len(tests["test"]) == 2
 
 
-@local_only
 def test_revision(source):
     """Check data returned from query that starts with '>revision' """
 
@@ -1517,7 +1512,6 @@ def test_revision(source):
         dict(bug=[])
 
 
-@local_only
 def test_bug(source):
     """Check data returned from query that starts with '>bug'"""
 
@@ -1760,7 +1754,6 @@ def test_bug(source):
         ])
 
 
-@local_only
 def test_issue(source):
     """Check data returned from query that starts with '>issue'"""
 
@@ -1890,7 +1883,6 @@ def test_issue(source):
         )])
 
 
-@local_only
 def test_incident(source):
     """Check data returned from query that starts with '>incident'"""
 

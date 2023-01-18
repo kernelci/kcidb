@@ -4,7 +4,6 @@ import re
 import textwrap
 import datetime
 import json
-from unittest.mock import Mock, patch
 import pytest
 import kcidb
 from kcidb.unittest import local_only, assert_executes
@@ -360,59 +359,36 @@ COMPREHENSIVE_IO_DATA = {
 }
 
 
-@local_only
-def test_get_last_modified():
+def test_get_last_modified(empty_database):
     """
-    Check get_last_modified() can be called on all DB drivers we can
-    easily instantiate.
+    Check get_last_modified() works correctly
     """
-    for database in ("null", "sqlite::memory:"):
-        print("Database:", database)
-        client = kcidb.db.Client(database)
-        if not client.is_initialized():
-            client.init()
-        timestamp = client.get_last_modified()
-        assert timestamp is not None
-        assert isinstance(timestamp, datetime.datetime)
-        assert timestamp.tzinfo is not None
+    client = empty_database
+    timestamp = client.get_last_modified()
+    assert timestamp is not None
+    assert isinstance(timestamp, datetime.datetime)
+    assert timestamp.tzinfo is not None
 
 
-@local_only
-def test_bigquery_load():
-    """Check all possible I/O fields can be loaded into BigQuery"""
-    io_data = COMPREHENSIVE_IO_DATA
-    dataset = Mock()
-    dataset.labels = dict(version_major=4, version_minor=1)
-    client = Mock()
-    client.get_dataset = Mock(return_value=dataset)
-    with patch("google.cloud.bigquery.Client", return_value=client), \
-         patch("google.cloud.bigquery.job.LoadJobConfig"):
-        client = kcidb.db.Client("bigquery:dataset")
-        client.load(io_data)
-
-
-@local_only
-def test_sqlite_load_dump():
+def test_all_fields(empty_database):
     """
     Check all possible I/O fields can be loaded into and dumped from
-    SQLite.
+    a database.
     """
     io_data = COMPREHENSIVE_IO_DATA
-    client = kcidb.db.Client("sqlite::memory:")
-    client.init()
+    client = empty_database
     client.load(io_data)
     assert io_data == client.dump()
 
 
-@local_only
-def test_upgrade():
+def test_upgrade(clean_database):
     """
     Test database schema upgrade affects accepted I/O schema, and doesn't
     affect ORM results.
     """
-    db_client = kcidb.db.Client("sqlite::memory:")
-    db_client.init((4, 0))
-    assert db_client.get_schema() == ((4, 0), kcidb.io.schema.V4_0)
+    db_client = clean_database
+    db_client.init(kcidb.io.schema.V4_0)
+    assert db_client.get_schema()[1] == kcidb.io.schema.V4_0
     # NOTE: Having only one element per list to ensure comparison
     v4_0_data = {
         "version": {"major": 4, "minor": 0},
@@ -606,8 +582,8 @@ def test_upgrade():
     assert db_client.oo_query(kcidb.orm.Pattern.parse(">*#")) == v4_0_oo_data
     with pytest.raises(AssertionError):
         db_client.load(v4_1_data)
-    db_client.upgrade((4, 1))
-    assert db_client.get_schema() == ((4, 1), kcidb.io.schema.V4_1)
+    db_client.upgrade(kcidb.io.schema.V4_1)
+    assert db_client.get_schema()[1] == kcidb.io.schema.V4_1
     assert db_client.oo_query(kcidb.orm.Pattern.parse(">*#")) == v4_0_oo_data
     # Shouldn't raise an assertion, SHOULDN'T IT? <----
     db_client.load(v4_0_data)
@@ -619,11 +595,9 @@ def test_upgrade():
     assert db_client.oo_query(kcidb.orm.Pattern.parse(">*#")) == v4_1_oo_data
 
 
-@local_only
-def test_query():
+def test_query(empty_database):
     """Test the query() method retrieves objects correctly"""
-    client = kcidb.db.Client("sqlite::memory:")
-    client.init()
+    client = empty_database
     client.load(dict(
         version=dict(major=4, minor=1),
         checkouts=[
@@ -788,12 +762,10 @@ def test_query():
         }
 
 
-@local_only
-def test_empty():
+def test_empty(empty_database):
     """Test the empty() method removes all data"""
     io_data = COMPREHENSIVE_IO_DATA
-    client = kcidb.db.Client("sqlite::memory:")
-    client.init()
+    client = empty_database
     client.load(io_data)
     assert io_data == client.dump()
     client.empty()
