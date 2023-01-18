@@ -4,17 +4,15 @@ import sys
 import json
 import pytest
 import kcidb
-from kcidb.unittest import local_only
 from kcidb.oo import Checkout, Build, Test, Node, Bug, Issue, Incident
 
 # We gotta have our fixtures, pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
-def client():
+def client(empty_database):
     """OO client for a database with general test data loaded"""
-    database = kcidb.db.Client('sqlite::memory:')
-    database.init()
+    database = empty_database
     database.load(
         {
             "version": {
@@ -111,10 +109,9 @@ def client():
 
 
 @pytest.fixture
-def traversing_client():
+def traversing_client(empty_database):
     """OO client for a database with test data for traversing loaded"""
-    database = kcidb.db.Client('sqlite::memory:')
-    database.init()
+    database = empty_database
     database.load(
         {
             "version": {"major": 4, "minor": 1},
@@ -405,13 +402,11 @@ def assert_contains(container, contents):
             assert_contains(container[key], contents[key])
 
 
-@local_only
 def test_response_zero_object(client):
     """Check that empty object is returned."""
     assert_response_contains(client, "", set(), 0)
 
 
-@local_only
 def test_response_one_object(client):
     """Check that one object is returned for every type"""
 
@@ -447,7 +442,6 @@ def test_response_one_object(client):
     )
 
 
-@local_only
 def test_response_two_object(client):
     """Check that two objects are returned for every type"""
 
@@ -488,7 +482,6 @@ def test_response_two_object(client):
     )
 
 
-@local_only
 def test_traversing_revision_links(traversing_client):
     """Check that revision's links are successfully traversed."""
 
@@ -549,7 +542,6 @@ def test_traversing_revision_links(traversing_client):
          "redhat:valid1", "redhat:valid2"}
 
 
-@local_only
 def test_traversing_valid_checkout_links(traversing_client):
     """Check that valid checkout links are successfully traversed."""
     checkouts = filter_valid(
@@ -583,7 +575,6 @@ def test_traversing_valid_checkout_links(traversing_client):
          "redhat:valid1", "redhat:valid2"}
 
 
-@local_only
 def test_traversing_valid_build_links(traversing_client):
     """Check that valid build links are successfully traversed."""
     builds = filter_valid(
@@ -599,7 +590,6 @@ def test_traversing_valid_build_links(traversing_client):
     assert isinstance(builds[0].tests_root, Node)
 
 
-@local_only
 def test_traversing_test_links(traversing_client):
     """Check that test links are successfully traversed."""
     tests = query_str(
@@ -611,7 +601,6 @@ def test_traversing_test_links(traversing_client):
     assert tests[2].get_parent_id("build") == tests[2].build.get_id()
 
 
-@local_only
 def test_traversing_revision_root_test_node(traversing_client):
     """
     Check that valid revision's root test node links are
@@ -646,10 +635,9 @@ def test_traversing_revision_root_test_node(traversing_client):
 
 
 @pytest.fixture
-def status_client():
+def status_client(empty_database):
     """OO client for a database with data for status testing loaded"""
-    database = kcidb.db.Client('sqlite::memory:')
-    database.init()
+    database = empty_database
     # It's about consistency, pylint: disable=use-dict-literal
     data = {
         "version": {"major": 4, "minor": 1},
@@ -781,7 +769,6 @@ def status_client():
     return kcidb.oo.Client(database)
 
 
-@local_only
 def test_status_builds(status_client):
     """Check build status effects"""
     for build_valid_name, build_valid_value in (
@@ -812,7 +799,6 @@ def test_status_builds(status_client):
                 f"\"valid\" value {build.valid!r}"
 
 
-@local_only
 def test_status_tests(status_client):
     """Check test status effects"""
 
