@@ -151,7 +151,7 @@ jobs:
             "kernelci-staging" "gh_run_${{ github.run_id }}" --smtp-mocked
           )
           declare -a env_args=(
-            "${args[@]}" --smtp-mocked --heavy-asserts --log-level=DEBUG
+            "${args[@]}" --heavy-asserts --log-level=DEBUG
           )
           env=$(./cloud env --format=sh "${env_args[@]}")
 
