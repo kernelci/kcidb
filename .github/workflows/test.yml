@@ -148,21 +148,18 @@ jobs:
         run: |
           status=0
           declare -a args=(
-            "kernelci-staging" "gh_run_${{ github.run_id }}" --smtp-mocked
+            "kernelci-staging" "gh_run_${{ github.run_id }}" "1"
+            --smtp-mocked --test
           )
           declare -a env_args=(
             "${args[@]}" --heavy-asserts --log-level=DEBUG
           )
-          env=$(./cloud env --format=sh "${env_args[@]}")
 
           ./cloud deploy "${env_args[@]}" --verbose || status=$((status || $?))
 
-          (
-            source <(echo "$env")
-            export GCP_PROJECT="${{ secrets.STAGING_GCLOUD_PROJECT }}"
-            export KCIDB_DEPLOYED=1
-            pytest --tb=native
-          ) || status=$((status || $?))
+          ./cloud shell  "${env_args[@]}" -- \
+                  pytest --tb=native --verbosity=2 --log-level=DEBUG ||
+                  status=$((status || $?))
 
           ./cloud withdraw "${args[@]}" --verbose || status=$((status || $?))
 
