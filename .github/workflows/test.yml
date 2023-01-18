@@ -148,7 +148,8 @@ jobs:
         run: |
           status=0
           declare -a args=(
-            "kernelci-staging" "gh_run_${{ github.run_id }}" --smtp-mocked
+            "kernelci-staging" "gh_run_${{ github.run_id }}"
+            --smtp-mocked --test
           )
           declare -a env_args=(
             "${args[@]}" --heavy-asserts --log-level=DEBUG
