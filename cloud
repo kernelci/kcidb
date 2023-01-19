@@ -269,9 +269,9 @@ function psql_instance_deploy() {
 }
 
 # Execute a command with the PostgreSQL proxy providing the connection to a
-# database with the "postgres" user. Setup environment variables for
-# connection with an empty connection string, using libpq.
-# Args: project instance database command arg...
+# server with the "postgres" user. Setup environment variables for
+# connection with only a database specification required, using libpq.
+# Args: project instance command arg...
 function psql_proxy_session() {
     # Source:
     # https://cloud.google.com/sql/docs/postgres/connect-admin-proxy#install
@@ -282,7 +282,6 @@ function psql_proxy_session() {
     )
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
-    declare -r database="$1"; shift
     declare -r fq_instance="$project:$PSQL_INSTANCE_REGION:$instance"
     # The default proxy binary, if installed
     declare proxy="cloud_sql_proxy"
@@ -321,7 +320,6 @@ function psql_proxy_session() {
 
     # Run the command
     PGHOST="$PSQL_PROXY_DIR/$fq_instance" \
-    PGDATABASE="$database" \
     PGPASSFILE="$PSQL_PROXY_PGPASS" \
     PGUSER="postgres" \
         "$@"
@@ -359,18 +357,20 @@ function psql_database_exists() {
 
 # Setup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
-# to connect to the database as a superuser, with an empty connection string.
-# Args: init submitter viewer
+# to connect to the database as a superuser.
+# Args: database init submitter viewer
 function _psql_database_setup() {
+    declare -r database="$1"; shift
     declare -r init="$1"; shift
     declare -r submitter="$1"; shift
     declare -r viewer="$1"; shift
     # Initialize the database, if requested
     if "$init"; then
-        mute kcidb-db-init -lDEBUG -d "postgresql" --ignore-initialized
+        mute kcidb-db-init -lDEBUG -d "postgresql:dbname=$database" \
+                           --ignore-initialized
     fi
     # Deploy viewer and submitter permissions
-    mute psql -e <<<"
+    mute psql --dbname="$database" -e <<<"
         \\set ON_ERROR_STOP on
         GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public
         TO $submitter;
@@ -381,13 +381,14 @@ function _psql_database_setup() {
 
 # Cleanup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
-# to connect to the database as a superuser, with an empty connection string.
-# Args: submitter viewer
+# to connect to the database as a superuser.
+# Args: database submitter viewer
 function _psql_database_cleanup() {
+    declare -r database="$1"; shift
     declare -r submitter="$1"; shift
     declare -r viewer="$1"; shift
     # Withdraw viewer and submitter permissions
-    mute psql -e <<<"
+    mute psql --dbname="$database" -e <<<"
         /* Do not stop on errors in case users are already removed */
         REVOKE SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public
         FROM $submitter;
@@ -399,7 +400,7 @@ function _psql_database_cleanup() {
         FROM pg_stat_activity
         WHERE datname = :'DBNAME' AND pid <> pg_backend_pid();
     "
-    mute kcidb-db-cleanup -lDEBUG -d "postgresql" \
+    mute kcidb-db-cleanup -lDEBUG -d "postgresql:dbname=$database" \
                           --ignore-not-initialized \
                           --ignore-not-found
 }
@@ -450,8 +451,8 @@ function psql_databases_deploy() {
         # NOTE: The viewer user is created per-instance
 
         # Setup the database
-        psql_proxy_session "$project" "$instance" "$database" \
-            _psql_database_setup "$init" "$submitter" "$viewer"
+        psql_proxy_session "$project" "$instance" \
+            _psql_database_setup "$database" "$init" "$submitter" "$viewer"
     done
 }
 
@@ -475,8 +476,8 @@ function psql_databases_withdraw() {
         exists=$(psql_database_exists "$project" "$instance" "$database")
         if "$exists"; then
             # Cleanup the database
-            psql_proxy_session "$project" "$instance" "$database" \
-                _psql_database_cleanup "$submitter" "$viewer"
+            psql_proxy_session "$project" "$instance" \
+                _psql_database_cleanup "$database" "$submitter" "$viewer"
             # Delete the database
             mute gcloud sql databases delete \
                 "$database" \
@@ -543,8 +544,8 @@ function psql_user_deploy() {
             "$name"
     fi
     # Strip extra permissions added by gcloud by default
-    psql_proxy_session "$project" "$instance" "postgres" \
-        mute psql -e <<<"
+    psql_proxy_session "$project" "$instance" \
+        mute psql --dbname postgres -e <<<"
             \\set ON_ERROR_STOP on
             REVOKE cloudsqlsuperuser FROM $name;
             ALTER ROLE $name WITH NOCREATEROLE NOCREATEDB;
