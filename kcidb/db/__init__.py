@@ -161,7 +161,8 @@ class Client(kcidb.orm.Source):
             assert isinstance(version[0], int) and version[0] >= 0
             assert isinstance(version[1], int) and version[1] >= 0
             assert prev_version is None or version > prev_version
-            assert issubclass(io_version, io.schema.VA)
+            assert isinstance(io_version, type) and \
+                issubclass(io_version, io.schema.VA)
             assert prev_io_version is None or io_version > prev_io_version
         return schemas
 
@@ -182,7 +183,8 @@ class Client(kcidb.orm.Source):
         assert isinstance(version, tuple) and len(version) == 2
         assert isinstance(version[0], int) and version[0] >= 0
         assert isinstance(version[1], int) and version[1] >= 0
-        assert issubclass(io_version, io.schema.VA)
+        assert isinstance(io_version, type) and \
+            issubclass(io_version, io.schema.VA)
         assert (version, io_version) in self.get_schemas().items()
         return version, io_version
 
