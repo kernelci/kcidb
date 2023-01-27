@@ -19,6 +19,8 @@ from kcidb.db.schematic import \
 from kcidb.db.misc import NotFound
 from kcidb.db.bigquery.schema import validate_json_obj_list
 
+# We'll manage for now, pylint: disable=too-many-lines
+
 # Module's logger
 LOGGER = logging.getLogger(__name__)
 
@@ -70,7 +72,7 @@ class Connection(AbstractConnection):
         self.client = bigquery.Client(project=project_id)
         self.dataset_ref = self.client.dataset(dataset_name)
         try:
-            self.dataset = self.client.get_dataset(self.dataset_ref)
+            self.client.get_dataset(self.dataset_ref)
         except GoogleNotFound as exc:
             raise NotFound(params) from exc
 
@@ -112,13 +114,14 @@ class Connection(AbstractConnection):
             isinstance(version, tuple) and len(version) == 2 and \
             isinstance(version[0], int) and version[0] >= 0 and \
             isinstance(version[1], int) and version[1] >= 0
+        dataset = self.client.get_dataset(self.dataset_ref)
         if version is None:
-            self.dataset.labels["version_major"] = None
-            self.dataset.labels["version_minor"] = None
+            dataset.labels["version_major"] = None
+            dataset.labels["version_minor"] = None
         else:
-            self.dataset.labels["version_major"] = str(version[0])
-            self.dataset.labels["version_minor"] = str(version[1])
-        self.client.update_dataset(self.dataset, ["labels"])
+            dataset.labels["version_major"] = str(version[0])
+            dataset.labels["version_minor"] = str(version[1])
+        self.client.update_dataset(dataset, ["labels"])
 
     def get_schema_version(self):
         """
@@ -129,11 +132,12 @@ class Connection(AbstractConnection):
             The major and the minor version numbers of the database schema,
             or None, if not initialized.
         """
-        if "version_major" in self.dataset.labels and \
-           "version_minor" in self.dataset.labels:
+        dataset = self.client.get_dataset(self.dataset_ref)
+        if "version_major" in dataset.labels and \
+           "version_minor" in dataset.labels:
             try:
-                return int(self.dataset.labels["version_major"]), \
-                    int(self.dataset.labels["version_minor"])
+                return int(dataset.labels["version_major"]), \
+                    int(dataset.labels["version_minor"])
             except ValueError:
                 return None
         if set(tli.table_id for tli in
