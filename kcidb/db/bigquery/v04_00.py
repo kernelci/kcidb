@@ -657,6 +657,9 @@ class Schema(AbstractSchema):
                 node[index] = cls._unpack_node(value)
         elif isinstance(node, dict):
             for key, value in list(node.items()):
+                if value == []:
+                    node[key] = None
+                    value = None
                 if value is None:
                     if drop_null:
                         del node[key]
