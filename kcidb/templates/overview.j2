@@ -1,0 +1,48 @@
+{# Overview template macros #}
+{% import "test.j2" as test_macros %}
+
+{%- macro emoji_counts() -%}
+    {%- set ns = namespace(
+            max_emojis={},
+            pieces=[],
+            trail=0
+        ) -%}
+
+    {# Find maximum emoji counts accross all arguments #}
+    {%- for emoji in test_macros.WAIVED_STATUS_EMOJIS.values() -%}
+        {%- set _ = ns.max_emojis.__setitem__(
+                emoji, varargs | map(attribute=emoji) | max
+            ) -%}
+    {%- endfor -%}
+
+    {# Build a list of "<emoji> <count>" pieces for all emojis #}
+    {%- for emoji, count in varargs[0].items() -%}
+        {%- if ns.max_emojis[emoji] > 0 -%}
+
+            {# Add an "<emoji> <count>" piece #}
+            {%- set _ = ns.pieces.extend([
+                (
+                    "%s %" +
+                    (ns.max_emojis[emoji] | string | length | string) +
+                    "s"
+                ) |
+                format(
+                    "➖" if count == 0 else emoji,
+                    "" if count == 0 else (count | string)
+                )
+               ]) -%}
+
+            {# Get the number of trailling "➖" character #}
+            {%- if count -%}
+                {%- set ns.trail = 0 -%}
+            {%- else -%}
+                {%- set ns.trail = ns.trail + 1 -%}
+            {%- endif -%}
+
+        {%- endif -%}
+    {%- endfor -%}
+
+    {# Output the pieces of interest #}
+    {{- ns.pieces[:(ns.pieces | length) - ns.trail] | join(" ") -}}
+
+{%- endmacro -%}
