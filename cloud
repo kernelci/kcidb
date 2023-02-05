@@ -1654,6 +1654,7 @@ function escape_whitespace() {
 #       --heavy-asserts=true|false
 #       --updated-publish=true|false
 #       --submitters=WORDS
+#       --argv=WORDS
 function execute_command() {
     params="$(getopt_vars command \
                           format \
@@ -1669,10 +1670,12 @@ function execute_command() {
                           heavy_asserts \
                           updated_publish \
                           submitters \
+                          argv \
                           -- "$@")"
     eval "$params"
-    # Convert submitters from a string of words to an array
+    # Convert submitters and extra args from a string of words to an array
     eval "declare -a submitters=($submitters)"
+    eval "declare -a argv=($argv)"
 
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
@@ -1872,6 +1875,16 @@ function execute_command() {
             "$pick_notifications_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
+    elif [ "$command" == "shell" ]; then
+        export GCP_PROJECT="$project"
+        source <(cloud_functions_env --format=sh "${env_args[@]}")
+        export KCIDB_DEPLOYED=1
+        if (( ${#argv[@]} )); then
+            argv=("$SHELL" "-c" "${argv[*]@Q}")
+        else
+            argv=("$SHELL" "-i")
+        fi
+        psql_proxy_session "$project" "$PSQL_INSTANCE" "${argv[@]}"
     elif [ "$command" == "withdraw" ]; then
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
@@ -2012,6 +2025,46 @@ function usage_env() {
     echo ""
 }
 
+# Output shell command usage information
+function usage_shell() {
+    echo "Usage: $(basename "$0") shell [OPTION...]" \
+         "PROJECT NAMESPACE [VERSION [CMD [ARG...]]"
+    echo "Execute a shell with deployment environment."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo "    --extra-cc=ADDRS"
+    echo "              Add specified addresses to CC of all emails."
+    echo "    --smtp-to-addrs=ADDRS"
+    echo "              Specify a comma-separated list of addresses"
+    echo "              to override recipients of email notifications."
+    echo "    --smtp-mocked"
+    echo "              Expect notification messages to be posted to a"
+    echo "              PubSub topic, instead of being sent to the SMTP"
+    echo "              server."
+    echo "    --log-level=NAME"
+    echo "              Specify Python log level NAME for Cloud Functions."
+    echo "              Default is INFO."
+    echo "    --heavy-asserts"
+    echo "              Enable heavy assertion checking in deployment."
+    echo "    --mute-updates"
+    echo "              Expect updates about loaded data to be disabled."
+    echo "    --test"
+    echo "              Expect various test resources to be deployed."
+    echo ""
+    echo "Positional arguments:"
+    echo ""
+    echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
+    echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
+    echo "    VERSION   Optional version of the dataset, e.g. 4."
+    echo "    CMD       The command to execute inside the shell."
+    echo "              If not specified, an interactive shell is started."
+    echo "    ARG       An argument to pass to the command, if specified."
+    echo ""
+}
+
 # Output withdraw command usage information
 function usage_withdraw() {
     echo "Usage: $(basename "$0") withdraw [OPTION...]" \
@@ -2100,13 +2153,13 @@ function execute() {
     declare getopt_shortopts="h"
     declare getopt_longopts="help"
 
-    if [[ $command == @(deploy|env|withdraw) ]]; then
+    if [[ $command == @(deploy|env|shell|withdraw) ]]; then
         getopt_longopts+=",smtp-mocked,test"
         if [[ $command == @(deploy|withdraw) ]]; then
             getopt_shortopts+="vs:"
             getopt_longopts+=",verbose,sections:,submitter:"
         fi
-        if [[ $command == @(deploy|env) ]]; then
+        if [[ $command == @(deploy|env|shell) ]]; then
             getopt_longopts+=",extra-cc:,smtp-to-addrs:"
             getopt_longopts+=",log-level:,heavy-asserts,mute-updates"
             if [[ $command == env ]]; then
@@ -2165,8 +2218,13 @@ function execute() {
         esac
     done
 
-    # Execute list-sections, if requested, and exit
+    # Process positional arguments according to the command invoked
     if [ "$command" == "list-sections" ]; then
+        if (( $# > 1 )); then
+            echo "Invalid number of positional arguments" >&2
+            "usage_${command//-/_}" >&2
+            exit 1
+        fi
         declare glob="${1:-*}"
         declare name
         for name in "${!SECTIONS[@]}"; do
@@ -2176,17 +2234,28 @@ function execute() {
             fi
         done
         exit 0
+    elif [ "$command" == "shell" ]; then
+        if (( $# < 2 )); then
+            echo "Invalid number of positional arguments" >&2
+            "usage_${command//-/_}" >&2
+            exit 1
+        fi
+    else
+        if (( $# < 2 || $# > 3 )); then
+            echo "Invalid number of positional arguments" >&2
+            "usage_${command//-/_}" >&2
+            exit 1
+        fi
     fi
 
     # Read and normalize positional arguments
-    if (( $# < 2 || $# > 3 )); then
-        echo "Invalid number of positional arguments" >&2
-        "usage_${command}" >&2
-        exit 1
-    fi
     declare -r project="$1"; shift
     declare -r namespace="$1"; shift
-    declare version="${1:-0}"
+    if (( $# )); then
+        declare version="$1"; shift
+    else
+        version="0"
+    fi
     if [[ $version =~ ^[0-9]+$ ]]; then
         version=$(printf %02u "$version")
     else
@@ -2195,6 +2264,7 @@ function execute() {
         exit 1
     fi
     declare -r version
+    declare -r -a argv=("$@")
 
     # Execute the command
     execute_command --command="$command" \
@@ -2210,7 +2280,8 @@ function execute() {
                     --log-level="$log_level" \
                     --heavy-asserts="$heavy_asserts" \
                     --updated-publish="$updated_publish" \
-                    --submitters="${submitters[*]@Q}"
+                    --submitters="${submitters[*]@Q}" \
+                    --argv="${argv[*]@Q}"
 }
 
 execute "$@"
