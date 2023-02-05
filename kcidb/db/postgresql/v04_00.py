@@ -79,6 +79,9 @@ class Connection(AbstractConnection):
         # Specify the logger to the LoggingConnection
         # It logs with DEBUG level, judging from the source (but not the docs)
         self.conn.initialize(LOGGER)
+        # Set session timezone to UTC, overriding local settings
+        with self, self.cursor() as cursor:
+            cursor.execute("SET SESSION TIME ZONE 'UTC'")
 
     def __getattr__(self, name):
         """
