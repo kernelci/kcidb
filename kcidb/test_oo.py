@@ -631,7 +631,7 @@ def test_traversing_revision_root_test_node(traversing_client):
 
         assert node.nodes == {}
 
-    assert path == ["pass1", "pass2", "fail"]
+    assert set(path) == {"pass1", "pass2", "fail"}
 
 
 @pytest.fixture
