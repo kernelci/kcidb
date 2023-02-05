@@ -878,7 +878,7 @@ def source(empty_database):
                 "origin": "kernelci",
                 "version": 1,
                 "report_url": "https://bugzilla/207065",
-                "report_subject": "Printing doesn't work",
+                "report_subject": "Printer doesn't print",
             },
             {
                 "id": "redhat:987987da98798aa233",
@@ -1090,23 +1090,24 @@ def test_run(source):
         ]
     }
 
+    bug_x = raw_bug(
+        url="https://bugzilla/1201011",
+        subject="Compiler compiles wrong",
+    )
+    bug_y = raw_bug(
+        url="https://bugzilla/207065",
+        subject="Printer doesn't print",
+    )
     assert \
         query_str(
             source,
             '>test["redhat:redhat.org:'
             'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c"]'
             '>incident<issue<bug#'
-        ) == \
-        dict(bug=[
-            raw_bug(
-                url="https://bugzilla/1201011",
-                subject="Compiler compiles wrong",
-            ),
-            raw_bug(
-                url="https://bugzilla/207065",
-                subject="Printer doesn't print",
-            ),
-        ])
+        ) in [
+            dict(bug=[bug_x, bug_y]),
+            dict(bug=[bug_y, bug_x]),
+        ]
 
 
 def test_build(source):
@@ -1252,8 +1253,7 @@ def test_checkout(source):
         ">build#"
     )
 
-    assert builds["build"]
-    compare_builds = map(lambda x: raw_build(**x), [
+    compare_builds = list(map(lambda x: raw_build(**x), [
         {
             "id": "kernelci:kernelci.org:619c65d3c1b0a764f3f2efa0",
             "checkout_id": "_:kernelci:"
@@ -1350,10 +1350,12 @@ def test_checkout(source):
                            "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
             "origin": "kernelci",
         }
-    ])
+    ]))
 
-    for data in zip(builds["build"], compare_builds):
-        assert data[0] == data[1]
+    for build in builds["build"]:
+        assert build in compare_builds
+    for build in compare_builds:
+        assert build in builds["build"]
 
     test_of_build_of_revision_dollar_sign = query_str(
         source,
@@ -1564,7 +1566,7 @@ def test_bug(source):
             id="kernelci:1987934987",
             origin="kernelci",
             report_url="https://bugzilla/207065",
-            report_subject="Printing doesn't work",
+            report_subject="Printer doesn't print",
             version=1,
         ) in \
         issues
@@ -1733,25 +1735,24 @@ def test_bug(source):
             origin="redhat",
         )])
 
+    revision_x = raw_revision(
+        git_commit_hash="5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+        git_commit_name="v5.15-4077-g5acb9c2a7bc8",
+        patchset_hash="",
+    )
+    revision_y = raw_revision(
+        git_commit_hash="82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896",
+        patchset_hash="",
+    )
     assert \
         query_str(
             source,
             '>bug["https://maillist/498232"]>issue>incident'
             '<test<build<checkout<revision#'
-        ) == \
-        dict(revision=[
-            raw_revision(
-                git_commit_hash="5acb9c2a7bc836e9e51"
-                "72bbcd2311499c5b4e5f1",
-                git_commit_name="v5.15-4077-g5acb9c2a7bc8",
-                patchset_hash="",
-            ),
-            raw_revision(
-                git_commit_hash="82bcf49e5e6ad570ff6"
-                "1ffcd210cf85c5ec8d896",
-                patchset_hash="",
-            )
-        ])
+        ) in [
+            dict(revision=[revision_x, revision_y]),
+            dict(revision=[revision_y, revision_x]),
+        ]
 
 
 def test_issue(source):
@@ -1777,7 +1778,7 @@ def test_issue(source):
             id="kernelci:1987934987",
             origin="kernelci",
             report_url="https://bugzilla/207065",
-            report_subject="Printing doesn't work",
+            report_subject="Printer doesn't print",
             version=1,
         )])
 
@@ -2092,7 +2093,7 @@ def test_incident(source):
             id="kernelci:1987934987",
             origin="kernelci",
             report_url="https://bugzilla/207065",
-            report_subject="Printing doesn't work",
+            report_subject="Printer doesn't print",
             version=1,
         )])
 
