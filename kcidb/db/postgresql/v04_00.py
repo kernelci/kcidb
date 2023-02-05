@@ -723,16 +723,22 @@ class Schema(AbstractSchema):
             base_obj_type = pattern.base.obj_type
             if pattern.child:
                 base_relation = "parent"
-                column_pairs = zip(
+                column_pairs = list(zip(
                     base_obj_type.children[obj_type.name].ref_fields,
                     base_obj_type.id_fields
-                )
+                ))
             else:
                 base_relation = "child"
-                column_pairs = zip(
+                column_pairs = list(zip(
                     obj_type.id_fields,
                     obj_type.children[base_obj_type.name].ref_fields
-                )
+                ))
+                base_query_string = \
+                    "SELECT DISTINCT " + \
+                    ", ".join(b for o, b in column_pairs) + "\n" \
+                    "FROM (\n" + \
+                    textwrap.indent(base_query_string, " " * 4) + "\n" + \
+                    ") AS non_distinct_base"
 
             query_string = \
                 f"/* {obj_type.name.capitalize()}s with " + \
@@ -742,9 +748,7 @@ class Schema(AbstractSchema):
                 ") AS obj INNER JOIN (\n" + \
                 textwrap.indent(base_query_string, " " * 4) + "\n" + \
                 ") AS base ON " + \
-                " AND ".join(
-                    [f"obj.{o} = base.{b}" for o, b in column_pairs]
-                )
+                " AND ".join(f"obj.{o} = base.{b}" for o, b in column_pairs)
             query_parameters += base_query_parameters
 
         return query_string, query_parameters
