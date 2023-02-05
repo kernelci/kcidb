@@ -442,7 +442,7 @@ class Schema(AbstractSchema):
                     raise Exception(
                         f"Failed creating table {table_name!r}"
                     ) from exc
-            # Create the "first" aggregation
+            # Create the "first" and "last" aggregations
             # Source: https://wiki.postgresql.org/wiki/First/last_(aggregate)
             cursor.execute(textwrap.dedent("""\
                 CREATE OR REPLACE FUNCTION first_agg(anyelement, anyelement)
@@ -451,8 +451,21 @@ class Schema(AbstractSchema):
                 'SELECT $1'
             """))
             cursor.execute(textwrap.dedent("""\
+                CREATE OR REPLACE FUNCTION last_agg(anyelement, anyelement)
+                RETURNS anyelement
+                LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
+                'SELECT $2';
+            """))
+            cursor.execute(textwrap.dedent("""\
                 CREATE OR REPLACE AGGREGATE first(anyelement) (
-                    SFUNC = public.first_agg,
+                    SFUNC = first_agg,
+                    STYPE = anyelement,
+                    PARALLEL = safe
+                )
+            """))
+            cursor.execute(textwrap.dedent("""\
+                CREATE AGGREGATE last(anyelement) (
+                    SFUNC = last_agg,
                     STYPE = anyelement,
                     PARALLEL = safe
                 )
@@ -464,7 +477,11 @@ class Schema(AbstractSchema):
         The database must be initialized.
         """
         with self.conn, self.conn.cursor() as cursor:
+            cursor.execute("DROP AGGREGATE IF EXISTS last(anyelement)")
             cursor.execute("DROP AGGREGATE IF EXISTS first(anyelement)")
+            cursor.execute(
+                "DROP FUNCTION IF EXISTS last_agg(anyelement, anyelement)"
+            )
             cursor.execute(
                 "DROP FUNCTION IF EXISTS first_agg(anyelement, anyelement)"
             )
