@@ -332,7 +332,7 @@ def validate_json_value(field, value):
             )
         validate_json_obj(field.fields, value)
     else:
-        ValueError(f"Unknown field type: {field.field_type!r}")
+        raise ValueError(f"Unknown field type: {field.field_type!r}")
 
     return value
 
