@@ -668,36 +668,43 @@ def test_query(empty_database):
             ],
         }
 
-    assert client.query(ids=dict(checkouts=["_:2"]), children=True) == \
+    unambigious_result = {
+        "version": {"major": 4, "minor": 1},
+        "checkouts": [
+            {"id": "_:2", "origin": "_"}
+        ],
+        "builds": [
+            {"checkout_id": "_:2", "id": "_:2", "origin": "_"}
+        ],
+        "tests": [
+            {"build_id": "_:2", "id": "_:2", "origin": "_"}
+        ],
+    }
+    incident_x = {
+        "build_id": "_:2",
+        "id": "_:3",
+        "issue_id": "_:3",
+        "issue_version": 1,
+        "origin": "_",
+        "test_id": "_:2",
+    }
+    incident_y = {
+        "id": "_:5",
+        "issue_id": "_:4",
+        "issue_version": 1,
+        "origin": "_",
+        "test_id": "_:2",
+    }
+    assert client.query(ids=dict(checkouts=["_:2"]), children=True) in [
         {
-            "version": {"major": 4, "minor": 1},
-            "checkouts": [
-                {"id": "_:2", "origin": "_"}
-            ],
-            "builds": [
-                {"checkout_id": "_:2", "id": "_:2", "origin": "_"}
-            ],
-            "tests": [
-                {"build_id": "_:2", "id": "_:2", "origin": "_"}
-            ],
-            "incidents": [
-                {
-                    "build_id": "_:2",
-                    "id": "_:3",
-                    "issue_id": "_:3",
-                    "issue_version": 1,
-                    "origin": "_",
-                    "test_id": "_:2",
-                },
-                {
-                    "id": "_:5",
-                    "issue_id": "_:4",
-                    "issue_version": 1,
-                    "origin": "_",
-                    "test_id": "_:2",
-                },
-            ],
-        }
+            **unambigious_result,
+            "incidents": [incident_x, incident_y],
+        },
+        {
+            **unambigious_result,
+            "incidents": [incident_y, incident_x],
+        },
+    ]
 
     assert client.query(ids=dict(incidents=["_:3"]), parents=True) == \
         {
@@ -726,40 +733,47 @@ def test_query(empty_database):
             ],
         }
 
+    unambigious_result = {
+        "version": {"major": 4, "minor": 1},
+        "checkouts": [
+            {"id": "_:2", "origin": "_"}
+        ],
+        "builds": [
+            {"checkout_id": "_:2", "id": "_:2", "origin": "_"}
+        ],
+        "tests": [
+            {"build_id": "_:2", "id": "_:2", "origin": "_"}
+        ],
+        "issues": [
+            {"id": "_:3", "origin": "_", "version": 1}
+        ],
+    }
+    incident_x = {
+        "build_id": "_:2",
+        "id": "_:3",
+        "issue_id": "_:3",
+        "issue_version": 1,
+        "origin": "_",
+        "test_id": "_:2",
+    }
+    incident_y = {
+        "id": "_:5",
+        "issue_id": "_:4",
+        "issue_version": 1,
+        "origin": "_",
+        "test_id": "_:2",
+    }
     assert client.query(ids=dict(incidents=["_:3"]),
-                        parents=True, children=True) == \
+                        parents=True, children=True) in [
         {
-            "version": {"major": 4, "minor": 1},
-            "checkouts": [
-                {"id": "_:2", "origin": "_"}
-            ],
-            "builds": [
-                {"checkout_id": "_:2", "id": "_:2", "origin": "_"}
-            ],
-            "tests": [
-                {"build_id": "_:2", "id": "_:2", "origin": "_"}
-            ],
-            "issues": [
-                {"id": "_:3", "origin": "_", "version": 1}
-            ],
-            "incidents": [
-                {
-                    "build_id": "_:2",
-                    "id": "_:3",
-                    "issue_id": "_:3",
-                    "issue_version": 1,
-                    "origin": "_",
-                    "test_id": "_:2",
-                },
-                {
-                    "id": "_:5",
-                    "issue_id": "_:4",
-                    "issue_version": 1,
-                    "origin": "_",
-                    "test_id": "_:2",
-                },
-            ],
-        }
+            **unambigious_result,
+            "incidents": [incident_x, incident_y],
+        },
+        {
+            **unambigious_result,
+            "incidents": [incident_y, incident_x],
+        },
+    ]
 
 
 def test_empty(empty_database):
