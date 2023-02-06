@@ -14,7 +14,8 @@ extension-pkg-whitelist=jq
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=duplicate-code,fixme,too-few-public-methods,redefined-builtin,consider-using-from-import
+disable=duplicate-code,fixme,too-few-public-methods,redefined-builtin,
+        consider-using-from-import,use-dict-literal,broad-exception-raised
 
 [REPORTS]
 # Activate the evaluation score.
