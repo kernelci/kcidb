@@ -24,14 +24,17 @@ def validate_json_value(field, value):
     Raises:
         JSONInvalidError: the JSON value doesn't match the field type.
     """
+    # It's OK, pylint: disable=too-many-branches
     assert isinstance(field, Field)
-
     if field.field_type == "BOOL":
         if not isinstance(value, bool):
             raise JSONInvalidError(f"Value is not a boolean: {value!r}")
     elif field.field_type == "STRING":
         if not isinstance(value, str):
             raise JSONInvalidError(f"Value is not a string: {value!r}")
+    elif field.field_type == "INTEGER":
+        if not isinstance(value, int):
+            raise JSONInvalidError(f"Value is not integer: {value!r}")
     elif field.field_type == "FLOAT64":
         if not isinstance(value, (int, float)):
             raise JSONInvalidError(f"Value is not numeric: {value!r}")
