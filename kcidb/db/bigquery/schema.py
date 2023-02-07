@@ -314,7 +314,7 @@ def validate_json_value(field, value):
     if field.field_type == "BOOL":
         if not isinstance(value, bool):
             raise JSONInvalidError(f"Value is not a boolean: {value!r}")
-    if field.field_type == "STRING":
+    elif field.field_type == "STRING":
         if not isinstance(value, str):
             raise JSONInvalidError(f"Value is not a string: {value!r}")
     elif field.field_type == "FLOAT64":
