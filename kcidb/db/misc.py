@@ -32,16 +32,6 @@ class NotFound(Error):
 class UnsupportedSchema(Error):
     """Database schema version is not supported"""
 
-    def __init__(self, major, minor):
-        """
-        Initialize the exception.
-
-        Args:
-            major:  Database schema major version number
-            minor:  Database schema minor version number
-        """
-        super().__init__(f"Database schema v{major}.{minor} is unsupported")
-
 
 def format_spec_list(specs):
     """

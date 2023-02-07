@@ -395,7 +395,10 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
                         schema.version[1] <= version[1]:
                     break
             else:
-                raise UnsupportedSchema(*version)
+                raise UnsupportedSchema(
+                        f"Database schema v{version[0]}.{version[1]} "
+                        f"is unsupported"
+                )
             self.schema = schema(self.conn)
 
     def is_initialized(self):
