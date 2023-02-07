@@ -195,7 +195,9 @@ class Driver(AbstractDriver):
         )
         initialized = Driver._drivers_are_initialized(self.drivers)
         if initialized is None:
-            raise kcidb.db.misc.UnsupportedSchema(None, None)
+            raise kcidb.db.misc.UnsupportedSchema(
+                f"Initialization status is inconsistent for {params!r}"
+            )
         # The driver's available schemas, starting with the currently-used
         # by the drivers, or with the minimum ones, if none,
         # pointed to by v0.0
