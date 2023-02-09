@@ -389,6 +389,8 @@ def test_upgrade(clean_database):
     db_client = clean_database
     db_client.init(kcidb.io.schema.V4_0)
     assert db_client.get_schema()[1] == kcidb.io.schema.V4_0
+    assert db_client.dump() == dict(version=dict(major=4, minor=0))
+
     # NOTE: Having only one element per list to ensure comparison
     v4_0_data = {
         "version": {"major": 4, "minor": 0},
