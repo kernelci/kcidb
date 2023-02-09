@@ -240,7 +240,7 @@ class Client(kcidb.orm.Source):
         try:
             return next(self.dump_iter(objects_per_report=0))
         except StopIteration:
-            return io.SCHEMA.new()
+            return self.get_schema()[1].new()
 
     def query_iter(self, ids=None,
                    children=False, parents=False,
@@ -308,7 +308,7 @@ class Client(kcidb.orm.Source):
                                         children=children, parents=parents,
                                         objects_per_report=0))
         except StopIteration:
-            return io.SCHEMA.new()
+            return self.get_schema()[1].new()
 
     def oo_query(self, pattern_set):
         """
