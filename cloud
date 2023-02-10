@@ -22,8 +22,8 @@ declare PSQL_PROXY_BINARY="$TMPDIR/cloud_sql_proxy"
 # Location of the PostgreSQL proxy socket directory
 declare PSQL_PROXY_DIR="$TMPDIR/cloud_sql_sockets"
 
-# File containing the PID of the PostgreSQL proxy, if started
-declare PSQL_PROXY_PID_FILE="$TMPDIR/cloud_sql_proxy.pid"
+# File containing the PID of the shell executing PostgreSQL proxy, if started
+declare PSQL_PROXY_SHELL_PID_FILE="$TMPDIR/cloud_sql_proxy.pid"
 
 # The .pgpass file for the command running through PostgreSQL proxy
 declare PSQL_PROXY_PGPASS="$TMPDIR/cloud_sql_proxy.pgpass"
@@ -31,11 +31,11 @@ declare PSQL_PROXY_PGPASS="$TMPDIR/cloud_sql_proxy.pgpass"
 # Cleanup after the script
 function _cleanup() {
     # Kill the cloud_sql_proxy, if started
-    if [ -e "$PSQL_PROXY_PID_FILE" ]; then
+    if [ -e "$PSQL_PROXY_SHELL_PID_FILE" ]; then
         declare pid
-        pid=$(< "$PSQL_PROXY_PID_FILE")
-        kill "$pid" 2>/dev/null || true
-        rm -f "$PSQL_PROXY_PID_FILE"
+        pid=$(< "$PSQL_PROXY_SHELL_PID_FILE")
+        pkill -P "$pid" 2>/dev/null || true
+        rm -f "$PSQL_PROXY_SHELL_PID_FILE"
     fi
     # Remove the directory with all the temporary files
     rm -Rf "$TMPDIR"
@@ -310,8 +310,8 @@ function psql_proxy_session() {
     # Start the proxy in background
     mute "$proxy" "-instances=$fq_instance" "-dir=$PSQL_PROXY_DIR" &
     pid="$!"
-    # Store the PID for errexit cleanup
-    echo -n "$pid" > "$PSQL_PROXY_PID_FILE"
+    # Store the PID of the shell running the proxy, for errexit cleanup
+    echo -n "$pid" > "$PSQL_PROXY_SHELL_PID_FILE"
 
     # Create the .pgpass file
     touch "$PSQL_PROXY_PGPASS"
@@ -328,8 +328,8 @@ function psql_proxy_session() {
     rm "$PSQL_PROXY_PGPASS"
 
     # Stop the proxy
-    kill "$pid" && wait "$pid" || true
-    rm "$PSQL_PROXY_PID_FILE"
+    pkill -P "$pid" && wait "$pid" || true
+    rm "$PSQL_PROXY_SHELL_PID_FILE"
 }
 
 # Check if a PostgreSQL database exists.
