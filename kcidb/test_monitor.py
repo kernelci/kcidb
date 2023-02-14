@@ -519,7 +519,7 @@ def test_email_generated(empty_deployment):
     # Try to pull the four notification messages we're expecting and
     # check we get one correct message per object type
     obj_types = {"revision", "checkout", "build", "test"}
-    for ack_id, email in email_subscriber.pull_iter(4, 1800):
+    for ack_id, email in email_subscriber.pull_iter(4, 600):
         email_subscriber.ack(ack_id)
         assert email['From'] == "bot@kernelci.org"
         assert email['To'] == "test@kernelci.org"
