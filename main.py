@@ -104,7 +104,8 @@ def get_load_queue_subscriber():
         _LOAD_QUEUE_SUBSCRIBER = kcidb.mq.IOSubscriber(
             PROJECT_ID,
             os.environ["KCIDB_LOAD_QUEUE_TOPIC"],
-            os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"]
+            os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"],
+            schema=get_db_client().get_schema()[1]
         )
     return _LOAD_QUEUE_SUBSCRIBER
 
@@ -189,6 +190,7 @@ def kcidb_load_queue(event, context):
     """
     subscriber = get_load_queue_subscriber()
     db_client = get_db_client()
+    io_schema = db_client.get_schema()[1]
     publisher = get_updated_queue_publisher()
     # Do nothing, if updated recently
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -212,14 +214,14 @@ def kcidb_load_queue(event, context):
 
     # Create merged data referencing the pulled pieces
     LOGGER.debug("Merging %u messages...", len(msgs))
-    data = kcidb.io.SCHEMA.merge(
-        kcidb.io.SCHEMA.new(),
+    data = io_schema.merge(
+        io_schema.new(),
         (msg[1] for msg in msgs),
         copy_target=False, copy_sources=False
     )
     LOGGER.info("Merged %u messages", len(msgs))
     # Load the merged data into the database
-    obj_num = kcidb.io.SCHEMA.count(data)
+    obj_num = io_schema.count(data)
     LOGGER.debug("Loading %u objects...", obj_num)
     db_client.load(data)
     LOGGER.info("Loaded %u objects", obj_num)
