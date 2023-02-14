@@ -26,9 +26,8 @@ LOGGER = logging.getLogger(__name__)
 class Publisher(ABC):
     """Abstract message queue publisher"""
 
-    @staticmethod
     @abstractmethod
-    def encode_data(data):
+    def encode_data(self, data):
         """
         Encode published data.
 
@@ -160,9 +159,8 @@ class Publisher(ABC):
 class Subscriber(ABC):
     """Abstract message queue subscriber"""
 
-    @staticmethod
     @abstractmethod
-    def decode_data(message_data):
+    def decode_data(self, message_data):
         """
         Decode message data to extract the original published data.
 
@@ -348,8 +346,7 @@ class Subscriber(ABC):
 class IOPublisher(Publisher):
     """I/O data queue publisher"""
 
-    @staticmethod
-    def encode_data(data):
+    def encode_data(self, data):
         """
         Encode JSON data, adhering to the current version of I/O schema, into
         message data.
@@ -372,8 +369,7 @@ class IOPublisher(Publisher):
 class IOSubscriber(Subscriber):
     """I/O data queue subscriber"""
 
-    @staticmethod
-    def decode_data(message_data):
+    def decode_data(self, message_data):
         """
         Decode message data to extract the JSON data adhering to the current
         I/O schema.
@@ -478,8 +474,7 @@ class IOSubscriber(Subscriber):
 class ORMPatternPublisher(Publisher):
     """ORM pattern queue publisher"""
 
-    @staticmethod
-    def encode_data(data):
+    def encode_data(self, data):
         """
         Encode a set of kcidb.orm.Pattern objects, into message data.
 
@@ -503,8 +498,7 @@ class ORMPatternPublisher(Publisher):
 class ORMPatternSubscriber(Subscriber):
     """ORM pattern queue subscriber"""
 
-    @staticmethod
-    def decode_data(message_data):
+    def decode_data(self, message_data):
         """
         Decode message data to extract kcidb.orm.Pattern objects.
 
@@ -528,8 +522,7 @@ class ORMPatternSubscriber(Subscriber):
 class EmailPublisher(Publisher):
     """Email queue publisher"""
 
-    @staticmethod
-    def encode_data(data):
+    def encode_data(self, data):
         """
         Encode an email, into message data.
 
@@ -549,7 +542,6 @@ class EmailPublisher(Publisher):
 class EmailSubscriber(Subscriber):
     """Email queue subscriber"""
 
-    # We'll be OK, pylint: disable=arguments-differ
     def decode_data(self, message_data):
         """
         Decode email from the message data.
