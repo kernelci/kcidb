@@ -45,6 +45,37 @@ EMPTY_DATABASES = {
 }
 
 
+# Only available when KCIDB_DEPLOYMENT is set to "This deployment is empty"
+@pytest.fixture(
+    params=["empty_deployment"]
+    if os.environ.get("KCIDB_DEPLOYMENT", "") == "This deployment is empty"
+    else []
+)
+def empty_deployment():
+    """Reusable empty (no-data) deployment"""
+    yield None
+    project = os.environ["GCP_PROJECT"]
+    # Empty the load queue subscription
+    topic = os.environ["KCIDB_LOAD_QUEUE_TOPIC"]
+    subscription = os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"]
+    for _ in kcidb.mq.IOSubscriber(project, topic, subscription). \
+            pull_iter(timeout=5):
+        pass
+    # Empty the database
+    kcidb.db.Client(os.environ["KCIDB_DATABASE"]).empty()
+    # Wipe the spool
+    kcidb.monitor.spool.Client(
+        os.environ["KCIDB_SPOOL_COLLECTION_PATH"]
+    ).wipe()
+    # Empty the mock SMTP queue subscription
+    topic = os.environ.get("KCIDB_SMTP_TOPIC")
+    subscription = os.environ.get("KCIDB_SMTP_SUBSCRIPTION")
+    if topic and subscription:
+        for _ in kcidb.mq.EmailSubscriber(project, topic, subscription). \
+                pull_iter(timeout=5):
+            pass
+
+
 @pytest.fixture
 def clean_database(_clean_database):
     """Reusable clean (uninitialized) database"""

@@ -6,7 +6,6 @@ import unittest
 import kcidb
 from kcidb.io import SCHEMA
 from kcidb import orm, db, oo, monitor
-from kcidb.unittest import local_only, deployment_only
 
 # Disable long line checking for JSON data
 # flake8: noqa
@@ -33,7 +32,6 @@ def match(io_data, pattern=">*#"):
     return monitor.match(oo_client.query(orm.Pattern.parse(pattern)))
 
 
-@local_only
 def test_min():
     """Check minimal matching"""
 
@@ -252,7 +250,6 @@ def test_min():
         assert f"Test {obj_type_name} detected!\n\n" in content
 
 
-@local_only
 def test_mark_brown():
     """Check Mark Brown's subscription works"""
     notifications = match({
@@ -335,13 +332,15 @@ def test_mark_brown():
     assert re.match(r"^Testing done for ", subjects[1])
 
 
-@deployment_only
 @unittest.skipUnless(
     os.environ.get("KCIDB_UPDATED_PUBLISH", ""),
     "Updates about loaded data are disabled"
 )
-def test_email_generated():
+def test_email_generated(empty_deployment):
     """Check appropriate email is generated for "test" subscription"""
+
+    # Calm down please, pylint
+    assert empty_deployment is None
 
     client = kcidb.Client(
         project_id=os.environ["GCP_PROJECT"],

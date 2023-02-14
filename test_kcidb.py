@@ -5,10 +5,9 @@ import json
 import textwrap
 import kcidb
 from kcidb.io import SCHEMA
-from kcidb.unittest import local_only, assert_executes
+from kcidb.unittest import assert_executes
 
 
-@local_only
 def test_light_asserts_are_disabled():
     """Check light asserts are disabled"""
     assert not kcidb.io.misc.LIGHT_ASSERTS, \
@@ -19,7 +18,6 @@ def test_light_asserts_are_disabled():
         "environment variable set to a non-empty string"
 
 
-@local_only
 def test_json_output_options():
     """Check JSON output options work"""
     assert_executes("", "kcidb.schema_main",
@@ -34,7 +32,6 @@ def test_json_output_options():
                     stdout_re="\\{\n  \".*")
 
 
-@local_only
 def test_submit_main():
     """Check kcidb-submit works"""
     driver_source = textwrap.dedent("""
@@ -97,7 +94,6 @@ def test_submit_main():
                     stdout_re="id\nid\n")
 
 
-@local_only
 def test_query_main():
     """Check kcidb-query works"""
     driver_source = textwrap.dedent("""
@@ -147,7 +143,6 @@ def test_query_main():
     )
 
 
-@local_only
 def test_schema_main():
     """Check kcidb-schema works"""
     assert_executes(
@@ -171,7 +166,6 @@ def test_schema_main():
                     f"number {SCHEMA.major + 1}\n")
 
 
-@local_only
 def test_validate_main():
     """Check kcidb-validate works"""
     empty = json.dumps(dict(version=dict(major=SCHEMA.major,
@@ -215,7 +209,6 @@ def test_validate_main():
                     stderr_re=".*ValidationError.*")
 
 
-@local_only
 def test_upgrade_main():
     """Check kcidb-upgrade works"""
     major = SCHEMA.major
@@ -263,7 +256,6 @@ def test_upgrade_main():
                     stdout_re=re.escape(latest_version))
 
 
-@local_only
 def test_count_main():
     """Check kcidb-count works"""
     assert_executes('', "kcidb.count_main")
@@ -286,7 +278,6 @@ def test_count_main():
                     "kcidb.count_main", stdout_re="1\n1\n")
 
 
-@local_only
 def test_merge_main():
     """Check kcidb-merge works"""
     empty = json.dumps(dict(version=dict(major=SCHEMA.major,
@@ -343,7 +334,6 @@ def test_merge_main():
                     ))
 
 
-@local_only
 def test_notify_main():
     """Check kcidb-notify works"""
     assert_executes('', "kcidb.notify_main", ">*#")

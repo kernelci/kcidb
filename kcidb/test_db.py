@@ -6,10 +6,9 @@ import datetime
 import json
 import pytest
 import kcidb
-from kcidb.unittest import local_only, assert_executes
+from kcidb.unittest import assert_executes
 
 
-@local_only
 def test_schemas_main():
     """Check kcidb-db-schemas works"""
     argv = ["kcidb.db.schemas_main", "-d", "sqlite::memory:"]
@@ -17,7 +16,6 @@ def test_schemas_main():
                     stdout_re=r"4\.0: 4\.0\n4\.1: 4\.1\n")
 
 
-@local_only
 def test_init_main():
     """Check kcidb-db-init works"""
     argv = ["kcidb.db.init_main", "-d", "bigquery:project.dataset"]
@@ -36,7 +34,6 @@ def test_init_main():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_cleanup_main():
     """Check kcidb-db-cleanup works"""
     argv = ["kcidb.db.cleanup_main", "-d", "bigquery:project.dataset"]
@@ -55,7 +52,6 @@ def test_cleanup_main():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_empty_main():
     """Check kcidb-db-empty works"""
     argv = ["kcidb.db.empty_main", "-d", "bigquery:project.dataset"]
@@ -74,7 +70,6 @@ def test_empty_main():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_dump_main():
     """Check kcidb-db-dump works"""
     empty = kcidb.io.SCHEMA.new()
@@ -111,7 +106,6 @@ def test_dump_main():
                                         json.dumps(empty) + "\n"))
 
 
-@local_only
 def test_query_main():
     """Check kcidb-db-query works"""
     driver_source = textwrap.dedent("""
@@ -159,7 +153,6 @@ def test_query_main():
     )
 
 
-@local_only
 def test_load_main():
     """Check kcidb-db-load works"""
     driver_source = textwrap.dedent("""

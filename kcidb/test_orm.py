@@ -6,7 +6,6 @@ import re
 from jinja2 import Template
 import pytest
 import kcidb
-from kcidb.unittest import local_only
 
 # We gotta have our fixtures, pylint: disable=redefined-outer-name
 
@@ -136,7 +135,6 @@ def from_io(io_data):
     return kcidb.orm.Pattern.from_io(io_data, schema=SCHEMA)
 
 
-@local_only
 def test_pattern_parse_misc():
     """Check miscellaneous pattern parsing works"""
     assert parse("") == set()
@@ -319,7 +317,6 @@ def test_pattern_parse_misc():
         }
 
 
-@local_only
 def test_pattern_parse_id_list():
     """Check pattern inline ID list parsing works"""
     assert parse(">revision[]#") == \
@@ -359,7 +356,6 @@ def test_pattern_parse_id_list():
                  {("abc", "def"), ("ghi", "jkl")})}
 
 
-@local_only
 def test_pattern_parse_trail_discard():
     """Check pattern parsing discards unmatched trail specifications"""
     assert \
@@ -381,7 +377,6 @@ def test_pattern_parse_trail_discard():
         }
 
 
-@local_only
 def test_pattern_parse_failures():
     """Check pattern parsing failures are handled appropriately"""
     with pytest.raises(Exception, match="Failed expanding") as excinfo:
@@ -399,7 +394,6 @@ def test_pattern_parse_failures():
     assert re.match("Invalid number of ID fields", str(exc))
 
 
-@local_only
 def test_pattern_from_io():
     """
     Check Pattern.from_io() works correctly.
@@ -577,7 +571,6 @@ def test_pattern_from_io():
     }
 
 
-@local_only
 def test_pattern_repr():
     """Check various patterns can be converted to strings"""
     assert repr(pattern(None, True, "revision")) == ">revision#"

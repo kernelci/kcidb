@@ -5,10 +5,8 @@ import sys
 from importlib import import_module
 from unittest.mock import patch
 import pytest
-from kcidb.unittest import local_only
 
 
-@local_only
 @patch('setuptools.setup')
 def test_console_scripts(setuptools_setup):
     """Check all entry points could be executed"""
