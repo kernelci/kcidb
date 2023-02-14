@@ -353,7 +353,7 @@ class IOPublisher(Publisher):
 
         Args:
             data:   JSON data to be encoded, adhering to the publisher's I/O
-                    schema version exactly.
+                    schema version.
 
         Returns
             The encoded message data.
@@ -362,7 +362,7 @@ class IOPublisher(Publisher):
             An exception in case data encoding failed.
         """
         if not LIGHT_ASSERTS:
-            self.schema.validate_exactly(data)
+            self.schema.validate(data)
         return json.dumps(data).encode()
 
     def __init__(self, *args, schema=io.SCHEMA, **kwargs):
@@ -780,7 +780,7 @@ def io_publisher_main():
             print(publishing_id, file=sys.stdout)
             sys.stdout.flush()
         publisher.publish_iter(
-            (publisher.schema.upgrade(data, copy=False)
+            (publisher.schema.validate(data)
              for data in misc.json_load_stream_fd(sys.stdin.fileno())),
             done_cb=print_publishing_id
         )
