@@ -165,7 +165,9 @@ def kcidb_load_message(event, context):
     subscription into the database.
     """
     # Get new data
-    data = kcidb.mq.IOSubscriber.decode_data(base64.b64decode(event["data"]))
+    data = get_load_queue_subscriber().decode_data(
+        base64.b64decode(event["data"])
+    )
     LOGGER.debug("DATA: %s", json.dumps(data))
     # Store it in the database
     get_db_client().load(data)
@@ -249,9 +251,9 @@ def kcidb_spool_notifications(event, context):
     # Reset the ORM cache
     oo_client.reset_cache()
     # Get arriving data
-    pattern_set = kcidb.mq.ORMPatternSubscriber.decode_data(
-        base64.b64decode(event["data"])
-    )
+    pattern_set = set()
+    for line in base64.b64decode(event["data"]).decode().splitlines():
+        pattern_set |= kcidb.orm.Pattern.parse(line)
     LOGGER.debug(
         "PATTERNS:\n%s",
         "".join(repr(p) + "\n" for p in pattern_set)
