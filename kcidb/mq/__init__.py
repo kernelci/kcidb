@@ -352,8 +352,8 @@ class IOPublisher(Publisher):
         message data.
 
         Args:
-            data:   JSON data to be encoded, adhering to the current I/O schema
-                    version.
+            data:   JSON data to be encoded, adhering to the publisher's I/O
+                    schema version exactly.
 
         Returns
             The encoded message data.
@@ -362,8 +362,21 @@ class IOPublisher(Publisher):
             An exception in case data encoding failed.
         """
         if not LIGHT_ASSERTS:
-            io.SCHEMA.validate_exactly(data)
+            self.schema.validate_exactly(data)
         return json.dumps(data).encode()
+
+    def __init__(self, *args, schema=io.SCHEMA, **kwargs):
+        """
+        Initialize the I/O publisher.
+
+        Args:
+            args:   The positional arguments to initialize Subscriber with.
+            schema: The version of I/O schema to validate published data to.
+            kwargs: The keyword arguments to initialize Subscriber with.
+        """
+        assert issubclass(schema, io.schema.VA)
+        super().__init__(*args, **kwargs)
+        self.schema = schema
 
 
 class IOSubscriber(Subscriber):
@@ -380,13 +393,26 @@ class IOSubscriber(Subscriber):
                             decoded.
 
         Returns
-            The decoded JSON data adhering to the current I/O schema.
+            The decoded JSON data adhering to the subscriber's version of the
+            I/O schema.
 
         Raises:
             An exception in case data decoding failed.
         """
-        data = json.loads(message_data.decode())
-        return io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
+        return self.schema.upgrade(json.loads(message_data.decode()))
+
+    def __init__(self, *args, schema=io.SCHEMA, **kwargs):
+        """
+        Initialize the I/O subscriber.
+
+        Args:
+            args:   The positional arguments to initialize Subscriber with.
+            schema: The version of I/O schema to validate/upgrade data to.
+            kwargs: The keyword arguments to initialize Subscriber with.
+        """
+        assert issubclass(schema, io.schema.VA)
+        super().__init__(*args, **kwargs)
+        self.schema = schema
 
     # We'll be OK, pylint: disable=arguments-differ
     def pull_iter(self, max_num=math.inf, timeout=math.inf, max_obj=math.inf):
@@ -421,7 +447,7 @@ class IOSubscriber(Subscriber):
         msg_pull_iter = super().pull_iter(max_num=max_num, timeout=timeout)
         try:
             for msg in msg_pull_iter:
-                msg_obj_num = io.SCHEMA.count(msg[1])
+                msg_obj_num = self.schema.count(msg[1])
                 obj_num += msg_obj_num
                 if msg_num > 0 and obj_num > max_obj:
                     LOGGER.debug("Message #%u crossed %u-object boundary "
@@ -754,7 +780,7 @@ def io_publisher_main():
             print(publishing_id, file=sys.stdout)
             sys.stdout.flush()
         publisher.publish_iter(
-            (io.SCHEMA.upgrade(io.SCHEMA.validate(data), copy=False)
+            (publisher.schema.upgrade(data, copy=False)
              for data in misc.json_load_stream_fd(sys.stdin.fileno())),
             done_cb=print_publishing_id
         )
