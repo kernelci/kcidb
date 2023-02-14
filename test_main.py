@@ -2,12 +2,12 @@
 
 import os
 import subprocess
+import unittest
 from importlib import import_module
 import yaml
-from kcidb.unittest import local_only
 
 
-@local_only
+@unittest.skipIf(os.environ.get("KCIDB_DEPLOYMENT"), "local-only")
 def test_google_credentials_are_not_specified():
     """Check Google Application credentials are not specified"""
     assert os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is None, \
@@ -16,7 +16,6 @@ def test_google_credentials_are_not_specified():
         "environment variable"
 
 
-@local_only
 def test_import():
     """Check main.py can be loaded"""
     # Load deployment environment variables

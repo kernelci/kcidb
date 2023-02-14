@@ -2,10 +2,9 @@
 
 import textwrap
 import dateutil.parser
-from kcidb.unittest import local_only, assert_executes
+from kcidb.unittest import assert_executes
 
 
-@local_only
 def test_wipe_main():
     """Check kcidb-spool-wipe works"""
     datetime_str = "2020-09-28 15:42:18.170439+03:00"

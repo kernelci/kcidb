@@ -4,10 +4,9 @@ import re
 import textwrap
 import json
 import kcidb
-from kcidb.unittest import local_only, assert_executes
+from kcidb.unittest import assert_executes
 
 
-@local_only
 def test_io_publisher_main_init():
     """Check kcidb-mq-io-publisher init works"""
     argv = ["kcidb.mq.io_publisher_main",
@@ -26,7 +25,6 @@ def test_io_publisher_main_init():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_io_publisher_main_cleanup():
     """Check kcidb-mq-io-publisher cleanup works"""
     argv = ["kcidb.mq.io_publisher_main",
@@ -45,7 +43,6 @@ def test_io_publisher_main_cleanup():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_io_publisher_main_publish():
     """Check kcidb-mq-io-publisher publish works"""
     argv = ["kcidb.mq.io_publisher_main",
@@ -86,7 +83,6 @@ def test_io_publisher_main_publish():
                                         json.dumps(empty) + "\n"))
 
 
-@local_only
 def test_io_subscriber_main_init():
     """Check kcidb-mq-io-subscriber init works"""
     argv = ["kcidb.mq.io_subscriber_main",
@@ -106,7 +102,6 @@ def test_io_subscriber_main_init():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_io_subscriber_main_cleanup():
     """Check kcidb-mq-io-subscriber cleanup works"""
     argv = ["kcidb.mq.io_subscriber_main",
@@ -127,7 +122,6 @@ def test_io_subscriber_main_cleanup():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_io_subscriber_main_pull():
     """Check kcidb-mq-io-subscriber pull works"""
     argv = ["kcidb.mq.io_subscriber_main",
@@ -153,7 +147,6 @@ def test_io_subscriber_main_pull():
                     stdout_re=re.escape(json.dumps(empty) + "\n"))
 
 
-@local_only
 def test_pattern_publisher_main_init():
     """Check kcidb-mq-pattern-publisher init works"""
     argv = ["kcidb.mq.pattern_publisher_main",
@@ -172,7 +165,6 @@ def test_pattern_publisher_main_init():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_pattern_publisher_main_cleanup():
     """Check kcidb-mq-pattern-publisher cleanup works"""
     argv = ["kcidb.mq.pattern_publisher_main",
@@ -191,7 +183,6 @@ def test_pattern_publisher_main_cleanup():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_pattern_publisher_main_publish():
     """Check kcidb-mq-pattern-publisher publish works"""
     argv = ["kcidb.mq.pattern_publisher_main", "-lDEBUG",
@@ -274,7 +265,6 @@ def test_pattern_publisher_main_publish():
                     stdout_re="id\n")
 
 
-@local_only
 def test_pattern_subscriber_main_init():
     """Check kcidb-mq-pattern-subscriber init works"""
     argv = ["kcidb.mq.pattern_subscriber_main",
@@ -294,7 +284,6 @@ def test_pattern_subscriber_main_init():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_pattern_subscriber_main_cleanup():
     """Check kcidb-mq-pattern-subscriber cleanup works"""
     argv = ["kcidb.mq.pattern_subscriber_main",
@@ -315,7 +304,6 @@ def test_pattern_subscriber_main_cleanup():
     assert_executes("", *argv, driver_source=driver_source)
 
 
-@local_only
 def test_pattern_subscriber_main_pull():
     """Check kcidb-mq-pattern-subscriber pull works"""
     argv = ["kcidb.mq.pattern_subscriber_main",

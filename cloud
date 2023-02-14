@@ -1701,10 +1701,13 @@ function execute_command() {
     declare -r psql_submitter_pgpass_secret="${prefix}psql_submitter_pgpass"
     declare -r psql_kcidb_db=$(
         echo -n "postgresql: "
-        echo -n "host=${psql_socket_dir}" | escape_whitespace
-        echo -n " "
-        echo -n "user=${psql_submitter}"
-        echo -n " "
+        # Use the local proxy for the shell
+        if [ "$command" != "shell" ]; then
+            echo -n "host=${psql_socket_dir}" | escape_whitespace
+            echo -n " "
+            echo -n "user=${psql_submitter}"
+            echo -n " "
+        fi
         echo -n "dbname=${psql_database}" | escape_whitespace
     )
     declare -r psql_clean_test_kcidb_db=$(
@@ -1878,7 +1881,7 @@ function execute_command() {
     elif [ "$command" == "shell" ]; then
         export GCP_PROJECT="$project"
         source <(cloud_functions_env --format=sh "${env_args[@]}")
-        export KCIDB_DEPLOYED=1
+        export KCIDB_DEPLOYMENT="${KCIDB_DEPLOYMENT:-1}"
         if (( ${#argv[@]} )); then
             argv=("$SHELL" "-c" "${argv[*]@Q}")
         else

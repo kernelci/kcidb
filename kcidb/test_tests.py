@@ -1,10 +1,9 @@
 """kcdib.tests module tests"""
 
 import textwrap
-from kcidb.unittest import local_only, assert_executes
+from kcidb.unittest import assert_executes
 
 
-@local_only
 def test_validate_main():
     """Check kcidb-tests-validate works"""
     assert_executes('', "kcidb.tests.validate_main",

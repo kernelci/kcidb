@@ -5,7 +5,6 @@ from kcidb import orm, db, oo
 from kcidb.monitor.output import NotificationMessage, Notification,\
     NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN, NOTIFICATION_MESSAGE_BODY_MAX_LEN
 from kcidb.io import SCHEMA
-from kcidb.unittest import local_only
 
 # Disable long line checking for JSON data
 # flake8: noqa
@@ -15,7 +14,6 @@ from kcidb.unittest import local_only
 VERSION = dict(major=SCHEMA.major, minor=SCHEMA.minor)
 
 
-@local_only
 def test_min():
     """Check minimal Notification functionality"""
 
@@ -80,7 +78,6 @@ def test_min():
     assert "We detected a new revision!" in content
 
 
-@local_only
 def test_subject_and_body_length():
     """Check subject and body length of Notification """
 
@@ -197,7 +194,6 @@ def test_subject_and_body_length():
     assert (message.get_body('plain').get_content())[-3:-1] == "✂️"
 
 
-@local_only
 def test_subject_invalid_character():
     """Check subject invalid character of Notification """
 

@@ -4,7 +4,6 @@ from itertools import zip_longest
 import textwrap
 import pytest
 from kcidb_io.schema import V1_1, V2_0, V3_0, V4_0, V4_1
-from kcidb.unittest import local_only
 from kcidb.db.mux import Driver as MuxDriver
 from kcidb.db.null import Driver as NullDriver
 from kcidb.db.misc import UnsupportedSchema
@@ -183,7 +182,6 @@ class DummyMuxDriver(MuxDriver):
         return dict(dummy=DummyDriver)
 
 
-@local_only
 def test_param_parsing():
     """Check that parameters are parsed correctly"""
     # Single driver without parameters
@@ -240,7 +238,6 @@ def test_param_parsing():
     }
 
 
-@local_only
 def test_initialized():
     """Check that initialization status is handled correctly"""
 
@@ -322,7 +319,6 @@ def test_initialized():
     assert driver.get_schema() == ((4, 0), V3_0)
 
 
-@local_only
 def test_schemas():  # It's OK, pylint: disable=too-many-branches
     """Check that schemas are enumerated and are upgradable"""
 
