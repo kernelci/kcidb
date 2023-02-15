@@ -786,3 +786,18 @@ def test_empty(empty_database):
     assert io_data == client.dump()
     client.empty()
     assert kcidb.io.SCHEMA.new() == client.dump()
+
+
+def test_cleanup(clean_database):
+    """Test the clean() method removes all data"""
+    client = clean_database
+    # Initialize/clean every version twice, going up
+    for version in client.get_schemas():
+        client.init(version)
+        client.cleanup()
+        client.init(version)
+        client.cleanup()
+    # Initialize/clean every version going down
+    for version in reversed(list(client.get_schemas())[:-1]):
+        client.init(version)
+        client.cleanup()
