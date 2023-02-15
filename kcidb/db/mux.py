@@ -240,6 +240,7 @@ class Driver(AbstractDriver):
         """
         for driver in self.drivers:
             driver.cleanup()
+        self.version = None
 
     def empty(self):
         """
