@@ -336,6 +336,10 @@ def test_mark_brown():
     os.environ.get("KCIDB_UPDATED_PUBLISH", ""),
     "Updates about loaded data are disabled"
 )
+@unittest.skipUnless(
+    os.environ.get("KCIDB_SMTP_TOPIC", ""),
+    "SMTP is not mocked"
+)
 def test_email_generated(empty_deployment):
     """Check appropriate email is generated for "test" subscription"""
 
