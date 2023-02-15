@@ -4,8 +4,8 @@ import decimal
 import json
 import logging
 import textwrap
+import datetime
 from functools import reduce
-from datetime import datetime
 from google.cloud import bigquery
 from google.cloud.bigquery.schema import SchemaField as Field
 from google.api_core.exceptions import BadRequest as GoogleBadRequest
@@ -650,7 +650,7 @@ class Schema(AbstractSchema):
         """
         if isinstance(node, decimal.Decimal):
             node = float(node)
-        elif isinstance(node, datetime):
+        elif isinstance(node, datetime.datetime):
             node = node.isoformat()
         elif isinstance(node, list):
             for index, value in enumerate(node):
