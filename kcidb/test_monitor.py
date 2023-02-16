@@ -5,7 +5,7 @@ import os
 import unittest
 import kcidb
 from kcidb.io import SCHEMA
-from kcidb import orm, db, oo, monitor
+from kcidb import io, orm, db, oo, monitor
 
 # Disable long line checking for JSON data
 # flake8: noqa
@@ -342,23 +342,27 @@ def test_mark_brown():
 )
 def test_email_generated(empty_deployment):
     """Check appropriate email is generated for "test" subscription"""
+    # It's a test, pylint: disable=too-many-locals
 
     # Calm down please, pylint
     assert empty_deployment is None
+
 
     client = kcidb.Client(
         project_id=os.environ["GCP_PROJECT"],
         topic_name=os.environ["KCIDB_LOAD_QUEUE_TOPIC"]
     )
+    db_client = db.Client(os.environ["KCIDB_DATABASE"])
     email_subscriber = kcidb.mq.EmailSubscriber(
         os.environ["GCP_PROJECT"],
         os.environ["KCIDB_SMTP_TOPIC"],
         os.environ["KCIDB_SMTP_SUBSCRIPTION"]
     )
-    io_data = {
+
+    io_data_v4_0 = {
         "version": {
             "major": 4,
-            "minor": 1
+            "minor": 0
         },
         "checkouts": [
             {
@@ -517,13 +521,63 @@ def test_email_generated(empty_deployment):
             },
         ],
     }
+    obj_types_v4_0 = {"revision", "checkout", "build", "test"}
+
+    io_data_v4_1 = {
+        **io_data_v4_0,
+        "version": {
+            "major": 4,
+            "minor": 1
+        },
+        "issues": [
+            {
+                "id": "non_test:1",
+                "origin": "non_test",
+                "version": 1,
+                "report_url": "https://kernelci.org/issue/1",
+                "report_subject": "Bad issue",
+            },
+            {
+                "id": "test:1",
+                "origin": "test",
+                "version": 1,
+                "report_url": "https://bugzilla.redhat.com/1",
+                "report_subject": "Worse issue",
+            },
+        ],
+        "incidents": [
+            {
+                "id": "non_test:1:1",
+                "origin": "non_test",
+                "issue_id": "non_test:1",
+                "issue_version": 1,
+                "present": True,
+                "test_id": "non_test:1",
+            },
+            {
+                "id": "test:1",
+                "origin": "test",
+                "issue_id": "test:1",
+                "issue_version": 1,
+                "present": True,
+                "test_id": "test:1",
+            },
+        ],
+    }
+    obj_types_v4_1 = obj_types_v4_0 | {"bug", "issue", "incident"}
+
+    io_version_data_and_obj_types = {
+        io.schema.V4_0: (io_data_v4_0, obj_types_v4_0),
+        io.schema.V4_1: (io_data_v4_1, obj_types_v4_1),
+    }
+    io_data, obj_types = \
+        io_version_data_and_obj_types[db_client.get_schema()[1]]
 
     # Submit data to submission queue
     client.submit(io_data)
-    # Try to pull the four notification messages we're expecting and
+    # Try to pull the notification messages we're expecting and
     # check we get one correct message per object type
-    obj_types = {"revision", "checkout", "build", "test"}
-    for ack_id, email in email_subscriber.pull_iter(4, 600):
+    for ack_id, email in email_subscriber.pull_iter(len(obj_types), 600):
         email_subscriber.ack(ack_id)
         assert email['From'] == "bot@kernelci.org"
         assert email['To'] == "test@kernelci.org"
@@ -540,7 +594,7 @@ def test_email_generated(empty_deployment):
         assert 'utf-8' == html.get_content_charset()
         content = html.get_content()
         assert f"Test {obj_type} detected!\r\n\r\n" in content
-    # Check we got all four
+    # Check we got all types
     assert len(obj_types) == 0
     # Check we get no more notification messages
     assert len(email_subscriber.pull(1, 5)) == 0
