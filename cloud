@@ -364,19 +364,19 @@ function _psql_database_setup() {
     declare -r init="$1"; shift
     declare -r submitter="$1"; shift
     declare -r viewer="$1"; shift
+    # Deploy viewer and submitter permissions
+    mute psql --dbname="$database" -e <<<"
+        \\set ON_ERROR_STOP on
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT SELECT, INSERT, UPDATE ON TABLES TO $submitter;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT SELECT ON TABLES TO $viewer;
+    "
     # Initialize the database, if requested
     if "$init"; then
         mute kcidb-db-init -lDEBUG -d "postgresql:dbname=$database" \
                            --ignore-initialized
     fi
-    # Deploy viewer and submitter permissions
-    mute psql --dbname="$database" -e <<<"
-        \\set ON_ERROR_STOP on
-        GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public
-        TO $submitter;
-        GRANT SELECT ON ALL TABLES IN SCHEMA public
-        TO $viewer;
-    "
 }
 
 # Cleanup a PostgreSQL database and its paraphernalia.
