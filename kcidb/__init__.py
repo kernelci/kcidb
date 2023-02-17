@@ -64,8 +64,10 @@ class Client:
         Submit reports.
 
         Args:
-            data:   The JSON report data to submit.
-                    Must adhere to the current version of I/O schema.
+            data:   A JSON object with the report data to submit.
+                    Must adhere to the current version of I/O schema,
+                    note that this function will not validate the
+                    submitted data.
 
         Returns:
             Submission ID string.
