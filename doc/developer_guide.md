@@ -21,13 +21,3 @@ to reinstall. It also installs extra development tools, such as `flake8` and
 Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
 
     export PATH="$PATH":~/.local/bin
-
-Releasing
----------
-
-Before releasing make sure the documentation files are up to date.
-
-To make a release tag the release commit with `v<NUMBER>`, where `<NUMBER>` is
-the next release number, e.g. `v3`. The very next commit after the tag should
-update the version number in `setup.py` to be the next one. I.e. continuing
-the above example, it should be `4`.
