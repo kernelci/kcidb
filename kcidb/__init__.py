@@ -65,8 +65,8 @@ class Client:
 
         Args:
             data:   A JSON object with the report data to submit.
-                    Must adhere to the current version of I/O schema,
-                    note that this function will not validate the
+                    Must adhere to the current, or an earlier version of I/O
+                    schema. Note that this function will not validate the
                     submitted data.
 
         Returns:
@@ -76,7 +76,7 @@ class Client:
             `NotImplementedError`, if not supplied with a project ID or an MQ
             topic name at initialization time.
         """
-        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
         if not self.mq_publisher:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
@@ -87,7 +87,8 @@ class Client:
 
         Args:
             data_iter:  An iterator returning the JSON report data to submit.
-                        Each must adhere to the current version of I/O schema.
+                        Each must adhere to the current, or an earlier version
+                        of I/O schema.
             done_cb:    A function to call when a report is successfully
                         submitted. Will be called with the submission ID of
                         each report returned by the iterator, in order.
@@ -157,7 +158,8 @@ class Client:
                         as well.
 
         Returns:
-            The fetched JSON data adhering to the current I/O schema version.
+            The fetched JSON data adhering to the database I/O schema
+            (current, or an earlier I/O schema).
 
         Raises:
             `NotImplementedError`, if not supplied with a dataset name at
@@ -170,14 +172,10 @@ class Client:
                    all(isinstance(e, str) for e in v)
                    for k, v in ids.items())
 
-        if self.db_client:
-            data = self.db_client.query(ids=ids,
-                                        children=children, parents=parents)
-        else:
+        if not self.db_client:
             raise NotImplementedError
-
-        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(data)
-        return data
+        return self.db_client.query(ids=ids,
+                                    children=children, parents=parents)
 
 
 def submit_main():
