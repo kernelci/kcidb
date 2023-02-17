@@ -506,9 +506,9 @@ class Schema(AbstractSchema):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the current I/O
-            schema version, each containing at most the specified number of
-            objects.
+            An iterator returning report JSON data adhering to the I/O
+            version of the database schema, each containing at most the
+            specified number of objects.
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
@@ -556,9 +556,9 @@ class Schema(AbstractSchema):
                                 report data, or zero for no limit.
 
         Returns:
-            An iterator returning report JSON data adhering to the current I/O
-            schema version, each containing at most the specified number of
-            objects.
+            An iterator returning report JSON data adhering to the I/O
+            version of the database schema, each containing at most the
+            specified number of objects.
         """
         # Calm down, we'll get to it,
         # pylint: disable=too-many-locals
@@ -798,7 +798,7 @@ class Schema(AbstractSchema):
 
         Args:
             data:   The JSON data to load into the database.
-                    Must adhere to the current version of I/O schema.
+                    Must adhere to the I/O version of the database schema.
         """
         assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
         with self.conn, self.conn.cursor() as cursor:

@@ -352,8 +352,8 @@ class IOPublisher(Publisher):
         message data.
 
         Args:
-            data:   JSON data to be encoded, adhering to the publisher's I/O
-                    schema version.
+            data:   JSON data to be encoded, adhering to the publisher's
+                    version of I/O schema, or an earlier one.
 
         Returns
             The encoded message data.
