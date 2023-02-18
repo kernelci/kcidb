@@ -580,7 +580,6 @@ def test_upgrade(clean_database):
     db_client.upgrade(kcidb.io.schema.V4_1)
     assert db_client.get_schema()[1] == kcidb.io.schema.V4_1
     assert db_client.oo_query(kcidb.orm.Pattern.parse(">*#")) == v4_0_oo_data
-    # Shouldn't raise an assertion, SHOULDN'T IT? <----
     db_client.load(v4_0_data)
     upgraded_v4_0_data = kcidb.io.schema.V4_1.upgrade(v4_0_data)
     assert db_client.dump() == upgraded_v4_0_data
