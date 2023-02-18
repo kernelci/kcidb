@@ -698,6 +698,7 @@ class Schema(AbstractSchema):
                 obj_list.append(self._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
+                    assert self.io.is_compatible_exactly(data)
                     assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
                     yield data
                     obj_num = 0
@@ -705,6 +706,7 @@ class Schema(AbstractSchema):
                     obj_list = None
 
         if obj_num:
+            assert self.io.is_compatible_exactly(data)
             assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
             yield data
 
@@ -814,6 +816,7 @@ class Schema(AbstractSchema):
                 obj_list.append(self._unpack_node(dict(row.items())))
                 obj_num += 1
                 if objects_per_report and obj_num >= objects_per_report:
+                    assert self.io.is_compatible_exactly(data)
                     assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
                     yield data
                     obj_num = 0
@@ -821,6 +824,7 @@ class Schema(AbstractSchema):
                     obj_list = None
 
         if obj_num:
+            assert self.io.is_compatible_exactly(data)
             assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
             yield data
 
@@ -982,6 +986,7 @@ class Schema(AbstractSchema):
             data:   The JSON data to load into the database.
                     Must adhere to the I/O version of the database schema.
         """
+        assert self.io.is_compatible_directly(data)
         assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
 
         # Load the data
