@@ -1237,6 +1237,7 @@ class Pattern:
             A set of Pattern objects matching the objects in the supplied I/O
             data.
         """
+        assert io.SCHEMA.is_compatible_exactly(io_data)
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(io_data)
         assert schema is None or isinstance(schema, Schema)
         if schema is None:

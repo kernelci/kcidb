@@ -361,6 +361,7 @@ class IOPublisher(Publisher):
         Raises:
             An exception in case data encoding failed.
         """
+        assert self.schema.is_compatible(data)
         if not LIGHT_ASSERTS:
             self.schema.validate(data)
         return json.dumps(data).encode()

@@ -76,6 +76,7 @@ class Client:
             `NotImplementedError`, if not supplied with a project ID or an MQ
             topic name at initialization time.
         """
+        assert io.SCHEMA.is_compatible(data)
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
         if not self.mq_publisher:
             raise NotImplementedError
