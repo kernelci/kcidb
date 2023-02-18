@@ -1262,12 +1262,17 @@ function cloud_functions_env() {
                           empty_test_databases \
                           -- "$@")"
     eval "$params"
+    if "$heavy_asserts"; then
+        declare -r load_queue_msg_max="16"
+    else
+        declare -r load_queue_msg_max="256"
+    fi
     declare -A env=(
         [KCIDB_LOG_LEVEL]="$log_level"
         [KCIDB_LOAD_QUEUE_TOPIC]="$new_topic"
         [KCIDB_LOAD_QUEUE_SUBSCRIPTION]="$new_load_subscription"
-        [KCIDB_LOAD_QUEUE_MSG_MAX]="256"
-        [KCIDB_LOAD_QUEUE_OBJ_MAX]="8192"
+        [KCIDB_LOAD_QUEUE_MSG_MAX]="$load_queue_msg_max"
+        [KCIDB_LOAD_QUEUE_OBJ_MAX]="$((load_queue_msg_max * 32))"
         [KCIDB_LOAD_QUEUE_TIMEOUT_SEC]="30"
         [KCIDB_PGPASS_SECRET]="$pgpass_secret"
         [KCIDB_DATABASE]="$database"
