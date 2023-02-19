@@ -489,7 +489,7 @@ class Schema(AbstractSchema):
                         if objects_per_report and \
                                 obj_num >= objects_per_report:
                             assert LIGHT_ASSERTS or \
-                                    self.io.is_valid_exactly(data)
+                                self.io.is_valid_exactly(data)
                             yield data
                             obj_num = 0
                             data = self.io.new()
@@ -624,7 +624,7 @@ class Schema(AbstractSchema):
                         if objects_per_report and \
                                 obj_num >= objects_per_report:
                             assert LIGHT_ASSERTS or \
-                                    self.io.is_valid_exactly(data)
+                                self.io.is_valid_exactly(data)
                             yield data
                             obj_num = 0
                             data = self.io.new()
