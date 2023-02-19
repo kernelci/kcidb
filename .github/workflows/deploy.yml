@@ -57,7 +57,7 @@ jobs:
         run: |
           declare -a args=(
             kernelci-staging "" 1
-            --smtp-to-addrs=kernelci-results-staging@groups.io
+            --smtp-mocked
           )
           ./cloud deploy "${args[@]}" -v
           KCIDB_DEPLOYMENT="This deployment is empty" \
