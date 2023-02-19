@@ -296,8 +296,12 @@ def merge_main():
         io.SCHEMA.validate(data)
         for data in misc.json_load_stream_fd(sys.stdin.fileno())
     ]
-    merged_data = io.SCHEMA.merge(io.SCHEMA.new(), sources,
-                                  copy_target=False, copy_sources=False)
+    target_schema = max(
+        (io.SCHEMA.get_exactly_compatible(s) for s in sources),
+        default=io.SCHEMA
+    )
+    merged_data = target_schema.merge(target_schema.new(), sources,
+                                      copy_target=False, copy_sources=False)
     misc.json_dump(merged_data, sys.stdout, indent=args.indent, seq=args.seq)
 
 
