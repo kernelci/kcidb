@@ -8,6 +8,8 @@ import pytest
 import kcidb
 from kcidb.unittest import assert_executes
 
+# It's OK, pylint: disable=too-many-lines
+
 
 def test_schemas_main():
     """Check kcidb-db-schemas works"""
@@ -379,214 +381,508 @@ def test_upgrade(clean_database):
     Test database schema upgrade affects accepted I/O schema, and doesn't
     affect ORM results.
     """
-    db_client = clean_database
-    db_client.init(kcidb.io.schema.V4_0)
-    assert db_client.get_schema()[1] == kcidb.io.schema.V4_0
-    assert db_client.dump() == dict(version=dict(major=4, minor=0))
-
-    # NOTE: Having only one element per list to ensure comparison
-    v4_0_data = {
-        "version": {"major": 4, "minor": 0},
-        "checkouts": [
-            {
-                "id": "_:kernelci:5acb9c2a7bc836e"
-                      "9e5172bbcd2311499c5b4e5f1",
-                "origin": "kernelci",
-                "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
-                                   "cd2311499c5b4e5f1",
-                "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
-                "patchset_hash": ""
-            },
-        ],
-        "builds": [
-            {
-                "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
-                "origin": "google",
-                "checkout_id": "_:google:bd355732283c23a365f7c"
-                               "55206c0385100d1c389"
-            },
-        ],
-        "tests": [
-            {
-                "id": "google:google.org:a19di3j5h67f8d9475f26v11",
-                "build_id": "google:google.org:a1d993c3n4c448b2"
-                            "j0l1hbf1",
-                "origin": "google",
-            },
-        ]
-    }
-    v4_1_data = {
-        "version": {"major": 4, "minor": 1},
-        "issues": [
-            {
-                "id": "redhat:878234322",
-                "version": 3,
-                "origin": "redhat",
-                "report_url":
-                    "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
-                "report_subject":
-                    "(cups-usb-quirks) - usb printer doesn't print "
-                    "(usblp0: USB Bidirectional printer dev)",
-                "culprit": {
-                    "code": True,
-                    "tool": False,
-                    "harness": False,
+    # NOTE: Having only one element per data type/list to ensure comparison
+    io_version_params = {
+        kcidb.io.schema.V3_0: dict(
+            io={
+                "version": {
+                    "major": 3,
+                    "minor": 0
                 },
-                "comment": "Match USB Bidirectional printer dev",
+                "revisions": [{
+                    "id": "f00af9d68ed146b47fdbfe91134fcf04c36e6d78",
+                    "origin": "tuxsuite",
+                    "git_repository_url":
+                        "https://android.googlesource.com/kernel/common.git",
+                    "git_commit_hash":
+                        "f00af9d68ed146b47fdbfe91134fcf04c36e6d78",
+                    "git_commit_name":
+                        "ASB-2023-01-05_mainline-9680-gf00af9d68ed1",
+                    "discovery_time": "2023-01-27T08:27:50.000000+00:00",
+                    "valid": True,
+                    "git_repository_branch": "android-mainline"
+                }],
+                "builds": [{
+                    "id": "tuxsuite:2KtyFbORDouvFKy49kQtfgCmcac",
+                    "revision_id": "f00af9d68ed146b47fdbfe91134fcf04c36e6d78",
+                    "origin": "tuxsuite",
+                    "architecture": "x86_64",
+                    "compiler": "Debian clang version 15.0.7",
+                    "config_name": "gki_defconfig",
+                    "config_url":
+                        "https://storage.tuxsuite.com/public/"
+                        "clangbuiltlinux/continuous-integration2/builds/"
+                        "2KtyFbORDouvFKy49kQtfgCmcac/config",
+                    "log_url":
+                        "https://storage.tuxsuite.com/public/"
+                        "clangbuiltlinux/continuous-integration2/builds/"
+                        "2KtyFbORDouvFKy49kQtfgCmcac/build.log",
+                    "start_time": "2023-01-27T08:27:50.000000+00:00",
+                    "valid": True
+                }],
+                "tests": [{
+                    "build_id":
+                        "syzbot:e716fd2a536671b69625b2536ebe9ede623b93b4",
+                    "description": "INFO: task hung in ipv6_route_ioctl (2)",
+                    "id": "syzbot:bf7c6406637722a401e0",
+                    "misc": {
+                        "origin_url":
+                            "https://syzkaller.appspot.com/bug?"
+                            "extid=bf7c6406637722a401e0",
+                        "reported_by":
+                            "syzbot+bf7c6406637722a401e0@"
+                            "syzkaller.appspotmail.com"
+                    },
+                    "origin": "syzbot",
+                    "output_files": [
+                        {
+                            "name": "report.txt",
+                            "url":
+                                "https://syzkaller.appspot.com/x/report.txt?"
+                                "x=1262b549480000"
+                        },
+                        {
+                            "name": "log.txt",
+                            "url":
+                                "https://syzkaller.appspot.com/x/log.txt?"
+                                "x=10ab93cd480000"
+                        },
+                        {
+                            "name": "machine_info.txt",
+                            "url": "https://syzkaller.appspot.com/x/"
+                                "minfo.txt?x=75affc83eb386f34"
+                        }
+                    ],
+                    "path": "syzkaller",
+                    "start_time": "2023-01-28T02:21:00.000000+00:00",
+                    "status": "FAIL",
+                    "waived": False
+                }],
             },
-        ],
-        "incidents": [
-            {
-                "id": "redhat:2340981234098123409382",
-                "issue_id": "redhat:878234322",
-                "issue_version": 3,
-                "origin": "redhat",
-                "test_id": "google:google.org:a19di3j5h67f8d9475f26v11",
-                "present": True,
+            oo={
+                'revision': [{
+                    'contacts': None,
+                    'git_commit_hash':
+                        'f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
+                    'git_commit_name':
+                        'ASB-2023-01-05_mainline-9680-gf00af9d68ed1',
+                    'patchset_files': None,
+                    'patchset_hash': ''
+                }],
+                'checkout': [{
+                    'comment': None,
+                    'git_commit_hash':
+                        'f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
+                    'git_repository_branch': 'android-mainline',
+                    'git_repository_url':
+                        'https://android.googlesource.com/kernel/common.git',
+                    'id':
+                        '_:tuxsuite:f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
+                    'log_excerpt': None,
+                    'log_url': None,
+                    'message_id': None,
+                    'misc': None,
+                    'origin': 'tuxsuite',
+                    'patchset_hash': '',
+                    'start_time': '2023-01-27T08:27:50.000000+00:00',
+                    'tree_name': None,
+                    'valid': True
+                }],
+                'build': [{
+                    'architecture': 'x86_64',
+                    'checkout_id':
+                        '_:tuxsuite:f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
+                    'command': None,
+                    'comment': None,
+                    'compiler': 'Debian clang version 15.0.7',
+                    'config_name': 'gki_defconfig',
+                    'config_url': 'https://storage.tuxsuite.com/public/'
+                        'clangbuiltlinux/continuous-integration2/builds/'
+                        '2KtyFbORDouvFKy49kQtfgCmcac/config',
+                    'duration': None,
+                    'id': 'tuxsuite:2KtyFbORDouvFKy49kQtfgCmcac',
+                    'input_files': None,
+                    'log_excerpt': None,
+                    'log_url': 'https://storage.tuxsuite.com/public/'
+                        'clangbuiltlinux/continuous-integration2/builds/'
+                        '2KtyFbORDouvFKy49kQtfgCmcac/build.log',
+                    'misc': None,
+                    'origin': 'tuxsuite',
+                    'output_files': None,
+                    'start_time': '2023-01-27T08:27:50.000000+00:00',
+                    'valid': True
+                }],
+                'test': [{
+                    'build_id':
+                        'syzbot:e716fd2a536671b69625b2536ebe9ede623b93b4',
+                    'comment': 'INFO: task hung in ipv6_route_ioctl (2)',
+                    'duration': None,
+                    'environment_comment': None,
+                    'environment_misc': None,
+                    'id': 'syzbot:bf7c6406637722a401e0',
+                    'log_excerpt': None,
+                    'log_url': None,
+                    'misc': {
+                        'origin_url':
+                            'https://syzkaller.appspot.com/bug?'
+                            'extid=bf7c6406637722a401e0',
+                        'reported_by':
+                            'syzbot+bf7c6406637722a401e0@'
+                            'syzkaller.appspotmail.com'
+                    },
+                    'origin': 'syzbot',
+                    'output_files': [
+                        {
+                            'name': 'report.txt',
+                            'url':
+                                'https://syzkaller.appspot.com/x/'
+                                'report.txt?x=1262b549480000'
+                        },
+                        {
+                            'name': 'log.txt',
+                            'url':
+                                'https://syzkaller.appspot.com/x/'
+                                'log.txt?x=10ab93cd480000'
+                        },
+                        {
+                            'name': 'machine_info.txt',
+                            'url':
+                                'https://syzkaller.appspot.com/x/'
+                                'minfo.txt?x=75affc83eb386f34'
+                        }
+                    ],
+                    'path': 'syzkaller',
+                    'start_time': '2023-01-28T02:21:00.000000+00:00',
+                    'status': 'FAIL',
+                    'waived': False
+                }],
+                'bug': [],
+                'issue': [],
+                'incident': [],
+            }
+        ),
+        kcidb.io.schema.V4_0: dict(
+            io={
+                "version": {"major": 4, "minor": 0},
+                "checkouts": [{
+                    "id": "_:kernelci:5acb9c2a7bc836e"
+                          "9e5172bbcd2311499c5b4e5f1",
+                    "origin": "kernelci",
+                    "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                       "cd2311499c5b4e5f1",
+                    "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_hash": ""
+                }],
+                "builds": [{
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "origin": "google",
+                    "checkout_id": "_:google:bd355732283c23a365f7c"
+                                   "55206c0385100d1c389"
+                }],
+                "tests": [{
+                    "id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "build_id": "google:google.org:a1d993c3n4c448b2"
+                                "j0l1hbf1",
+                    "origin": "google",
+                }],
             },
-        ],
+            oo={
+                "revision": [{
+                    "contacts": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_name":
+                        "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_files": None,
+                    "patchset_hash": "",
+                }],
+                "checkout": [{
+                    "comment": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_repository_branch": None,
+                    "git_repository_url": None,
+                    "id":
+                        "_:kernelci:"
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "message_id": None,
+                    "misc": None,
+                    "origin": "kernelci",
+                    "patchset_hash": "",
+                    "start_time": None,
+                    "tree_name": None,
+                    "valid": None,
+                }],
+                "build": [{
+                    "architecture": None,
+                    "checkout_id":
+                        "_:google:"
+                        "bd355732283c23a365f7c55206c0385100d1c389",
+                    "command": None,
+                    "comment": None,
+                    "compiler": None,
+                    "config_name": None,
+                    "config_url": None,
+                    "duration": None,
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "input_files": None,
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "start_time": None,
+                    "valid": None,
+                }],
+                "test": [{
+                    "build_id":
+                        "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "comment": None,
+                    "duration": None,
+                    "environment_comment": None,
+                    "environment_misc": None,
+                    "id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "path": None,
+                    "start_time": None,
+                    "status": None,
+                    "waived": None,
+                }],
+                "bug": [],
+                "issue": [],
+                "incident": [],
+            }
+        ),
+        kcidb.io.schema.V4_1: dict(
+            io={
+                "version": {"major": 4, "minor": 1},
+                "checkouts": [{
+                    "id": "_:kernelci:5acb9c2a7bc836e"
+                          "9e5172bbcd2311499c5b4e5f1",
+                    "origin": "kernelci",
+                    "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                       "cd2311499c5b4e5f1",
+                    "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_hash": ""
+                }],
+                "builds": [{
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "origin": "google",
+                    "checkout_id": "_:google:bd355732283c23a365f7c"
+                                   "55206c0385100d1c389"
+                }],
+                "tests": [{
+                    "id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "build_id": "google:google.org:a1d993c3n4c448b2"
+                                "j0l1hbf1",
+                    "origin": "google",
+                }],
+                "issues": [{
+                    "id": "redhat:878234322",
+                    "version": 3,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi"
+                        "?id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit": {
+                        "code": True,
+                        "tool": False,
+                        "harness": False,
+                    },
+                    "comment": "Match USB Bidirectional printer dev",
+                }],
+                "incidents": [{
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "origin": "redhat",
+                    "test_id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "present": True,
+                }],
+            },
+            oo={
+                "revision": [{
+                    "contacts": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_name":
+                        "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_files": None,
+                    "patchset_hash": "",
+                }],
+                "checkout": [{
+                    "comment": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_repository_branch": None,
+                    "git_repository_url": None,
+                    "id":
+                        "_:kernelci:"
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "message_id": None,
+                    "misc": None,
+                    "origin": "kernelci",
+                    "patchset_hash": "",
+                    "start_time": None,
+                    "tree_name": None,
+                    "valid": None,
+                }],
+                "build": [{
+                    "architecture": None,
+                    "checkout_id":
+                        "_:google:"
+                        "bd355732283c23a365f7c55206c0385100d1c389",
+                    "command": None,
+                    "comment": None,
+                    "compiler": None,
+                    "config_name": None,
+                    "config_url": None,
+                    "duration": None,
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "input_files": None,
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "start_time": None,
+                    "valid": None,
+                }],
+                "test": [{
+                    "build_id":
+                        "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "comment": None,
+                    "duration": None,
+                    "environment_comment": None,
+                    "environment_misc": None,
+                    "id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "path": None,
+                    "start_time": None,
+                    "status": None,
+                    "waived": None,
+                }],
+                "bug": [{
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "url":
+                        "https://bugzilla.redhat.com/show_bug.cgi"
+                        "?id=873123",
+                    "subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                }],
+                "issue": [{
+                    "comment": "Match USB Bidirectional printer dev",
+                    "id": "redhat:878234322",
+                    "misc": None,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi?"
+                        "id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "build_valid": None,
+                    "test_status": None,
+                    "version": 3,
+                }],
+                "incident": [{
+                    "build_id": None,
+                    "comment": None,
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "misc": None,
+                    "origin": "redhat",
+                    "test_id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                }],
+            }
+        ),
     }
-    v4_0_oo_data = {
-        "revision": [
-            {
-                "contacts": None,
-                "git_commit_hash":
-                    "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                "git_commit_name":
-                    "v5.15-4077-g5acb9c2a7bc8",
-                "patchset_files": None,
-                "patchset_hash": "",
-            }
-        ],
-        "checkout": [
-            {
-                "comment": None,
-                "git_commit_hash":
-                    "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                "git_repository_branch": None,
-                "git_repository_url": None,
-                "id":
-                    "_:kernelci:5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                "log_excerpt": None,
-                "log_url": None,
-                "message_id": None,
-                "misc": None,
-                "origin": "kernelci",
-                "patchset_hash": "",
-                "start_time": None,
-                "tree_name": None,
-                "valid": None,
-            }
-        ],
-        "build": [
-            {
-                "architecture": None,
-                "checkout_id":
-                    "_:google:bd355732283c23a365f7c55206c0385100d1c389",
-                "command": None,
-                "comment": None,
-                "compiler": None,
-                "config_name": None,
-                "config_url": None,
-                "duration": None,
-                "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
-                "input_files": None,
-                "log_excerpt": None,
-                "log_url": None,
-                "misc": None,
-                "origin": "google",
-                "output_files": None,
-                "start_time": None,
-                "valid": None,
-            }
-        ],
-        "test": [
-            {
-                "build_id":
-                    "google:google.org:a1d993c3n4c448b2j0l1hbf1",
-                "comment": None,
-                "duration": None,
-                "environment_comment": None,
-                "environment_misc": None,
-                "id":
-                    "google:google.org:a19di3j5h67f8d9475f26v11",
-                "log_excerpt": None,
-                "log_url": None,
-                "misc": None,
-                "origin": "google",
-                "output_files": None,
-                "path": None,
-                "start_time": None,
-                "status": None,
-                "waived": None,
-            }
-        ],
-        "bug": [],
-        "issue": [],
-        "incident": [],
-    }
-    v4_1_oo_data = kcidb.misc.merge_dicts(
-        v4_0_oo_data,
-        bug=[
-            {
-                "culprit_code": True,
-                "culprit_tool": False,
-                "culprit_harness": False,
-                "url":
-                    "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
-                "subject":
-                    "(cups-usb-quirks) - usb printer doesn't print "
-                    "(usblp0: USB Bidirectional printer dev)",
-            }
-        ],
-        issue=[
-            {
-                "comment": "Match USB Bidirectional printer dev",
-                "id": "redhat:878234322",
-                "misc": None,
-                "origin": "redhat",
-                "report_url":
-                    "https://bugzilla.redhat.com/show_bug.cgi?id=873123",
-                "report_subject":
-                    "(cups-usb-quirks) - usb printer doesn't print "
-                    "(usblp0: USB Bidirectional printer dev)",
-                "culprit_code": True,
-                "culprit_tool": False,
-                "culprit_harness": False,
-                "build_valid": None,
-                "test_status": None,
-                "version": 3,
-            }
-        ],
-        incident=[
-            {
-                "build_id": None,
-                "comment": None,
-                "id": "redhat:2340981234098123409382",
-                "issue_id": "redhat:878234322",
-                "issue_version": 3,
-                "misc": None,
-                "origin": "redhat",
-                "test_id": "google:google.org:a19di3j5h67f8d9475f26v11",
-            }
-        ],
-    )
 
-    db_client.load(v4_0_data)
-    assert db_client.dump() == v4_0_data
-    assert db_client.oo_query(kcidb.orm.Pattern.parse(">*#")) == v4_0_oo_data
-    with pytest.raises(AssertionError):
-        db_client.load(v4_1_data)
-    db_client.upgrade(kcidb.io.schema.V4_1)
-    assert db_client.get_schema()[1] == kcidb.io.schema.V4_1
-    assert db_client.oo_query(kcidb.orm.Pattern.parse(">*#")) == v4_0_oo_data
-    db_client.load(v4_0_data)
-    upgraded_v4_0_data = kcidb.io.schema.V4_1.upgrade(v4_0_data)
-    assert db_client.dump() == upgraded_v4_0_data
-    db_client.load(v4_1_data)
-    merged_data = {**upgraded_v4_0_data, **v4_1_data}
-    assert db_client.dump() == merged_data
-    assert db_client.oo_query(kcidb.orm.Pattern.parse(">*#")) == v4_1_oo_data
+    database = clean_database
+    database_io_versions = set(database.get_schemas().values())
+    last_io_version = None
+    last_params = None
+
+    # For each I/O version supported by the database, and corresponding params
+    for io_version, params in io_version_params.items():
+        if io_version not in database_io_versions:
+            continue
+
+        # If it's not the database's first I/O version
+        if last_io_version and last_params:
+            # Upgrade the database to this I/O version
+            database.upgrade(io_version)
+            # Check upgrade went well
+            # You're wrong, pylint: disable=unsubscriptable-object
+            assert database.oo_query(kcidb.orm.Pattern.parse(">*#")) == \
+                last_params["oo"]
+            upgraded_io = io_version.upgrade(last_params["io"])
+            assert database.dump() == upgraded_io
+            assert database.query(io_version.get_ids(upgraded_io)) == \
+                upgraded_io
+
+        # For each data's I/O version and parameters
+        for load_io_version, load_params in io_version_params.items():
+            # If data's I/O version is newer than database's
+            if load_io_version > io_version:
+                # Make sure load fails
+                with pytest.raises(AssertionError):
+                    database.load(load_params["io"])
+                continue
+            # Make sure the database is initialized and empty
+            if database.is_initialized():
+                database.empty()
+            else:
+                database.init(io_version)
+
+            # Find oldest directly-compatible version to upgrade to
+            for upgrade_io_version in io_version.history:
+                if upgrade_io_version >= load_io_version and \
+                        upgrade_io_version.major == io_version.major:
+                    break
+            else:
+                upgrade_io_version = io_version
+
+            # Load (possibly-upgraded) data
+            database.load(upgrade_io_version.upgrade(load_params["io"]))
+
+            # Check we can query it in various ways
+            upgraded_io = io_version.upgrade(load_params["io"])
+            assert database.dump() == upgraded_io
+            assert database.query(io_version.get_ids(upgraded_io)) == \
+                upgraded_io
+            assert database.oo_query(kcidb.orm.Pattern.parse(">*#")) == \
+                load_params["oo"]
+
+        # Remeber this I/O version and its parameters for the next round
+        last_io_version = io_version
+        last_params = params
 
 
 def test_query(empty_database):
