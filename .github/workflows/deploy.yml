@@ -18,7 +18,7 @@ jobs:
     environment: staging
     concurrency: staging
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check credentials
         env:
           GCLOUD_PROJECT: ${{ secrets.GCLOUD_PROJECT }}
@@ -40,9 +40,9 @@ jobs:
             echo "Required credentials are missing, aborting." >&2
           fi
           "$CREDENTIALS_PRESENT"
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
       - name: Install
@@ -72,7 +72,7 @@ jobs:
     environment: production
     concurrency: production
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check credentials
         env:
           GCLOUD_PROJECT: ${{ secrets.GCLOUD_PROJECT }}
@@ -94,9 +94,9 @@ jobs:
             echo "Required credentials are missing, aborting." >&2
           fi
           "$CREDENTIALS_PRESENT"
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
       - name: Install
