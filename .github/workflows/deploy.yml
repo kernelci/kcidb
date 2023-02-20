@@ -12,7 +12,7 @@ jobs:
       GCLOUD_PROJECT: ${{ secrets.GCLOUD_PROJECT }}
       GCLOUD_SA_KEY: ${{ secrets.GCLOUD_SA_KEY }}
 
-  deploy:
+  deploy_to_staging:
     needs: test
     runs-on: ubuntu-latest
     environment: staging
@@ -65,3 +65,61 @@ jobs:
           KCIDB_DEPLOYMENT="This deployment is empty" \
             ./cloud shell  "${args[@]}" --heavy-asserts -- \
                     pytest --tb=native --verbosity=2 --log-level=DEBUG
+
+  deploy_to_production:
+    needs: deploy_to_staging
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency: production
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check credentials
+        env:
+          GCLOUD_PROJECT: ${{ secrets.GCLOUD_PROJECT }}
+          GCLOUD_SA_KEY: ${{ secrets.GCLOUD_SA_KEY }}
+        run: |
+          # Check credentials
+          CREDENTIALS_PRESENT=true
+          function check() {
+            if eval "test -z \"\$$1\""; then
+              echo "$1 secret is missing." >&2
+              CREDENTIALS_PRESENT=false
+            fi
+          }
+          check GCLOUD_PROJECT
+          check GCLOUD_SA_KEY
+          if "$CREDENTIALS_PRESENT"; then
+            echo "All required credentials are present, continuing." >&2
+          else
+            echo "Required credentials are missing, aborting." >&2
+          fi
+          "$CREDENTIALS_PRESENT"
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip3 install --upgrade '.[dev]'
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: ${{ secrets.GCLOUD_PROJECT }}
+          service_account_key: ${{ secrets.GCLOUD_SA_KEY }}
+          export_default_credentials: true
+      - name: Deploy Playground
+        run: |
+          declare -a args=(
+            kernelci-production "playground" 1
+            --smtp-mocked
+          )
+          ./cloud deploy "${args[@]}" -v
+      - name: Deploy Production
+        run: |
+          declare -a args=(
+            kernelci-production "" 1
+            --extra-cc=kernelci-results-staging@groups.io
+          )
+          ./cloud deploy "${args[@]}" -v
