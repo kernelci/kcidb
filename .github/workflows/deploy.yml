@@ -49,12 +49,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools
           pip3 install --upgrade '.[dev]'
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
         with:
           project_id: ${{ secrets.GCLOUD_PROJECT }}
-          service_account_key: ${{ secrets.GCLOUD_SA_KEY }}
-          export_default_credentials: true
+          credentials_json: ${{ secrets.GCLOUD_SA_KEY }}
+          create_credentials_file: true
+          export_environment_variables: true
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
       - name: Deploy to Staging and Test
         run: |
           declare -a args=(
@@ -103,12 +107,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools
           pip3 install --upgrade '.[dev]'
-      - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
         with:
           project_id: ${{ secrets.GCLOUD_PROJECT }}
-          service_account_key: ${{ secrets.GCLOUD_SA_KEY }}
-          export_default_credentials: true
+          credentials_json: ${{ secrets.GCLOUD_SA_KEY }}
+          create_credentials_file: true
+          export_environment_variables: true
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
       - name: Deploy Playground
         run: |
           declare -a args=(
