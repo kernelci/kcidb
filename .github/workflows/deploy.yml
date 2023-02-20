@@ -8,7 +8,6 @@ name: deploy
 jobs:
   test:
     uses: kernelci/kcidb/.github/workflows/test.yml@main
-    environment: staging
     secrets:
       GCLOUD_PROJECT: ${{ secrets.GCLOUD_PROJECT }}
       GCLOUD_SA_KEY: ${{ secrets.GCLOUD_SA_KEY }}
