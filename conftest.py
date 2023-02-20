@@ -59,7 +59,7 @@ def empty_deployment():
     topic = os.environ["KCIDB_LOAD_QUEUE_TOPIC"]
     subscription = os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"]
     for _ in kcidb.mq.IOSubscriber(project, topic, subscription). \
-            pull_iter(timeout=5):
+            pull_iter(timeout=30):
         pass
     # Empty the database
     kcidb.db.Client(os.environ["KCIDB_DATABASE"]).empty()
@@ -72,7 +72,7 @@ def empty_deployment():
     subscription = os.environ.get("KCIDB_SMTP_SUBSCRIPTION")
     if topic and subscription:
         for _ in kcidb.mq.EmailSubscriber(project, topic, subscription). \
-                pull_iter(timeout=5):
+                pull_iter(timeout=30):
             pass
 
 
