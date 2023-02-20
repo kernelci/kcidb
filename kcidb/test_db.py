@@ -4,6 +4,7 @@ import re
 import textwrap
 import datetime
 import json
+from itertools import permutations
 import pytest
 import kcidb
 from kcidb.unittest import assert_executes
@@ -921,19 +922,22 @@ def test_query(empty_database):
                  test_id="_:2"),
         ],
     ))
-    assert client.query(ids=dict(checkouts=["_:1"]), children=True) == \
-        {
-            "version": {"major": 4, "minor": 1},
-            "checkouts": [
-                {"id": "_:1", "origin": "_"}
-            ],
-            "builds": [
-                {"checkout_id": "_:1", "id": "_:1", "origin": "_"}
-            ],
-            "tests": [
-                {"build_id": "_:1", "id": "_:1", "origin": "_"}
-            ],
-            "incidents": [
+    assert client.query(ids=dict(checkouts=["_:1"]), children=True) in \
+        [
+            {
+                "version": {"major": 4, "minor": 1},
+                "checkouts": [
+                    {"id": "_:1", "origin": "_"}
+                ],
+                "builds": [
+                    {"checkout_id": "_:1", "id": "_:1", "origin": "_"}
+                ],
+                "tests": [
+                    {"build_id": "_:1", "id": "_:1", "origin": "_"}
+                ],
+                "incidents": list(incidents),
+            }
+            for incidents in permutations([
                 {
                     "build_id": "_:1",
                     "id": "_:1",
@@ -955,8 +959,8 @@ def test_query(empty_database):
                     'origin': '_',
                     'test_id': '_:1',
                 },
-            ],
-        }
+            ])
+        ]
 
     unambigious_result = {
         "version": {"major": 4, "minor": 1},
