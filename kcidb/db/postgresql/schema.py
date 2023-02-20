@@ -91,7 +91,7 @@ class TimestampColumn(Column):
         Unpack the PostgreSQL representation of the column value into the JSON
         representation.
         """
-        return value.isoformat()
+        return value.isoformat(timespec='microseconds')
 
     def __init__(self, constraint=None):
         """
