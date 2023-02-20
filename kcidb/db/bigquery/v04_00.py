@@ -651,7 +651,7 @@ class Schema(AbstractSchema):
         if isinstance(node, decimal.Decimal):
             node = float(node)
         elif isinstance(node, datetime.datetime):
-            node = node.isoformat()
+            node = node.isoformat(timespec='microseconds')
         elif isinstance(node, list):
             for index, value in enumerate(node):
                 node[index] = cls._unpack_node(value)
