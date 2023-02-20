@@ -110,8 +110,15 @@ class Type:
             `jsonschema.exceptions.ValidationError`, if the data did not
             adhere to this type's JSON schema.
         """
+        try:
+            format_checker = jsonschema.Draft7Validator.FORMAT_CHECKER
+        except AttributeError:
+            # Nevermind, pylint: disable=fixme
+            # TODO Remove once we stop supporting Python 3.6
+            format_checker = jsonschema.draft7_format_checker
+
         jsonschema.validate(instance=data, schema=self.json_schema,
-                            format_checker=jsonschema.draft7_format_checker)
+                            format_checker=format_checker)
         return data
 
     def is_valid(self, data):
@@ -273,8 +280,15 @@ class Schema:
             `jsonschema.exceptions.ValidationError`, if the data did not
             match the schema.
         """
+        try:
+            format_checker = jsonschema.Draft7Validator.FORMAT_CHECKER
+        except AttributeError:
+            # Nevermind, pylint: disable=fixme
+            # TODO Remove once we stop supporting Python 3.6
+            format_checker = jsonschema.draft7_format_checker
+
         jsonschema.validate(instance=data, schema=self.json_schema,
-                            format_checker=jsonschema.draft7_format_checker)
+                            format_checker=format_checker)
         return data
 
     def is_valid(self, data):
