@@ -7,6 +7,7 @@ import atexit
 import tempfile
 import sys
 import traceback
+import itertools
 import argparse
 import logging
 import json
@@ -485,3 +486,20 @@ def merge_dicts(*args, **kwargs):
     for arg in args:
         result.update(arg)
     return result
+
+
+def isliced(iterable, size):
+    """
+    Create a generator yielding tuples of specified maximum number
+    of elements from an iterable.
+
+    Args:
+        iterable:   The iterable to return elements from.
+        size:       Maximum number of elements in each tuple.
+    """
+    iterator = iter(iterable)
+    while True:
+        iterator_slice = tuple(itertools.islice(iterator, size))
+        if not iterator_slice:
+            break
+        yield iterator_slice
