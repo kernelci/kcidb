@@ -472,10 +472,12 @@ def merge_dicts(*args, **kwargs):
     """
     Merge dictionaries together.
 
-    @param args     The list of dictionaries to merge together.
-    @param kwargs   The last dictionary to merge on top of the result.
+    Args:
+        args:   The list of dictionaries to merge together.
+        kwargs: The last dictionary to merge on top of the result.
 
-    @return The merged dictionary.
+    Returns:
+        The merged dictionary.
     """
     assert all(isinstance(arg, dict) for arg in args)
     args = [*args, kwargs]
