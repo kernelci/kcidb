@@ -67,8 +67,8 @@ _OO_CLIENT = None
 _SPOOL_CLIENT = None
 # True if the database updates should be published to the updated queue
 UPDATED_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_PUBLISH", ""))
-# Maximum number of patterns published onto the updated queue in one message
-UPDATED_QUEUE_PATTERN_MAX = int(os.environ["KCIDB_UPDATED_QUEUE_PATTERN_MAX"])
+# Maximum number of objects published onto the updated queue in one message
+UPDATED_QUEUE_OBJ_MAX = int(os.environ["KCIDB_UPDATED_QUEUE_OBJ_MAX"])
 # The publisher object for the queue with patterns matching objects updated by
 # loading submissions.
 _UPDATED_QUEUE_PUBLISHER = None
@@ -180,14 +180,12 @@ def kcidb_load_message(event, context):
         data = kcidb.io.SCHEMA.upgrade(data, copy=False)
         # Generate patterns matching all affected objects
         pattern_set = set()
-        for pattern in kcidb.orm.Pattern.from_io(data):
+        for pattern in kcidb.orm.Pattern.from_io(
+                data, max_objs=UPDATED_QUEUE_OBJ_MAX):
             # TODO Avoid formatting and parsing
             pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
-        # Publish patterns matching all affected objects, split into messages
-        publisher.publish_iter(
-            set(pattern_tuple) for pattern_tuple in
-            kcidb.misc.isliced(pattern_set, UPDATED_QUEUE_PATTERN_MAX)
-        )
+        # Publish patterns matching all affected objects, one per message
+        publisher.publish_iter({pattern} for pattern in pattern_set)
 
 
 def kcidb_load_queue(event, context):
@@ -244,15 +242,13 @@ def kcidb_load_queue(event, context):
 
         # Generate patterns matching all affected objects
         pattern_set = set()
-        for pattern in kcidb.orm.Pattern.from_io(data):
+        for pattern in kcidb.orm.Pattern.from_io(
+                data, max_objs=UPDATED_QUEUE_OBJ_MAX):
             # TODO Avoid formatting and parsing
             pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
 
-        # Publish patterns matching all affected objects, split into messages
-        publisher.publish_iter(
-            set(pattern_tuple) for pattern_tuple in
-            kcidb.misc.isliced(pattern_set, UPDATED_QUEUE_PATTERN_MAX)
-        )
+        # Publish patterns matching all affected objects, one per message
+        publisher.publish_iter({pattern} for pattern in pattern_set)
         LOGGER.info("Published %u updates made by %u loaded objects",
                     len(pattern_set), obj_num)
 

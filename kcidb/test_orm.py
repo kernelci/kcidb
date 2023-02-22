@@ -130,9 +130,11 @@ def pattern(base, child, obj_type_name, obj_id_set=None):
                              SCHEMA.types[obj_type_name], obj_id_set)
 
 
-def from_io(io_data):
+def from_io(io_data, max_objs=0):
     """Create a pattern from I/O with test schema"""
-    return kcidb.orm.Pattern.from_io(io_data, schema=SCHEMA)
+    assert isinstance(max_objs, int) and max_objs >= 0
+    return kcidb.orm.Pattern.from_io(io_data, schema=SCHEMA,
+                                     max_objs=max_objs)
 
 
 def test_pattern_parse_misc():
@@ -460,6 +462,21 @@ def test_pattern_from_io():
             {("origin:1",), ("origin:2",), ("origin:3",)}
         )
     }
+    assert from_io(io_data, max_objs=3) == {
+        pattern(
+            None, True, "checkout",
+            {("origin:1",), ("origin:2",), ("origin:3",)}
+        )
+    }
+    assert from_io(io_data, max_objs=2) == {
+        pattern(None, True, "checkout", {("origin:1",), ("origin:2",)}),
+        pattern(None, True, "checkout", {("origin:3",)})
+    }
+    assert from_io(io_data, max_objs=1) == {
+        pattern(None, True, "checkout", {("origin:1",)}),
+        pattern(None, True, "checkout", {("origin:2",)}),
+        pattern(None, True, "checkout", {("origin:3",)})
+    }
 
     io_data = {
         "builds": [
@@ -516,6 +533,16 @@ def test_pattern_from_io():
         **kcidb.io.SCHEMA.new()
     }
     assert from_io(io_data) == {
+        pattern(None, True, "checkout", {("origin:1",)}),
+        pattern(None, True, "build", {("origin:2",)}),
+        pattern(None, True, "test", {("origin:3",)}),
+    }
+    assert from_io(io_data, max_objs=1) == {
+        pattern(None, True, "checkout", {("origin:1",)}),
+        pattern(None, True, "build", {("origin:2",)}),
+        pattern(None, True, "test", {("origin:3",)}),
+    }
+    assert from_io(io_data, max_objs=2) == {
         pattern(None, True, "checkout", {("origin:1",)}),
         pattern(None, True, "build", {("origin:2",)}),
         pattern(None, True, "test", {("origin:3",)}),
