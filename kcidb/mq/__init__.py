@@ -82,7 +82,7 @@ class Publisher(ABC):
         Publish data to the message queue in the future.
 
         Args:
-            data:   The JSON data to publish to the message queue.
+            data:   The data to publish to the message queue.
                     Must adhere to a version of I/O schema.
 
         Returns:
@@ -97,7 +97,7 @@ class Publisher(ABC):
         Publish data to the message queue.
 
         Args:
-            data:   The JSON data to publish to the message queue.
+            data:   The data to publish to the message queue.
                     Must adhere to a version of I/O schema.
 
         Returns:
@@ -110,10 +110,10 @@ class Publisher(ABC):
         Publish data returned by an iterator.
 
         Args:
-            data_iter:  An iterator returning the JSON data to publish to the
+            data_iter:  An iterator returning the data to publish to the
                         message queue. Each must adhere to a version of I/O
                         schema.
-            done_cb:    A function to call when a JSON data is successfully
+            done_cb:    A function to call when a data is successfully
                         published. Will be called with the publishing ID of
                         each data returned by the iterator, in order.
         """

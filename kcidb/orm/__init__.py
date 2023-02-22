@@ -1237,7 +1237,7 @@ class Pattern:
         return match_set
 
     @staticmethod
-    def from_io(io_data, schema=None):
+    def from_io(io_data, schema=None, max_objs=0):
         """
         Create a pattern set matching all objects in the supplied I/O data.
 
@@ -1246,6 +1246,9 @@ class Pattern:
                         Must adhere to the current schema version.
             schema:     An object type schema to use, or None to use
                         kcidb.orm.SCHEMA.
+            max_objs:   Maximum number of object IDs to put into each
+                        created pattern (a positive integer).
+                        Zero for no limit.
 
         Returns:
             A set of Pattern objects matching the objects in the supplied I/O
@@ -1254,6 +1257,8 @@ class Pattern:
         assert io.SCHEMA.is_compatible_exactly(io_data)
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(io_data)
         assert schema is None or isinstance(schema, Schema)
+        assert isinstance(max_objs, int) and max_objs >= 0
+
         if schema is None:
             schema = SCHEMA
         # Assert all I/O object lists are represented in the OO schema
@@ -1270,12 +1275,13 @@ class Pattern:
                 continue
             obj_type = schema.types[obj_list_name[:-1]]
             id_fields = obj_type.id_fields
-            pattern_set.add(
-                Pattern(None, True, obj_type, {
-                    tuple(o[id_field] for id_field in id_fields)
-                    for o in obj_list
-                })
-            )
+            for obj_list_slice in kcidb.misc.isliced(obj_list, max_objs):
+                pattern_set.add(
+                    Pattern(None, True, obj_type, {
+                        tuple(o[id_field] for id_field in id_fields)
+                        for o in obj_list_slice
+                    })
+                )
         return pattern_set
 
 

@@ -1262,17 +1262,12 @@ function cloud_functions_env() {
                           empty_test_databases \
                           -- "$@")"
     eval "$params"
-    if "$heavy_asserts"; then
-        declare -r load_queue_msg_max="16"
-    else
-        declare -r load_queue_msg_max="256"
-    fi
     declare -A env=(
         [KCIDB_LOG_LEVEL]="$log_level"
         [KCIDB_LOAD_QUEUE_TOPIC]="$new_topic"
         [KCIDB_LOAD_QUEUE_SUBSCRIPTION]="$new_load_subscription"
-        [KCIDB_LOAD_QUEUE_MSG_MAX]="$load_queue_msg_max"
-        [KCIDB_LOAD_QUEUE_OBJ_MAX]="$((load_queue_msg_max * 32))"
+        [KCIDB_LOAD_QUEUE_MSG_MAX]="256"
+        [KCIDB_LOAD_QUEUE_OBJ_MAX]="8192"
         [KCIDB_LOAD_QUEUE_TIMEOUT_SEC]="30"
         [KCIDB_PGPASS_SECRET]="$pgpass_secret"
         [KCIDB_DATABASE]="$database"
@@ -1360,6 +1355,7 @@ function cloud_functions_deploy() {
                           --runtime python37 \
                           --trigger-topic "${pick_notifications_trigger_topic}" \
                           --memory 256MB \
+                          --max-instances=1 \
                           --timeout 540
     cloud_function_deploy "$project" "${prefix}send_notification" \
                           "$source" \
@@ -1370,6 +1366,7 @@ function cloud_functions_deploy() {
                           --trigger-resource "${trigger_resource}" \
                           --memory 256MB \
                           --retry \
+                          --max-instances=1 \
                           --timeout 540
 
     cloud_function_deploy "$project" "${prefix}spool_notifications" \
@@ -1379,6 +1376,7 @@ function cloud_functions_deploy() {
                           --runtime python37 \
                           --trigger-topic "${updated_topic}" \
                           --memory 2048MB \
+                          --max-instances=10 \
                           --timeout 540
 
     cloud_function_deploy "$project" "${prefix}load_queue" \
@@ -1388,6 +1386,7 @@ function cloud_functions_deploy() {
                           --runtime python37 \
                           --trigger-topic "${load_queue_trigger_topic}" \
                           --memory 1024MB \
+                          --max-instances=1 \
                           --timeout 540
     # Remove the environment YAML file
     rm "$env_yaml_file"
