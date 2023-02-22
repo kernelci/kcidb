@@ -270,6 +270,7 @@ def kcidb_spool_notifications(event, context):
     pattern_set = set()
     for line in base64.b64decode(event["data"]).decode().splitlines():
         pattern_set |= kcidb.orm.Pattern.parse(line)
+    LOGGER.info("RECEIVED %u PATTERNS", len(pattern_set))
     LOGGER.debug(
         "PATTERNS:\n%s",
         "".join(repr(p) + "\n" for p in pattern_set)
