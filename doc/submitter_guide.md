@@ -85,7 +85,7 @@ $ kcidb-query -d bigquery:playground_kcidb_01
 and submit an empty report:
 
 ```console
-$ echo '{"version":{"major":4,"minor":0}}' |
+$ echo '{"version":{"major":4,"minor":1}}' |
         kcidb-submit -p kernelci-production -t playground_kcidb_new
 ```
 
@@ -107,7 +107,7 @@ Here's a minimal report, containing no data:
 {
     "version": {
         "major": 4,
-        "minor": 0
+        "minor": 1
     }
 }
 ```
@@ -122,6 +122,8 @@ independently or in any combination:
 * "checkout" - a checkout of the code being built and tested
 * "build" - a build of a specific checkout
 * "test" - an execution of a test on a specific build in specific environment
+* "issue" - an issue found in reports
+* "incident" - an issue occurrence or absence
 
 Each of these object types refers to the previous one using an ID. The only
 required fields for each object are their IDs, IDs of the parent object
@@ -153,9 +155,24 @@ checkout with one build and one test:
             "origin": "submitter"
         }
     ],
+    "issue": [
+        {
+            "id": "submitter:124853810",
+            "version": 1,
+            "origin": "submitter"
+        }
+    ],
+    "incident": [
+        {
+            "id": "submitter:1084645810",
+            "issue_id": "submitter:956769",
+            "origin": "submitter",
+            "issue_version": 0
+        }
+    ],
     "version": {
         "major": 4,
-        "minor": 0
+        "minor": 1
     }
 }
 ```

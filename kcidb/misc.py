@@ -490,13 +490,18 @@ def merge_dicts(*args, **kwargs):
 
 def isliced(iterable, size):
     """
-    Create a generator yielding tuples of specified maximum number
-    of elements from an iterable.
+    Create a generator yielding iterables of specified maximum number of
+    elements from an iterable.
 
     Args:
         iterable:   The iterable to return elements from.
-        size:       Maximum number of elements in each tuple.
+        size:       Maximum number of elements in each tuple (a positive
+                    integer), or zero to have the original iterable yielded.
     """
+    assert isinstance(size, int) and size >= 0
+    if size == 0:
+        yield iterable
+        return
     iterator = iter(iterable)
     while True:
         iterator_slice = tuple(itertools.islice(iterator, size))

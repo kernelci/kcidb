@@ -1262,11 +1262,6 @@ function cloud_functions_env() {
                           empty_test_databases \
                           -- "$@")"
     eval "$params"
-    if "$heavy_asserts"; then
-        declare -r updated_queue_pattern_max="256"
-    else
-        declare -r updated_queue_pattern_max="2048"
-    fi
     declare -A env=(
         [KCIDB_LOG_LEVEL]="$log_level"
         [KCIDB_LOAD_QUEUE_TOPIC]="$new_topic"
@@ -1280,7 +1275,6 @@ function cloud_functions_env() {
         [KCIDB_CLEAN_TEST_DATABASES]="$clean_test_databases"
         [KCIDB_EMPTY_TEST_DATABASES]="$empty_test_databases"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
-        [KCIDB_UPDATED_QUEUE_PATTERN_MAX]="$updated_queue_pattern_max"
         [KCIDB_SELECTED_SUBSCRIPTIONS]=""
         [KCIDB_SPOOL_COLLECTION_PATH]="$spool_collection_path"
         [KCIDB_SMTP_HOST]="smtp.gmail.com"
