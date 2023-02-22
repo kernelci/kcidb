@@ -464,7 +464,7 @@ class Schema(AbstractSchema):
                 )
             """))
             cursor.execute(textwrap.dedent("""\
-                CREATE AGGREGATE last(anyelement) (
+                CREATE OR REPLACE AGGREGATE last(anyelement) (
                     SFUNC = last_agg,
                     STYPE = anyelement,
                     PARALLEL = safe
