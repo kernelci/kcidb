@@ -67,8 +67,6 @@ _OO_CLIENT = None
 _SPOOL_CLIENT = None
 # True if the database updates should be published to the updated queue
 UPDATED_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_PUBLISH", ""))
-# Maximum number of objects published onto the updated queue in one message
-UPDATED_QUEUE_OBJ_MAX = int(os.environ["KCIDB_UPDATED_QUEUE_OBJ_MAX"])
 # The publisher object for the queue with patterns matching objects updated by
 # loading submissions.
 _UPDATED_QUEUE_PUBLISHER = None
@@ -180,12 +178,11 @@ def kcidb_load_message(event, context):
         data = kcidb.io.SCHEMA.upgrade(data, copy=False)
         # Generate patterns matching all affected objects
         pattern_set = set()
-        for pattern in kcidb.orm.Pattern.from_io(
-                data, max_objs=UPDATED_QUEUE_OBJ_MAX):
+        for pattern in kcidb.orm.Pattern.from_io(data):
             # TODO Avoid formatting and parsing
             pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
-        # Publish patterns matching all affected objects, one per message
-        publisher.publish_iter({pattern} for pattern in pattern_set)
+        # Publish patterns matching all affected objects
+        publisher.publish(pattern_set)
 
 
 def kcidb_load_queue(event, context):
@@ -242,15 +239,13 @@ def kcidb_load_queue(event, context):
 
         # Generate patterns matching all affected objects
         pattern_set = set()
-        for pattern in kcidb.orm.Pattern.from_io(
-                data, max_objs=UPDATED_QUEUE_OBJ_MAX):
+        for pattern in kcidb.orm.Pattern.from_io(data):
             # TODO Avoid formatting and parsing
             pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
 
-        # Publish patterns matching all affected objects, one per message
-        publisher.publish_iter({pattern} for pattern in pattern_set)
-        LOGGER.info("Published %u updates made by %u loaded objects",
-                    len(pattern_set), obj_num)
+        # Publish patterns matching all affected objects
+        publisher.publish(pattern_set)
+        LOGGER.info("Published updates made by %u loaded objects", obj_num)
 
 
 def kcidb_spool_notifications(event, context):
