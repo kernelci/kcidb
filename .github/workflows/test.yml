@@ -61,7 +61,7 @@ jobs:
       - name: Check python sources with pylint
         run: "pylint kcidb *.py"
       - name: Check python sources with pycodestyle
-        run: "pycodestyle kcidb *.py"
+        run: "pydocstyle kcidb *.py"
       - name: Test with pytest
         run: KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest --tb=native
 
