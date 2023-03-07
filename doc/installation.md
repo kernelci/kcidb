@@ -15,10 +15,6 @@ Where `<SOURCE>` is the location of the package source, e.g. a git repo:
 
     pip3 install --user git+https://github.com/kernelci/kcidb.git
 
-a (release) tag in a git repo:
-
-    pip3 install --user git+https://github.com/kernelci/kcidb.git@v9
-
 or a directory path:
 
     pip3 install --user .
