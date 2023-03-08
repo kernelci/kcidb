@@ -25,6 +25,35 @@ Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
 Guidelines
 ----------
 
+### Commits
+
+When posting PRs, please keep one logical change per commit, and do not have
+more than one commit per a logical change. This makes it easier to review,
+think about, and manipulate changes. This way if you want to revert a change,
+you only need to revert a single commit. Same goes for merges across branches.
+
+For example, if you have to do a similar change across multiple files, make it
+a single commit. OTOH, if you're doing different changes on the same file, or
+even the same line, make them separate commits.
+
+Before asking for a review, please make sure the commits are in order, and
+don't keep amendments made on top of the previous review as separate commits -
+squash them.
+
+Please use [imperative mood](https://en.wikipedia.org/wiki/Imperative_mood)
+when writing commit messages, i.e. as if giving a command for something to
+change. Keep subjects short and to the point, expand in the body of the commit
+message. This makes it easier to read, understand, and manipulate commit
+history. E.g. write "Add support for querying incidents", or even just
+"Support querying incidents", but not "Supported querying incidents", and not
+"Code to support querying incidents".
+
+Use "tags" in commit subjects to make them shorter and to indicate the scope
+of the change. E.g. instead of writing "Add documentation on commit
+requirements", write "doc: Describe commit requirements". Look at commit
+history of particular areas you're changing for reference on which tags to
+use, so they're consistent.
+
 ### I/O data validation
 
 When loading data into a database, the data should be "directly compatible"
