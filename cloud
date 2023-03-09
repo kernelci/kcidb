@@ -1234,6 +1234,7 @@ function cloud_function_withdraw() {
 # Output deployment environment for Cloud Functions
 # Args: --format=yaml|sh
 #       --log-level=NAME
+#       --optimize=PYTHONOPTIMIZE
 #       --heavy-asserts=true|false
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-publish=true|false
@@ -1249,6 +1250,7 @@ function cloud_function_withdraw() {
 function cloud_functions_env() {
     params="$(getopt_vars format \
                           log_level \
+                          optimize \
                           heavy_asserts \
                           new_topic new_load_subscription \
                           updated_publish updated_topic \
@@ -1264,6 +1266,7 @@ function cloud_functions_env() {
     eval "$params"
     declare -A env=(
         [KCIDB_LOG_LEVEL]="$log_level"
+        [PYTHONOPTIMIZE]="${optimize}"
         [KCIDB_LOAD_QUEUE_TOPIC]="$new_topic"
         [KCIDB_LOAD_QUEUE_SUBSCRIPTION]="$new_load_subscription"
         [KCIDB_LOAD_QUEUE_MSG_MAX]="256"
@@ -1655,6 +1658,7 @@ function escape_whitespace() {
 #       --smtp-mocked=true|false
 #       --test=true|false
 #       --log-level=NAME
+#       --optimize=PYTHONOPTIMIZE
 #       --heavy-asserts=true|false
 #       --updated-publish=true|false
 #       --submitters=WORDS
@@ -1671,6 +1675,7 @@ function execute_command() {
                           smtp_mocked \
                           test \
                           log_level \
+                          optimize \
                           heavy_asserts \
                           updated_publish \
                           submitters \
@@ -1807,6 +1812,7 @@ function execute_command() {
 
     declare -r -a env_args=(
         --log-level="$log_level"
+        --optimize="$optimize"
         --heavy-asserts="$heavy_asserts"
         --new-topic="$new_topic"
         --new-load-subscription="$new_load_subscription"
@@ -1974,6 +1980,9 @@ function usage_deploy() {
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
+    echo "    --optimize=PYTHONOPTIMIZE"
+    echo "              Specify a value for PYTHONOPTIMIZE to be added to the environment"
+    echo "              Default is an empty string."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
@@ -2017,6 +2026,9 @@ function usage_env() {
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
+    echo "    --optimize=PYTHONOPTIMIZE"
+    echo "              Specify a value for PYTHONOPTIMIZE to be added to the environment"
+    echo "              Default is an empty string."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
@@ -2054,6 +2066,9 @@ function usage_shell() {
     echo "    --log-level=NAME"
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
+    echo "    --optimize=PYTHONOPTIMIZE"
+    echo "              Specify a value for PYTHONOPTIMIZE to be added to the environment"
+    echo "              Default is an empty string."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
@@ -2168,7 +2183,7 @@ function execute() {
         fi
         if [[ $command == @(deploy|env|shell) ]]; then
             getopt_longopts+=",extra-cc:,smtp-to-addrs:"
-            getopt_longopts+=",log-level:,heavy-asserts,mute-updates"
+            getopt_longopts+=",log-level:,optimize:,heavy-asserts,mute-updates"
             if [[ $command == env ]]; then
                 getopt_longopts+=",format:"
             fi
@@ -2199,6 +2214,7 @@ function execute() {
     declare smtp_mocked="false"
     declare test="false"
     declare log_level="INFO"
+    declare optimize=""
     declare heavy_asserts="false"
     declare updated_publish="true"
     declare -a submitters=()
@@ -2215,6 +2231,7 @@ function execute() {
             --psql-password-file)
                 password_set_file psql_superuser "$2"; shift 2;;
             --log-level) log_level="$2"; shift 2;;
+            --optimize) optimize="$2"; shift 2;;
             --heavy-asserts) heavy_asserts="true"; shift;;
             --mute-updates) updated_publish="false"; shift;;
             --test) test="true"; shift;;
@@ -2285,6 +2302,7 @@ function execute() {
                     --smtp-mocked="$smtp_mocked" \
                     --test="$test" \
                     --log-level="$log_level" \
+                    --optimize="$optimize" \
                     --heavy-asserts="$heavy_asserts" \
                     --updated-publish="$updated_publish" \
                     --submitters="${submitters[*]@Q}" \
