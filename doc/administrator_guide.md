@@ -5,52 +5,47 @@ draft: false
 wieght: 40
 description: "Deploying, maintaining, and upgrading a KCIDB service installation"
 ---
-Kcidb infrastructure is mostly based on Google Cloud services at the moment:
-
-    === Hosts ===  ======================= Google Cloud Project ========================
-
-    ~ Webserver ~                                                    ~~~~ BigQuery ~~~~~
-    kcidb-grafana <-------------------------------------------------  .. kcidb_XX ..
-                                                                     :   checkouts  :
-    ~~ Client ~~~                                                    :   builds     :
-    kcidb-query <--------------------------------------------------- :   tests      :
-                                                                      ''''''''''''''
-                    ~~ Pub/Sub ~~       ~~~~ Cloud Functions ~~~~            ^
-                    kcidb_trigger ----------.                                |
-                                            v                                |
-    kcidb-submit -> kcidb_new --------> kcidb_load_queue --------------------'
-                                            |
-                          .-----------------'
-                          v                                          ~~~~ Firestore ~~~~
-                    kcidb_updated ----> kcidb_spool_notifications -> notifications
-                                                                           |
-                                                   .-----------------------'
-                                                   |
-                                                   v                 ~ Secret Manager ~~
-                                        kcidb_send_notification <--- kcidb_smtp_password
-                                                   |
-                                                   |                 ~~~~~~ GMail ~~~~~~
-                                                   `---------------> bot@kernelci.org
-
-BigQuery stores the report dataset and serves it to Grafana dashboards hosted
-on kcidb.kernelci.org, as well as to any clients invoking `kcidb-query` or
-using the kcidb library to query the database.
-
-Whenever a client submits reports, either via `kcidb-submit` or the kcidb
-library, they go to a Pub/Sub message queue topic named `kcidb_new`, then to
-the `kcidb_load_queue` "Cloud Function", which loads the data to the BigQuery
-dataset, and then pushes the list of updated objects to `kcidb_updated` topic.
-The `kcidb_load_queue` function is triggered periodically via messages to
-`kcidb_trigger` topic, pushed there by the Cloud Scheduler service.
-
-That topic is watched by `kcidb_spool_notifications` function, which picks up
-the data, generates report notifications, and stores them in a Firestore
-collection named `notifications`.
-
-The last "Cloud Function", `kcidb_send_notification`, picks up the created
-notifications from the Firestore collection, and sends them out through GMail,
-using the `bot@kernelci.org` account, authenticating with the password stored
-in `kcidb_smtp_password` secret, within Secret Manager.
+```mermaid
+graph LR
+    subgraph Hosts
+        kcidb-grafana
+        kcidb-query
+        kcidb-submit
+    end
+    subgraph "Google Cloud Project"
+        kcidb-grafana -->|queries| kcidb_XX["..kcidb_XX..<br/>checkouts<br/>builds<br/>tests"]
+        kcidb-query -->|queries| kcidb_XX
+        kcidb-submit -->|submits| kcidb_new["kcidb_new"]
+        kcidb_new -->|loads to BigQuery| kcidb_load_queue["kcidb_load_queue"]
+        kcidb_load_queue -->|pushes updated objects| kcidb_updated["kcidb_updated"]
+        kcidb_trigger["kcidb_trigger"] -->|triggers| kcidb_load_queue
+        kcidb_updated -->|sends data to| kcidb_spool_notifications["kcidb_spool_notifications"]
+        kcidb_spool_notifications -->|stores in| notifications["notifications"]
+        kcidb_send_notification["kcidb_send_notification"] -->|sends notifications through| Gmail["GMail"]
+        kcidb_smtp_password["kcidb_smtp_password"] -->|authenticates with| kcidb_send_notification
+        subgraph "Google Cloud Services"
+            kcidb_trigger
+            kcidb_load_queue
+            kcidb_spool_notifications
+            kcidb_send_notification
+        end
+        subgraph "Data Storage"
+            kcidb_XX
+            notifications
+            kcidb_smtp_password
+            subgraph "Google Cloud Services"
+                BigQuery["BigQuery"]
+                Firestore["Firestore"]
+            end
+        end
+    end
+    BigQuery -->|serves data to| kcidb-grafana
+    BigQuery -->|serves data to| kcidb-query
+    BigQuery -->|loads data from| kcidb_load_queue
+    Firestore -->|stores data from| kcidb_spool_notifications
+    kcidb_smtp_password -->|stores password for| kcidb_send_notification
+    kcidb_send_notification -->|sends notifications from| bot["bot@kernelci.org"]
+```
 
 Setup
 -----
