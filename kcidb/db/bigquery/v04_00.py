@@ -70,7 +70,9 @@ class Connection(AbstractConnection):
             project_id = None
             dataset_name = params
         self.client = bigquery.Client(project=project_id)
-        self.dataset_ref = self.client.dataset(dataset_name)
+        self.dataset_ref = bigquery.DatasetReference(
+            self.client.project, dataset_name
+        )
         try:
             self.client.get_dataset(self.dataset_ref)
         except GoogleNotFound as exc:
