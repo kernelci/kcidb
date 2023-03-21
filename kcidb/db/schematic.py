@@ -296,14 +296,15 @@ class Schema(ABC, metaclass=MetaSchema):
         The database must be initialized.
 
         Args:
-            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
         assert isinstance(pattern_set, set)
-        assert all(isinstance(r, orm.Pattern) for r in pattern_set)
+        assert all(isinstance(r, orm.query.Pattern)
+                   for r in pattern_set)
 
     @abstractmethod
     def load(self, data):
@@ -583,14 +584,15 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         The database must be initialized.
 
         Args:
-            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
         assert isinstance(pattern_set, set)
-        assert all(isinstance(r, orm.Pattern) for r in pattern_set)
+        assert all(isinstance(r, orm.query.Pattern)
+                   for r in pattern_set)
         assert self.is_initialized()
         return self.schema.oo_query(pattern_set)
 

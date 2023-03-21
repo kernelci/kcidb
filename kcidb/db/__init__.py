@@ -337,7 +337,7 @@ class Client(kcidb.orm.Source):
         Query raw object-oriented data from the database.
 
         Args:
-            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
@@ -345,7 +345,8 @@ class Client(kcidb.orm.Source):
         """
         assert LIGHT_ASSERTS or self.is_initialized()
         assert isinstance(pattern_set, set)
-        assert all(isinstance(r, kcidb.orm.Pattern) for r in pattern_set)
+        assert all(isinstance(r, kcidb.orm.query.Pattern)
+                   for r in pattern_set)
         LOGGER.debug("OO Query: %r", pattern_set)
         return self.driver.oo_query(pattern_set)
 

@@ -224,7 +224,8 @@ def test_pattern_publisher_main_publish():
 
     driver_source = textwrap.dedent("""
         from unittest.mock import patch, Mock, call
-        from kcidb.orm import Pattern, SCHEMA
+        from kcidb.orm.query import Pattern
+        from kcidb.orm.data import SCHEMA
         future = Mock()
         future.done = lambda: True
         future.add_done_callback = lambda cb: cb(future)
@@ -311,7 +312,8 @@ def test_pattern_subscriber_main_pull():
             "pull", "--timeout", "123"]
     driver_source = textwrap.dedent("""
         from unittest.mock import patch, Mock
-        from kcidb.orm import Pattern, SCHEMA
+        from kcidb.orm.query import Pattern
+        from kcidb.orm.data import SCHEMA
         subscriber = Mock()
         subscriber.pull_iter = Mock(return_value=[("ID", {
             Pattern(
