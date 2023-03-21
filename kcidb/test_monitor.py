@@ -29,7 +29,7 @@ def match(io_data, pattern=">*#"):
     db_client.init()
     oo_client = oo.Client(db_client)
     db_client.load(io_data)
-    return monitor.match(oo_client.query(orm.Pattern.parse(pattern)))
+    return monitor.match(oo_client.query(orm.query.Pattern.parse(pattern)))
 
 
 def test_min():

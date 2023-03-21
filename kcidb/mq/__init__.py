@@ -503,7 +503,7 @@ class ORMPatternPublisher(Publisher):
 
     def encode_data(self, data):
         """
-        Encode a set of kcidb.orm.Pattern objects, into message data.
+        Encode a set of kcidb.orm.query.Pattern objects, into message data.
 
         Args:
             data:   The set to encode.
@@ -515,7 +515,7 @@ class ORMPatternPublisher(Publisher):
             An exception in case data encoding failed.
         """
         assert isinstance(data, set)
-        assert all(isinstance(pattern, kcidb.orm.Pattern)
+        assert all(isinstance(pattern, kcidb.orm.query.Pattern)
                    for pattern in data)
         return "".join(
             repr(pattern) + "\n" for pattern in data
@@ -527,7 +527,7 @@ class ORMPatternSubscriber(Subscriber):
 
     def decode_data(self, message_data):
         """
-        Decode message data to extract kcidb.orm.Pattern objects.
+        Decode message data to extract kcidb.orm.query.Pattern objects.
 
         Args:
             message_data:   The message data from the message queue
@@ -535,14 +535,14 @@ class ORMPatternSubscriber(Subscriber):
                             decoded.
 
         Returns
-            The decoded set of kcidb.orm.Pattern objects.
+            The decoded set of kcidb.orm.query.Pattern objects.
 
         Raises:
             An exception in case data decoding failed.
         """
         pattern_set = set()
         for line in message_data.decode().splitlines():
-            pattern_set |= kcidb.orm.Pattern.parse(line)
+            pattern_set |= kcidb.orm.query.Pattern.parse(line)
         return pattern_set
 
 
@@ -818,7 +818,7 @@ def pattern_publisher_main():
     parser = PublisherArgumentParser("ORM patterns", description=description)
     parser.subparsers["publish"].add_argument(
         '--pattern-help',
-        action=kcidb.orm.PatternHelpAction,
+        action=kcidb.orm.query.PatternHelpAction,
         help='Print pattern string documentation and exit.'
     )
     args = parser.parse_args()
@@ -831,7 +831,7 @@ def pattern_publisher_main():
         pattern_set = set()
         for line_idx, line in enumerate(sys.stdin):
             try:
-                pattern_set |= kcidb.orm.Pattern.parse(line)
+                pattern_set |= kcidb.orm.query.Pattern.parse(line)
             except Exception as exc:
                 raise Exception(
                     f"Failed parsing ORM pattern on line {line_idx + 1}: "

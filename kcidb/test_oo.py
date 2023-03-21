@@ -311,7 +311,7 @@ def traversing_client(empty_database):
 
 def query_str(client, pattern_string):
     """Run OO client query with a parsed string."""
-    return client.query(kcidb.orm.Pattern.parse(pattern_string))
+    return client.query(kcidb.orm.query.Pattern.parse(pattern_string))
 
 
 def filter_valid(container):
@@ -348,7 +348,7 @@ def assert_response_contains(client, pattern_str, types, num_instances):
     assert types <= set(kcidb.oo.CLASSES)
     assert isinstance(num_instances, int)
 
-    data = client.query(kcidb.orm.Pattern.parse(pattern_str))
+    data = client.query(kcidb.orm.query.Pattern.parse(pattern_str))
 
     assert set(data) == types
     for type_name, type_objs in data.items():
@@ -785,7 +785,7 @@ def test_status_builds(status_client):
         ):
             build_id = f"_:valid_{build_valid_name}_" \
                 f"incident_{incident_valid_name}"
-            result = status_client.query(kcidb.orm.Pattern.parse(
+            result = status_client.query(kcidb.orm.query.Pattern.parse(
                 ">build%#", [{(build_id,)}]
             ))
             assert set(result.keys()) == {"build"}, \
@@ -825,7 +825,7 @@ def test_status_tests(status_client):
                 test_id = f"_:status_{test_status_name}_" \
                     f"waived_{test_waived_name}_" \
                     f"incident_{incident_status_name}"
-                result = status_client.query(kcidb.orm.Pattern.parse(
+                result = status_client.query(kcidb.orm.query.Pattern.parse(
                     ">test%#", [{(test_id,)}]
                 ))
                 assert set(result.keys()) == {"test"}, \

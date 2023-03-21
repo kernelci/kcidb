@@ -42,7 +42,7 @@ def test_min():
             },
         ],
     })
-    oo_data = oo_client.query(orm.Pattern.parse(">*#"))
+    oo_data = oo_client.query(orm.query.Pattern.parse(">*#"))
 
     notification_message = NotificationMessage(
         to=["foo@kernelci.org", "bar@kernelci.org"],
@@ -119,7 +119,9 @@ def test_subject_and_body_length():
             },
         ]
     })
-    revision = oo_client.query(orm.Pattern.parse(">revision#"))["revision"][0]
+    revision = oo_client.query(
+        orm.query.Pattern.parse(">revision#")
+    )["revision"][0]
 
     # test under-limit length subject/body are left intact in the email
     notification_message = NotificationMessage(
@@ -235,7 +237,9 @@ def test_subject_invalid_character():
             },
         ]
     })
-    revision = oo_client.query(orm.Pattern.parse(">revision#"))["revision"][0]
+    revision = oo_client.query(
+        orm.query.Pattern.parse(">revision#")
+    )["revision"][0]
 
     # test invalid character in subject are replaced
     # by the uncertainty sign character in the email

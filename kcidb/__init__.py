@@ -314,7 +314,7 @@ def notify_main():
     oo_client = oo.Client(db.Client(args.database))
     pattern_set = set()
     for pattern_string in args.pattern_strings:
-        pattern_set |= orm.Pattern.parse(pattern_string)
+        pattern_set |= orm.query.Pattern.parse(pattern_string)
     for notification in monitor.match(oo_client.query(pattern_set)):
         sys.stdout.write(
             notification.render().
@@ -349,9 +349,9 @@ def ingest_main():
         data = io.SCHEMA.upgrade(data, copy=False)
         # Record patterns matching the loaded objects and all their parents
         pattern_set = set()
-        for pattern in orm.Pattern.from_io(data):
+        for pattern in orm.query.Pattern.from_io(data):
             # TODO Avoid formatting and parsing
-            pattern_set |= orm.Pattern.parse(repr(pattern) + "<*#")
+            pattern_set |= orm.query.Pattern.parse(repr(pattern) + "<*#")
         LOGGER.debug("Notification patterns: %r", pattern_set)
         # Reset the OO cache
         oo_client.reset_cache()

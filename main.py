@@ -178,9 +178,10 @@ def kcidb_load_message(event, context):
         data = kcidb.io.SCHEMA.upgrade(data, copy=False)
         # Generate patterns matching all affected objects
         pattern_set = set()
-        for pattern in kcidb.orm.Pattern.from_io(data):
+        for pattern in kcidb.orm.query.Pattern.from_io(data):
             # TODO Avoid formatting and parsing
-            pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
+            pattern_set |= \
+                kcidb.orm.query.Pattern.parse(repr(pattern) + "<*#")
         # Publish patterns matching all affected objects
         publisher.publish(pattern_set)
 
@@ -239,9 +240,10 @@ def kcidb_load_queue(event, context):
 
         # Generate patterns matching all affected objects
         pattern_set = set()
-        for pattern in kcidb.orm.Pattern.from_io(data):
+        for pattern in kcidb.orm.query.Pattern.from_io(data):
             # TODO Avoid formatting and parsing
-            pattern_set |= kcidb.orm.Pattern.parse(repr(pattern) + "<*#")
+            pattern_set |= \
+                kcidb.orm.query.Pattern.parse(repr(pattern) + "<*#")
 
         # Publish patterns matching all affected objects
         publisher.publish(pattern_set)
@@ -260,7 +262,7 @@ def kcidb_spool_notifications(event, context):
     # Get arriving data
     pattern_set = set()
     for line in base64.b64decode(event["data"]).decode().splitlines():
-        pattern_set |= kcidb.orm.Pattern.parse(line)
+        pattern_set |= kcidb.orm.query.Pattern.parse(line)
     LOGGER.info("RECEIVED %u PATTERNS", len(pattern_set))
     LOGGER.debug(
         "PATTERNS:\n%s",

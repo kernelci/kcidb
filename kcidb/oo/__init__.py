@@ -8,7 +8,9 @@ from functools import reduce
 from cached_property import cached_property
 import kcidb.db
 from kcidb.misc import LIGHT_ASSERTS
-from kcidb.orm import Type, SCHEMA, Pattern, Source
+from kcidb.orm import Source
+from kcidb.orm.query import Pattern
+from kcidb.orm.data import Type, SCHEMA
 
 
 class Object:
@@ -23,7 +25,7 @@ class Object:
             client:     The object-oriented database client to query for
                         references.
             type:       The type of represented object.
-                        Instance of kcidb.orm.Type.
+                        Instance of kcidb.orm.data.Type.
             data:       The raw data of the object to represent.
         """
         assert isinstance(client, Client)
@@ -38,7 +40,7 @@ class Object:
         Retrieve the object's type.
 
         Returns:
-            The object's type, an instance of kcidb.orm.Type.
+            The object's type, an instance of kcidb.orm.data.Type.
         """
         return self._type
 
@@ -743,7 +745,7 @@ class Client:
         Retrieve objects specified via a pattern list.
 
         Args:
-            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
@@ -831,7 +833,7 @@ def query_main():
     db_client = kcidb.db.Client(args.database)
     pattern_set = set()
     for pattern_string in args.pattern_strings:
-        pattern_set |= kcidb.orm.Pattern.parse(pattern_string)
+        pattern_set |= Pattern.parse(pattern_string)
     kcidb.misc.json_dump(
         db_client.oo_query(pattern_set),
         sys.stdout, indent=args.indent, seq=args.seq

@@ -11,7 +11,7 @@ import kcidb
 
 
 EMPTY_TEMPLATE = Template("")
-SCHEMA = kcidb.orm.Schema(
+SCHEMA = kcidb.orm.data.Schema(
     {},
     dict(
         revision=dict(
@@ -120,21 +120,21 @@ SCHEMA = kcidb.orm.Schema(
 
 def parse(string, obj_id_set_list=None):
     """Parse a pattern string using test schema"""
-    return kcidb.orm.Pattern.parse(string, obj_id_set_list,
-                                   schema=SCHEMA)
+    return kcidb.orm.query.Pattern.parse(string, obj_id_set_list,
+                                         schema=SCHEMA)
 
 
 def pattern(base, child, obj_type_name, obj_id_set=None):
     """Create a pattern with test schema"""
-    return kcidb.orm.Pattern(base, child,
-                             SCHEMA.types[obj_type_name], obj_id_set)
+    return kcidb.orm.query.Pattern(base, child,
+                                   SCHEMA.types[obj_type_name], obj_id_set)
 
 
 def from_io(io_data, max_objs=0):
     """Create a pattern from I/O with test schema"""
     assert isinstance(max_objs, int) and max_objs >= 0
-    return kcidb.orm.Pattern.from_io(io_data, schema=SCHEMA,
-                                     max_objs=max_objs)
+    return kcidb.orm.query.Pattern.from_io(io_data, schema=SCHEMA,
+                                           max_objs=max_objs)
 
 
 def test_pattern_parse_misc():
@@ -643,7 +643,7 @@ def raw_data(type_name, **kwargs):
          with the missing fields set to None.
     """
     _data = {}
-    for item in kcidb.orm.SCHEMA.types[type_name] \
+    for item in kcidb.orm.data.SCHEMA.types[type_name] \
             .json_schema['properties'].keys():
         _data[item] = kwargs.get(item, None)
     return _data
@@ -995,7 +995,7 @@ def source(empty_database):
 def query_str(source, pattern_string):
     """Run OO query with a parsed string."""
     return source.oo_query(
-        kcidb.orm.Pattern.parse(pattern_string)
+        kcidb.orm.query.Pattern.parse(pattern_string)
     )
 
 

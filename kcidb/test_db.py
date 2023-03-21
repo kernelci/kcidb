@@ -777,7 +777,7 @@ def test_upgrade(clean_database):
             database.upgrade(io_version)
             # Check upgrade went well
             # You're wrong, pylint: disable=unsubscriptable-object
-            assert database.oo_query(kcidb.orm.Pattern.parse(">*#")) == \
+            assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
                 last_params["oo"]
             upgraded_io = io_version.upgrade(last_params["io"])
             assert database.dump() == upgraded_io
@@ -814,7 +814,8 @@ def test_upgrade(clean_database):
             assert database.dump() == upgraded_io
             assert database.query(io_version.get_ids(upgraded_io)) == \
                 upgraded_io
-            assert database.oo_query(kcidb.orm.Pattern.parse(">*#")) == \
+            assert \
+                database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
                 load_params["oo"]
 
         # Remeber this I/O version and its parameters for the next round

@@ -677,13 +677,13 @@ class Schema(AbstractSchema):
         Render a pattern for raw OO data into a query.
 
         Args:
-            pattern:    The pattern (instance of kcidb.orm.Pattern) to
+            pattern:    The pattern (instance of kcidb.orm.query.Pattern) to
                         render.
 
         Returns:
             The SQL query string and the query parameters.
         """
-        assert isinstance(pattern, orm.Pattern)
+        assert isinstance(pattern, orm.query.Pattern)
         obj_type = pattern.obj_type
         type_query_string = cls.OO_QUERIES[obj_type.name]["statement"]
         if pattern.obj_id_set:
@@ -760,18 +760,18 @@ class Schema(AbstractSchema):
         Query raw object-oriented data from the database.
 
         Args:
-            pattern_set:    A set of patterns ("kcidb.orm.Pattern"
+            pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
                             instances) matching objects to fetch.
         Returns:
             A dictionary of object type names and lists containing retrieved
             objects of the corresponding type.
         """
         assert isinstance(pattern_set, set)
-        assert all(isinstance(r, orm.Pattern) for r in pattern_set)
+        assert all(isinstance(r, orm.query.Pattern) for r in pattern_set)
 
         # Render all queries for each type
         obj_type_queries = {}
-        for obj_type in orm.SCHEMA.types.values():
+        for obj_type in orm.data.SCHEMA.types.values():
             for pattern in pattern_set:
                 if pattern.obj_type == obj_type:
                     if obj_type not in obj_type_queries:
@@ -791,7 +791,7 @@ class Schema(AbstractSchema):
                     oo_query["schema"].unpack_iter(cursor, drop_null=False)
                 )
 
-        assert LIGHT_ASSERTS or orm.SCHEMA.is_valid(objs)
+        assert LIGHT_ASSERTS or orm.data.SCHEMA.is_valid(objs)
         return objs
 
     def load(self, data):
