@@ -74,7 +74,6 @@ class Client(kcidb.orm.Source):
                                   driver
         """
         assert isinstance(database, str)
-        self.database = database
         self.driver = misc.instantiate_spec(DRIVER_TYPES, database)
         assert all(io_schema <= io.SCHEMA
                    for io_schema in self.driver.get_schemas().values()), \
