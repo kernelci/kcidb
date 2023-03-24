@@ -1,7 +1,6 @@
 """kcdib.db module tests"""
 
 import re
-import textwrap
 import datetime
 import json
 from itertools import permutations
@@ -19,194 +18,131 @@ def test_schemas_main():
                     stdout_re=r"4\.0: 4\.0\n4\.1: 4\.1\n")
 
 
-def test_init_main():
+def test_init_main(clean_database):
     """Check kcidb-db-init works"""
-    argv = ["kcidb.db.init_main", "-d", "bigquery:project.dataset"]
-    driver_source = textwrap.dedent("""
-        from unittest.mock import patch, Mock
-        client = Mock()
-        client.init = Mock()
-        client.is_initialized = Mock(return_value=False)
-        with patch("kcidb.db.Client", return_value=client) as \
-                Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        client.init.assert_called_once()
-        return status
-    """)
-    assert_executes("", *argv, driver_source=driver_source)
+    argv = ["kcidb.db.init_main", "-d", clean_database.database]
+    assert_executes("", *argv)
 
 
-def test_cleanup_main():
+def test_cleanup_main(clean_database):
     """Check kcidb-db-cleanup works"""
-    argv = ["kcidb.db.cleanup_main", "-d", "bigquery:project.dataset"]
-    driver_source = textwrap.dedent("""
-        from unittest.mock import patch, Mock
-        client = Mock()
-        client.cleanup = Mock()
-        client.is_initialized = Mock(return_value=True)
-        with patch("kcidb.db.Client", return_value=client) as \
-                Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        client.cleanup.assert_called_once()
-        return status
-    """)
-    assert_executes("", *argv, driver_source=driver_source)
+    clean_database.init()
+    argv = ["kcidb.db.cleanup_main", "-d", clean_database.database]
+    assert_executes("", *argv)
 
 
-def test_empty_main():
+def test_empty_main(empty_database):
     """Check kcidb-db-empty works"""
-    argv = ["kcidb.db.empty_main", "-d", "bigquery:project.dataset"]
-    driver_source = textwrap.dedent("""
-        from unittest.mock import patch, Mock
-        client = Mock()
-        client.empty = Mock()
-        client.is_initialized = Mock(return_value=True)
-        with patch("kcidb.db.Client", return_value=client) as \
-                Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        client.empty.assert_called_once()
-        return status
-    """)
-    assert_executes("", *argv, driver_source=driver_source)
+    argv = ["kcidb.db.empty_main", "-d", empty_database.database]
+    assert_executes("", *argv)
 
 
-def test_dump_main():
+def test_dump_main(empty_database):
     """Check kcidb-db-dump works"""
-    empty = kcidb.io.SCHEMA.new()
-    argv = ["kcidb.db.dump_main", "-d", "bigquery:project.dataset",
+    argv = ["kcidb.db.dump_main", "-d", empty_database.database,
             "--indent=0"]
-
-    driver_source = textwrap.dedent(f"""
-        from unittest.mock import patch, Mock
-        client = Mock()
-        client.dump_iter = Mock(return_value=iter(({repr(empty)},)))
-        with patch("kcidb.db.Client", return_value=client) as \
-                Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        client.dump_iter.assert_called_once()
-        return status
-    """)
-    assert_executes("", *argv, driver_source=driver_source,
-                    stdout_re=re.escape(json.dumps(empty) + "\n"))
-
-    driver_source = textwrap.dedent(f"""
-        from unittest.mock import patch, Mock
-        client = Mock()
-        client.dump_iter = Mock(return_value=iter({repr((empty, empty))}))
-        with patch("kcidb.db.Client", return_value=client) as \
-                Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        client.dump_iter.assert_called_once()
-        return status
-    """)
-    assert_executes("", *argv, driver_source=driver_source,
-                    stdout_re=re.escape(json.dumps(empty) + "\n" +
-                                        json.dumps(empty) + "\n"))
-
-
-def test_query_main():
-    """Check kcidb-db-query works"""
-    driver_source = textwrap.dedent("""
-        from unittest.mock import patch
-        with patch("kcidb.db.Client"):
-            return function()
-    """)
-    argv = ["kcidb.db.query_main", "-d", "bigquery:project.dataset"]
-    assert_executes("", *argv, driver_source=driver_source)
-
-    argv = [
-        "kcidb.db.query_main", "-d", "bigquery:project.dataset",
-        "-c", "test:checkout:1", "-b", "test:build:1",
-        "-t", "test:test:1",
-        "--parents", "--children", "--objects-per-report", "10",
-        "--indent=0",
-    ]
-    empty = kcidb.io.SCHEMA.new()
-    driver_source = textwrap.dedent(f"""
-        from unittest.mock import patch, Mock
-        client = Mock()
-        client.query_iter = Mock(return_value=iter((
-            {repr(empty)}, {repr(empty)},
-        )))
-        with patch("kcidb.db.Client", return_value=client) as Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        client.query_iter.assert_called_once_with(
-            ids=dict(checkouts=["test:checkout:1"],
-                     builds=["test:build:1"],
-                     tests=["test:test:1"]),
-            parents=True,
-            children=True,
-            objects_per_report=10
-        )
-        return status
-    """)
-    assert_executes(
-        json.dumps(empty), *argv,
-        driver_source=driver_source,
-        stdout_re=re.escape(
-            json.dumps(empty) + "\n" +
-            json.dumps(empty) + "\n"
-        )
+    empty_database.load(
+        {
+            "version": {
+                "major": 4,
+                "minor": 1
+            },
+            "checkouts": [
+                {
+                    "id": "_:kernelci:5acb9c2a7bc836e"
+                          "9e5172bbcd2311499c5b4e5f1",
+                    "origin": "kernelci",
+                    "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                       "cd2311499c5b4e5f1",
+                    "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_hash": ""
+                }
+            ],
+            "builds": [
+                {
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "origin": "google",
+                    "checkout_id": "_:google:bd355732283c23a365f7c"
+                                   "55206c0385100d1c389"
+                }
+            ],
+            "tests": [
+                {
+                    "id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "build_id": "google:google.org:a1d993c3n4c448b2"
+                                "j0l1hbf1",
+                    "origin": "google",
+                }
+            ]
+        }
     )
+    data = empty_database.dump()
+    assert_executes("", *argv,
+                    stdout_re=re.escape(json.dumps(data) + "\n"))
 
 
-def test_load_main():
+def test_query_main(empty_database):
+    """Check kcidb-db-query works"""
+    argv = ["kcidb.db.query_main", "-d", empty_database.database,
+            "-c", '_:1', "-b", '_:1', "-t", '_:1', "--indent=0"]
+
+    data = dict(
+        version=dict(major=4, minor=1),
+        checkouts=[dict(id="_:1", origin="_")],
+        builds=[dict(id="_:1", origin="_", checkout_id="_:1")],
+        tests=[dict(id="_:1", origin="_", build_id="_:1")],
+    )
+    empty_database.load(data)
+    data = empty_database.dump()
+    assert_executes("", *argv, stdout_re=re.escape(json.dumps(data) + "\n"))
+
+
+def test_load_main(empty_database):
     """Check kcidb-db-load works"""
-    driver_source = textwrap.dedent("""
-        from unittest.mock import patch, Mock
-        from kcidb_io.schema import V4_1
-        client = Mock()
-        client.get_schema = Mock(return_value=((1, 0), V4_1))
-        with patch("kcidb.db.Client", return_value=client):
-            return function()
-    """)
-    argv = ["kcidb.db.load_main", "-d", "bigquery:project.dataset"]
-
-    assert_executes("", *argv, driver_source=driver_source)
-    assert_executes('{', *argv, driver_source=driver_source,
+    argv = ["kcidb.db.load_main", "-d", empty_database.database]
+    assert_executes("", *argv)
+    assert_executes('{', *argv,
                     status=1, stderr_re=".*JSONParseError.*")
-    assert_executes('{}', *argv, driver_source=driver_source,
+    assert_executes('{}', *argv,
                     status=1, stderr_re=".*ValidationError.*")
 
     empty = kcidb.io.SCHEMA.new()
-
-    driver_source = textwrap.dedent(f"""
-        from unittest.mock import patch, Mock
-        from kcidb_io.schema import V4_1
-        client = Mock()
-        client.get_schema = Mock(return_value=((1, 0), V4_1))
-        client.load = Mock()
-        with patch("kcidb.db.Client", return_value=client) as Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        client.load.assert_called_once_with({repr(empty)})
-        return status
-    """)
-    assert_executes(json.dumps(empty), *argv,
-                    driver_source=driver_source)
-
-    driver_source = textwrap.dedent(f"""
-        from unittest.mock import patch, Mock, call
-        from kcidb_io.schema import V4_1
-        client = Mock()
-        client.get_schema = Mock(return_value=((1, 0), V4_1))
-        client.load = Mock()
-        with patch("kcidb.db.Client", return_value=client) as Client:
-            status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
-        assert client.load.call_count == 2
-        client.load.assert_has_calls([call({repr(empty)}),
-                                      call({repr(empty)})])
-        return status
-    """)
-    assert_executes(json.dumps(empty) + json.dumps(empty), *argv,
-                    driver_source=driver_source)
+    assert_executes(json.dumps(empty), *argv)
+    data = {
+        "version": {
+            "major": 4,
+            "minor": 1
+        },
+        "checkouts": [
+            {
+                "id": "_:kernelci:5acb9c2a7bc836e"
+                      "9e5172bbcd2311499c5b4e5f1",
+                "origin": "kernelci",
+                "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                   "cd2311499c5b4e5f1",
+                "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
+                "patchset_hash": ""
+            },
+        ],
+        "builds": [
+            {
+                "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                "origin": "google",
+                "checkout_id": "_:google:bd355732283c23a365f7c"
+                               "55206c0385100d1c389"
+            },
+        ],
+        "tests": [
+            {
+                "id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                "build_id": "google:google.org:a1d993c3n4c448b2"
+                            "j0l1hbf1",
+                "origin": "google",
+            },
+        ]
+    }
+    assert_executes(json.dumps(data), *argv)
+    assert empty_database.dump() == data
 
 
 # I/O data containing all possible fields
