@@ -220,7 +220,9 @@ def query_main():
     query_iter = client.query_iter(
         ids=dict(checkouts=args.checkout_ids,
                  builds=args.build_ids,
-                 tests=args.test_ids),
+                 tests=args.test_ids,
+                 issues=args.issue_ids,
+                 incidents=args.incident_ids),
         parents=args.parents,
         children=args.children,
         objects_per_report=args.objects_per_report
