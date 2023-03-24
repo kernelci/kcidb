@@ -538,7 +538,22 @@ class QueryArgumentParser(SplitOutputArgumentParser):
             dest="test_ids",
             action='append',
         )
-
+        self.add_argument(
+            '-i', '--issue-id',
+            metavar="ID",
+            default=[],
+            help='ID of an issue to match',
+            dest="issue_ids",
+            action='append',
+        )
+        self.add_argument(
+            '-n', '--incident-id',
+            metavar="ID",
+            default=[],
+            help='ID of an incident to match',
+            dest="incident_ids",
+            action='append',
+        )
         self.add_argument(
             '--parents',
             help='Match parents of matching objects',
@@ -580,7 +595,9 @@ def query_main():
     query_iter = client.query_iter(
         ids=dict(checkouts=args.checkout_ids,
                  builds=args.build_ids,
-                 tests=args.test_ids),
+                 tests=args.test_ids,
+                 issues=args.issue_ids,
+                 incidents=args.incident_ids),
         parents=args.parents,
         children=args.children,
         objects_per_report=args.objects_per_report

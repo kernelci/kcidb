@@ -109,7 +109,8 @@ def test_query_main():
         "-c", "test:checkout:1", "-b", "test:build:1",
         "-t", "test:test:1",
         "--parents", "--children", "--objects-per-report", "10",
-        "--indent=0",
+        "--indent=0", "-i", "test:issue:1",
+        "-n", "test:incident:1",
     ]
     empty = kcidb.io.SCHEMA.new()
     driver_source = textwrap.dedent(f"""
@@ -126,7 +127,9 @@ def test_query_main():
         client.query_iter.assert_called_once_with(
             ids=dict(checkouts=["test:checkout:1"],
                      builds=["test:build:1"],
-                     tests=["test:test:1"]),
+                     tests=["test:test:1"],
+                     issues=["test:issue:1"],
+                     incidents=["test:incident:1"]),
             parents=True,
             children=True,
             objects_per_report=10
