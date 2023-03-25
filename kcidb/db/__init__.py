@@ -126,6 +126,24 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         self.driver.cleanup()
 
+    def reset(self, database=None):
+        """
+        Recreates a database driver instance on request
+        using existing database string
+        Args:
+            database:   A string specifying the database to access, formatted
+                        as "<DRIVER>:<PARAMS>" or just "<DRIVER>". Where
+                        "<DRIVER>" is the driver name, and "<PARAMS>" is the
+                        optional driver-specific database parameter string
+                        or None.
+
+        Returns:
+            A new client object
+        """
+        if database is None:
+            return Client(self.database)
+        return Client(database)
+
     def empty(self):
         """
         Empty the database, removing all data.
