@@ -75,7 +75,7 @@ Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
 
     export PATH="$PATH":~/.local/bin
 
-See [Installation](../installation) for alternatives, and if you know your
+See [Installation](https://github.com/kernelci/kcidb/blob/main/doc/installation.md) for alternatives, and if you know your
 Python, feel free to do it your way!
 
 To test your installation, authentication, and the parameters you received
