@@ -3,7 +3,7 @@
 from kcidb.monitor.output import NotificationMessage as Message
 
 
-def match_revision(revision):
+def _disabled_match_revision(revision):
     """Match revisions of interest to Nikolai Kondrashov"""
     subject_sfx = ' failed for {% include "revision_summary.txt.j2" %}'
     msg_args = dict(
