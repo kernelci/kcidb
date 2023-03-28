@@ -74,6 +74,7 @@ class Client(kcidb.orm.Source):
                                   driver
         """
         assert isinstance(database, str)
+        self.database = database
         self.driver = misc.instantiate_spec(DRIVER_TYPES, database)
         assert all(io_schema <= io.SCHEMA
                    for io_schema in self.driver.get_schemas().values()), \
@@ -133,6 +134,15 @@ class Client(kcidb.orm.Source):
         """
         assert self.is_initialized()
         self.driver.empty()
+
+    def reset(self):
+        """
+        Recreates a database driver instance on request
+        using existing database string
+        Returns:
+            The Recreated driver instance
+        """
+        return Client(self.database)
 
     def get_last_modified(self):
         """
