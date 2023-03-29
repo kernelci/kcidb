@@ -122,6 +122,7 @@ jobs:
           declare -a args=(
             kernelci-production "playground" 1
             --smtp-mocked
+            --optimize=2
           )
           ./cloud deploy "${args[@]}" -v
       - name: Deploy Production
