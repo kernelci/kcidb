@@ -590,10 +590,16 @@ def query_main():
     description = \
         "kcidb-db-query - Query objects from Kernel CI report database"
     parser = QueryArgumentParser(description=description)
+    parser.add_argument(
+        '--schema', type=str, default='latest',
+        help='I/O schema version to use (in the format io:<major>.<minor>) '
+             'or "latest" to use the latest schema version'
+    )
     args = parser.parse_args()
-    client = Client(args.database)
+    client = Client(args.database, io_version=args.schema)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
+    io_schema = client.get_schema()[1]
     query_iter = client.query_iter(
         ids=dict(checkouts=args.checkout_ids,
                  builds=args.build_ids,
@@ -609,17 +615,24 @@ def query_main():
     )
 
 
+
 def load_main():
     """Execute the kcidb-db-load command-line tool"""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = \
         'kcidb-db-load - Load reports into Kernel CI report database'
     parser = ArgumentParser(description=description)
+    parser.add_argument('--schema', help='I/O schema version in the format "io:<major>.<minor>"')
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
-    io_schema = client.get_schema()[1]
+    io_schema = io.latest_schema() if args.schema == 'latest' else None
+    if args.schema and args.schema.startswith('io:'):
+        major, minor = map(int, args.schema[3:].split('.'))
+        io_schema = io.find(major, minor)
+    if io_schema is None:
+        io_schema = client.get_schema()[1]
     for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno()):
         data = io_schema.upgrade(io_schema.validate(data), copy=False)
         client.load(data)
@@ -631,9 +644,24 @@ def schemas_main():
     description = 'kcidb-db-schemas - List available database schemas ' \
         '(as <DB>: <I/O>)'
     parser = ArgumentParser(description=description)
+    parser.add_argument('--schema', choices=['latest', 'io:<major>.<minor>'], default='latest')
     args = parser.parse_args()
     client = Client(args.database)
-    curr_version = client.get_schema()[0] if client.is_initialized() else None
+    
+    if args.schema == 'latest':
+        curr_version = client.get_schema()[0] if client.is_initialized() else None
+        version = list(client.get_schemas())[-1]
+    else:
+        io_version = io.schema.VA.from_string(args.schema[3:])
+        for schema_version, schema_io_version in client.get_schemas().items():
+            if schema_io_version == io_version:
+                version = schema_version
+                break
+        else:
+            print(f"Error: I/O version {args.schema} is not supported")
+            return
+    
+    client.init(version)
     lines = []
     widths = [0, 0]
     for version, io_version in client.get_schemas().items():
@@ -662,20 +690,33 @@ def init_main():
         '-s', '--schema',
         metavar="VERSION",
         help="Specify database schema VERSION to initialize to "
-             "(a first column value from kcidb-db-schemas output). "
+             "(a first column value from kcidb-db-schemas output), or "
+             "io:<major>.<minor> to specify the I/O schema version, or "
+             "'latest' to initialize to the latest schema. "
              "Default is the latest version.",
-        type=kcidb.misc.version
+        type=str,
+        default='latest'
     )
     args = parser.parse_args()
     client = Client(args.database)
     if args.schema is not None:
-        if args.schema not in client.get_schemas():
-            raise Exception(
-                f"Schema version {args.schema[0]}.{args.schema[1]} "
-                f"is not available for database {args.database!r}"
-            )
+        if args.schema == 'latest':
+            schema_version = None
+        elif args.schema.startswith('io:'):
+            io_version_str = args.schema.split(':')[1]
+            io_version = io.schema.VA(io_version_str.split('.'))
+            schema_version = client.get_schema_version_for_io_version(io_version)
+        else:
+            schema_version = kcidb.misc.version(args.schema)
+            if schema_version not in client.get_schemas():
+                raise Exception(
+                    f"Schema version {schema_version[0]}.{schema_version[1]} "
+                    f"is not available for database {args.database!r}"
+                )
+    else:
+        schema_version = None
     if not client.is_initialized():
-        client.init(args.schema)
+        client.init(schema_version)
     elif not args.ignore_initialized:
         raise Exception(f"Database {args.database!r} is already initialized")
 
@@ -686,34 +727,44 @@ def upgrade_main():
     description = 'kcidb-db-upgrade - Upgrade database schema'
     parser = ArgumentParser(description=description)
     parser.add_argument(
-        '-s', '--schema',
-        metavar="VERSION",
-        help="Specify database schema VERSION (<major>.<minor> - a left-side "
-             "value from kcidb-db-schemas output) to upgrade to. "
-             "Default is the latest version. "
-             "Increases in the major number introduce "
-             "backwards-incompatible changes, in the minor - "
-             "backwards-compatible.",
-        type=kcidb.misc.version
+    '-s', '--schema',
+    metavar="VERSION",
+    help="Specify database schema VERSION (<major>.<minor> - a left-side "
+         "value from kcidb-db-schemas output) to upgrade to, or 'latest' to upgrade to the latest version. "
+         "Increases in the major number introduce "
+         "backwards-incompatible changes, in the minor - "
+         "backwards-compatible. To specify I/O schema version, use the format 'io:<major>.<minor>'",
+    type=str,
+    default="latest"
     )
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
-    if args.schema is not None:
-        if args.schema not in client.get_schemas():
+    if args.schema == "latest":
+        version = None
+    elif args.schema.startswith("io:"):
+        io_version = io.schema.VA(*map(int, args.schema[3:].split(".")))
+        schemas = client.get_schemas()
+        versions = [version for version, schema_io_version in schemas.items() if schema_io_version == io_version]
+        if len(versions) == 0:
+            raise Exception(f"I/O version {args.schema} not supported by driver schemas")
+        version = max(versions)
+    else:
+        version = kcidb.misc.version(args.schema)
+        if version not in client.get_schemas():
             raise Exception(
                 f"Schema version {args.schema[0]}.{args.schema[1]} "
                 f"is not available for database {args.database!r}"
             )
         curr_schema = client.get_schema()[0]
-        if args.schema < curr_schema:
+        if version < curr_schema:
             raise Exception(
                 f"Schema version {args.schema[0]}.{args.schema[1]} "
                 f"is older than version {curr_schema[0]}.{curr_schema[1]} "
                 f"currently used by database {args.database!r}"
             )
-    client.upgrade(args.schema)
+    client.upgrade(version)
 
 
 def cleanup_main():
