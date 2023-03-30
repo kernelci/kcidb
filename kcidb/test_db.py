@@ -19,6 +19,18 @@ def test_schemas_main():
                     stdout_re=r"4\.0: 4\.0\n4\.1: 4\.1\n")
 
 
+def test_reset(clean_database):
+    """Check Client.reset() works"""
+    assert not clean_database.is_initialized()
+    client = kcidb.db.Client(clean_database.database)
+    assert not client.is_initialized()
+    client.init()
+    assert client.is_initialized()
+    assert not clean_database.is_initialized()
+    clean_database.reset()
+    assert clean_database.is_initialized()
+
+
 def test_init_main():
     """Check kcidb-db-init works"""
     argv = ["kcidb.db.init_main", "-d", "bigquery:project.dataset"]

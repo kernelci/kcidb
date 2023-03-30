@@ -75,10 +75,8 @@ class Client(kcidb.orm.Source):
         """
         assert isinstance(database, str)
         self.database = database
-        self.driver = misc.instantiate_spec(DRIVER_TYPES, database)
-        assert all(io_schema <= io.SCHEMA
-                   for io_schema in self.driver.get_schemas().values()), \
-            "Driver has I/O schemas newer than the current package I/O schema"
+        self.driver = None
+        self.reset()
 
     def is_initialized(self):
         """
@@ -88,6 +86,16 @@ class Client(kcidb.orm.Source):
             True if the database is initialized, False otherwise.
         """
         return self.driver.is_initialized()
+
+    def reset(self):
+        """
+        Reset the client's database connection, updating
+        its knowledge of the database schema
+        """
+        self.driver = misc.instantiate_spec(DRIVER_TYPES, self.database)
+        assert all(io_schema <= io.SCHEMA
+                   for io_schema in self.driver.get_schemas().values()), \
+            "Driver has I/O schemas newer than the current package I/O schema"
 
     def init(self, version=None):
         """
