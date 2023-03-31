@@ -22,6 +22,30 @@ Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
 
     export PATH="$PATH":~/.local/bin
 
+### Pre-commit hooks
+
+Git hooks are scripts that can be triggered automatically by Git when
+certain events occur, such as committing changes to a repository.
+They are typically used to enforce coding standards, perform automated
+tests, or perform other checks on code changes before they are committed.
+
+There are two main components in the setup 1) `.pre-commit` script and
+2) `.github-workflow-script`. The `.github-workflow-script` extracts the
+steps directly from the GitHub workflow, while a `.pre-commit `script will
+run the extracted commands.
+
+To leverage the setup, symlink the `.pre-commit` script into the git
+pre-commit hook (`.git/hooks/pre-commit`). We can do that using a
+simple command in the terminal. Make sure you are in the root
+directory of the project.
+
+    ln -s ../../.pre-commit .git/hooks/pre-commit
+
+Now, every time you run git commit, the pre-commit hook script will be
+executed before the commit is created. If any of the pre-commit checks
+fail, the commit will be aborted and you will see an error message
+explaining the issue.
+
 Guidelines
 ----------
 
