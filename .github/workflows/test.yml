@@ -63,7 +63,7 @@ jobs:
       - name: Test with pytest
         run: KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest --tb=native
 
-  check_auxilary_files:
+  check_auxiliary_files:
 
     runs-on: ubuntu-latest
     strategy:
