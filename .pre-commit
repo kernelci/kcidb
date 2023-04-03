@@ -44,4 +44,4 @@ fi
 git diff-index --check --cached $against --
 
 # Execute steps extracted from GitHub Actions
-. <(./.github-workflow-script .github/workflows/test.yml)
+. <(.github/workflows/script .github/workflows/test.yml)
