@@ -11,6 +11,7 @@ from kcidb.misc import LIGHT_ASSERTS
 from kcidb.orm import Source
 from kcidb.orm.query import Pattern
 from kcidb.orm.data import Type, SCHEMA
+from kcidb.oo import argparse
 
 
 class Object:
@@ -779,56 +780,13 @@ class Client:
             self.cache.reset()
 
 
-class ArgumentParser(kcidb.misc.ArgumentParser):
-    """
-    Command-line argument parser with common OO arguments added.
-    """
-
-    def __init__(self, *args, database=None, **kwargs):
-        """
-        Initialize the parser, adding common OO arguments.
-
-        Args:
-            args:       Positional arguments to initialize ArgumentParser
-                        with.
-            database:   The default database specification to use, or None to
-                        make database specification required.
-            kwargs:     Keyword arguments to initialize ArgumentParser with.
-        """
-        super().__init__(*args, **kwargs)
-        kcidb.db.argparse_add_args(self, database=database)
-        kcidb.orm.argparse_add_args(self)
-
-
-class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
-    """
-    Command-line argument parser for tools outputting JSON,
-    with common OO arguments added.
-    """
-
-    def __init__(self, *args, database=None, **kwargs):
-        """
-        Initialize the parser, adding JSON output arguments.
-
-        Args:
-            args:       Positional arguments to initialize ArgumentParser
-                        with.
-            database:   The default database specification to use, or None to
-                        make database specification required.
-            kwargs:     Keyword arguments to initialize ArgumentParser with.
-        """
-        super().__init__(*args, **kwargs)
-        kcidb.db.argparse_add_args(self, database=database)
-        kcidb.orm.argparse_add_args(self)
-
-
 def query_main():
     """Execute the kcidb-oo-query command-line tool"""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = \
         "kcidb-oo-query - Query object-oriented data from " \
         "Kernel CI report database"
-    parser = OutputArgumentParser(description=description)
+    parser = argparse.OutputArgumentParser(description=description)
     args = parser.parse_args()
     db_client = kcidb.db.Client(args.database)
     pattern_set = set()

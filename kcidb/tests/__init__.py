@@ -3,7 +3,7 @@
 import sys
 import yaml
 import requests
-from kcidb import misc
+from kcidb import misc, argparse
 from kcidb.tests import schema
 
 
@@ -11,7 +11,7 @@ def validate_main():
     """Execute the kcidb-tests-validate command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-tests-validate - Validate test catalog YAML'
-    parser = misc.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         "-u", "--urls",
         action='store_true',

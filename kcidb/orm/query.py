@@ -4,7 +4,6 @@ mapping system to retrieve Kernel CI report data from the database.
 """
 
 import re
-import argparse
 import textwrap
 
 from kcidb.orm.data import Schema, SCHEMA, Type
@@ -800,29 +799,3 @@ class Pattern:
                     })
                 )
         return pattern_set
-
-
-class PatternHelpAction(argparse.Action):
-    """Argparse action outputting pattern string help and exiting."""
-    def __init__(self,
-                 option_strings,
-                 dest=argparse.SUPPRESS,
-                 default=argparse.SUPPRESS,
-                 help=None):
-        super().__init__(
-            option_strings=option_strings,
-            dest=dest,
-            default=default,
-            nargs=0,
-            help=help)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        print(
-            Pattern.STRING_DOC +
-            "\n" +
-            "NOTE: Specifying object ID lists separately is not "
-            "supported using\n"
-            "      command-line tools. "
-            "Only inline ID lists are supported.\n"
-        )
-        parser.exit()
