@@ -15,6 +15,8 @@ with open(args.workflow_file, "r") as file:
     data = yaml.safe_load(file)
 
 print("#!/bin/bash")
+print("")
+print("set -e -u -o pipefail")
 # Loop over all jobs
 for job_name, job in data["jobs"].items():
     # Loop over all steps in the job
