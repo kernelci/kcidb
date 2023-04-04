@@ -312,6 +312,41 @@ Date/Time Format][datetime_format].
 
 Example: `"2020-08-14T23:41:54+00:00"`
 
+#### Issues
+
+##### `build_valid`
+The status to assign to incident builds
+
+Example: `false`
+
+##### `test_status`
+The Status to assign to incident tests, it can be one of the following
+
+* `ERROR` - the test is faulty, the status of the tested code is unknown.
+* `FAIL` - the test has failed, the tested code is faulty.
+* `PASS` - the test has passed, the tested code is correct.
+* `DONE` - the test has finished successfully, the status of the tested code
+  is unknown.
+
+##### `culprit`
+The layers of the execution stack responsible for the issue
+It can be one of the following properties
+
+* `Code` - the built or tested code, value is boolean
+* `Tool` - the static analyzer, the build toolchain, the test, etc
+* `Harness` - the system controlling the execution of the build.
+
+#### Incidents
+
+##### `present`
+True if the issue occurred in the linked objects, False if it was absent
+
+##### `comment`
+A human-readable comment regarding the incident
+
+##### `origin`
+The name of the CI system which submitted the incident
+
 ### Extra data
 If you have some data you'd like to provide developers with, but the schema
 doesn't accommodate it, put it as arbitrary JSON under the `misc` field, which
