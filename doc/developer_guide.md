@@ -46,6 +46,46 @@ executed before the commit is created. If any of the pre-commit checks
 fail, the commit will be aborted and you will see an error message
 explaining the issue.
 
+Testing subscriptions
+---------------------
+
+While developing [subscription modules][subscriptions] you will likely need to
+test which notifications they generate for which data. You could use the
+`kcidb-ingest` tool for that.
+
+It takes I/O JSON data on its standard input, loads it into the database
+specified with the `-d/--database` option, and then invokes subscriptions for
+every modified object, outputting any generated email notifications on
+standard output, separated by the null character `\0`.
+
+The default database is an in-memory sqlite database, which is initially
+empty, and is discarded after completion, but you could specify any other
+database, for example containing pre-loaded data to simulate updates (e.g. `-d
+json:existing_data.json`). See the output of `kcidb-ingest --database-help`
+for documentation on database specification strings.
+
+Here's a minimal example triggering the special [test
+subscription][test_subscription]:
+
+    kcidb-ingest <<END
+    {
+        "version": {"major": 4},
+        "builds": [
+            {
+                "id": "test:1",
+                "origin": "test",
+                "checkout_id": "test:1",
+                "valid": false
+            }
+        ]
+    }
+    END
+
+The above would output a single notification email.
+
+[subscriptions]: https://github.com/kernelci/kcidb/tree/main/kcidb/monitor/subscriptions
+[test_subscription]: https://github.com/kernelci/kcidb/blob/main/kcidb/monitor/subscriptions/test.py
+
 Guidelines
 ----------
 
