@@ -19,7 +19,7 @@ Python 3 library, if you're feeling fancy).
 1\. Get submission credentials and parameters
 ---------------------------------------------
 
-Write to [kernelci@groups.io](mailto:kernelci@groups.io), introduce yourself,
+Write to [kernelci@lists.linux.dev](mailto:kernelci@lists.linux.dev), introduce yourself,
 and explain what you want to submit (better, show preliminary report data).
 Once your request is approved, you will get a JSON credentials file, which you
 can use to authenticate yourself with KCIDB tools/library.
