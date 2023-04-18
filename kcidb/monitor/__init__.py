@@ -1,7 +1,7 @@
 """Kernel CI reporting - monitor"""
 
 # Silence flake8 "imported but unused" warning
-from kcidb.monitor import (subscriptions, output, spool, misc) # noqa
+from kcidb.monitor import (subscriptions, output, spool, misc)  # noqa: F401
 
 
 def match(oo_data, match_map=None):
