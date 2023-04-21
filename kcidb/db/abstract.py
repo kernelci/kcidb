@@ -1,4 +1,4 @@
-"""Kernel CI reporting database - abstract database definitions"""
+"""Kernel CI reporting database - abstract database definitions."""
 
 from abc import ABC, abstractmethod
 import kcidb.orm as orm
@@ -6,7 +6,7 @@ from kcidb.misc import LIGHT_ASSERTS
 
 
 class Driver(ABC):
-    """An abstract driver"""
+    """An abstract driver."""
 
     @classmethod
     @abstractmethod
@@ -63,27 +63,18 @@ class Driver(ABC):
 
     @abstractmethod
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the driven database, removing all data.
-        The database must be initialized.
-        """
+        """Database cleanup: remove all data and deinitialize."""
         assert self.is_initialized()
 
     @abstractmethod
     def empty(self):
-        """
-        Empty the driven database, removing all data.
-        The database must be initialized.
-        """
+        """Clear all data from the initialized database."""
         assert self.is_initialized()
 
     @abstractmethod
     def get_last_modified(self):
         """
-        Get the time the data in the driven database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized, or its data loading interface is not limited in the
-        amount of load() method calls.
+        Get last modified time of initialized database.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -93,10 +84,7 @@ class Driver(ABC):
     @abstractmethod
     def get_schemas(self):
         """
-        Retrieve available database schemas: a dictionary of tuples containing
-        major and minor version numbers of the schemas (both non-negative
-        integers), and corresponding I/O schemas
-        (kcidb_io.schema.abstract.Version instances) supported by them.
+        Get available db schema versions and their corresponding I/O schemas.
 
         Returns:
             The schema dictionary, sorted by ascending version numbers.
@@ -105,9 +93,7 @@ class Driver(ABC):
     @abstractmethod
     def get_schema(self):
         """
-        Get a tuple with the driven database schema's major and minor version
-        numbers, and the I/O schema supported by it. The database must be
-        initialized.
+        Get database schema version and I/O schema (Initialized DB).
 
         Returns:
             A tuple of the major and minor version numbers (both non-negative
@@ -120,8 +106,7 @@ class Driver(ABC):
     @abstractmethod
     def upgrade(self, target_version):
         """
-        Upgrade the database to the specified schema.
-        The database must be initialized.
+        Upgrade initialized database to schema.
 
         Args:
             target_version: A tuple of the major and minor version numbers of
@@ -139,8 +124,7 @@ class Driver(ABC):
     @abstractmethod
     def dump_iter(self, objects_per_report):
         """
-        Dump all data from the database in object number-limited chunks.
-        The database must be initialized.
+        Dump all data from initialized database in chunks.
 
         Args:
             objects_per_report: An integer number of objects per each returned
@@ -158,8 +142,7 @@ class Driver(ABC):
     @abstractmethod
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks. The database must be initialized.
+        Fetch objects from database in chunks by object number limit.
 
         Args:
             ids:                A dictionary of object list names, and lists
@@ -187,8 +170,7 @@ class Driver(ABC):
     @abstractmethod
     def oo_query(self, pattern_set):
         """
-        Query raw object-oriented data from the database.
-        The database must be initialized.
+        Retrieve raw object-oriented data from the database.
 
         Args:
             pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
@@ -205,8 +187,7 @@ class Driver(ABC):
     @abstractmethod
     def load(self, data):
         """
-        Load data into the database.
-        The database must be initialized.
+        Load data into the database(required initialized).
 
         Args:
             data:   The JSON data to load into the database.

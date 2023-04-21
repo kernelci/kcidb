@@ -1,11 +1,11 @@
-"""Mark Brown's subscription"""
+"""Mark Brown's subscription."""
 from datetime import (timezone, datetime, timedelta)
 
 from kcidb.monitor.output import NotificationMessage as Message
 
 
 def match_revision(revision):
-    """Match revisions of interest to Mark Brown"""
+    """Match revisions of interest to Mark Brown."""
     # Repos we're interested in
     repo_urls = {
         f"https://git.kernel.org/pub/scm/linux/kernel/git/{r}.git"

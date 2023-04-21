@@ -1,4 +1,4 @@
-"""Kernel CI report database - BigQuery schema v4.0"""
+"""Kernel CI report database - BigQuery schema v4.0 ."""
 
 import decimal
 import json
@@ -26,9 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Connection(AbstractConnection):
-    """
-    Kernel CI BigQuery report database connection.
-    """
+    """Kernel CI BigQuery report database connection."""
 
     # Documentation of the connection parameters
     _PARAMS_DOC = textwrap.dedent("""\
@@ -80,8 +78,7 @@ class Connection(AbstractConnection):
 
     def query_create(self, query_string, query_parameters=None):
         """
-        Creates a Query job configured for a given query string and
-        optional parameters. BigQuery can run the job to query the database.
+        Create a Query job for BigQuery database from query string.
 
         Args:
             query_string:       The SQL query string.
@@ -103,9 +100,7 @@ class Connection(AbstractConnection):
 
     def set_schema_version(self, version):
         """
-        Set the schema version of the connected database (or remove it) in a
-        separate transaction. Does not modify the data or upgrade its actual
-        schema.
+        Set or remove schema version of connected DB in transaction.
 
         Args:
             version:    A tuple of (major, minor) schema version numbers (both
@@ -127,8 +122,7 @@ class Connection(AbstractConnection):
 
     def get_schema_version(self):
         """
-        Retrieve the schema version of the connected database, in a separate
-        transaction.
+        Retrieve connected database schema version in a separate transaction.
 
         Returns:
             The major and the minor version numbers of the database schema,
@@ -150,10 +144,9 @@ class Connection(AbstractConnection):
 
     def get_last_modified(self):
         """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized or its data loading interface is not limited in the amount
-        of load() method calls.
+        Get last modified time of connected database.
+
+        This return minimum timestamp if uninitialized.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -167,7 +160,7 @@ class Connection(AbstractConnection):
 
 
 class Schema(AbstractSchema):
-    """BigQuery database schema v4.0"""
+    """BigQuery database schema v4.0 ."""
 
     # The connection class to use for talking to the database.
     Connection = Connection
@@ -602,18 +595,13 @@ class Schema(AbstractSchema):
         conn.client.create_table(view)
 
     def init(self):
-        """
-        Initialize the database. The database must be uninitialized.
-        """
+        """Initialize the database. The database must be uninitialized."""
         # Create tables and corresponding views
         for table_name, table_schema in self.TABLE_MAP.items():
             self._create_table(self.conn, table_name, table_schema)
 
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the database, removing all data.
-        The database must be initialized.
-        """
+        """Deinitialize and remove all data from initialized database."""
         for table_name in self.TABLE_MAP:
             view_ref = self.conn.dataset_ref.table(table_name)
             try:
@@ -627,10 +615,7 @@ class Schema(AbstractSchema):
                 pass
 
     def empty(self):
-        """
-        Empty the database, removing all data.
-        The database must be initialized.
-        """
+        """Clear all data from initialized database."""
         for table_name in self.TABLE_MAP:
             self.conn.query_create(
                 f"DELETE FROM `_{table_name}` WHERE TRUE"
@@ -639,8 +624,7 @@ class Schema(AbstractSchema):
     @classmethod
     def _unpack_node(cls, node, drop_null=True):
         """
-        Unpack a retrieved data node (and all its children) to
-        the JSON-compatible and schema-complying representation.
+        Unpack retrieved data and children to JSON schema-compliant format.
 
         Args:
             node:       The node to unpack.
@@ -714,8 +698,7 @@ class Schema(AbstractSchema):
 
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks.
+        Chunk fetch objects from database by object number.
 
         Args:
             ids:                A dictionary of object list names, and lists
@@ -759,7 +742,7 @@ class Schema(AbstractSchema):
         # Add referenced parents if requested
         if parents:
             def add_parents(obj_list_name):
-                """Add parent IDs to query results"""
+                """Add parent IDs to query results."""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
                 for child_list_name in self.io.graph[obj_list_name]:
@@ -780,7 +763,7 @@ class Schema(AbstractSchema):
         # Add referenced children if requested
         if children:
             def add_children(obj_list_name):
-                """Add child IDs to query results"""
+                """Add child IDs to query results."""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
                 for child_list_name in self.io.graph[obj_list_name]:
@@ -958,8 +941,7 @@ class Schema(AbstractSchema):
     @classmethod
     def _pack_node(cls, node):
         """
-        Pack a loaded data node (and all its children) to
-        the BigQuery storage-compatible representation.
+        Compact data node and children to BigQuery storage-compatible format.
 
         Args:
             node:   The node to pack.

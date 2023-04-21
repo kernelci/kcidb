@@ -1,7 +1,4 @@
-"""
-The query classes and functions used by the KCIDB object-relational
-mapping system to retrieve Kernel CI report data from the database.
-"""
+"""Query classes and functions for Kernel CI report ORM database retrieval."""
 
 import re
 import argparse
@@ -136,7 +133,7 @@ _PATTERN_STRING_RE = re.compile(
 
 # TODO: Make Pattern immutable
 class Pattern:
-    """A pattern matching objects in a data source"""
+    """A pattern matching objects in a data source."""
 
     # No, it's OK, pylint: disable=too-many-arguments
     def __init__(self, base, child, obj_type, obj_id_set=None):
@@ -192,6 +189,7 @@ class Pattern:
         )
 
     def __eq__(self, other):
+        """Check if objects are equal."""
         return \
             isinstance(other, Pattern) and \
             self.base == other.base and \
@@ -200,6 +198,7 @@ class Pattern:
             self.obj_id_set == other.obj_id_set
 
     def __hash__(self):
+        """Return hash."""
         return self._hash
 
     @staticmethod
@@ -264,6 +263,7 @@ class Pattern:
         ) + "]"
 
     def __repr__(self, final=True):
+        """Return a string representation of a Pattern instance."""
         string = ""
         if self.base is not None:
             string += self.base.__repr__(final=False)
@@ -309,8 +309,7 @@ class Pattern:
     def _expand_relation(schema, base_set,
                          child, obj_type_expr, obj_id_set):
         """
-        Expand a single level of parent/child relation into a list of
-        patterns, for a parsed pattern specification.
+        Expand parent/child relation to list of patterns.
 
         Args:
             schema:         An object type schema to use.
@@ -396,8 +395,7 @@ class Pattern:
     def _expand(schema, base_set, match_set, child, obj_type_expr,
                 obj_id_set, match_spec):
         """
-        Expand a parsed pattern specification into a list of referenced
-        patterns, and a list of matching patterns.
+        Expand parsed pattern to list of referenced and matching patterns.
 
         Args:
             schema:         An object type schema to use.
@@ -546,8 +544,7 @@ class Pattern:
     @staticmethod
     def _parse_spec(string, obj_id_set_list):
         """
-        Parse an optional ID list specification from a pattern string,
-        possibly consuming an element from the supplied object ID list list.
+        Parse ID list from pattern string; use object ID list.
 
         Args:
             string:             The ID list specification string to parse,
@@ -690,9 +687,7 @@ class Pattern:
     @staticmethod
     def parse(string, obj_id_set_list=None, schema=None):
         """
-        Parse a pattern string and its parameter IDs into a tree of Pattern
-        objects. See kcidb.orm.query.Pattern.STRING_DOC for documentation on
-        pattern strings.
+        Parse a pattern string into a tree of Pattern objects.
 
         Args:
             string:             The pattern string.
@@ -804,11 +799,13 @@ class Pattern:
 
 class PatternHelpAction(argparse.Action):
     """Argparse action outputting pattern string help and exiting."""
+
     def __init__(self,
                  option_strings,
                  dest=argparse.SUPPRESS,
                  default=argparse.SUPPRESS,
                  help=None):
+        """Initialize PatternHelpAction object."""
         super().__init__(
             option_strings=option_strings,
             dest=dest,
@@ -817,6 +814,7 @@ class PatternHelpAction(argparse.Action):
             help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
+        """Print pattern string help and exit."""
         print(
             Pattern.STRING_DOC +
             "\n" +

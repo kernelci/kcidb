@@ -1,4 +1,4 @@
-"""Kernel CI report database"""
+"""Kernel CI report database."""
 
 import sys
 import logging
@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MuxDriver(mux.Driver):
-    """Kernel CI multiplexing database driver"""
+    """Kernel CI multiplexing database driver."""
 
     @classmethod
     def get_doc(cls):
@@ -32,8 +32,7 @@ class MuxDriver(mux.Driver):
     @classmethod
     def get_drivers(cls):
         """
-        Retrieve a dictionary of driver names and types available for driver's
-        control.
+        Retrieve available driver types and names for control.
 
         Returns:
             A driver dictionary.
@@ -53,7 +52,7 @@ DRIVER_TYPES = dict(
 
 
 class Client(kcidb.orm.Source):
-    """Kernel CI report database client"""
+    """Kernel CI report database client."""
 
     def __init__(self, database):
         """
@@ -88,10 +87,7 @@ class Client(kcidb.orm.Source):
         return self.driver.is_initialized()
 
     def reset(self):
-        """
-        Reset the client's database connection, updating
-        its knowledge of the database schema
-        """
+        """Reset the client's database connection."""
         self.driver = misc.instantiate_spec(DRIVER_TYPES, self.database)
         assert all(io_schema <= io.SCHEMA
                    for io_schema in self.driver.get_schemas().values()), \
@@ -128,27 +124,18 @@ class Client(kcidb.orm.Source):
         self.driver.init(version)
 
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the database, removing all data.
-        The database must be initialized.
-        """
+        """Deinitialize database and remove all data. Must be initialized."""
         assert self.is_initialized()
         self.driver.cleanup()
 
     def empty(self):
-        """
-        Empty the database, removing all data.
-        The database must be initialized.
-        """
+        """Clear initialized database of all data."""
         assert self.is_initialized()
         self.driver.empty()
 
     def get_last_modified(self):
         """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized or its data loading interface is not limited in the amount
-        of load() method calls.
+        Get last modified time of database or return minimum timestamp.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -161,7 +148,9 @@ class Client(kcidb.orm.Source):
 
     def get_schemas(self):
         """
-        Retrieve available database schemas: a dictionary of tuples containing
+        Retrieve available database schemas.
+
+        A dictionary of tuples containing
         major and minor version numbers of the schemas (both non-negative
         integers), and corresponding I/O schemas
         (kcidb_io.schema.abstract.Version instances) supported by them.
@@ -186,9 +175,7 @@ class Client(kcidb.orm.Source):
 
     def get_schema(self):
         """
-        Get a tuple with the driven database schema's major and minor version
-        numbers, and the I/O schema supported by it. The database must be
-        initialized.
+        Get driven DB schema version and I/O schema.
 
         Returns:
             A tuple of the major and minor version numbers (both non-negative
@@ -208,8 +195,7 @@ class Client(kcidb.orm.Source):
 
     def upgrade(self, target_version=None):
         """
-        Upgrade the database to the latest (or specified) schema.
-        The database must be initialized.
+        Upgrade initialized database schema.
 
         Args:
             target_version: A tuple of the major and minor version numbers of
@@ -277,8 +263,7 @@ class Client(kcidb.orm.Source):
                    children=False, parents=False,
                    objects_per_report=0):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks.
+        Match & fetch objects from database, in object number-limited chunk.
 
         Args:
             ids:                A dictionary of object list names, and lists
@@ -377,11 +362,13 @@ class Client(kcidb.orm.Source):
 
 class DBHelpAction(argparse.Action):
     """Argparse action outputting database string help and exiting."""
+
     def __init__(self,
                  option_strings,
                  dest=argparse.SUPPRESS,
                  default=argparse.SUPPRESS,
                  help=None):
+        """Initialize a DBHelpAction instance."""
         super().__init__(
             option_strings=option_strings,
             dest=dest,
@@ -390,6 +377,7 @@ class DBHelpAction(argparse.Action):
             help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
+        """Provide instructions for using KCIDB database drivers."""
         print("KCIDB has several database drivers for both actual and "
               "virtual databases.\n"
               "You can specify a particular driver to use, and its "
@@ -445,9 +433,7 @@ def argparse_add_args(parser, database=None):
 
 
 class ArgumentParser(kcidb.misc.ArgumentParser):
-    """
-    Command-line argument parser with common database arguments added.
-    """
+    """Command-line argument parser with common db arguments added."""
 
     def __init__(self, *args, database=None, **kwargs):
         """
@@ -465,10 +451,7 @@ class ArgumentParser(kcidb.misc.ArgumentParser):
 
 
 class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
-    """
-    Command-line argument parser for tools outputting JSON,
-    with common database arguments added.
-    """
+    """CLI argument parser for JSON output with DB options."""
 
     def __init__(self, *args, database=None, **kwargs):
         """
@@ -486,10 +469,7 @@ class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
 
 
 class SplitOutputArgumentParser(kcidb.misc.SplitOutputArgumentParser):
-    """
-    Command-line argument parser for tools outputting split-report streams,
-    with common database arguments added.
-    """
+    """Command-line parser for split-report stream tools with DB arguments."""
 
     def __init__(self, *args, database=None, **kwargs):
         """
@@ -508,9 +488,7 @@ class SplitOutputArgumentParser(kcidb.misc.SplitOutputArgumentParser):
 
 # No, it's OK, pylint: disable=too-many-ancestors
 class QueryArgumentParser(SplitOutputArgumentParser):
-    """
-    Command-line argument parser with common database query arguments added.
-    """
+    """Command-line argument parser with common db query arguments added."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -577,7 +555,7 @@ class QueryArgumentParser(SplitOutputArgumentParser):
 
 
 def dump_main():
-    """Execute the kcidb-db-dump command-line tool"""
+    """Execute the kcidb-db-dump command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = \
         'kcidb-db-dump - Dump all data from Kernel CI report database'
@@ -593,7 +571,7 @@ def dump_main():
 
 
 def query_main():
-    """Execute the kcidb-db-query command-line tool"""
+    """Execute the kcidb-db-query command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = \
         "kcidb-db-query - Query objects from Kernel CI report database"
@@ -618,7 +596,7 @@ def query_main():
 
 
 def load_main():
-    """Execute the kcidb-db-load command-line tool"""
+    """Execute the kcidb-db-load command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = \
         'kcidb-db-load - Load reports into Kernel CI report database'
@@ -634,7 +612,7 @@ def load_main():
 
 
 def schemas_main():
-    """Execute the kcidb-db-schemas command-line tool"""
+    """Execute the kcidb-db-schemas command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = 'kcidb-db-schemas - List available database schemas ' \
         '(as <DB>: <I/O>)'
@@ -657,7 +635,7 @@ def schemas_main():
 
 
 def init_main():
-    """Execute the kcidb-db-init command-line tool"""
+    """Execute the kcidb-db-init command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = 'kcidb-db-init - Initialize a Kernel CI report database'
     parser = ArgumentParser(description=description)
@@ -689,7 +667,7 @@ def init_main():
 
 
 def upgrade_main():
-    """Execute the kcidb-db-upgrade command-line tool"""
+    """Execute the kcidb-db-upgrade command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = 'kcidb-db-upgrade - Upgrade database schema'
     parser = ArgumentParser(description=description)
@@ -725,7 +703,7 @@ def upgrade_main():
 
 
 def cleanup_main():
-    """Execute the kcidb-db-cleanup command-line tool"""
+    """Execute the kcidb-db-cleanup command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = 'kcidb-db-cleanup - Cleanup a Kernel CI report database'
     parser = ArgumentParser(description=description)
@@ -753,7 +731,7 @@ def cleanup_main():
 
 
 def empty_main():
-    """Execute the kcidb-db-empty command-line tool"""
+    """Execute the kcidb-db-empty command-line tool."""
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = 'kcidb-db-empty - Remove all data from a ' \
         'Kernel CI report database'

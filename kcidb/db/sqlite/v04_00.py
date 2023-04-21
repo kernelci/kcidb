@@ -1,4 +1,4 @@
-"""Kernel CI report database - SQLite schema v4.0"""
+"""Kernel CI report database - SQLite schema v4.0 ."""
 
 import random
 import textwrap
@@ -22,10 +22,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Connection(AbstractConnection):
-    """
-    Kernel CI SQLite report database connection.
-    Exposes SQLite connection interface.
-    """
+    """SQLite interface for Kernel CI report database."""
 
     # Documentation of the connection parameters
     _PARAMS_DOC = textwrap.dedent("""\
@@ -70,22 +67,20 @@ class Connection(AbstractConnection):
         )
 
     def __getattr__(self, name):
-        """Retrieve missing attributes from the SQLite connection object"""
+        """Retrieve missing attributes from the SQLite connection object."""
         return getattr(self.conn, name)
 
     def __enter__(self):
-        """Enter the connection runtime context"""
+        """Enter the connection runtime context."""
         return self.conn.__enter__()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Leave the connection runtime context"""
+        """Leave the connection runtime context."""
         return self.conn.__exit__(exc_type, exc_value, traceback)
 
     def set_schema_version(self, version):
         """
-        Set the schema version of the connected database (or remove it) in a
-        separate transaction. Does not modify the data or upgrade its actual
-        schema.
+        Set/remove database schema version in separate transaction.
 
         Args:
             version:    A tuple of (major, minor) schema version numbers (both
@@ -108,8 +103,7 @@ class Connection(AbstractConnection):
 
     def get_schema_version(self):
         """
-        Retrieve the schema version of the connected database, in a separate
-        transaction.
+        Retrieve schema version of connected db in separate transaction.
 
         Returns:
             The major and the minor version numbers of the database schema,
@@ -129,10 +123,7 @@ class Connection(AbstractConnection):
 
     def get_last_modified(self):
         """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized or its data loading interface is not limited in the amount
-        of load() method calls.
+        Retrieve the last modified time of connected database.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -142,7 +133,7 @@ class Connection(AbstractConnection):
 
 
 class Schema(AbstractSchema):
-    """SQLite database schema v4.0"""
+    """SQLite database schema v4.0 ."""
 
     # The connection class to use for talking to the database.
     Connection = Connection
@@ -412,9 +403,7 @@ class Schema(AbstractSchema):
     )
 
     def init(self):
-        """
-        Initialize the database. The database must be empty uninitialized.
-        """
+        """Initialize the database. The db must be empty uninitialized."""
         with self.conn:
             cursor = self.conn.cursor()
             try:
@@ -429,10 +418,7 @@ class Schema(AbstractSchema):
                 cursor.close()
 
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the database, removing all data.
-        The database must be initialized.
-        """
+        """Deinitialize database and remove data."""
         with self.conn:
             cursor = self.conn.cursor()
             try:
@@ -442,10 +428,7 @@ class Schema(AbstractSchema):
                 cursor.close()
 
     def empty(self):
-        """
-        Empty the database, removing all data.
-        The database must be initialized.
-        """
+        """Clear all data from initialized database."""
         with self.conn:
             cursor = self.conn.cursor()
             try:
@@ -506,8 +489,7 @@ class Schema(AbstractSchema):
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks.
+        Retrieve objects from the database in limited chunks.
 
         Args:
             ids:                A dictionary of object list names, and lists
@@ -560,7 +542,7 @@ class Schema(AbstractSchema):
         # Add referenced parents if requested
         if parents:
             def add_parents(obj_list_name):
-                """Add parent IDs to query results"""
+                """Add parent IDs to query results."""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
                 for child_list_name in self.io.graph[obj_list_name]:
@@ -581,7 +563,7 @@ class Schema(AbstractSchema):
         # Add referenced children if requested
         if children:
             def add_children(obj_list_name):
-                """Add child IDs to query results"""
+                """Add child IDs to query results."""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
                 for child_list_name in self.io.graph[obj_list_name]:

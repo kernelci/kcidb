@@ -1,4 +1,4 @@
-"""Kernel CI reporting - shared test fixtures"""
+"""Kernel CI reporting - shared test fixtures."""
 
 import os
 import atexit
@@ -52,7 +52,7 @@ EMPTY_DATABASES = {
     else []
 )
 def empty_deployment():
-    """Reusable empty (no-data) deployment"""
+    """Reusable empty (no-data) deployment."""
     yield None
     project = os.environ["GCP_PROJECT"]
     # Empty the load queue subscription
@@ -78,7 +78,7 @@ def empty_deployment():
 
 @pytest.fixture
 def clean_database(_clean_database):
-    """Reusable clean (uninitialized) database"""
+    """Reusable clean (uninitialized) database."""
     yield _clean_database
     if _clean_database.is_initialized():
         _clean_database.cleanup()
@@ -86,13 +86,13 @@ def clean_database(_clean_database):
 
 @pytest.fixture
 def empty_database(_empty_database):
-    """Reusable empty (no-data) database"""
+    """Reusable empty (no-data) database."""
     yield _empty_database
     _empty_database.empty()
 
 
 def pytest_generate_tests(metafunc):
-    """Process a collected pytest test function"""
+    """Process a collected pytest test function."""
     if "empty_database" in metafunc.fixturenames:
         metafunc.parametrize("_empty_database",
                              EMPTY_DATABASES.values(),

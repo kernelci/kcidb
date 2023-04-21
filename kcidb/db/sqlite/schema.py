@@ -1,20 +1,15 @@
-"""
-Kernel CI SQLite report database miscellaneous schema definitions.
-"""
+"""Kernel CI SQLite report database miscellaneous schema definitions."""
 import json
 import dateutil.parser
 from kcidb.db.sql.schema import Constraint, Column, Table as _SQLTable
 
 
 class BoolColumn(Column):
-    """A boolean column"""
+    """A boolean column."""
 
     @staticmethod
     def unpack(value):
-        """
-        Unpack the SQLite representation of the column value into the JSON
-        representation.
-        """
+        """Unpack SQLite value to JSON representation."""
         return bool(value) if value is not None else None
 
     def __init__(self, constraint=None):
@@ -31,7 +26,7 @@ class BoolColumn(Column):
 
 
 class TextColumn(Column):
-    """A text column"""
+    """A text column."""
 
     def __init__(self, constraint=None):
         """
@@ -47,7 +42,7 @@ class TextColumn(Column):
 
 
 class IntegerColumn(Column):
-    """An integer column"""
+    """An integer column."""
 
     def __init__(self, constraint=None):
         """
@@ -63,22 +58,16 @@ class IntegerColumn(Column):
 
 
 class JSONColumn(TextColumn):
-    """A JSON-encoded column"""
+    """A JSON-encoded column."""
 
     @staticmethod
     def pack(value):
-        """
-        Pack the JSON representation of the column value into the SQLite
-        representation.
-        """
+        """Pack JSON to SQLite column."""
         return json.dumps(value) if value is not None else None
 
     @staticmethod
     def unpack(value):
-        """
-        Unpack the SQLite representation of the column value into the JSON
-        representation.
-        """
+        """Unpack SQLite value to JSON representation of column."""
         return json.loads(value) if value is not None else None
 
     def __init__(self, constraint=None):
@@ -96,14 +85,11 @@ class JSONColumn(TextColumn):
 
 
 class TimestampColumn(TextColumn):
-    """A normalized timestamp column"""
+    """A normalized timestamp column."""
 
     @staticmethod
     def pack(value):
-        """
-        Pack the JSON representation of the column value into the SQLite
-        representation.
-        """
+        """Pack JSON value to SQLite representation."""
         return dateutil.parser.isoparse(value).isoformat(
             timespec='microseconds'
         )
@@ -123,7 +109,8 @@ class TimestampColumn(TextColumn):
 
 
 class Table(_SQLTable):
-    """A table schema"""
+    """A table schema."""
+
     def __init__(self, columns, primary_key=None):
         """
         Initialize the table schema.

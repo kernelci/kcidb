@@ -1,4 +1,4 @@
-"""Kernel CI reporting test catalog"""
+"""Kernel CI reporting test catalog."""
 
 import sys
 import yaml
@@ -8,7 +8,7 @@ from kcidb.tests import schema
 
 
 def validate_main():
-    """Execute the kcidb-tests-validate command-line tool"""
+    """Execute the kcidb-tests-validate command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-tests-validate - Validate test catalog YAML'
     parser = misc.ArgumentParser(description=description)

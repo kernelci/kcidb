@@ -1,4 +1,4 @@
-"""Kernel CI reporting database - driver with discrete schemas"""
+"""Kernel CI reporting database - driver with discrete schemas."""
 
 import inspect
 from abc import ABCMeta, ABC, abstractmethod
@@ -10,7 +10,7 @@ from kcidb.db.abstract import Driver as AbstractDriver
 
 
 class MetaConnection(ABCMeta):
-    """Connection metaclass"""
+    """Connection metaclass."""
 
     def __init__(cls, name, bases, namespace, **kwargs):
         """
@@ -31,7 +31,7 @@ class MetaConnection(ABCMeta):
 
 
 class Connection(ABC, metaclass=MetaConnection):
-    """An abstract database connection, to be customized for a schema"""
+    """An abstract database connection, to be customized for a schema."""
 
     # Documentation of the connection parameters
     _PARAMS_DOC = None
@@ -53,9 +53,7 @@ class Connection(ABC, metaclass=MetaConnection):
     @abstractmethod
     def set_schema_version(self, version):
         """
-        Set the schema version of the connected database (or remove it) in a
-        separate transaction. Does not modify the data or upgrade its actual
-        schema.
+        Set or remove schema version of the database.
 
         Args:
             version:    A tuple of (major, minor) schema version numbers (both
@@ -70,8 +68,7 @@ class Connection(ABC, metaclass=MetaConnection):
     @abstractmethod
     def get_schema_version(self):
         """
-        Retrieve the schema version of the connected database, in a separate
-        transaction.
+        Retrieve database schema version in separate transaction.
 
         Returns:
             The major and the minor version numbers of the database schema,
@@ -81,10 +78,7 @@ class Connection(ABC, metaclass=MetaConnection):
     @abstractmethod
     def get_last_modified(self):
         """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized, or its data loading interface is not limited in the
-        amount of load() method calls.
+        Get the last modified time of the database.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -102,7 +96,7 @@ class Connection(ABC, metaclass=MetaConnection):
 
 
 class MetaSchema(ABCMeta):
-    """Schema metaclass"""
+    """Schema metaclass."""
 
     def __init__(cls, name, bases, namespace, **kwargs):
         """
@@ -153,11 +147,7 @@ class MetaSchema(ABCMeta):
 
     @property
     def lineage(cls):
-        """
-        A generator returning every schema version in (reverse order of)
-        history, starting with this one and ending with the first one (the
-        direct child of the abstract one).
-        """
+        """Generator of all schema versions in reverse order."""
         while cls.__bases__[0] is not ABC:
             yield cls
             # Piss off, pylint: disable=self-cls-assignment
@@ -165,16 +155,12 @@ class MetaSchema(ABCMeta):
 
     @property
     def history(cls):
-        """
-        A tuple containing every schema version in history, starting with the
-        first version (the direct child of the abstract one) and ending with
-        this one.
-        """
+        """Return tuple of schema versions, from first to current."""
         return tuple(reversed(tuple(cls.lineage)))
 
 
 class Schema(ABC, metaclass=MetaSchema):
-    """An abstract schema for a database driver"""
+    """An abstract schema for a database driver."""
 
     # The connection class to use for talking to the database.
     # Must be a subclass of kcidb.db.schematic.Connection and a subclass of the
@@ -223,29 +209,20 @@ class Schema(ABC, metaclass=MetaSchema):
 
     @abstractmethod
     def init(self):
-        """
-        Initialize the database. The database must be uninitialized.
-        """
+        """Initialize the database. The database must be uninitialized."""
 
     @abstractmethod
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the database, removing all data.
-        The database must be initialized.
-        """
+        """Deinitialize database, remove all data. Initialization required."""
 
     @abstractmethod
     def empty(self):
-        """
-        Empty the database, removing all data.
-        The database must be initialized.
-        """
+        """Empty initialized database."""
 
     @abstractmethod
     def dump_iter(self, objects_per_report):
         """
-        Dump all data from the database in object number-limited chunks.
-        The database must be initialized.
+        Dump all data from initialized database in limited chunks.
 
         Args:
             objects_per_report: An integer number of objects per each returned
@@ -262,8 +239,7 @@ class Schema(ABC, metaclass=MetaSchema):
     @abstractmethod
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks. The database must be initialized.
+        Fetch objects in limited chunks from an initialized database.
 
         Args:
             ids:                A dictionary of object list names, and lists
@@ -292,8 +268,7 @@ class Schema(ABC, metaclass=MetaSchema):
     @abstractmethod
     def oo_query(self, pattern_set):
         """
-        Query raw object-oriented data from the database.
-        The database must be initialized.
+        Query raw object data from the database, if initialized.
 
         Args:
             pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
@@ -309,8 +284,7 @@ class Schema(ABC, metaclass=MetaSchema):
     @abstractmethod
     def load(self, data):
         """
-        Load data into the database.
-        The database must be initialized.
+        Load data into initialized database.
 
         Args:
             data:   The JSON data to load into the database.
@@ -320,7 +294,7 @@ class Schema(ABC, metaclass=MetaSchema):
 
 
 class MetaDriver(ABCMeta):
-    """A schematic metadriver"""
+    """A schematic metadriver."""
 
     def __init__(cls, name, bases, namespace, **kwargs):
         """
@@ -345,7 +319,7 @@ class MetaDriver(ABCMeta):
 
 
 class Driver(AbstractDriver, metaclass=MetaDriver):
-    """An abstract driver with discreetly-defined schemas"""
+    """An abstract driver with discreetly-defined schemas."""
 
     # A class representing the latest database schema recognized by the
     # driver. A subclass of kcidb.db.schematic.Schema, and of the parent
@@ -432,29 +406,20 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         self.conn.set_schema_version(version)
 
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the driven database, removing all data.
-        The database must be initialized.
-        """
+        """Deinitialize driven database, removing all data."""
         assert self.is_initialized()
         self.schema.conn.set_schema_version(None)
         self.schema.cleanup()
         self.schema = None
 
     def empty(self):
-        """
-        Empty the driven database, removing all data.
-        The database must be initialized.
-        """
+        """Remove all data from initialized database."""
         assert self.is_initialized()
         self.schema.empty()
 
     def get_last_modified(self):
         """
-        Get the time the data in the driven database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized, or its data loading interface is not limited in the
-        amount of load() method calls.
+        Get time of last modification of a database.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -464,7 +429,9 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def get_schemas(self):
         """
-        Retrieve available database schemas: a dictionary of tuples containing
+        Retrieve available database schemas.
+
+        A dictionary of tuples containing
         major and minor version numbers of the schemas (both non-negative
         integers), and corresponding I/O schemas
         (kcidb_io.schema.abstract.Version instances) supported by them.
@@ -479,9 +446,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def get_schema(self):
         """
-        Get a tuple with the driven database schema's major and minor version
-        numbers, and the I/O schema supported by it. The database must be
-        initialized.
+        Retrieve driven database schema version and I/O schema supported.
 
         Returns:
             A tuple of the major and minor version numbers (both non-negative
@@ -494,8 +459,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def upgrade(self, target_version):
         """
-        Upgrade the database to the specified schema.
-        The database must be initialized.
+        Upgrade initialized database to specified schema.
 
         Args:
             target_version: A tuple of the major and minor version numbers of
@@ -530,8 +494,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def dump_iter(self, objects_per_report):
         """
-        Dump all data from the database in object number-limited chunks.
-        The database must be initialized.
+        Dump all data in limited chunks from initialized database.
 
         Args:
             objects_per_report: An integer number of objects per each returned
@@ -549,8 +512,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks. The database must be initialized.
+        Fetch objects from database, limited chunks, require initialization.
 
         Args:
             ids:                A dictionary of object list names, and lists
@@ -580,8 +542,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def oo_query(self, pattern_set):
         """
-        Query raw object-oriented data from the database.
-        The database must be initialized.
+        Query raw data from initialized database.
 
         Args:
             pattern_set:    A set of patterns ("kcidb.orm.query.Pattern"
@@ -598,8 +559,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def load(self, data):
         """
-        Load data into the database.
-        The database must be initialized.
+        Load data into an initialized database.
 
         Args:
             data:   The JSON data to load into the database.

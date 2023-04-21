@@ -1,4 +1,4 @@
-"""Kernel CI reporting - monitor - subscriptions"""
+"""Kernel CI reporting - monitor - subscriptions."""
 
 import pkgutil
 import importlib

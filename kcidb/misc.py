@@ -1,4 +1,4 @@
-"""Kernel CI reporting - misc definitions"""
+"""Kernel CI reporting - misc definitions."""
 
 import math
 import re
@@ -46,7 +46,7 @@ LIGHT_ASSERTS = not os.environ.get("KCIDB_HEAVY_ASSERTS", "")
 
 def logging_setup(level):
     """
-    Setup logging: set root logger log level and disable irrelevant logging.
+    Configure root logger: level and disable irrelevant logs.
 
     Args:
         level:  Logging level for the root logger.
@@ -88,8 +88,7 @@ def format_exception_stack(exc):
 
 def log_and_print_excepthook(type, value, tb):
     """
-    Log an exception with DEBUG level and print its summary to stderr.
-    Adheres to sys.excepthook interface.
+    Log debug-level exception summary adhering to sys.excepthook interface.
 
     Args:
         type:   Exception class.
@@ -103,9 +102,7 @@ def log_and_print_excepthook(type, value, tb):
 
 
 class ArgumentParser(argparse.ArgumentParser):
-    """
-    KCIDB command-line argument parser handling common arguments.
-    """
+    """KCIDB command-line argument parser handling common arguments."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -131,8 +128,7 @@ class ArgumentParser(argparse.ArgumentParser):
 
     def parse_args(self, args=None, namespace=None):
         """
-        Parse arguments, including common ones, apply ones affecting global
-        state.
+        Parse arguments, apply global state-affecting and common ones.
 
         Args:
             args:       List of strings to parse. The default is taken from
@@ -152,6 +148,7 @@ class ArgumentParser(argparse.ArgumentParser):
 def non_negative_int(string):
     """
     Parse a non-negative integer out of a string.
+
     Matches the argparse type function interface.
 
     Args:
@@ -174,6 +171,7 @@ def non_negative_int(string):
 def non_negative_int_or_inf(string):
     """
     Parse a non-negative integer or a positive infinity out of a string.
+
     Matches the argparse type function interface.
 
     Args:
@@ -200,8 +198,9 @@ def non_negative_int_or_inf(string):
 
 def iso_timestamp(string):
     """
-    Parse an ISO-8601 timestamp out of a string, assuming local timezone, if
-    not specified. Matches the argparse type function interface.
+    Parse an ISO-8601 timestamp out of a string, assuming local timezone.
+
+    If not specified. Matches the argparse type function interface.
 
     Args:
         string: The string to parse.
@@ -226,9 +225,7 @@ def iso_timestamp(string):
 
 def version(string):
     """
-    Parse a version string into a tuple with major and minor version numbers
-    (both non-negative integers). Matches the argparse type function
-    interface.
+    Convert version string to tuple with major and minor numbers.
 
     Args:
         string: The string representing the version to parse.
@@ -272,9 +269,7 @@ def argparse_output_add_args(parser):
 
 
 class OutputArgumentParser(ArgumentParser):
-    """
-    Command-line argument parser for tools outputting JSON.
-    """
+    """Command-line argument parser for tools outputting JSON."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -289,9 +284,7 @@ class OutputArgumentParser(ArgumentParser):
 
 
 class SplitOutputArgumentParser(OutputArgumentParser):
-    """
-    Command-line argument parser for tools supporting split-report output.
-    """
+    """Command-line arg parser for tools supporting split-report output."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -325,6 +318,7 @@ def argparse_schema_add_args(parser, version_verb):
     def schema_version(string):
         """
         Lookup a schema version object using a major version number string.
+
         Matches the argparse type function interface.
 
         Args:
@@ -450,10 +444,9 @@ def get_secret(project_id, secret_id):
 
 def get_secret_pgpass(project_id, secret_id):
     """
-    Get the latest version of a secret containing a PostgreSQL's .pgpass file
-    from Google Secret Manager. Store that secret in a temporary file and
-    expose it via the PGPASSFILE environment variable for use by libpq-based
-    clients.
+    Retrieve latest PostgreSQL.
+
+    pgpass file secret from Google Secret Manager, expose via PGPASSFILE.
 
     Args:
         project_id: The ID of the Google Cloud project to fetch secrets from.
@@ -490,8 +483,7 @@ def merge_dicts(*args, **kwargs):
 
 def isliced(iterable, size):
     """
-    Create a generator yielding iterables of specified maximum number of
-    elements from an iterable.
+    Create generator for iterable with specified max length.
 
     Args:
         iterable:   The iterable to return elements from.

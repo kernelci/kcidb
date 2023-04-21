@@ -1,4 +1,4 @@
-"""Kernel CI report database - SQLite schema v4.1"""
+"""Kernel CI report database - SQLite schema v4.1 ."""
 
 import logging
 import kcidb.io as io
@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Schema(PreviousSchema):
-    """SQLite database schema v4.1"""
+    """SQLite database schema v4.1 ."""
 
     # The schema's version.
     version = (4, 1)

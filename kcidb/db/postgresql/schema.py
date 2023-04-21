@@ -1,12 +1,10 @@
-"""
-Kernel CI PostgreSQL report database - misc schema definitions
-"""
+"""Kernel CI PostgreSQL report database - misc schema definitions."""
 import json
 from kcidb.db.sql.schema import Constraint, Column, Table as _SQLTable
 
 
 class BoolColumn(Column):
-    """A boolean column schema"""
+    """A boolean column schema."""
 
     def __init__(self, constraint=None):
         """
@@ -22,7 +20,7 @@ class BoolColumn(Column):
 
 
 class VarcharColumn(Column):
-    """A character varying column schema"""
+    """A character varying column schema."""
 
     def __init__(self, length, constraint=None):
         """
@@ -43,7 +41,7 @@ class VarcharColumn(Column):
 
 
 class TextColumn(Column):
-    """A text column schema"""
+    """A text column schema."""
 
     def __init__(self, constraint=None):
         """
@@ -59,14 +57,11 @@ class TextColumn(Column):
 
 
 class JSONColumn(Column):
-    """A JSON column schema"""
+    """A JSON column schema."""
 
     @staticmethod
     def pack(value):
-        """
-        Pack the JSON representation of the column value into the PostgreSQL
-        representation.
-        """
+        """Convert JSON data to PostgreSQL format and vice versa."""
         return json.dumps(value)
 
     def __init__(self, constraint=None):
@@ -83,14 +78,11 @@ class JSONColumn(Column):
 
 
 class TimestampColumn(Column):
-    """A timestamp column schema"""
+    """A timestamp column schema."""
 
     @staticmethod
     def unpack(value):
-        """
-        Unpack the PostgreSQL representation of the column value into the JSON
-        representation.
-        """
+        """Unpack Postgres column value into JSON representation."""
         return value.isoformat(timespec='microseconds')
 
     def __init__(self, constraint=None):
@@ -107,7 +99,7 @@ class TimestampColumn(Column):
 
 
 class IntegerColumn(Column):
-    """An integer number column schema"""
+    """An integer number column schema."""
 
     def __init__(self, constraint=None):
         """
@@ -123,7 +115,7 @@ class IntegerColumn(Column):
 
 
 class FloatColumn(Column):
-    """A floating-point number column schema"""
+    """A floating-point number column schema."""
 
     def __init__(self, constraint=None):
         """
@@ -139,7 +131,8 @@ class FloatColumn(Column):
 
 
 class Table(_SQLTable):
-    """A table schema"""
+    """A table schema."""
+
     def __init__(self, columns, primary_key=None):
         """
         Initialize the table schema.

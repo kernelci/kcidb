@@ -1,4 +1,4 @@
-"""Kernel CI message queue"""
+"""Kernel CI message queue."""
 
 import math
 import datetime
@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Publisher(ABC):
-    """Abstract message queue publisher"""
+    """Abstract message queue publisher."""
 
     @abstractmethod
     def encode_data(self, data):
@@ -66,15 +66,11 @@ class Publisher(ABC):
         self.topic_path = self.client.topic_path(project_id, topic_name)
 
     def init(self):
-        """
-        Initialize publishing setup.
-        """
+        """Initialize publishing setup."""
         self.client.create_topic(name=self.topic_path)
 
     def cleanup(self):
-        """
-        Cleanup publishing setup.
-        """
+        """Cleanup publishing setup."""
         self.client.delete_topic(topic=self.topic_path)
 
     def future_publish(self, data):
@@ -125,9 +121,7 @@ class Publisher(ABC):
         futures_lock = threading.Lock()
 
         def done(_):
-            """
-            Report and remove all initial completed futures.
-            """
+            """Report and remove all initial completed futures."""
             with futures_lock:
                 idx = 0
                 for idx, future in enumerate(futures):
@@ -157,7 +151,7 @@ class Publisher(ABC):
 
 
 class Subscriber(ABC):
-    """Abstract message queue subscriber"""
+    """Abstract message queue subscriber."""
 
     @abstractmethod
     def decode_data(self, message_data):
@@ -198,24 +192,17 @@ class Subscriber(ABC):
         self.topic_path = self.client.topic_path(project_id, topic_name)
 
     def init(self):
-        """
-        Initialize subscription setup.
-        """
+        """Initialize subscription setup."""
         self.client.create_subscription(name=self.subscription_path,
                                         topic=self.topic_path)
 
     def cleanup(self):
-        """
-        Cleanup subscription setup.
-        """
+        """Cleanup subscription setup."""
         self.client.delete_subscription(subscription=self.subscription_path)
 
     def pull_iter(self, max_num=math.inf, timeout=math.inf):
         """
-        Create a generator iterator pulling published data from the message
-        queue, discarding (and logging as errors) invalid data. The generator
-        stops pulling when either the specified number of messages is
-        retrieved or the specified timeout expires.
+        Generate data from message queue, with error handling.
 
         Args:
             max_num:    Maximum number of messages to pull, or infinity for
@@ -299,9 +286,7 @@ class Subscriber(ABC):
 
     def pull(self, max_num=1, timeout=math.inf):
         """
-        Pull published data from the message queue, discarding (and logging as
-        errors) invalid data. Stop pulling when either the specified number of
-        messages is retrieved or the specified timeout expires.
+        Pull published data from msg queue until timeout or message limit.
 
         Args:
             max_num:    Maximum number of messages to pull, or infinity for
@@ -344,12 +329,11 @@ class Subscriber(ABC):
 
 
 class IOPublisher(Publisher):
-    """I/O data queue publisher"""
+    """I/O data queue publisher."""
 
     def encode_data(self, data):
         """
-        Encode JSON data, adhering to the current version of I/O schema, into
-        message data.
+        Encode JSON into message data with current schema.
 
         Args:
             data:   JSON data to be encoded, adhering to the publisher's
@@ -381,12 +365,11 @@ class IOPublisher(Publisher):
 
 
 class IOSubscriber(Subscriber):
-    """I/O data queue subscriber"""
+    """I/O data queue subscriber."""
 
     def decode_data(self, message_data):
         """
-        Decode message data to extract the JSON data adhering to the current
-        I/O schema.
+        Decode message data to extract JSON data.
 
         Args:
             message_data:   The message data from the message queue
@@ -418,11 +401,7 @@ class IOSubscriber(Subscriber):
     # We'll be OK, pylint: disable=arguments-differ
     def pull_iter(self, max_num=math.inf, timeout=math.inf, max_obj=math.inf):
         """
-        Create a generator iterator pulling published data from the message
-        queue, discarding (and logging as errors) invalid data. The generator
-        stops pulling when either the specified number of messages is
-        retrieved, the specified number of objects is retrieved within the
-        messages, or the specified timeout expires.
+        Create generator for message queue data retrieval.
 
         Args:
             max_num:    Maximum number of messages to pull, or infinity for
@@ -467,10 +446,7 @@ class IOSubscriber(Subscriber):
     # We'll be OK, pylint: disable=arguments-differ
     def pull(self, max_num=1, timeout=None, max_obj=None):
         """
-        Pull published data from the message queue, discarding (and logging as
-        errors) invalid data. Stop pulling when either the specified number of
-        messages is retrieved, the specified number of objects is retrieved
-        within the messages, or the specified timeout expires.
+        Pull valid data from message queue.
 
         Args:
             max_num:    Maximum number of messages to pull, or infinity for
@@ -499,7 +475,7 @@ class IOSubscriber(Subscriber):
 
 
 class ORMPatternPublisher(Publisher):
-    """ORM pattern queue publisher"""
+    """ORM pattern queue publisher."""
 
     def encode_data(self, data):
         """
@@ -523,7 +499,7 @@ class ORMPatternPublisher(Publisher):
 
 
 class ORMPatternSubscriber(Subscriber):
-    """ORM pattern queue subscriber"""
+    """ORM pattern queue subscriber."""
 
     def decode_data(self, message_data):
         """
@@ -547,7 +523,7 @@ class ORMPatternSubscriber(Subscriber):
 
 
 class EmailPublisher(Publisher):
-    """Email queue publisher"""
+    """Email queue publisher."""
 
     def encode_data(self, data):
         """
@@ -567,7 +543,7 @@ class EmailPublisher(Publisher):
 
 
 class EmailSubscriber(Subscriber):
-    """Email queue subscriber"""
+    """Email queue subscriber."""
 
     def decode_data(self, message_data):
         """
@@ -618,9 +594,7 @@ def argparse_add_args(parser):
 
 
 class ArgumentParser(misc.ArgumentParser):
-    """
-    Command-line argument parser with common message queue arguments added.
-    """
+    """Command-line arg parser with common message queue arguments added."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -666,9 +640,7 @@ def argparse_publisher_add_args(parser, data_name):
 
 
 class PublisherArgumentParser(misc.ArgumentParser):
-    """
-    Command-line argument parser with common message queue arguments added.
-    """
+    """Command-line arg parser with common message queue arguments added."""
 
     def __init__(self, data_name, *args, **kwargs):
         """
@@ -743,10 +715,7 @@ def argparse_subscriber_add_args(parser, data_name):
 
 
 class SubscriberArgumentParser(misc.ArgumentParser):
-    """
-    Command-line argument parser with message queue subscriber arguments
-    added.
-    """
+    """Command-line arg parser with message queue subscriber arguments."""
 
     def __init__(self, data_name, *args, **kwargs):
         """
@@ -764,7 +733,7 @@ class SubscriberArgumentParser(misc.ArgumentParser):
 
 
 def io_publisher_main():
-    """Execute the kcidb-mq-io-publisher command-line tool"""
+    """Execute the kcidb-mq-io-publisher command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-io-publisher - ' \
@@ -788,7 +757,7 @@ def io_publisher_main():
 
 
 def io_subscriber_main():
-    """Execute the kcidb-mq-io-subscriber command-line tool"""
+    """Execute the kcidb-mq-io-subscriber command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-io-subscriber - ' \
@@ -810,7 +779,7 @@ def io_subscriber_main():
 
 
 def pattern_publisher_main():
-    """Execute the kcidb-mq-pattern-publisher command-line tool"""
+    """Execute the kcidb-mq-pattern-publisher command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-pattern-publisher - ' \
@@ -841,7 +810,7 @@ def pattern_publisher_main():
 
 
 def pattern_subscriber_main():
-    """Execute the kcidb-mq-pattern-subscriber command-line tool"""
+    """Execute the kcidb-mq-pattern-subscriber command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-pattern-subscriber - ' \
@@ -865,7 +834,7 @@ def pattern_subscriber_main():
 
 
 def email_publisher_main():
-    """Execute the kcidb-mq-email-publisher command-line tool"""
+    """Execute the kcidb-mq-email-publisher command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-email-publisher - ' \
@@ -883,7 +852,7 @@ def email_publisher_main():
 
 
 def email_subscriber_main():
-    """Execute the kcidb-mq-email-subscriber command-line tool"""
+    """Execute the kcidb-mq-email-subscriber command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-mq-email-subscriber - ' \

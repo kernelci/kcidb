@@ -1,10 +1,10 @@
-"""An example LTP maintainer subscription"""
+"""An example LTP maintainer subscription."""
 
 from kcidb.monitor.output import NotificationMessage as Message
 
 
 def _disabled_match_revision(revision):
-    """Match revisions of interest to LTP maintainers"""
+    """Match revisions of interest to LTP maintainers."""
     summary = '{% include "revision_summary.txt.j2" %}'
     msg_args = dict(
         to=["LTP Mailing List <ltp@lists.linux.it>"],

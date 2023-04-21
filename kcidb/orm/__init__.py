@@ -1,7 +1,4 @@
-"""
-Kernel CI report object-relational mapping (ORM) - report data organized into
-objects, but without the object-oriented interface.
-"""
+"""Kernel CI report ORM: organize data into objects without interface."""
 
 import logging
 from abc import ABC, abstractmethod
@@ -14,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Source(ABC):
-    """An abstract source of raw object-oriented (OO) data"""
+    """An abstract source of raw object-oriented (OO) data."""
 
     @abstractmethod
     def oo_query(self, pattern_set):
@@ -33,7 +30,7 @@ class Source(ABC):
 
 
 class Prefetcher(Source):
-    """A prefetching source of object-oriented data"""
+    """A prefetching source of object-oriented data."""
 
     def __init__(self, source):
         """
@@ -83,7 +80,7 @@ class Prefetcher(Source):
 
 
 class Cache(Source):
-    """A cache source of object-oriented data"""
+    """A cache source of object-oriented data."""
 
     def __init__(self, source):
         """
@@ -97,16 +94,13 @@ class Cache(Source):
         self.reset()
 
     def reset(self):
-        """
-        Reset the cache.
-        """
+        """Reset the cache."""
         self.type_id_objs = {type_name: {} for type_name in data.SCHEMA.types}
         self.pattern_responses = {}
 
     def _merge_pattern_response(self, pattern, response):
         """
-        Process a response to a single-pattern query fetched from the
-        underlying source, merging it with the cache.
+        Process single-pattern query response, merge with cache.
 
         Args:
             pattern:    The pattern the response was retrieved for.
@@ -296,9 +290,7 @@ def argparse_add_args(parser):
 
 
 class ArgumentParser(kcidb.misc.ArgumentParser):
-    """
-    Command-line argument parser with common ORM arguments added.
-    """
+    """Command-line argument parser with common ORM arguments added."""
 
     def __init__(self, *args, **kwargs):
         """
@@ -313,10 +305,7 @@ class ArgumentParser(kcidb.misc.ArgumentParser):
 
 
 class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
-    """
-    Command-line argument parser for tools outputting JSON,
-    with common ORM arguments added.
-    """
+    """CLI JSON parser with common ORM arguments."""
 
     def __init__(self, *args, **kwargs):
         """

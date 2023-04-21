@@ -1,11 +1,9 @@
-"""Kernel CI reporting - monitor - misc definitions"""
+"""Kernel CI reporting - monitor - misc definitions."""
 
 
 def is_valid_firestore_id(value):
     """
-    Check if a value is valid for use as a Google Firestore
-    collection or document ID, according to
-    https://firebase.google.com/docs/firestore/quotas
+    Validate a value as a valid Google Firestore ID.
 
     Args:
         value: The value to check.

@@ -1,4 +1,5 @@
-"""Kernel CI report database - null driver"""
+"""Kernel CI report database - null driver."""
+
 
 import textwrap
 import datetime
@@ -7,7 +8,7 @@ from kcidb.db.abstract import Driver as AbstractDriver
 
 
 class Driver(AbstractDriver):
-    """Kernel CI null database driver"""
+    """Kernel CI null database driver."""
 
     @classmethod
     def get_doc(cls):
@@ -45,9 +46,7 @@ class Driver(AbstractDriver):
 
     def get_schema(self):
         """
-        Get a tuple with the driven database schema's major and minor version
-        numbers, and the I/O schema supported by it. The database must be
-        initialized.
+        Get driven database schema version and supported I/O schema.
 
         Returns:
             A tuple of the major and minor version numbers (both non-negative
@@ -59,10 +58,7 @@ class Driver(AbstractDriver):
 
     def get_schemas(self):
         """
-        Retrieve available database schemas: a dictionary of tuples containing
-        major and minor version numbers of the schemas (both non-negative
-        integers), and corresponding I/O schemas
-        (kcidb_io.schema.abstract.Version instances) supported by them.
+        Get available database schemas and their corresponding I/O schemas.
 
         Returns:
             The schema dictionary, sorted by ascending version numbers.
@@ -71,8 +67,7 @@ class Driver(AbstractDriver):
 
     def upgrade(self, target_version):
         """
-        Upgrade the database to the specified schema.
-        The database must be initialized.
+        Upgrade initialized database to specified schema.
 
         Args:
             target_version: A tuple of the major and minor version numbers of
@@ -95,23 +90,14 @@ class Driver(AbstractDriver):
         assert version == self.get_schema()[0]
 
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the database, removing all data.
-        The database must be initialized.
-        """
+        """Truncate all data and deinitialize the database."""
 
     def empty(self):
-        """
-        Empty the driven database, removing all data.
-        The database must be initialized.
-        """
+        """Clear all data from driven database(Requires initialization)."""
 
     def get_last_modified(self):
         """
-        Get the time the data in the driven database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized, or its data loading interface is not limited in the
-        amount of load() method calls.
+        Retrieve the last modified time of the connected database.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -138,8 +124,7 @@ class Driver(AbstractDriver):
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks.
+        Match and fetch objects from db, in object number-limited chunks.
 
         Args:
             ids:                A dictionary of object list names, and lists

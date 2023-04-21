@@ -1,34 +1,27 @@
-"""
-Kernel CI report database - generic SQL schema definitions
-"""
+"""Kernel CI report database - generic SQL schema definitions."""
 
 import re
 from enum import Enum
 
 
 class Constraint(Enum):
-    """A column's constraint"""
+    """A column's constraint."""
+
     PRIMARY_KEY = "PRIMARY KEY"
     NOT_NULL = "NOT NULL"
 
 
 class Column:
-    """A column schema"""
+    """A column schema."""
 
     @staticmethod
     def pack(value):
-        """
-        Pack the JSON representation of the column value into the database
-        representation.
-        """
+        """Pack JSON representation of column value into db representation."""
         return value
 
     @staticmethod
     def unpack(value):
-        """
-        Unpack the database representation of the column value into the JSON
-        representation.
-        """
+        """Unpack a SQLite column value into its JSON representation."""
         return value
 
     def __init__(self, type, constraint=None):
@@ -60,7 +53,7 @@ class Column:
 
 
 class TableColumn:
-    """A column within a table schema"""
+    """A column within a table schema."""
 
     # Regular expression fully-matching column names, which don't need quoting
     NAME_RE = re.compile("[a-zA-Z_][a-zA-Z0-9_]*")
@@ -104,7 +97,7 @@ class TableColumn:
 
 
 class Table:
-    """A table schema"""
+    """A table schema."""
 
     def __init__(self, placeholder, columns, primary_key=None, key_sep="_"):
         """
@@ -187,8 +180,7 @@ class Table:
 
     def format_insert(self, name, prio_db):
         """
-        Format the "INSERT/UPDATE" command template for loading a row into a
-        database, observing deduplication logic.
+        Format an "INSERT/UPDATE" command to add unique row to the database.
 
         Args:
             name:       The name of the target table of the command.
@@ -224,8 +216,7 @@ class Table:
 
     def format_dump(self, name):
         """
-        Format the "SELECT" command for dumping the table contents, returning
-        data suitable for unpacking with unpack*() methods.
+        Format "SELECT" command to dump table contents as unpackable data.
 
         Args:
             name:   The name of the target table of the command.
@@ -238,8 +229,7 @@ class Table:
 
     def format_delete(self, name):
         """
-        Format the "DELETE" command for emptying the table (removing all
-        rows).
+        Format the "DELETE" command for emptying the table.
 
         Args:
             name:   The name of the target table of the command.
@@ -254,8 +244,7 @@ class Table:
 
     def pack(self, obj):
         """
-        Pack a JSON object into its database representation for use with the
-        "INSERT" command formatted by the format_insert() method.
+        Pack a JSON object for database "INSERT" command.
 
         Args:
             obj:    The object to pack.
@@ -281,9 +270,7 @@ class Table:
 
     def pack_iter(self, obj_seq):
         """
-        Create a generator packing JSON objects from the specified sequence
-        into their database representation, for use with the "INSERT"
-        command formatted by the format_insert() method.
+        Create a generator packing JSON objects in database representation.
 
         Args:
             obj_seq:    The object sequence to create the generator for.
@@ -296,8 +283,7 @@ class Table:
 
     def unpack(self, obj, drop_null=True):
         """
-        Unpack a database representation of an object into its JSON
-        representation.
+        Unpack a database object representation into JSON.
 
         Args:
             obj:        The object to unpack.
@@ -322,8 +308,7 @@ class Table:
 
     def unpack_iter(self, obj_seq, drop_null=True):
         """
-        Create a generator unpacking database object representations from
-        the specified sequence into their JSON representation.
+        Generate JSON representations from database object representations.
 
         Args:
             obj_seq:    The object sequence to create the generator for.

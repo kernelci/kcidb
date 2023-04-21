@@ -1,14 +1,14 @@
-"""Kernel CI reporting database - misc definitions"""
+"""Kernel CI reporting database - misc definitions."""
 
 import re
 
 
 class Error(Exception):
-    """An abstract error"""
+    """An abstract error."""
 
 
 class UnknownDriver(Error):
-    """Database driver is unknown"""
+    """Database driver is unknown."""
 
     def __init__(self, driver_name):
         """
@@ -21,7 +21,7 @@ class UnknownDriver(Error):
 
 
 class NotFound(Error):
-    """A database doesn't exist"""
+    """A database doesn't exist."""
 
     def __init__(self, database):
         """Initialize the exception."""
@@ -30,13 +30,12 @@ class NotFound(Error):
 
 
 class UnsupportedSchema(Error):
-    """Database schema version is not supported"""
+    """Database schema version is not supported."""
 
 
 def format_spec_list(specs):
     """
-    Format a database specification list string out of a list of specification
-    strings.
+    Format a db spec list string out of a list of specification strings.
 
     Args:
         specs   An iterable of database specification strings to format.
@@ -52,8 +51,7 @@ def format_spec_list(specs):
 
 def parse_spec_list(spec_list_str):
     """
-    Create a generator parsing and returning database specification strings
-    from a (backslash-escaped) whitespace-separated list.
+    Generate and return database specification strings.
 
     Args:
         spec_list_str:   The list string to parse.
@@ -92,8 +90,7 @@ def parse_spec_list(spec_list_str):
 
 def instantiate_spec(drivers, spec):
     """
-    Create an instance of a driver described in a spec string, picking drivers
-    from the supplied dictionary.
+    Shortened: Create a driver instance from a spec string and dictionary.
 
     Args:
         drivers:    The dictionary of driver names and types to instantiate
@@ -125,9 +122,7 @@ def instantiate_spec(drivers, spec):
 
 def instantiate_spec_list(drivers, spec_list_str):
     """
-    Create a generator returning driver instances created from a database
-    specification list string, picking driver types from the supplied
-    dictionary.
+    Create a generator from a database specification list.
 
     Args:
         drivers:        The dictionary of driver names and types to

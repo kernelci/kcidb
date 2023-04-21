@@ -1,7 +1,4 @@
-"""
-The data structures and constants used by the KCIDB object-relational
-mapping system to organize Kernel CI report data into objects.
-"""
+"""Data structures and constants for Kernel CI report ORM."""
 
 import jsonschema
 from kcidb.misc import LIGHT_ASSERTS
@@ -9,7 +6,7 @@ import kcidb.io as io
 
 
 class Relation:
-    """A parent/child relation between object types"""
+    """A parent/child relation between object types."""
 
     def __init__(self, parent, child, ref_fields):
         """
@@ -33,7 +30,7 @@ class Relation:
 
 
 class Type:
-    """An object type"""
+    """An object type."""
 
     # It's OK, pylint: disable=too-many-instance-attributes,too-many-arguments
 
@@ -127,8 +124,7 @@ class Type:
 
     def get_id(self, data):
         """
-        Retrieve a tuple of field values identifying an object globally, from
-        its data.
+        Retrieve tuple of globally identifying field values from object data.
 
         Args:
             data:   The object data to retrieve the ID from.
@@ -141,8 +137,7 @@ class Type:
 
     def get_parent_id(self, parent_type_name, data):
         """
-        Retrieve a tuple of field values identifying an object's parent of
-        particular type globally, from the object's data.
+        Retrieve tuple of parent field values from object data.
 
         Args:
             parent_type_name:   The name of the type of the parent object to
@@ -161,7 +156,7 @@ class Type:
 
 
 class Schema:
-    """A repository of recognized object types"""
+    """A repository of recognized object types."""
 
     def __init__(self, json_schema_defs, types):
         """
@@ -297,9 +292,7 @@ class Schema:
 
     def format_dot(self):
         """
-        Format the directed graph of object type relations in the schema using
-        the DOT language. The returned value could be visualized with e.g.
-        "dot -Tx11".
+        Format object type relations using DOT language for graph visual.
 
         Returns:
             The string containing the DOT representation of object type
