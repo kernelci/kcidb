@@ -1,4 +1,4 @@
-"""Kernel CI reporting - unittest extensions"""
+"""Kernel CI reporting - unittest extensions."""
 
 import re
 import sys
@@ -8,8 +8,7 @@ import subprocess
 
 def execute(stdin, name, *args, driver_source="return function()"):
     """
-    Run a KCIDB executable with the specified name, by executing its main
-    function.
+    Run KCIDB executable with specified name, by executing main function.
 
     Args:
         stdin:          A string to pass to the standard input of the
@@ -55,8 +54,7 @@ def assert_executes(stdin, name, *args,
                     driver_source="return function()",
                     stdout_re="", stderr_re="", status=0):
     """
-    Assert a KCIDB executable produces certain stdout, stderr, and exit
-    status, provided the specified standard input and arguments.
+    Assert KCIDB executable produces expected output with given input.
 
     Args:
         stdin:          A string to pass to the standard input of the

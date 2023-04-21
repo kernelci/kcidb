@@ -1,4 +1,4 @@
-"""An example stable tree subscriptions"""
+"""An example stable tree subscriptions."""
 
 from kcidb.monitor.output import NotificationMessage as Message
 
@@ -14,7 +14,7 @@ REPO_URL_SET = {
 
 
 def _disabled_match_revision(revision):
-    """Match revisions of interest to stable tree developers"""
+    """Match revisions of interest to stable tree developers."""
     subject_sfx = ' failed for {% include "revision_summary.txt.j2" %}'
     msg_args = dict(
         to=["Linux Stable maillist <stable@vger.kernel.org>"],

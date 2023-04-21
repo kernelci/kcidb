@@ -1,10 +1,10 @@
-"""Nikolai Kondrashov's subscription"""
+"""Nikolai Kondrashov's subscription."""
 
 from kcidb.monitor.output import NotificationMessage as Message
 
 
 def _disabled_match_revision(revision):
-    """Match revisions of interest to Nikolai Kondrashov"""
+    """Match revisions of interest to Nikolai Kondrashov."""
     subject_sfx = ' failed for {% include "revision_summary.txt.j2" %}'
     msg_args = dict(
         to=["Nikolai Kondrashov <Nikolai.Kondrashov@redhat.com>"],

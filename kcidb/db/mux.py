@@ -1,4 +1,4 @@
-"""Kernel CI reporting database - multiplexing"""
+"""Kernel CI reporting database - multiplexing."""
 
 import textwrap
 from abc import abstractmethod
@@ -8,14 +8,13 @@ from kcidb.db.abstract import Driver as AbstractDriver
 
 
 class Driver(AbstractDriver):
-    """Abstract multiplexing driver"""
+    """Abstract multiplexing driver."""
 
     @classmethod
     @abstractmethod
     def get_drivers(cls):
         """
-        Retrieve a dictionary of driver names and types available for driver's
-        control.
+        Get available drivers' names and types as a dictionary.
 
         Returns:
             A driver dictionary.
@@ -67,10 +66,7 @@ class Driver(AbstractDriver):
     @staticmethod
     def _drivers_get_schemas(drivers):
         """
-        Generate a dictionary of the driver's schema version numbers and
-        corresponding I/O schema and schema version numbers of specified member
-        drivers. All databases driven by the drivers should either be
-        initialized, or not initialized, at the same time.
+        Generate dictionary of driver's schema versions and I/O schema.
 
         The driver's schema version numbers start with 0.0, corresponding to
         the schema versions currently used by the drivers, if all databases
@@ -111,10 +107,7 @@ class Driver(AbstractDriver):
         schemas = []
 
         def add_indexed_schema():
-            """
-            Add a version of a schema described by the current value of
-            driver_indices to the "schemas" list.
-            """
+            """Add schema to "schemas" list with driver_indices value."""
             schemas.append((
                 # Record the minimum supported I/O version across
                 # currently-selected schemas of all drivers
@@ -217,8 +210,7 @@ class Driver(AbstractDriver):
 
     def init(self, version):
         """
-        Initialize the member databases.
-        All the databases must be uninitialized.
+        Initialize member databases. All must be uninitialized.
 
         Args:
             version:    A tuple of the major and minor version numbers (both
@@ -234,28 +226,19 @@ class Driver(AbstractDriver):
         self.version = version
 
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the databases, removing all data.
-        All the databases must be initialized.
-        """
+        """Deinitialize all initialized databases and remove all data."""
         for driver in self.drivers:
             driver.cleanup()
         self.version = None
 
     def empty(self):
-        """
-        Empty the driven databases, removing all data.
-        All the databases must be initialized.
-        """
+        """Empty initialized driven databases, removing all data."""
         for driver in self.drivers:
             driver.empty()
 
     def get_last_modified(self):
         """
-        Get the time the data in the driven databases was last modified.
-        Can return the minimum timestamp constant, if the databases are not
-        initialized, or their data loading interface is not limited in the
-        amount of load() method calls.
+        Get last modified time of database with minimum timestamp constant.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -265,10 +248,7 @@ class Driver(AbstractDriver):
 
     def get_schemas(self):
         """
-        Retrieve available database schemas: a dictionary of tuples containing
-        major and minor version numbers of the schemas (both non-negative
-        integers), and corresponding I/O schemas
-        (kcidb_io.schema.abstract.Version instances) supported by them.
+        Retrieve available db schemas major/minor versions and I/O schemas.
 
         Returns:
             The schema dictionary, sorted by ascending version numbers.
@@ -280,9 +260,7 @@ class Driver(AbstractDriver):
 
     def get_schema(self):
         """
-        Get a tuple with the driven database schema's major and minor version
-        numbers, and the I/O schema supported by it. The database must be
-        initialized.
+        Get driven database schema version and I/O schema supported.
 
         Returns:
             A tuple of the major and minor version numbers (both non-negative
@@ -294,8 +272,7 @@ class Driver(AbstractDriver):
 
     def upgrade(self, target_version):
         """
-        Upgrade the database to the specified schema.
-        The database must be initialized.
+        Upgrade initialized database to specified schema version.
 
         Args:
             target_version: A tuple of the major and minor version numbers of
@@ -334,8 +311,7 @@ class Driver(AbstractDriver):
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the first database, in object
-        number-limited chunks.
+        Fetch limited objects from 1st database in chunks.
 
         Args:
             ids:                A dictionary of object list names, and lists

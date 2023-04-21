@@ -1,4 +1,4 @@
-"""Kernel CI reporting"""
+"""Kernel CI reporting."""
 
 import sys
 import email
@@ -13,17 +13,19 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DatabaseNotInitialized(Exception):
-    """Database is not initialized exception"""
+    """Database is not initialized exception."""
+
     def __init__(self):
+        """Database not initialized."""
         super().__init__("Database is not initialized")
 
 
 class Client:
-    """Kernel CI reporting client"""
+    """Kernel CI reporting client."""
 
     def __init__(self, database=None, project_id=None, topic_name=None):
         """
-        Initialize a reporting client
+        Initialize a reporting client.
 
         Args:
             database:       The database specification string to use for
@@ -180,7 +182,7 @@ class Client:
 
 
 def submit_main():
-    """Execute the kcidb-submit command-line tool"""
+    """Execute the kcidb-submit command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-submit - Submit Kernel CI reports, print submission IDs'
@@ -210,7 +212,7 @@ def submit_main():
 
 
 def query_main():
-    """Execute the kcidb-query command-line tool"""
+    """Execute the kcidb-query command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         "kcidb-query - Query Kernel CI reports"
@@ -233,7 +235,7 @@ def query_main():
 
 
 def schema_main():
-    """Execute the kcidb-schema command-line tool"""
+    """Execute the kcidb-schema command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-schema - Output current or older I/O JSON schema'
     parser = misc.OutputArgumentParser(description=description)
@@ -244,7 +246,7 @@ def schema_main():
 
 
 def validate_main():
-    """Execute the kcidb-validate command-line tool"""
+    """Execute the kcidb-validate command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-validate - Validate I/O JSON data'
     parser = misc.OutputArgumentParser(description=description)
@@ -260,7 +262,7 @@ def validate_main():
 
 
 def upgrade_main():
-    """Execute the kcidb-upgrade command-line tool"""
+    """Execute the kcidb-upgrade command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-upgrade - Upgrade I/O JSON data to current schema'
     parser = misc.OutputArgumentParser(description=description)
@@ -276,7 +278,7 @@ def upgrade_main():
 
 
 def count_main():
-    """Execute the kcidb-count command-line tool"""
+    """Execute the kcidb-count command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-count - Count number of objects in I/O JSON data'
     parser = misc.ArgumentParser(description=description)
@@ -288,7 +290,7 @@ def count_main():
 
 
 def merge_main():
-    """Execute the kcidb-merge command-line tool"""
+    """Execute the kcidb-merge command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-merge - Upgrade and merge I/O data sets'
     parser = misc.OutputArgumentParser(description=description)
@@ -308,7 +310,7 @@ def merge_main():
 
 
 def notify_main():
-    """Execute the kcidb-notify command-line tool"""
+    """Execute the kcidb-notify command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-notify - Generate notifications for specified objects'
     parser = oo.ArgumentParser(database="json", description=description)
@@ -327,7 +329,7 @@ def notify_main():
 
 
 def ingest_main():
-    """Execute the kcidb-ingest command-line tool"""
+    """Execute the kcidb-ingest command-line tool."""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-ingest - Load data into a (new) database and ' \
         'generate notifications for new and modified objects'

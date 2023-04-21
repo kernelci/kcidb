@@ -1,10 +1,10 @@
-"""An example mainline tree subscriptions"""
+"""An example mainline tree subscriptions."""
 
 from kcidb.monitor.output import NotificationMessage as Message
 
 
 def _disabled_match_revision(revision):
-    """Match revisions of interest to stable tree developers"""
+    """Match revisions of interest to stable tree developers."""
     repo_url = \
         "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
     subject_sfx = ' failed for {% include "revision_summary.txt.j2" %}'

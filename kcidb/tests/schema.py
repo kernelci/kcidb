@@ -1,4 +1,4 @@
-"""Kernel CI reporting test catalog schema"""
+"""Kernel CI reporting test catalog schema."""
 
 import jsonschema
 

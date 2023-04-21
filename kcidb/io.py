@@ -1,4 +1,4 @@
-"""KCIDB package-specific I/O definitions"""
+"""KCIDB package-specific I/O definitions."""
 
 # Inherit all public definitions from kcidb_io package
 # We know what we're doing, flake8 and

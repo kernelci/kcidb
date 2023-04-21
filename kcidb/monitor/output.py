@@ -1,4 +1,4 @@
-"""Kernel CI reporting - monitor - output"""
+"""Kernel CI reporting - monitor - output."""
 
 import datetime
 import re
@@ -32,9 +32,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class NotificationMessage:
-    """
-    Message for a notification about a report object state.
-    """
+    """Message for a notification about a report object state."""
+
     # It's OK pylint: disable=too-many-arguments
     def __init__(self, to, subject, body, cc=None, bcc=None, id="", due=None):
         """
@@ -103,9 +102,7 @@ class NotificationMessage:
 
 
 class Notification:
-    """
-    Notification about a report object state.
-    """
+    """Notification about a report object state."""
 
     @staticmethod
     def _to_id_part(string):
@@ -123,8 +120,7 @@ class Notification:
     @staticmethod
     def _from_id_part(id_part):
         """
-        Decode an ID part into the original string passed to _to_id_part()
-        previously.
+        Decode ID part back to original string from _to_id_part().
 
         Args:
             id: The ID part to decode.

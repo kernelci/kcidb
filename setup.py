@@ -63,6 +63,7 @@ setuptools.setup(
         dev=[
             "flake8",
             "pylint",
+            "pydocstyle",
             "yamllint",
             "pytest",
         ],

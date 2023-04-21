@@ -1,4 +1,4 @@
-"""Kernel CI report database - BigQuery schema v4.1"""
+"""Kernel CI report database - BigQuery schema v4.1 ."""
 
 import logging
 from google.cloud.bigquery.schema import SchemaField as Field
@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Schema(PreviousSchema):
-    """BigQuery database schema v4.1"""
+    """BigQuery database schema v4.1 ."""
 
     # The schema's version.
     version = (4, 1)

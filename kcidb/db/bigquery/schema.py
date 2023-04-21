@@ -1,17 +1,14 @@
-"""
-Kernel CI BigQuery report database - miscellaneous schema definitions
-"""
+"""Kernel CI BigQuery report database - miscellaneous schema definitions."""
 from google.cloud.bigquery.schema import SchemaField as Field
 
 
 class JSONInvalidError(Exception):
-    """JSON doesn't match table schema error"""
+    """JSON doesn't match table schema error."""
 
 
 def validate_json_value(field, value):
     """
-    Validate a JSON value against the schema for the field it's supposed to be
-    loaded into.
+    Validate JSON value against target field's schema for loading.
 
     Args:
         field:  The field schema to validate against, an instance of
@@ -57,8 +54,7 @@ def validate_json_value(field, value):
 
 def validate_json_obj(field_list, obj):
     """
-    Validate a JSON object against the schema of the table it's to be loaded
-    into.
+    Validate JSON object against target table schema.
 
     Args:
         field_list: The list of table fields to validate against. A list of
@@ -114,8 +110,7 @@ def validate_json_obj(field_list, obj):
 
 def validate_json_obj_list(field_list, obj_list):
     """
-    Validate a list of JSON objects against the schema of the table they are
-    to be loaded into.
+    Validate JSON objects against table schema for loading.
 
     Args:
         field_list: The list of table fields to validate against. A list of

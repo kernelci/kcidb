@@ -1,4 +1,4 @@
-"""Google Cloud Functions for Kernel CI reporting"""
+"""Google Cloud Functions for Kernel CI reporting."""
 
 import os
 import json
@@ -73,10 +73,7 @@ _UPDATED_QUEUE_PUBLISHER = None
 
 
 def get_smtp_publisher():
-    """
-    Get the created/cached publisher object for email messages, if we're
-    requested to send them to a PubSub topic, or None, if not.
-    """
+    """Get the created/cached publisher object for email messages."""
     # It's alright, pylint: disable=global-statement
     global _SMTP_PUBLISHER
     if SMTP_TOPIC is not None and _SMTP_PUBLISHER is None:
@@ -85,7 +82,7 @@ def get_smtp_publisher():
 
 
 def get_smtp_password():
-    """Get the (cached) password for the SMTP user"""
+    """Get the (cached) password for the SMTP user."""
     # It's alright, pylint: disable=global-statement
     global _SMTP_PASSWORD
     if _SMTP_PASSWORD is None:
@@ -95,9 +92,7 @@ def get_smtp_password():
 
 
 def get_load_queue_subscriber():
-    """
-    Create or get the cached subscriber object for the submission queue.
-    """
+    """Create or get the cached subscriber object for the submission queue."""
     # It's alright, pylint: disable=global-statement
     global _LOAD_QUEUE_SUBSCRIBER
     if _LOAD_QUEUE_SUBSCRIBER is None:
@@ -112,9 +107,10 @@ def get_load_queue_subscriber():
 
 def get_updated_queue_publisher():
     """
-    Create or get the cached publisher object for the queue with patterns
-    matching objects updated by loaded submissions. Return None if update
-    publishing is disabled.
+    Create or get the cached publisher object for the queue.
+
+    Here patterns matching objects updated by loaded submissions,
+    Return None if update publishing is disabled.
     """
     # It's alright, pylint: disable=global-statement
     global _UPDATED_QUEUE_PUBLISHER
@@ -162,8 +158,9 @@ def get_spool_client():
 
 def kcidb_load_message(event, context):
     """
-    Load a single message's KCIDB data from the triggering Pub Sub
-    subscription into the database.
+    Load a single message's KCIDB data.
+
+    Load it from the triggering Pub Sub subscription into the database.
     """
     # Get new data
     data = get_load_queue_subscriber().decode_data(
@@ -188,7 +185,8 @@ def kcidb_load_message(event, context):
 
 def kcidb_load_queue(event, context):
     """
-    Load multiple KCIDB data messages from the load queue into the database,
+    Load multiple KCIDB data messages from the load queue into the database.
+
     if it stayed unmodified for at least DATABASE_LOAD_PERIOD.
     """
     subscriber = get_load_queue_subscriber()
@@ -251,10 +249,7 @@ def kcidb_load_queue(event, context):
 
 
 def kcidb_spool_notifications(event, context):
-    """
-    Spool notifications about objects matching patterns arriving from a Pub
-    Sub subscription
-    """
+    """Spool notifications about objects matching patterns from Pub Sub."""
     oo_client = get_oo_client()
     spool_client = get_spool_client()
     # Reset the ORM cache
@@ -279,9 +274,7 @@ def kcidb_spool_notifications(event, context):
 
 
 def kcidb_send_notification(data, context):
-    """
-    Send notifications from the spool
-    """
+    """Send notifications from the spool."""
     spool_client = get_spool_client()
     # Get the notification ID
     notification_id = context.resource.split("/")[-1]
@@ -297,9 +290,7 @@ def kcidb_send_notification(data, context):
 
 
 def kcidb_pick_notifications(data, context):
-    """
-    Pick abandoned notifications and send them.
-    """
+    """Pick abandoned notifications and send them."""
     spool_client = get_spool_client()
     for notification_id in spool_client.unpicked():
         # Pick abandoned notification and resend

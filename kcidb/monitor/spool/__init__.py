@@ -21,7 +21,7 @@ from kcidb.monitor.output import Notification
 
 
 class Client:
-    """Notification spool client"""
+    """Notification spool client."""
 
     @staticmethod
     def is_valid_id(value):
@@ -137,6 +137,7 @@ class Client:
     def pick(self, id, timestamp=None, timeout=None):
         """
         Pick a notification from the spool, for sending.
+
         A notification can only be picked by one client.
 
         Args:
@@ -168,7 +169,7 @@ class Client:
 
         @firestore.transactional
         def pick_if_not_picked(transaction, doc, timestamp):
-            """Pick notification, if not picked yet"""
+            """Pick notification, if not picked yet."""
             # Get the document snapshot
             snapshot = doc.get(field_paths=["picked_until", "message", "due"],
                                transaction=transaction)
@@ -268,7 +269,7 @@ class Client:
 
 
 def wipe_main():
-    """Execute the kcidb-monitor-spool-wipe command-line tool"""
+    """Execute the kcidb-monitor-spool-wipe command-line tool."""
     sys.excepthook = log_and_print_excepthook
     description = \
         'kcidb-monitor-spool-wipe - Remove (old) notifications from the spool'

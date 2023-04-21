@@ -1,6 +1,4 @@
-"""
-Kernel CI report database - Jinja2 templates
-"""
+"""Kernel CI report database - Jinja2 templates."""
 
 import os
 import jinja2

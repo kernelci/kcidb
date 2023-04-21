@@ -1,4 +1,4 @@
-"""Kernel CI report database - PostgreSQL schema v4.0"""
+"""Kernel CI report database - PostgreSQL schema v4.0 ."""
 
 import random
 import logging
@@ -22,10 +22,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Connection(AbstractConnection):
-    """
-    Kernel CI PostgreSQL report database connection.
-    Exposes PostgreSQL connection interface.
-    """
+    """Kernel CI PostgreSQL report database connection."""
 
     # Documentation of the connection parameters
     _PARAMS_DOC = textwrap.dedent("""\
@@ -84,24 +81,20 @@ class Connection(AbstractConnection):
             cursor.execute("SET SESSION TIME ZONE 'UTC'")
 
     def __getattr__(self, name):
-        """
-        Retrieve missing attributes from the PostgreSQL connection object.
-        """
+        """Retrieve missing attributes from PostgreSQL connection object."""
         return getattr(self.conn, name)
 
     def __enter__(self):
-        """Enter the connection runtime context"""
+        """Enter the connection runtime context."""
         return self.conn.__enter__()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Leave the connection runtime context"""
+        """Leave the connection runtime context."""
         return self.conn.__exit__(exc_type, exc_value, traceback)
 
     def set_schema_version(self, version):
         """
-        Set the schema version of the connected database (or remove it) in a
-        separate transaction. Does not modify the data or upgrade its actual
-        schema.
+        Update or delete the schema version in the database.
 
         Args:
             version:    A tuple of (major, minor) schema version numbers (both
@@ -128,8 +121,7 @@ class Connection(AbstractConnection):
 
     def get_schema_version(self):
         """
-        Retrieve the schema version of the connected database, in a separate
-        transaction.
+        Retrieve schema version of connected db, in separate transaction.
 
         Returns:
             The major and the minor version numbers of the database schema,
@@ -147,10 +139,7 @@ class Connection(AbstractConnection):
 
     def get_last_modified(self):
         """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized or its data loading interface is not limited in the amount
-        of load() method calls.
+        Get the last modified time of the database.
 
         Returns:
             A timezone-aware datetime object representing the last
@@ -160,7 +149,7 @@ class Connection(AbstractConnection):
 
 
 class Schema(AbstractSchema):
-    """PostgreSQL database schema v4.0"""
+    """PostgreSQL database schema v4.0 ."""
 
     # The connection class to use for talking to the database.
     Connection = Connection
@@ -430,10 +419,7 @@ class Schema(AbstractSchema):
     )
 
     def init(self):
-        """
-        Initialize the database.
-        The database must be uninitialized.
-        """
+        """Initialize the database."""
         with self.conn, self.conn.cursor() as cursor:
             for table_name, table_schema in self.TABLES.items():
                 try:
@@ -472,10 +458,7 @@ class Schema(AbstractSchema):
             """))
 
     def cleanup(self):
-        """
-        Cleanup (deinitialize) the database, removing all data.
-        The database must be initialized.
-        """
+        """Cleanup (deinit) the initialized database, removing all data."""
         with self.conn, self.conn.cursor() as cursor:
             cursor.execute("DROP AGGREGATE IF EXISTS last(anyelement)")
             cursor.execute("DROP AGGREGATE IF EXISTS first(anyelement)")
@@ -489,10 +472,7 @@ class Schema(AbstractSchema):
                 cursor.execute(f"DROP TABLE IF EXISTS {name}")
 
     def empty(self):
-        """
-        Empty the database, removing all data.
-        The database must be initialized.
-        """
+        """Clear initialized database."""
         with self.conn, self.conn.cursor() as cursor:
             for name, schema in self.TABLES.items():
                 cursor.execute(schema.format_delete(name))
@@ -542,8 +522,7 @@ class Schema(AbstractSchema):
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids, children, parents, objects_per_report):
         """
-        Match and fetch objects from the database, in object number-limited
-        chunks.
+        Match and fetch objects from db, in object number-limited chunks.
 
         Args:
             ids:                A dictionary of object list names, and lists
@@ -596,7 +575,7 @@ class Schema(AbstractSchema):
         # Add referenced parents if requested
         if parents:
             def add_parents(obj_list_name):
-                """Add parent IDs to query results"""
+                """Add parent IDs to query results."""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
                 for child_list_name in self.io.graph[obj_list_name]:
@@ -617,7 +596,7 @@ class Schema(AbstractSchema):
         # Add referenced children if requested
         if children:
             def add_children(obj_list_name):
-                """Add child IDs to query results"""
+                """Add child IDs to query results."""
                 obj_name = obj_list_name[:-1]
                 query = obj_list_queries[obj_list_name]
                 for child_list_name in self.io.graph[obj_list_name]:

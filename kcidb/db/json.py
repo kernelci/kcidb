@@ -1,4 +1,4 @@
-"""Kernel CI report database - JSON-initialized in-memory database driver"""
+"""Kernel CI report database - JSON-initialized in-memory database driver."""
 
 import sys
 import textwrap
@@ -7,7 +7,7 @@ from kcidb.db.sqlite import Driver as SQLiteDriver
 
 
 class Driver(SQLiteDriver):
-    """Kernel CI I/O JSON-initialized in-memory database driver"""
+    """Kernel CI I/O JSON-initialized in-memory database driver."""
 
     @classmethod
     def get_doc(cls):

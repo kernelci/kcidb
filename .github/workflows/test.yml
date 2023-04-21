@@ -64,6 +64,10 @@ jobs:
         run: "pylint kcidb *.py"
         env:
           KCIDB_HOOKS: "pre-commit"
+      - name: Check python sources with pydocstyle
+        run: "pydocstyle kcidb *.py"
+        env:
+          KCIDB_HOOKS: "pre-commit"
       - name: Test with pytest
         run: KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest --tb=native
         env:
