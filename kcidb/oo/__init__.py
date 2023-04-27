@@ -115,10 +115,11 @@ VALID_PRIORITY = {
 TEST_STATUS_PRIORITY = {
     "FAIL":     1,
     "ERROR":    2,
-    "PASS":     3,
-    "DONE":     4,
-    "SKIP":     5,
-    None:       6,
+    "MISS":     3,
+    "PASS":     4,
+    "DONE":     5,
+    "SKIP":     6,
+    None:       7,
 }
 
 # A dictionary of test "waived" values and their priority, defined as a

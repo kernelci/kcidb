@@ -18,7 +18,7 @@ class Schema(PreviousSchema):
     # The schema's version.
     version = (4, 1)
     # The I/O schema the database schema supports
-    io = io.schema.V4_1
+    io = io.schema.V4_2
 
     # A map of table names and descriptions
     TABLES = dict(

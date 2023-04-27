@@ -16,7 +16,7 @@ def test_schemas_main():
     """Check kcidb-db-schemas works"""
     argv = ["kcidb.db.schemas_main", "-d", "sqlite::memory:"]
     assert_executes("", *argv,
-                    stdout_re=r"4\.0: 4\.0\n4\.1: 4\.1\n")
+                    stdout_re=r"4\.0: 4\.0\n4\.1: 4\.2\n")
 
 
 def test_reset(clean_database):
@@ -677,9 +677,9 @@ def test_upgrade(clean_database):
                 "incident": [],
             }
         ),
-        kcidb.io.schema.V4_1: dict(
+        kcidb.io.schema.V4_2: dict(
             io={
-                "version": {"major": 4, "minor": 1},
+                "version": {"major": 4, "minor": 2},
                 "checkouts": [{
                     "id": "_:kernelci:5acb9c2a7bc836e"
                           "9e5172bbcd2311499c5b4e5f1",
@@ -700,6 +700,7 @@ def test_upgrade(clean_database):
                     "build_id": "google:google.org:a1d993c3n4c448b2"
                                 "j0l1hbf1",
                     "origin": "google",
+                    "status": "MISS",
                 }],
                 "issues": [{
                     "id": "redhat:878234322",
@@ -794,7 +795,7 @@ def test_upgrade(clean_database):
                     "output_files": None,
                     "path": None,
                     "start_time": None,
-                    "status": None,
+                    "status": "MISS",
                     "waived": None,
                 }],
                 "bug": [{
@@ -907,7 +908,7 @@ def test_query(empty_database):
     """Test the query() method retrieves objects correctly"""
     client = empty_database
     client.load(dict(
-        version=dict(major=4, minor=1),
+        version=dict(major=4, minor=2),
         checkouts=[
             dict(id="_:1", origin="_"),
             dict(id="_:2", origin="_"),
@@ -942,7 +943,7 @@ def test_query(empty_database):
     assert client.query(ids=dict(checkouts=["_:1"]), children=True) in \
         [
             {
-                "version": {"major": 4, "minor": 1},
+                "version": {"major": 4, "minor": 2},
                 "checkouts": [
                     {"id": "_:1", "origin": "_"}
                 ],
@@ -980,7 +981,7 @@ def test_query(empty_database):
         ]
 
     unambigious_result = {
-        "version": {"major": 4, "minor": 1},
+        "version": {"major": 4, "minor": 2},
         "checkouts": [
             {"id": "_:2", "origin": "_"}
         ],
@@ -1019,7 +1020,7 @@ def test_query(empty_database):
 
     assert client.query(ids=dict(incidents=["_:3"]), parents=True) == \
         {
-            "version": {"major": 4, "minor": 1},
+            "version": {"major": 4, "minor": 2},
             "checkouts": [
                 {"id": "_:2", "origin": "_"}
             ],
@@ -1045,7 +1046,7 @@ def test_query(empty_database):
         }
 
     unambigious_result = {
-        "version": {"major": 4, "minor": 1},
+        "version": {"major": 4, "minor": 2},
         "checkouts": [
             {"id": "_:2", "origin": "_"}
         ],
@@ -1085,6 +1086,22 @@ def test_query(empty_database):
             "incidents": [incident_y, incident_x],
         },
     ]
+
+
+def test_test_status(empty_database):
+    """Test all test status values are accepted and preserved"""
+    status_set = set(kcidb.io.SCHEMA.json["$defs"]["status"]["enum"])
+    client = empty_database
+    client.load({
+        **kcidb.io.SCHEMA.new(),
+        "tests": [
+            dict(build_id="_:1", origin="_", id="_:" + status, status=status)
+            for status in status_set
+        ]
+    })
+    dump = client.dump()
+    assert status_set == set(test["id"][2:] for test in dump["tests"])
+    assert status_set == set(test["status"] for test in dump["tests"])
 
 
 def test_empty(empty_database):
