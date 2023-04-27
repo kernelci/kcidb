@@ -1,8 +1,8 @@
 {# Test macros #}
 
 {% macro status_emoji(status) %}
-    {{- "💥" if status == "ERROR" else
-        "❌" if status == "FAIL" else
+    {{- "❌" if status == "FAIL" else
+        "💥" if status == "ERROR" else
         "✅" if status == "PASS" else
         "🆗" if status == "DONE" else
         "⏩" if status == "SKIP" else
