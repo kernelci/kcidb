@@ -176,9 +176,9 @@ def test_load_main():
     """Check kcidb-db-load works"""
     driver_source = textwrap.dedent("""
         from unittest.mock import patch, Mock
-        from kcidb_io.schema import V4_1
+        from kcidb.io import SCHEMA
         client = Mock()
-        client.get_schema = Mock(return_value=((1, 0), V4_1))
+        client.get_schema = Mock(return_value=((1, 0), SCHEMA))
         with patch("kcidb.db.Client", return_value=client):
             return function()
     """)
@@ -194,9 +194,9 @@ def test_load_main():
 
     driver_source = textwrap.dedent(f"""
         from unittest.mock import patch, Mock
-        from kcidb_io.schema import V4_1
+        from kcidb.io import SCHEMA
         client = Mock()
-        client.get_schema = Mock(return_value=((1, 0), V4_1))
+        client.get_schema = Mock(return_value=((1, 0), SCHEMA))
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
@@ -209,9 +209,9 @@ def test_load_main():
 
     driver_source = textwrap.dedent(f"""
         from unittest.mock import patch, Mock, call
-        from kcidb_io.schema import V4_1
+        from kcidb.io import SCHEMA
         client = Mock()
-        client.get_schema = Mock(return_value=((1, 0), V4_1))
+        client.get_schema = Mock(return_value=((1, 0), SCHEMA))
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
