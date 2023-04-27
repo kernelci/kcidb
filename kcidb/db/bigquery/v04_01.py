@@ -16,7 +16,7 @@ class Schema(PreviousSchema):
     # The schema's version.
     version = (4, 1)
     # The I/O schema the database schema supports
-    io = io.schema.V4_1
+    io = io.schema.V4_2
 
     # Culprit fields
     CULPRIT_FIELDS = (

@@ -271,20 +271,59 @@ Example: `"2020-08-14T23:08:10.008000+00:00"`
 #### Tests
 
 ##### `status`
-The test status string, one of the following.
+The test status string, one of the following:
 
-* `FAIL` - the test has failed, the tested code is faulty.
-* `ERROR` - the test is faulty, the status of the tested code is unknown.
-* `PASS` - the test has passed, the tested code is correct.
-* `DONE` - the test has finished successfully, the status of the tested code
-  is unknown.
-* `SKIP` - the test wasn't executed, the status of the tested code is unknown.
+* "FAIL" - the test completed and reported the tested code as faulty.
+* "ERROR" - the test didn't complete due to a failure in its code, and the
+  status of the tested code is unknown.
+* "MISS" - the test didn't run due to a failure in the test harness, and the
+  status of both the test and the tested code is unknown.
+* "PASS" - the test completed and reported the tested code as correct.
+* "DONE" - the test completed and had not reported the status of the tested
+  code, but, for example, produced a performance measurement result.
+* "SKIP" - the test did not run or complete, because it was not applicable,
+  and the status of both the test and the tested code is unknown.
 
 The status names above are listed in priority order (highest to lowest), which
-could be used for producing a summary status for a collection of test runs,
-e.g. for all testing done on a build, based on results of executed test
-suites. The summary status would be the highest priority status across all
-test runs in a collection.
+can be used to produce a summary status for a collection of test runs.
+
+For example, the summary status for all testing done on a build would be the
+highest-priority status across all its tests.
+
+You can break down the testing stack into three layers: the tested code, the
+test, and the harness running the test (and everything above it). With that in
+mind, you can then express each status as one of three outcomes for each
+layer: failure, success, or no data. Like this:
+
+    STATUS      CODE TEST HARNESS+           LEGEND
+
+    FAIL        ❌   ✅   ✅                 ❌ - failure
+    ERROR       ➖   ❌   ✅                 ✅ - success
+    MISS        ➖   ➖   ❌                 ➖ - no data
+    PASS        ✅   ✅   ✅
+    DONE        ➖   ✅   ✅
+    SKIP        ➖   ➖   ✅
+                ➖   ➖   ➖
+
+E.g. an ERROR status would mean that the harness succeeded in running the
+test, but the test code itself failed, and the test didn't complete, so we
+cannot make any conclusions about the tested code.
+
+OTOH, the similar DONE status would mean that both the harness and the test
+worked alright, but the test simply didn't produce sufficient data to make a
+conclusion about the code. E.g. it made a performance measurement that needs
+analyzing over a span of revisions (to determine if it's dropping or rising),
+and is meaningless alone.
+
+Going one layer up, the MISS status means that the harness has failed to even
+execute the test, so it didn't run, and we don't have any data on its outcome,
+and obviously no data on the tested code either. And the similar SKIP status
+means that the harness worked alright, and either it, or the test itself,
+decided not to run this specific test, because it was inapplicable.
+
+Finally, the last line in the table above (without a status) corresponds to
+the absent "status" field, and means that the test is only scheduled to
+execute, the system hasn't got to it yet, and so we have no data on anything.
 
 Example: `"FAIL"`
 
