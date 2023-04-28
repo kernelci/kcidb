@@ -312,6 +312,94 @@ Date/Time Format][datetime_format].
 
 Example: `"2020-08-14T23:41:54+00:00"`
 
+#### Issues
+These are the collection of incident issues for recorded executed test suite against a build.
+The following properties are used to describe issues found in reports
+
+##### `build_valid`
+The status to assign to incident builds
+
+Example: `false`
+
+##### `test_status`
+The Status to assign to incident tests, it can be one of the following
+
+* `ERROR` - the test is faulty, the status of the tested code is unknown.
+* `FAIL` - the test has failed, the tested code is faulty.
+* `PASS` - the test has passed, the tested code is correct.
+* `DONE` - the test has finished successfully, the status of the tested code
+  is unknown.
+* `SKIP` - the test wasn't executed, the status of the tested code is unknown.
+
+<<<<<<< HEAD
+Example: `ERROR`
+
+##### `culprit`
+This refers to the layers of the execution stack responsible for the issue
+It can contain one or more of the following properties, which are all boolean
+
+* `code` - the built or tested code, value is boolean
+* `tool` - the static analyzer, the build toolchain, the test, etc
+* `harness` - the system controlling the execution of the build.
+
+Example: `True`
+
+##### Incidents
+The following properties are used to describe an issue occurrence or absence of it
+
+Example: `"code": True`
+
+##### `culprit`
+The layers of the execution stack responsible for the issue
+It can be one of the following properties
+
+* `code` - the built or tested code, value is boolean
+* `tool` - the static analyzer, the build toolchain, the test, etc
+* `harness` - the system controlling the execution of the build.
+
+#### Incidents
+An incident describes the occurrence or absence of an issue
+The following properties are used to describe incident found in reports
+
+##### `present`
+True if the issue occurred in the linked objects, False if it was absent
+
+Example: `True`
+
+##### `comment`
+A human-readable comment regarding the incident
+
+Example: `The test failed due to a null pointer exception in the code, Further investigation required`
+
+##### `origin`
+The name of the CI system which submitted the incident
+
+Example: `submitter:956769`
+
+##### `issue_id`
+The id of the occurring or absent issue
+
+Example: `submitter:124853810`
+
+##### `issue_version`
+The modification version number of the occurring or absent issue
+
+Example: `0`
+
+##### `build_id`
+The ID of the build object exhibiting or missing the issue
+
+Example: `submitter:956769`
+
+##### `test_id`
+The ID of the test object exhibiting or missing the issue
+
+Example: `submitter:114353810`
+
+##### `comment`
+A human-readable comment regarding the incident
+
+
 ### Extra data
 If you have some data you'd like to provide developers with, but the schema
 doesn't accommodate it, put it as arbitrary JSON under the `misc` field, which
