@@ -273,8 +273,8 @@ Example: `"2020-08-14T23:08:10.008000+00:00"`
 ##### `status`
 The test status string, one of the following.
 
-* `ERROR` - the test is faulty, the status of the tested code is unknown.
 * `FAIL` - the test has failed, the tested code is faulty.
+* `ERROR` - the test is faulty, the status of the tested code is unknown.
 * `PASS` - the test has passed, the tested code is correct.
 * `DONE` - the test has finished successfully, the status of the tested code
   is unknown.
