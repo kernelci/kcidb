@@ -1,18 +1,38 @@
 {# Test macros #}
 
+{# Waived value emojis in order of decreasing priority #}
+{% set WAIVED_EMOJIS = {
+        false:  "",
+        true:   "🚧",
+        none:   "❓",
+    } %}
+
+{# Status value emojis in order of decreasing priority #}
+{% set STATUS_EMOJIS = {
+        "FAIL":     "❌",
+        "ERROR":    "💥",
+        "PASS":     "✅",
+        "DONE":     "🆗",
+        "SKIP":     "⏩",
+        none:       "❓",
+    } %}
+
+{# Combined waived and status values emojis in order of decreasing priority #}
+{% set WAIVED_STATUS_EMOJIS = {} %}
+{% for waived, waived_emoji in WAIVED_EMOJIS.items() %}
+    {% for status, status_emoji in STATUS_EMOJIS.items() %}
+        {% set _ = WAIVED_STATUS_EMOJIS.__setitem__(
+            (waived, status), waived_emoji + status_emoji
+           ) %}
+    {% endfor %}
+{% endfor %}
+
 {% macro status_emoji(status) %}
-    {{- "💥" if status == "ERROR" else
-        "❌" if status == "FAIL" else
-        "✅" if status == "PASS" else
-        "🆗" if status == "DONE" else
-        "⏩" if status == "SKIP" else
-        "❓" -}}
+    {{- STATUS_EMOJI[status] -}}
 {% endmacro %}
 
 {% macro waived_emoji(waived) %}
-    {{- "🚧" if waived is true else
-        "" if waived is false else
-        "❓" -}}
+    {{- WAIVED_EMOJI(waived) -}}
 {% endmacro %}
 
 {% macro status_name(status) %}
@@ -24,7 +44,7 @@
 {% endmacro %}
 
 {% macro waived_status_emoji(waived, status) %}
-    {{- waived_emoji(waived) + status_emoji(status) -}}
+    {{- WAIVED_STATUS_EMOJIS[(waived, status)] -}}
 {% endmacro %}
 
 {% macro waived_status_badge(waived, status) %}
