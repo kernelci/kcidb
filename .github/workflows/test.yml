@@ -172,12 +172,11 @@ jobs:
             "${args[@]}" --heavy-asserts --log-level=DEBUG
           )
 
-          ./cloud deploy "${env_args[@]}" --verbose || status=$((status || $?))
-
-          KCIDB_DEPLOYMENT="This deployment is empty" \
-            ./cloud shell  "${env_args[@]}" -- \
-                    pytest --tb=native --verbosity=2 --log-level=DEBUG ||
-                    status=$((status || $?))
+          ./cloud deploy "${env_args[@]}" --verbose &&
+            KCIDB_DEPLOYMENT="This deployment is empty" \
+              ./cloud shell  "${env_args[@]}" -- \
+                      pytest --tb=native --verbosity=2 --log-level=DEBUG ||
+              status=$((status || $?))
 
           ./cloud withdraw "${args[@]}" --verbose || status=$((status || $?))
 
