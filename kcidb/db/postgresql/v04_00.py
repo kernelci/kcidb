@@ -50,6 +50,31 @@ class Connection(AbstractConnection):
                         instead of randomly. Double to include one literally.
     """)
 
+    @classmethod
+    def _connect(cls, params):
+        """
+        Create and configure a connection to a PostgreSQL database.
+
+        Args:
+            dsn:    A libpq connection string specifying the database to
+                    connect.
+
+        Returns:
+            The created and configured connection.
+        """
+        # Create the connection
+        conn = psycopg2.connect(
+            params,
+            connection_factory=psycopg2.extras.LoggingConnection
+        )
+        # Specify the logger to the LoggingConnection
+        # It logs with DEBUG level, judging from the source (but not the docs)
+        conn.initialize(LOGGER)
+        # Set session timezone to UTC, overriding local settings
+        with conn, conn.cursor() as cursor:
+            cursor.execute("SET SESSION TIME ZONE 'UTC'")
+        return conn
+
     def __init__(self, params):
         """
         Initialize a PostgreSQL connection.
@@ -71,17 +96,10 @@ class Connection(AbstractConnection):
             params = params[1:]
 
         super().__init__(params)
+        # Store the DSN for reconnection
+        self.dsn = params
         # Create the connection
-        self.conn = psycopg2.connect(
-            params,
-            connection_factory=psycopg2.extras.LoggingConnection
-        )
-        # Specify the logger to the LoggingConnection
-        # It logs with DEBUG level, judging from the source (but not the docs)
-        self.conn.initialize(LOGGER)
-        # Set session timezone to UTC, overriding local settings
-        with self, self.cursor() as cursor:
-            cursor.execute("SET SESSION TIME ZONE 'UTC'")
+        self.conn = self._connect(self.dsn)
 
     def __getattr__(self, name):
         """
@@ -91,7 +109,13 @@ class Connection(AbstractConnection):
 
     def __enter__(self):
         """Enter the connection runtime context"""
-        return self.conn.__enter__()
+        try:
+            return self.conn.__enter__()
+        except psycopg2.InterfaceError as exc:
+            if self.conn.closed:
+                self.conn = self._connect(self.dsn)
+                return self.conn.__enter__()
+            raise exc
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Leave the connection runtime context"""
