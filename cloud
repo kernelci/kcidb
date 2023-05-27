@@ -367,10 +367,16 @@ function _psql_database_setup() {
     # Deploy viewer and submitter permissions
     mute psql --dbname="$database" -e <<<"
         \\set ON_ERROR_STOP on
+
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
         GRANT SELECT, INSERT, UPDATE ON TABLES TO $submitter;
+        GRANT SELECT, INSERT, UPDATE ON ALL TABLES
+        IN SCHEMA public TO $submitter;
+
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
         GRANT SELECT ON TABLES TO $viewer;
+        GRANT SELECT ON ALL TABLES
+        IN SCHEMA public TO $viewer;
     "
     # Initialize the database, if requested
     if "$init"; then
