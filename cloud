@@ -368,6 +368,8 @@ function _psql_database_setup() {
     mute psql --dbname="$database" -e <<<"
         \\set ON_ERROR_STOP on
 
+        GRANT USAGE ON SCHEMA public TO $submitter, $viewer;
+
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
         GRANT SELECT, INSERT, UPDATE ON TABLES TO $submitter;
         GRANT SELECT, INSERT, UPDATE ON ALL TABLES
