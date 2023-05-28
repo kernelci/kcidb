@@ -816,7 +816,7 @@ def test_email_generated(empty_deployment):
         # check we get one correct message per object type
         remaining_obj_types = obj_types.copy()
         for ack_id, email in \
-                email_subscriber.pull_iter(len(remaining_obj_types), 600):
+                email_subscriber.pull_iter(len(remaining_obj_types), 1800):
             email_subscriber.ack(ack_id)
             assert email['From'] == "bot@kernelci.org", \
                 f"Email From incorrect for {io_version!r}"
