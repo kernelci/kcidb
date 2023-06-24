@@ -1,5 +1,7 @@
 """kcidb namespace tests"""
 
+import pkgutil
+import importlib
 import re
 import json
 import textwrap
@@ -30,6 +32,25 @@ def test_json_output_options():
                     stdout_re="\\{\n    \".*")
     assert_executes("", "kcidb.schema_main", "--indent=2",
                     stdout_re="\\{\n  \".*")
+
+
+def test_package_symbols():
+    """
+    Test that package modules are accessible as symbols after importing
+    the package's module (__init__.py).
+    """
+
+    def check_package(package):
+        for _, module_name, is_pkg in pkgutil.iter_modules(package.__path__):
+            module_fullname = f"{package.__name__}.{module_name}"
+            module = importlib.import_module(module_fullname)
+            symbol = getattr(package, module_name, None)
+            assert symbol is module, \
+                f"{package.__name__} missing for submodule {module_name}. "\
+                f"Expected symbol is {module}, but actual symbol is {symbol}."
+            if is_pkg:
+                check_package(module)
+    check_package(kcidb)
 
 
 def test_submit_main():
