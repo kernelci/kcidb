@@ -8,7 +8,6 @@ import logging
 import smtplib
 import kcidb
 
-
 # Name of the Google Cloud project we're deployed in
 PROJECT_ID = os.environ["GCP_PROJECT"]
 
@@ -63,6 +62,8 @@ EXTRA_CC = os.environ.get("KCIDB_EXTRA_CC", None)
 _DB_CLIENT = None
 # The object-oriented database client instance
 _OO_CLIENT = None
+# KCIDB cache client instance
+_CACHE_CLIENT = None
 # The notification spool client
 _SPOOL_CLIENT = None
 # True if the database updates should be published to the updated queue
@@ -347,3 +348,37 @@ def send_message(message):
         finally:
             # Disconnect from the SMTP server
             smtp.quit()
+
+
+def get_cache_client():
+    """Create the cache client."""
+    # It's alright, pylint: disable=global-statement
+    global _CACHE_CLIENT
+    if _CACHE_CLIENT is None:
+        _CACHE_CLIENT = kcidb.cache.Client(
+            "cache_file_storage", 5 * 1024 * 1024
+        )
+    return _CACHE_CLIENT
+
+
+def kcidb_cache_urls(event, context):
+    """
+    Cloud Function triggered by Pub/Sub to cache URLs.
+
+    Args:
+        event (dict): The dictionary with the Pub/Sub event data.
+            - data (str): contains newline-separated URLs.
+        context (google.cloud.functions.Context): The event context.
+
+    Returns:
+        None
+    """
+    # Extract the Pub/Sub message data
+    pubsub_message = base64.b64decode(event['data']).decode()
+
+    # Get or create the cache client
+    cache = get_cache_client()
+
+    # Cache each URL
+    for url in pubsub_message.splitlines():
+        cache.store(url)

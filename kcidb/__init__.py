@@ -6,6 +6,7 @@ import logging
 from kcidb.misc import LIGHT_ASSERTS
 # Silence flake8 "imported but unused" warning
 from kcidb import io, db, mq, orm, oo, monitor, tests, unittest, misc # noqa
+from kcidb import cache # noqa
 
 
 # Module's logger
