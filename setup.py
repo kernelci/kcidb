@@ -45,6 +45,7 @@ setuptools.setup(
     install_requires=[
         "google-cloud-bigquery",
         "google-cloud-pubsub",
+        "google-cloud-storage",
         "google-cloud-firestore",
         "google-cloud-secret-manager",
         "psycopg2",
