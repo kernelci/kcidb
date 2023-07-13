@@ -1170,6 +1170,7 @@ function pubsub_subscription_withdraw() {
 #       --updated-topic=NAME
 #       --updated-debug-subscription=NAME
 #       --pick-notifications-trigger-topic=NAME
+#       --updated-urls-topic=NAME
 #       --smtp-topic=NAME
 #       --smtp-subscription=NAME
 function pubsub_deploy() {
@@ -1181,6 +1182,7 @@ function pubsub_deploy() {
                           updated_topic \
                           updated_debug_subscription \
                           pick_notifications_trigger_topic \
+                          updated_urls_topic \
                           smtp_topic smtp_subscription \
                           -- "$@")"
     eval "$params"
@@ -1200,6 +1202,7 @@ function pubsub_deploy() {
     pubsub_subscription_deploy "$project" "${updated_topic}" \
                                "${updated_debug_subscription}"
     pubsub_topic_deploy "$project" "${pick_notifications_trigger_topic}"
+    pubsub_topic_deploy "$project" "${updated_urls_topic}"
     if [ -n "$smtp_topic" ]; then
         pubsub_topic_deploy "$project" "$smtp_topic"
         pubsub_subscription_deploy "$project" "$smtp_topic" \
@@ -1211,6 +1214,7 @@ function pubsub_deploy() {
 # Args: --project=NAME
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
+#       --updated-urls-topic=NAME
 #       --new-topic=NAME
 #       --new-load-subscription=NAME
 #       --new-debug-subscription=NAME
@@ -1222,6 +1226,7 @@ function pubsub_withdraw() {
     params="$(getopt_vars project \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
+                          updated_urls_topic \
                           new_topic \
                           new_load_subscription \
                           new_debug_subscription \
@@ -1241,6 +1246,7 @@ function pubsub_withdraw() {
     pubsub_topic_withdraw "$project" "$new_topic"
     pubsub_topic_withdraw "$project" "$load_queue_trigger_topic"
     pubsub_topic_withdraw "$project" "$pick_notifications_trigger_topic"
+    pubsub_topic_withdraw "$project" "$updated_urls_topic"
 }
 
 # Deploy a Cloud Function
@@ -1365,6 +1371,7 @@ function cloud_functions_env() {
 # Args: --project=NAME --prefix=PREFIX --source=PATH
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
+#       --updated-urls-topic=NAME
 #       --updated-topic=NAME
 #       --spool-collection-path=PATH
 #       --env-yaml=YAML
@@ -1372,6 +1379,7 @@ function cloud_functions_deploy() {
     params="$(getopt_vars project prefix source \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
+                          updated_urls_topic \
                           updated_topic \
                           spool_collection_path \
                           env_yaml \
@@ -1418,6 +1426,16 @@ function cloud_functions_deploy() {
                           --trigger-topic "${updated_topic}" \
                           --memory 2048MB \
                           --max-instances=10 \
+                          --timeout 540
+    
+    cloud_function_deploy "$project" "${prefix}cache_urls" \
+                          "$source" \
+                          --entry-point kcidb_cache_urls \
+                          --env-vars-file "$env_yaml_file" \
+                          --runtime python37 \
+                          --trigger-topic "${updated_urls_topic}" \
+                          --memory 256MB \
+                          --max-instances=1 \
                           --timeout 540
 
     cloud_function_deploy "$project" "${prefix}load_queue" \
@@ -1726,6 +1744,7 @@ function execute_command() {
 
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
+    declare -r updated_urls_topic="${prefix}updated_urls"
     declare -r new_topic="${prefix}new"
     declare -r new_load_subscription="${prefix}new_load"
     declare -r new_debug_subscription="${prefix}new_debug"
@@ -1905,6 +1924,7 @@ function execute_command() {
             --new-load-subscription="$new_load_subscription" \
             --new-debug-subscription="$new_debug_subscription" \
             --updated-topic="$updated_topic" \
+            --updated-urls-topic="$updated_urls_topic" \
             --updated-debug-subscription="$updated_debug_subscription" \
             --pick-notifications-trigger-topic \
               "$pick_notifications_trigger_topic" \
@@ -1918,6 +1938,7 @@ function execute_command() {
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --pick-notifications-trigger-topic \
               "$pick_notifications_trigger_topic" \
+            --updated-urls-topic="$updated_urls_topic" \
             --updated-topic="$updated_topic" \
             --spool-collection-path="$spool_collection_path" \
             --env-yaml="${env_yaml}"
@@ -1951,6 +1972,7 @@ function execute_command() {
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
             --new-debug-subscription="$new_debug_subscription" \
+            --updated-urls-topic="$updated_urls_topic" \
             --updated-topic="$updated_topic" \
             --updated-debug-subscription="$updated_debug_subscription" \
             --smtp-topic="$smtp_topic" \
