@@ -1243,6 +1243,22 @@ function pubsub_withdraw() {
     pubsub_topic_withdraw "$project" "$pick_notifications_trigger_topic"
 }
 
+# Deploy a Google Cloud Storage Bucket
+# Args: project storage_bucket
+function storage_deploy() {
+    declare -r project="$1"; shift
+    declare -r storage_bucket="$1"; shift
+    gsutil mb -p "$project" -c STANDARD -l "us-central1" "gs://$storage_bucket"
+    gsutil iam ch allUsers:objectViewer "gs://$storage_bucket/"
+}
+
+# Remove a Google Cloud Storage Bucket and its contents
+# Args: storage_bucket
+function storage_withdraw() {
+    declare -r storage_bucket="$1"; shift
+    gsutil -m rm -r "gs://$storage_bucket"
+}
+
 # Deploy a Cloud Function
 # Args: project name source [param_arg...]
 function cloud_function_deploy() {
@@ -1616,6 +1632,7 @@ declare -A -r SECTIONS=(
     ["pubsub"]="Pub/Sub topics and subscriptions"
     ["secrets"]="Secrets"
     ["firestore"]="Firestore database"
+    ["storage"]="Google cloud storage"
     ["cloud_functions"]="Cloud Functions"
     ["scheduler"]="Scheduler jobs"
     ["submitters"]="Submitter permissions"
@@ -1725,6 +1742,7 @@ function execute_command() {
     eval "declare -a argv=($argv)"
 
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
+    declare -r storage_bucket="${project}${prefix}cache"
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
     declare -r new_topic="${prefix}new"
     declare -r new_load_subscription="${prefix}new_load"
@@ -1882,7 +1900,7 @@ function execute_command() {
     app_deploy "$project"
     services_enable "$project" appengine secretmanager cloudfunctions \
                                cloudbuild cloudscheduler firestore \
-                               sqladmin
+                               sqladmin storage
 
     # Enable generating PostgreSQL superuser password (if not specified),
     # if the instance doesn't exist yet
@@ -1911,6 +1929,7 @@ function execute_command() {
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
         sections_run "$sections" firestore_deploy "$project"
+        sections_run "$sections" storage_deploy "$project" "$storage_bucket"
         sections_run "$sections" cloud_functions_deploy \
             --project="$project" \
             --prefix="$prefix" \
@@ -1941,6 +1960,7 @@ function execute_command() {
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
         sections_run "$sections" cloud_functions_withdraw "$project" "$prefix"
+        sections_run "$sections" storage_withdraw "$storage_bucket"
         sections_run "$sections" firestore_withdraw \
             "$project" "$spool_collection_path"
         sections_run "$sections" pubsub_withdraw \
