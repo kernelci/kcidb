@@ -1298,6 +1298,7 @@ function cloud_function_withdraw() {
 # Output deployment environment for Cloud Functions
 # Args: --format=yaml|sh
 #       --log-level=NAME
+#       --cache-bucket-name=NAME
 #       --optimize=PYTHONOPTIMIZE
 #       --heavy-asserts=true|false
 #       --new-topic=NAME --new-load-subscription=NAME
@@ -1323,6 +1324,7 @@ function cloud_functions_env() {
                           smtp_to_addrs smtp_password_secret \
                           smtp_topic smtp_subscription \
                           pgpass_secret \
+                          cache_bucket_name \
                           database \
                           clean_test_databases \
                           empty_test_databases \
@@ -1352,6 +1354,9 @@ function cloud_functions_env() {
     )
     if [ -n "$extra_cc" ]; then
         env[KCIDB_EXTRA_CC]="$extra_cc"
+    fi
+    if [ -n "$cache_bucket_name" ]; then
+        env[KCIDB_CACHE_BUCKET_NAME]="$cache_bucket_name"
     fi
     if [ -n "$smtp_to_addrs" ]; then
         env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
@@ -1764,7 +1769,7 @@ function execute_command() {
     eval "declare -a argv=($argv)"
 
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
-    declare -r storage_bucket="${project}_${prefix}cache"
+    declare -r cache_bucket_name="${project}_${prefix}cache"
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
     declare -r updated_urls_topic="${prefix}updated_urls"
     declare -r new_topic="${prefix}new"
@@ -1891,6 +1896,7 @@ function execute_command() {
 
     declare -r -a env_args=(
         --log-level="$log_level"
+        --cache-bucket-name="$cache_bucket_name"
         --optimize="$optimize"
         --heavy-asserts="$heavy_asserts"
         --new-topic="$new_topic"
@@ -1953,7 +1959,7 @@ function execute_command() {
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
         sections_run "$sections" firestore_deploy "$project"
-        sections_run "$sections" storage_deploy "$project" "$storage_bucket"
+        sections_run "$sections" storage_deploy "$project" "$cache_bucket_name"
         sections_run "$sections" cloud_functions_deploy \
             --project="$project" \
             --prefix="$prefix" \
@@ -1985,7 +1991,7 @@ function execute_command() {
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
         sections_run "$sections" cloud_functions_withdraw "$project" "$prefix"
-        sections_run "$sections" storage_withdraw "$storage_bucket"
+        sections_run "$sections" storage_withdraw "$cache_bucket_name"
         sections_run "$sections" firestore_withdraw \
             "$project" "$spool_collection_path"
         sections_run "$sections" pubsub_withdraw \

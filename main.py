@@ -71,6 +71,8 @@ UPDATED_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_PUBLISH", ""))
 # The publisher object for the queue with patterns matching objects updated by
 # loading submissions.
 _UPDATED_QUEUE_PUBLISHER = None
+# KCIDB cache storage bucket name
+CACHE_BUCKET_NAME = os.environ.get("KCIDB_CACHE_BUCKET_NAME")
 
 
 def get_smtp_publisher():
@@ -356,7 +358,7 @@ def get_cache_client():
     global _CACHE_CLIENT
     if _CACHE_CLIENT is None:
         _CACHE_CLIENT = kcidb.cache.Client(
-            "cache_file_storage", 5 * 1024 * 1024
+            CACHE_BUCKET_NAME, 5 * 1024 * 1024
         )
     return _CACHE_CLIENT
 
