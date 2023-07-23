@@ -49,7 +49,8 @@ EMPTY_DATABASES = {
 @pytest.fixture(
     params=["empty_deployment"]
     if os.environ.get("KCIDB_DEPLOYMENT", "") == "This deployment is empty"
-    else []
+    else [],
+    scope="session"
 )
 def empty_deployment():
     """Reusable empty (no-data) deployment"""
