@@ -1257,8 +1257,12 @@ function pubsub_withdraw() {
 function storage_deploy() {
     declare -r project="$1"; shift
     declare -r bucket="$1"; shift
-    TMPDIR="$TMPDIR_ORIG" gsutil -q mb -p "$project" -c STANDARD \
-        -l "us-central1" -b on "gs://$bucket"
+    # Check if the bucket exists
+    if ! TMPDIR="$TMPDIR_ORIG" gsutil ls "gs://$bucket" &>/dev/null; then
+        # Create the bucket if it doesn't exist
+        TMPDIR="$TMPDIR_ORIG" gsutil -q mb -p "$project" -c STANDARD \
+            -l "us-central1" -b on "gs://$bucket"
+    fi
     TMPDIR="$TMPDIR_ORIG" gsutil iam ch allUsers:objectViewer "gs://$bucket/"
 }
 
@@ -1266,7 +1270,11 @@ function storage_deploy() {
 # Args: bucket
 function storage_withdraw() {
     declare -r bucket="$1"; shift
-    TMPDIR="$TMPDIR_ORIG" gsutil -q -m rm -r "gs://$bucket"
+    # Check if the bucket exists
+    if TMPDIR="$TMPDIR_ORIG" gsutil ls "gs://$bucket" &>/dev/null; then
+        # Remove the bucket and its contents if it exists
+        TMPDIR="$TMPDIR_ORIG" gsutil -q -m rm -r "gs://$bucket"
+    fi
 }
 
 # Deploy a Cloud Function
