@@ -1303,6 +1303,7 @@ function cloud_function_withdraw() {
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-publish=true|false
 #       --updated-topic=NAME
+#       --updated_urls_topic=NAME
 #       --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
@@ -1318,6 +1319,7 @@ function cloud_functions_env() {
                           heavy_asserts \
                           new_topic new_load_subscription \
                           updated_publish updated_topic \
+                          updated_urls_topic \
                           spool_collection_path \
                           extra_cc \
                           smtp_to_addrs smtp_password_secret \
@@ -1342,6 +1344,7 @@ function cloud_functions_env() {
         [KCIDB_CLEAN_TEST_DATABASES]="$clean_test_databases"
         [KCIDB_EMPTY_TEST_DATABASES]="$empty_test_databases"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
+        [KCIDB_UPDATED_URLS_TOPIC]="$updated_urls_topic"
         [KCIDB_SELECTED_SUBSCRIPTIONS]=""
         [KCIDB_SPOOL_COLLECTION_PATH]="$spool_collection_path"
         [KCIDB_SMTP_HOST]="smtp.gmail.com"
@@ -1897,6 +1900,7 @@ function execute_command() {
         --new-load-subscription="$new_load_subscription"
         --updated-publish="$updated_publish"
         --updated-topic="$updated_topic"
+        --updated-urls-topic="$updated_urls_topic"
         --spool-collection-path="$spool_collection_path"
         --extra-cc="$extra_cc"
         --smtp-to-addrs="$smtp_to_addrs"
