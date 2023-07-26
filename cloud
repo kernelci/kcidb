@@ -2035,6 +2035,7 @@ function usage() {
     echo ""
     echo "    deploy        Deploy an installation to the cloud."
     echo "    env           Output environment YAML for Cloud Functions."
+    echo "    shell         Execute a shell with deployment environment."
     echo "    withdraw      Withdraw an installation from the cloud."
     echo "    list-sections List sections of the installation."
     echo ""
