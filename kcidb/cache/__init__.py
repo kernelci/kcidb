@@ -157,3 +157,9 @@ class Client:
         if blob.exists():
             return blob.download_as_bytes()
         return None
+
+    def empty(self):
+        """Empty the cache (remove all contents)."""
+        bucket = self.client.bucket(self.bucket_name)
+        for blob in bucket.list_blobs():
+            blob.delete()
