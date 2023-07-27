@@ -1474,6 +1474,17 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
+    cloud_function_deploy "$project" "${prefix}cache_redirect" \
+                          "$source" \
+                          --entry-point kcidb_cache_redirect \
+                          --env-vars-file "$env_yaml_file" \
+                          --runtime python37 \
+                          --trigger-http \
+                          --allow-unauthenticated \
+                          --memory 256MB \
+                          --max-instances=1 \
+                          --timeout 540
+
     cloud_function_deploy "$project" "${prefix}load_queue" \
                           "$source" \
                           --entry-point kcidb_load_queue \
