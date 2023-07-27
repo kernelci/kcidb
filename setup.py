@@ -46,6 +46,7 @@ setuptools.setup(
         "google-cloud-bigquery",
         "google-cloud-pubsub",
         "google-cloud-storage",
+        "functions-framework",
         "google-cloud-firestore",
         "google-cloud-secret-manager",
         "psycopg2",

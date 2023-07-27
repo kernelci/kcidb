@@ -5,6 +5,8 @@ import base64
 import datetime
 import logging
 import smtplib
+from urllib.parse import unquote
+import functions_framework
 import kcidb
 
 # Name of the Google Cloud project we're deployed in
@@ -357,3 +359,48 @@ def kcidb_cache_urls(event, context):
     # Cache each URL
     for url in pubsub_message.splitlines():
         cache.store(url)
+
+
+@functions_framework.http
+def kcidb_cache_redirect(request):
+    """
+    Handle the cache redirection for incoming HTTP GET requests.
+
+    This function takes an HTTP request and processes it for
+    cache redirection. If the request is a GET request,
+    it extracts the URL from the request, checks if the URL exists
+    in the cache, and performs a redirect if necessary.
+
+    Args:
+        request (object): The HTTP request object.
+
+    Returns:
+        tuple: A tuple containing the response body, status code,
+        and headers epresenting the redirect response.
+    """
+    if request.method == 'GET':
+        url_to_fetch = unquote(request.query_string.decode("ascii"))
+        LOGGER.debug("URL %s", url_to_fetch)
+
+        if not url_to_fetch:
+            # If the URL is empty, return a 400 (Bad Request) error
+            response_body = "Put a valid URL to query from \
+                the caching system."
+            return (response_body, 400, {})
+
+        # Check if the URL is in the cache
+        cache_client = get_cache_client()
+        cache = cache_client.map(url_to_fetch)
+        if cache:
+            LOGGER.debug("Redirecting to the cache at %s", cache)
+            # Redirect to the cached URL if it exists
+            return ("", 302, {"Location": cache})
+
+        # If the URL is not in the cache or not provided,
+        # redirect to the original URL
+        LOGGER.debug("Redirecting to the origin at %s", url_to_fetch)
+        return ("", 302, {"Location": url_to_fetch})
+
+    # If the request method is not GET, return 405 (Method Not Allowed) error
+    response_body = "Method not allowed."
+    return (response_body, 405, {'Allow': 'GET'})
