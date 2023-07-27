@@ -1495,6 +1495,7 @@ function cloud_functions_withdraw() {
     cloud_function_withdraw "$project" "${prefix}pick_notifications"
     cloud_function_withdraw "$project" "${prefix}send_notification"
     cloud_function_withdraw "$project" "${prefix}spool_notifications"
+    cloud_function_withdraw "$project" "${prefix}cache_urls"
     cloud_function_withdraw "$project" "${prefix}load_queue"
 }
 
