@@ -901,3 +901,23 @@ def email_subscriber_main():
             sys.stdout.write(data.as_string(policy=email.policy.SMTPUTF8))
             sys.stdout.flush()
             subscriber.ack(ack_id)
+
+class URLListPublisher(Publisher):
+    """URL list queue publisher"""
+
+    def encode_data(self, data):
+        """
+        Encode a list of URLs into message data.
+
+        Args:
+            data:   The list of URLs to encode.
+
+        Returns:
+            The encoded message data.
+
+        Raises:
+            An exception in case data encoding failed.
+        """
+        assert isinstance(data, list)
+        assert all(isinstance(url, str) for url in data)
+        return "\n".join(data).encode()

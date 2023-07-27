@@ -5,6 +5,8 @@ import subprocess
 import unittest
 from importlib import import_module
 import yaml
+import kcidb
+import time
 
 
 @unittest.skipIf(os.environ.get("KCIDB_DEPLOYMENT"), "local-only")
@@ -37,3 +39,31 @@ def test_import():
     finally:
         os.environ.clear()
         os.environ.update(orig_env)
+
+def test_url_caching(empty_deployment):
+    publisher = kcidb.mq.URLListPublisher(
+        os.environ["PROJECT"],
+        os.environ["KCIDB_UPDATED_URLS_TOPIC"]
+    )
+    publisher.publish([
+        "https://github.com/kernelci/kcidb/blob/main/test_kcidb.py",
+        "https://github.com/kernelci/kcidb/blob/main/get-url-stats"
+    ])
+
+    cache = kcidb.cache.Client(os.environ["KCIDB_CACHE_BUCKET_NAME"])
+
+    for i in range(12):
+        # Check if the URLs are in the cache
+        url1_stored = cache.is_stored("https://github.com/kernelci/kcidb/blob/main/test_kcidb.py")
+        url2_stored = cache.is_stored("https://github.com/kernelci/kcidb/blob/main/get-url-stats")
+
+        # If both URLs are in the cache, the test passes
+        if url1_stored and url2_stored:
+            break
+
+        # Wait for five seconds before retrying
+        time.sleep(5)
+    else:
+        # If the loop finishes without breaking, it means the URLs were not found in the cache.
+        # The test fails in this case.
+        assert False, "URLs not found in the cache"
