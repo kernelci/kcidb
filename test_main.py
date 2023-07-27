@@ -41,9 +41,11 @@ def test_import():
         os.environ.update(orig_env)
 
 def test_url_caching(empty_deployment):
+    project = os.environ["GCP_PROJECT"],
+    topic = os.environ["KCIDB_UPDATED_URLS_TOPIC"]
     publisher = kcidb.mq.URLListPublisher(
-        os.environ["PROJECT"],
-        os.environ["KCIDB_UPDATED_URLS_TOPIC"]
+        project,
+        topic
     )
     publisher.publish([
         "https://github.com/kernelci/kcidb/blob/main/test_kcidb.py",
