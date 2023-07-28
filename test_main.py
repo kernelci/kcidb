@@ -41,18 +41,16 @@ def test_import():
         os.environ.update(orig_env)
 
 def test_url_caching(empty_deployment):
-    project = os.environ["GCP_PROJECT"],
-    topic = os.environ["KCIDB_UPDATED_URLS_TOPIC"]
     publisher = kcidb.mq.URLListPublisher(
-        project,
-        topic
+        os.environ["GCP_PROJECT"],
+        os.environ["KCIDB_UPDATED_URLS_TOPIC"]
     )
     publisher.publish([
         "https://raw.githubusercontent.com/kernelci/kcidb/main/test_kcidb.py",
         "https://raw.githubusercontent.com/kernelci/kcidb/main/conftest.py"
     ])
 
-    cache = kcidb.cache.Client(os.environ["KCIDB_CACHE_BUCKET_NAME"])
+    cache = kcidb.cache.Client(os.environ["KCIDB_CACHE_BUCKET_NAME"], 5 * 1024 * 1024)
 
     for i in range(12):
         # Check if the URLs are in the cache
