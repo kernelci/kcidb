@@ -48,16 +48,16 @@ def test_url_caching(empty_deployment):
         topic
     )
     publisher.publish([
-        "https://github.com/kernelci/kcidb/blob/main/test_kcidb.py",
-        "https://github.com/kernelci/kcidb/blob/main/get-url-stats"
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/test_kcidb.py",
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/conftest.py"
     ])
 
     cache = kcidb.cache.Client(os.environ["KCIDB_CACHE_BUCKET_NAME"])
 
     for i in range(12):
         # Check if the URLs are in the cache
-        url1_stored = cache.is_stored("https://github.com/kernelci/kcidb/blob/main/test_kcidb.py")
-        url2_stored = cache.is_stored("https://github.com/kernelci/kcidb/blob/main/get-url-stats")
+        url1_stored = cache.is_stored("https://raw.githubusercontent.com/kernelci/kcidb/main/test_kcidb.py")
+        url2_stored = cache.is_stored("https://raw.githubusercontent.com/kernelci/kcidb/main/conftest.py")
 
         # If both URLs are in the cache, the test passes
         if url1_stored and url2_stored:
