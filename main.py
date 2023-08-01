@@ -1,7 +1,6 @@
 """Google Cloud Functions for Kernel CI reporting"""
 
 import os
-import json
 import base64
 import datetime
 import logging
@@ -162,32 +161,6 @@ def get_spool_client():
 
 
 # pylint: disable=unused-argument
-
-def kcidb_load_message(event, context):
-    """
-    Load a single message's KCIDB data from the triggering Pub Sub
-    subscription into the database.
-    """
-    # Get new data
-    data = get_load_queue_subscriber().decode_data(
-        base64.b64decode(event["data"])
-    )
-    LOGGER.debug("DATA: %s", json.dumps(data))
-    # Store it in the database
-    get_db_client().load(data)
-    publisher = get_updated_queue_publisher()
-    if publisher:
-        # Upgrade the data to the latest I/O version to enable ID extraction
-        data = kcidb.io.SCHEMA.upgrade(data, copy=False)
-        # Generate patterns matching all affected objects
-        pattern_set = set()
-        for pattern in kcidb.orm.query.Pattern.from_io(data):
-            # TODO Avoid formatting and parsing
-            pattern_set |= \
-                kcidb.orm.query.Pattern.parse(repr(pattern) + "<*#")
-        # Publish patterns matching all affected objects
-        publisher.publish(pattern_set)
-
 
 def kcidb_load_queue(event, context):
     """
