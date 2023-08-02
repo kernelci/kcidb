@@ -114,8 +114,10 @@ class Client:
         Returns:
             The public URL of the (potentially) cached URL.
         """
-        return f"https://storage.googleapis.com/ \
-            {self.bucket_name}/{self._format_object_name(url)}"
+        return (
+            f"https://storage.googleapis.com/"
+            f"{self.bucket_name}/{self._format_object_name(url)}"
+        )
 
     def map(self, url):
         """
