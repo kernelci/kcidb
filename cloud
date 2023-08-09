@@ -1277,6 +1277,9 @@ function storage_withdraw() {
     fi
 }
 
+# The region used to host our Cloud Functions
+declare -r CLOUD_FUNCTION_REGION="us-central1"
+
 # Deploy a Cloud Function
 # Args: project name source [param_arg...]
 function cloud_function_deploy() {
@@ -1285,6 +1288,7 @@ function cloud_function_deploy() {
     declare -r source="$1"; shift
     verbose echo "    Deploying ${name@Q}"
     mute gcloud functions deploy --quiet --project="$project" \
+                                 --region="$CLOUD_FUNCTION_REGION" \
                                  --source "$source" "$name" "$@"
 }
 
