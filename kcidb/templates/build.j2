@@ -1,9 +1,24 @@
 {# Build template macros #}
+{% import "test.j2" as test_macros %}
 
 {% macro summary(build) %}
     {{- [build.architecture, build.config_name,
          none if build.comment is none else ('"' + build.comment + '"')] |
         reject("none") | join(" ") | default(build.id, true) -}}
+{% endmacro %}
+
+{% macro container_emoji_counts(emoji_counts, container) %}
+    {% for emoji in test_macros.WAIVED_STATUS_EMOJIS.values() %}
+        {% set _ = emoji_counts.__setitem__(
+            emoji,
+            container.builds |
+                selectattr(
+                    "valid",
+                    "==",
+                    {"❌": false, "✅": true, "❓": none}.get(emoji, {})
+                ) | list | length
+           ) %}
+    {% endfor %}
 {% endmacro %}
 
 {% macro container_summary(container, max_list_len) %}

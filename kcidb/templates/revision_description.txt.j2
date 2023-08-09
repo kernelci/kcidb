@@ -2,6 +2,7 @@
 {% import "test.j2" as test_macros %}
 {% import "build.j2" as build_macros %}
 {% import "misc.j2" as misc_macros %}
+{% import "overview.j2" as overview_macros %}
 {# Maximum length of a list of things (builds/tests/etc.) #}
 {% set max_list_len = 5 %}
 Below is the summary of results Kernel CI database has recorded
@@ -11,15 +12,24 @@ for this revision so far. See complete and up-to-date report at:
 
 OVERVIEW
 
+{% set test_emoji_counts = {} %}
+{% set _ = test_macros.container_emoji_counts(test_emoji_counts,
+                                              revision) -%}
+
+{% set build_emoji_counts = {} %}
+{% set _ = build_macros.container_emoji_counts(build_emoji_counts,
+                                               revision) -%}
+
 {% if revision.patchset_files %}
        Patches: {{ misc_macros.valid_badge(revision.checkouts_valid) }}
 {% endif %}
 {% if revision.builds %}
-        Builds: {{ misc_macros.valid_badge(revision.builds_valid) }}
+        Builds: {{ overview_macros.emoji_counts(build_emoji_counts,
+                                                test_emoji_counts) }}
 {% endif %}
 {% if revision.tests %}
-         Tests: {{ test_macros.waived_status_badge(revision.tests_root.waived,
-                                                   revision.tests_root.status) }}
+         Tests: {{ overview_macros.emoji_counts(test_emoji_counts,
+                                                build_emoji_counts) }}
 {% endif %}
 
 REVISION
