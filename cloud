@@ -1313,6 +1313,7 @@ function cloud_function_withdraw() {
 #       --updated-publish=true|false
 #       --updated-topic=NAME
 #       --updated_urls_topic=NAME
+#       --cache-bucket-name=NAME
 #       --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
@@ -1362,12 +1363,10 @@ function cloud_functions_env() {
         [KCIDB_SMTP_USER]="bot@kernelci.org"
         [KCIDB_SMTP_PASSWORD_SECRET]="$smtp_password_secret"
         [KCIDB_SMTP_FROM_ADDR]="bot@kernelci.org"
+        [KCIDB_CACHE_BUCKET_NAME]="$cache_bucket_name"
     )
     if [ -n "$extra_cc" ]; then
         env[KCIDB_EXTRA_CC]="$extra_cc"
-    fi
-    if [ -n "$cache_bucket_name" ]; then
-        env[KCIDB_CACHE_BUCKET_NAME]="$cache_bucket_name"
     fi
     if [ -n "$smtp_to_addrs" ]; then
         env[KCIDB_SMTP_TO_ADDRS]="$smtp_to_addrs"
