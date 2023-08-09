@@ -546,6 +546,43 @@ class ORMPatternSubscriber(Subscriber):
         return pattern_set
 
 
+class URLListPublisher(Publisher):
+    """URL list queue publisher"""
+
+    def encode_data(self, data):
+        """
+        Encode a list of URLs into message data.
+        Args:
+            data:   The list of URLs to encode.
+        Returns:
+            The encoded message data.
+        Raises:
+            An exception in case data encoding failed.
+        """
+        assert isinstance(data, list)
+        assert all(isinstance(url, str) for url in data)
+        return "\n".join(data).encode()
+
+
+class URLListSubscriber(Subscriber):
+    """URL list queue subscriber"""
+
+    def decode_data(self, message_data):
+        """
+        Decode message data to extract a list of URLs.
+
+        Args:
+            message_data:   The message data from the message queue
+
+        Returns:
+            The decoded list of URLs.
+
+        Raises:
+            An exception in case data decoding failed.
+        """
+        return message_data.decode().splitlines()
+
+
 class EmailPublisher(Publisher):
     """Email queue publisher"""
 
