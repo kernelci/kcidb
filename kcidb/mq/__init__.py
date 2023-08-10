@@ -552,10 +552,13 @@ class URLListPublisher(Publisher):
     def encode_data(self, data):
         """
         Encode a list of URLs into message data.
+
         Args:
             data:   The list of URLs to encode.
+
         Returns:
             The encoded message data.
+
         Raises:
             An exception in case data encoding failed.
         """
