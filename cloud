@@ -1318,6 +1318,7 @@ function cloud_function_withdraw() {
 #       --updated-topic=NAME
 #       --updated_urls_topic=NAME
 #       --cache-bucket-name=NAME
+#       --cache-redirector-url=URL
 #       --spool-collection-path=PATH
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=ADDRS --smtp-password-secret=NAME
@@ -1340,6 +1341,7 @@ function cloud_functions_env() {
                           smtp_topic smtp_subscription \
                           pgpass_secret \
                           cache_bucket_name \
+                          cache_redirector_url \
                           database \
                           clean_test_databases \
                           empty_test_databases \
@@ -1368,6 +1370,7 @@ function cloud_functions_env() {
         [KCIDB_SMTP_PASSWORD_SECRET]="$smtp_password_secret"
         [KCIDB_SMTP_FROM_ADDR]="bot@kernelci.org"
         [KCIDB_CACHE_BUCKET_NAME]="$cache_bucket_name"
+        [KCIDB_CACHE_REDIRECTOR_URL]="$cache_redirector_url"
     )
     if [ -n "$extra_cc" ]; then
         env[KCIDB_EXTRA_CC]="$extra_cc"
@@ -1413,6 +1416,7 @@ function cloud_functions_env() {
 #       --updated-urls-topic=NAME
 #       --updated-topic=NAME
 #       --spool-collection-path=PATH
+#       --cache-redirect-function-name=NAME
 #       --env-yaml=YAML
 function cloud_functions_deploy() {
     params="$(getopt_vars project prefix source \
@@ -1421,6 +1425,7 @@ function cloud_functions_deploy() {
                           updated_urls_topic \
                           updated_topic \
                           spool_collection_path \
+                          cache_redirect_function_name \
                           env_yaml \
                           -- "$@")"
     eval "$params"
@@ -1445,6 +1450,7 @@ function cloud_functions_deploy() {
                           --memory 256MB \
                           --max-instances=1 \
                           --timeout 540
+
     cloud_function_deploy "$project" "${prefix}send_notification" \
                           "$source" \
                           --entry-point kcidb_send_notification \
@@ -1477,7 +1483,7 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "${prefix}cache_redirect" \
+    cloud_function_deploy "$project" "${cache_redirect_function_name}" \
                           "$source" \
                           --entry-point kcidb_cache_redirect \
                           --env-vars-file "$env_yaml_file" \
@@ -1502,14 +1508,18 @@ function cloud_functions_deploy() {
 }
 
 # Withdraw Cloud Functions
-# Args: project prefix
+# Args: --project=NAME --prefix=PREFIX 
+#       --cache-redirect-function-name=NAME
 function cloud_functions_withdraw() {
-    declare -r project="$1"; shift
-    declare -r prefix="$1"; shift
+    params="$(getopt_vars project prefix \
+                          cache_redirect_function_name \
+                          -- "$@")"
+    eval "$params"
     cloud_function_withdraw "$project" "${prefix}pick_notifications"
     cloud_function_withdraw "$project" "${prefix}send_notification"
     cloud_function_withdraw "$project" "${prefix}spool_notifications"
     cloud_function_withdraw "$project" "${prefix}cache_urls"
+    cloud_function_withdraw "$project" "${cache_redirect_function_name}"
     cloud_function_withdraw "$project" "${prefix}load_queue"
 }
 
@@ -1797,6 +1807,9 @@ function execute_command() {
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
     declare -r cache_bucket_name="${project}_${prefix}cache"
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
+    declare -r cache_redirect_function_name="${prefix}cache_redirect"
+    declare cache_redirector_url="https://${CLOUD_FUNCTION_REGION}-${project}.cloud"
+    declare -r cache_redirector_url+="functions.net/${cache_redirect_function_name}"
     declare -r updated_urls_topic="${prefix}updated_urls"
     declare -r new_topic="${prefix}new"
     declare -r new_load_subscription="${prefix}new_load"
@@ -1923,6 +1936,7 @@ function execute_command() {
     declare -r -a env_args=(
         --log-level="$log_level"
         --cache-bucket-name="$cache_bucket_name"
+        --cache-redirector-url="$cache_redirector_url"
         --optimize="$optimize"
         --heavy-asserts="$heavy_asserts"
         --new-topic="$new_topic"
@@ -1996,6 +2010,7 @@ function execute_command() {
               "$pick_notifications_trigger_topic" \
             --updated-urls-topic="$updated_urls_topic" \
             --updated-topic="$updated_topic" \
+            --cache-redirect-function-name="$cache_redirect_function_name" \
             --spool-collection-path="$spool_collection_path" \
             --env-yaml="${env_yaml}"
         sections_run "$sections" scheduler_deploy \
@@ -2017,7 +2032,10 @@ function execute_command() {
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
-        sections_run "$sections" cloud_functions_withdraw "$project" "$prefix"
+        sections_run "$sections" cloud_functions_withdraw \
+            --project="$project" \
+            --prefix="$prefix" \
+            --cache-redirect-function-name="$cache_redirect_function_name"
         sections_run "$sections" storage_withdraw "$cache_bucket_name"
         sections_run "$sections" firestore_withdraw \
             "$project" "$spool_collection_path"
