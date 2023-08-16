@@ -321,6 +321,36 @@ function psql_proxy_session() {
     chmod 0600 "$PSQL_PROXY_PGPASS"
     password_get_pgpass psql_superuser postgres >| "$PSQL_PROXY_PGPASS"
 
+    # Wait for the proxy to become ready
+    declare max_checks=10
+    declare delay=3
+    declare checks
+    declare output=""
+    declare ready="false"
+    for ((checks=0; checks < max_checks; checks++)); do
+        if output+=$(
+            PGHOST="$PSQL_PROXY_DIR/$fq_instance" \
+            PGPASSFILE="$PSQL_PROXY_PGPASS" \
+            PGUSER="postgres" \
+            pg_isready
+        )$'\n'; then
+            ready="true"
+            break;
+        fi
+        sleep "$delay"
+    done
+
+    # Check if the wait was successful
+    if ! "$ready"; then
+        echo "PostgreSQL proxy ${proxy@Q} is not ready " \
+             "after $((checks * delay)) seconds." >&2
+        if [ -n "$output" ]; then
+            echo "pg_isready output:" >&2
+            echo "$output" >&2
+        fi
+    fi
+    "$ready"
+
     # Run the command
     PGHOST="$PSQL_PROXY_DIR/$fq_instance" \
     PGPASSFILE="$PSQL_PROXY_PGPASS" \
