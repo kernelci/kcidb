@@ -67,6 +67,8 @@ _OO_CLIENT = None
 _CACHE_CLIENT = None
 # The notification spool client
 _SPOOL_CLIENT = None
+# The updated URLs topic publisher
+_UPDATED_URLS_PUBLISHER = None
 # True if the database updates should be published to the updated queue
 UPDATED_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_PUBLISH", ""))
 # The publisher object for the queue with patterns matching objects updated by
@@ -162,13 +164,80 @@ def get_spool_client():
     return _SPOOL_CLIENT
 
 
-# pylint: disable=unused-argument
+def get_updated_urls_publisher():
+    """Create or retrieve the updated URLs publisher client"""
+    # It's alright, pylint: disable=global-statement
+    global _UPDATED_URLS_PUBLISHER
+    if _UPDATED_URLS_PUBLISHER is None:
+        _UPDATED_URLS_PUBLISHER = kcidb.mq.URLListPublisher(
+            PROJECT_ID,
+            os.environ["KCIDB_UPDATED_URLS_TOPIC"]
+        )
+    return _UPDATED_URLS_PUBLISHER
 
+
+# This dictionary defines a structured specification
+# for extracting URLs from I/O data.
+URL_FIELDS_SPEC = {
+    'checkouts': [
+        {
+            'patchset_files': [{'url': True}],
+            'log_url': True
+        }
+    ],
+    'builds': [
+        {
+            'input_files': [{'url': True}],
+            'output_files': [{'url': True}],
+            'config_url': True,
+            'log_url': True
+        }
+    ],
+    'tests': [
+        {
+            'output_files': [{'url': True}],
+            'log_url': True
+        }
+    ]
+}
+
+
+def extract_fields(spec, data):
+    """
+    Extract specified fields from input data based
+    on a specification structure.
+
+    Args:
+        spec: The specification for the fields to be extracted. Can be a
+              boolean value, a dictionary containing field specifications, or
+              a list containing a single field specification.
+
+        data: The input data containing the fields to be extracted.
+
+    Yields:
+        URLs extracted based on the specifications.
+    """
+    if spec is True:
+        yield data
+    if isinstance(spec, dict) and isinstance(data, dict):
+        for obj_type, obj_spec in spec.items():
+            if obj_type in data:
+                yield from extract_fields(obj_spec, data[obj_type])
+    elif isinstance(spec, list) and isinstance(data, list):
+        assert len(spec) == 1
+        obj_specs = spec[0]
+        for obj in data:
+            yield from extract_fields(obj_specs, obj)
+
+
+# pylint: disable=unused-argument
+# As we don't use/need Cloud Function args
 def kcidb_load_queue(event, context):
     """
     Load multiple KCIDB data messages from the load queue into the database,
     if it stayed unmodified for at least DATABASE_LOAD_PERIOD.
     """
+    # pylint: disable=too-many-locals
     subscriber = get_load_queue_subscriber()
     db_client = get_db_client()
     io_schema = db_client.get_schema()[1]
@@ -206,6 +275,21 @@ def kcidb_load_queue(event, context):
     LOGGER.debug("Loading %u objects...", obj_num)
     db_client.load(data)
     LOGGER.info("Loaded %u objects", obj_num)
+
+    # Get or create the URL publisher client
+    urls_publisher = get_updated_urls_publisher()
+
+    # Extract URLs from the data using URL_FIELDS_SPEC
+    urls = extract_fields(URL_FIELDS_SPEC, data)
+
+    # Divide the extracted URLs into slices of 64 using isliced
+    urls_slices = kcidb.misc.isliced(set(urls), 64)
+
+    # Process each slice of URLs
+    for urls in urls_slices:
+        LOGGER.info("Publishing extracted URLs: %s", list(urls))
+        # Publish the extracted URLs
+        urls_publisher.publish(list(urls))
 
     # Acknowledge all the loaded messages
     for msg in msgs:
