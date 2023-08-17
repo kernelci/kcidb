@@ -73,6 +73,9 @@ jcstress:
 kselftest:
   title: Kernel self-tests
   home: https://kselftest.wiki.kernel.org/
+kunit:
+  title: Kernel unit tests
+  home: https://kunit.dev/
 kvm-unit-tests:
   title: KVM unit tests
   home: https://www.linux-kvm.org/page/KVM-unit-tests
