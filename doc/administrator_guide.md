@@ -5,6 +5,10 @@ draft: false
 wieght: 40
 description: "Deploying, maintaining, and upgrading a KCIDB service installation"
 ---
+
+Architecture
+-----
+
 Kcidb infrastructure is mostly based on Google Cloud services at the moment:
 
     === Hosts ===  ======================= Google Cloud Project ========================
@@ -51,6 +55,53 @@ The last "Cloud Function", `kcidb_send_notification`, picks up the created
 notifications from the Firestore collection, and sends them out through GMail,
 using the `bot@kernelci.org` account, authenticating with the password stored
 in `kcidb_smtp_password` secret, within Secret Manager.
+
+### Caching System
+
+```mermaid
+flowchart TB
+    A[CI System] -->|Publish I/O data| B(kcidb_new)
+
+    subgraph Data Submission
+        B(kcidb_new) -->|Pull I/O data| C(["kcidb_load_queue()"])
+        C(["kcidb_load_queue()"]) -->|Publish URLs| D(kcidb_updated_urls)
+    end
+
+    subgraph Caching System
+        D(kcidb_updated_urls)-->|Push URLs| E([kcidb_cache_urls])
+        E(["kcidb_cache_urls()"])-->|Store objects| F[(GCS bucket)]
+    end
+
+    subgraph Request Handling
+        F[(GCS bucket)]<--> G(["kcidb_cache_redirect()"])
+    end
+
+    G(["kcidb_cache_redirect()"])-->|Cache found| I{{Bucket URL}}
+    G(["kcidb_cache_redirect()"])-->|Cache not found| H{{Original URL}}
+    J[User browser]-->|HTTP GET| G(["kcidb_cache_redirect()"])
+
+    subgraph Legend
+    K([Cloud Functions])
+    M(Pub/Sub Topic)
+    end
+```
+
+1. **Publishing Initial Data**: The CI System initiates the process by publishing I/O data to the `kcidb_new` topic. This topic acts as a holding area for the data.
+
+2. **URLs Extraction**:
+The `kcidb_load_queue()` function pulls the I/O data from the `kcidb_new` topic, store it in the database and also extracts URLs from it. This extracted URL data is then published to the `kcidb_updated_urls` topic.
+
+3. **URL Processing and Cache Logic**: The `kcidb_cache_urls()` function receives the URLs from the `kcidb_updated_urls` topic and fetch the file from that location and store them in the Google Cloud Storage Bucket.
+
+### Cache Request Handling
+
+1. **User File Request**: When a user requests a file then that request is directed to the `kcidb_cache_redirect()` cloud function. This function serves as the entry point for processing user requests and initiating the cache lookup process.
+
+2. **Cache Lookup**: The `kcidb_cache_redirect()` function interacts with the Google Cloud Storage Bucket to find and serve the file from there, if its available.
+
+3. **File Availability Check**: If the requested file is found within the cache storage, the `kcidb_cache_redirect()` function performs a redirection to the location of the file within the Google Cloud Storage Bucket and serve it to the user.
+
+4. **Fallback Mechanism**: In cases where the requested file is not present within the ccache storage, then `kcidb_cache_redirect()` function redirect the user to the original URL from which the file was initially requested.
 
 Setup
 -----
