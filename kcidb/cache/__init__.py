@@ -49,6 +49,11 @@ class Client:
             url:    The URL to try to cache.
         """
         object_name = self._format_object_name(url)
+
+        # Cache every 4096th URL only for the trial period
+        if not object_name.endswith("000"):
+            return
+
         blob = self.client.bucket(self.bucket_name).blob(object_name)
 
         if blob.exists():
