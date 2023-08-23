@@ -400,7 +400,11 @@ class IOSubscriber(Subscriber):
         Raises:
             An exception in case data decoding failed.
         """
-        return self.schema.upgrade(json.loads(message_data.decode()))
+        return self.schema.upgrade(
+            self.schema.validate(
+                json.loads(message_data.decode())
+            )
+        )
 
     def __init__(self, *args, schema=io.SCHEMA, **kwargs):
         """
