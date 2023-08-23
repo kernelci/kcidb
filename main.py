@@ -223,9 +223,11 @@ def kcidb_load_queue(event, context):
             pattern_set |= \
                 kcidb.orm.query.Pattern.parse(repr(pattern) + "<*#")
 
-        # Publish patterns matching all affected objects
-        publisher.publish(pattern_set)
-        LOGGER.info("Published updates made by %u loaded objects", obj_num)
+        # Publish patterns matching all affected objects, if any
+        if pattern_set:
+            publisher.publish(pattern_set)
+            LOGGER.info("Published updates made by %u loaded objects",
+                        obj_num)
 
 
 def kcidb_spool_notifications(event, context):
