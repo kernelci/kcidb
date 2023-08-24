@@ -83,6 +83,30 @@ class Client:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
 
+    def submit_future(self, data):
+        """
+        Submit reports without blocking for the interaction with the
+        database.
+
+        Args:
+            data:   A JSON object with the report data to submit.
+                    Must adhere to the current, or an earlier version of I/O
+                    schema. Note that this function will not validate the
+                    submitted data.
+
+        Returns:
+            A future which will return the Submission ID string.
+
+        Raises:
+            `NotImplementedError`, if not supplied with a project ID or an MQ
+            topic name at initialization time.
+        """
+        assert io.SCHEMA.is_compatible(data)
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
+        if not self.mq_publisher:
+            raise NotImplementedError
+        return self.mq_publisher.publish_future(data)
+
     def submit_iter(self, data_iter, done_cb=None):
         """
         Submit reports returned by an iterator.
