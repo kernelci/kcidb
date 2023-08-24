@@ -50,12 +50,14 @@ def check_url_in_cache(url):
     response = requests.get(
         f"{cache_redirector_url}?{url_encoded}",
         timeout=10,   # Time in secs
-        allow_redirects=True
+        allow_redirects=False
     )
-    redirect_url = response.url
-    if response.status_code == 200:
+    if response.status_code == 302:
         # Check if the redirect URL matches the blob storage URL pattern
-        if redirect_url.startswith('https://storage.googleapis.com/'):
+        if (
+            response.headers.get("Location", "")
+            .startswith('https://storage.googleapis.com/')
+        ):
             return True
     return False
 
