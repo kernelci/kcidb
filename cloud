@@ -1521,8 +1521,8 @@ function cloud_functions_deploy() {
                           --trigger-http \
                           --allow-unauthenticated \
                           --memory 256MB \
-                          --max-instances=1 \
-                          --timeout 540
+                          --max-instances=16 \
+                          --timeout 30
 
     cloud_function_deploy "$project" "${prefix}load_queue" \
                           "$source" \
