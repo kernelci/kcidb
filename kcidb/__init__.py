@@ -83,7 +83,7 @@ class Client:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
 
-    def submit_future(self, data):
+    def future_submit(self, data):
         """
         Submit reports without blocking for the interaction with the
         database.
@@ -105,7 +105,7 @@ class Client:
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
         if not self.mq_publisher:
             raise NotImplementedError
-        return self.mq_publisher.publish_future(data)
+        return self.mq_publisher.future_publish(data)
 
     def submit_iter(self, data_iter, done_cb=None):
         """
