@@ -1311,15 +1311,16 @@ function storage_withdraw() {
 declare -r CLOUD_FUNCTION_REGION="us-central1"
 
 # Deploy a Cloud Function
-# Args: project name source [param_arg...]
+# Args: project prefix name source [param_arg...]
 function cloud_function_deploy() {
     declare -r project="$1"; shift
+    declare -r prefix="$1"; shift
     declare -r name="$1"; shift
     declare -r source="$1"; shift
     verbose echo "    Deploying ${name@Q}"
     mute gcloud functions deploy --quiet --project="$project" \
                                  --region="$CLOUD_FUNCTION_REGION" \
-                                 --source "$source" "$name" "$@"
+                                 --source "$source" "${prefix}${name}" "$@"
 }
 
 # Delete a Cloud Function (without complaining it doesn't exist).
@@ -1335,12 +1336,13 @@ function cloud_function_delete()
 }
 
 # Delete a Cloud Function if it exists
-# Args: project name
+# Args: project prefix name
 function cloud_function_withdraw() {
     declare -r project="$1"; shift
+    declare -r prefix="$1"; shift
     declare -r name="$1"; shift
     verbose echo "    Withdrawing ${name@Q}"
-    cloud_function_delete --quiet --project="$project" "name"
+    cloud_function_delete --quiet --project="$project" "${prefix}${name}"
 }
 
 # Output deployment environment for Cloud Functions
@@ -1477,7 +1479,7 @@ function cloud_functions_deploy() {
     trigger_event+="document.create"
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
-    cloud_function_deploy "$project" "${prefix}pick_notifications" \
+    cloud_function_deploy "$project" "$prefix" pick_notifications \
                           "$source" \
                           --entry-point kcidb_pick_notifications\
                           --env-vars-file "$env_yaml_file" \
@@ -1487,7 +1489,7 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "${prefix}send_notification" \
+    cloud_function_deploy "$project" "$prefix" send_notification \
                           "$source" \
                           --entry-point kcidb_send_notification \
                           --env-vars-file "$env_yaml_file" \
@@ -1499,7 +1501,7 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "${prefix}spool_notifications" \
+    cloud_function_deploy "$project" "$prefix" spool_notifications \
                           "$source" \
                           --entry-point kcidb_spool_notifications \
                           --env-vars-file "$env_yaml_file" \
@@ -1509,7 +1511,7 @@ function cloud_functions_deploy() {
                           --max-instances=10 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "${prefix}cache_urls" \
+    cloud_function_deploy "$project" "$prefix" cache_urls \
                           "$source" \
                           --entry-point kcidb_cache_urls \
                           --env-vars-file "$env_yaml_file" \
@@ -1520,7 +1522,7 @@ function cloud_functions_deploy() {
                           --timeout 540
 
     cloud_function_deploy "$project" \
-                          "${prefix}${cache_redirect_function_name}" \
+                          "$prefix" "$cache_redirect_function_name" \
                           "$source" \
                           --entry-point \
                           "kcidb_${cache_redirect_function_name}" \
@@ -1532,7 +1534,7 @@ function cloud_functions_deploy() {
                           --max-instances=16 \
                           --timeout 30
 
-    cloud_function_deploy "$project" "${prefix}load_queue" \
+    cloud_function_deploy "$project" "$prefix" load_queue \
                           "$source" \
                           --entry-point kcidb_load_queue \
                           --env-vars-file "$env_yaml_file" \
@@ -1553,13 +1555,13 @@ function cloud_functions_withdraw() {
                           cache_redirect_function_name \
                           -- "$@")"
     eval "$params"
-    cloud_function_withdraw "$project" "${prefix}pick_notifications"
-    cloud_function_withdraw "$project" "${prefix}send_notification"
-    cloud_function_withdraw "$project" "${prefix}spool_notifications"
-    cloud_function_withdraw "$project" "${prefix}cache_urls"
+    cloud_function_withdraw "$project" "$prefix" pick_notifications
+    cloud_function_withdraw "$project" "$prefix" send_notification
+    cloud_function_withdraw "$project" "$prefix" spool_notifications
+    cloud_function_withdraw "$project" "$prefix" cache_urls
     cloud_function_withdraw "$project" \
-                            "${prefix}${cache_redirect_function_name}"
-    cloud_function_withdraw "$project" "${prefix}load_queue"
+                            "$prefix" "$cache_redirect_function_name"
+    cloud_function_withdraw "$project" "$prefix" load_queue
 }
 
 # Check if a scheduler job exists
