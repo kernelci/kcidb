@@ -1311,12 +1311,12 @@ function storage_withdraw() {
 declare -r CLOUD_FUNCTION_REGION="us-central1"
 
 # Deploy a Cloud Function
-# Args: project prefix name source [param_arg...]
+# Args: source project prefix name [param_arg...]
 function cloud_function_deploy() {
+    declare -r source="$1"; shift
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
     declare -r name="$1"; shift
-    declare -r source="$1"; shift
     verbose echo "    Deploying ${name@Q}"
     mute gcloud functions deploy --quiet --project="$project" \
                                  --region="$CLOUD_FUNCTION_REGION" \
@@ -1479,8 +1479,8 @@ function cloud_functions_deploy() {
     trigger_event+="document.create"
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
-    cloud_function_deploy "$project" "$prefix" pick_notifications \
-                          "$source" \
+    cloud_function_deploy "$source" "$project" "$prefix" \
+                          pick_notifications \
                           --entry-point kcidb_pick_notifications\
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
@@ -1489,8 +1489,8 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "$prefix" send_notification \
-                          "$source" \
+    cloud_function_deploy "$source" "$project" "$prefix" \
+                          send_notification \
                           --entry-point kcidb_send_notification \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
@@ -1501,8 +1501,8 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "$prefix" spool_notifications \
-                          "$source" \
+    cloud_function_deploy "$source" "$project" "$prefix" \
+                          spool_notifications \
                           --entry-point kcidb_spool_notifications \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
@@ -1511,8 +1511,8 @@ function cloud_functions_deploy() {
                           --max-instances=10 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "$prefix" cache_urls \
-                          "$source" \
+    cloud_function_deploy "$source" "$project" "$prefix" \
+                          cache_urls \
                           --entry-point kcidb_cache_urls \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
@@ -1521,9 +1521,8 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$project" \
-                          "$prefix" "$cache_redirect_function_name" \
-                          "$source" \
+    cloud_function_deploy "$source" "$project" "$prefix" \
+                          "$cache_redirect_function_name" \
                           --entry-point \
                           "kcidb_${cache_redirect_function_name}" \
                           --env-vars-file "$env_yaml_file" \
@@ -1534,8 +1533,8 @@ function cloud_functions_deploy() {
                           --max-instances=16 \
                           --timeout 30
 
-    cloud_function_deploy "$project" "$prefix" load_queue \
-                          "$source" \
+    cloud_function_deploy "$source" "$project" "$prefix" \
+                          load_queue \
                           --entry-point kcidb_load_queue \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
