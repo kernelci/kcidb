@@ -1322,19 +1322,25 @@ function cloud_function_deploy() {
                                  --source "$source" "$name" "$@"
 }
 
+# Delete a Cloud Function (without complaining it doesn't exist).
+# Accepts the arguments of "gcloud functions delete".
+function cloud_function_delete()
+{
+    declare output
+    if ! output=$(gcloud functions delete "$@" 2>&1) &&
+       [[ $output != *\ status=\[404\]* ]]; then
+        echo "$output" >&2
+        false
+    fi
+}
+
 # Delete a Cloud Function if it exists
 # Args: project name
 function cloud_function_withdraw() {
     declare -r project="$1"; shift
     declare -r name="$1"; shift
-    declare output
     verbose echo "    Withdrawing ${name@Q}"
-    if ! output=$(
-            gcloud functions delete --quiet --project="$project" "$name" 2>&1
-       ) && [[ $output != *\ status=\[404\]* ]]; then
-        echo "$output" >&2
-        false
-    fi
+    cloud_function_delete --quiet --project="$project" "name"
 }
 
 # Output deployment environment for Cloud Functions
