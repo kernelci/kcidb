@@ -87,6 +87,7 @@ class Client:
                         contents,
                         content_type=content_type
                     )
+                    LOGGER.debug("URL '%s' successfully cached.", url)
                 else:
                     LOGGER.debug("Failed download URL '%s'. "
                                  "Status code: %d", url, response.status_code)
