@@ -1323,6 +1323,7 @@ function cloud_function_deploy() {
         mute gcloud functions deploy --quiet --project="$project" \
                                      --region="$CLOUD_FUNCTION_REGION" \
                                      --source "$source" "${prefix}${name}" \
+                                     --entry-point "kcidb_${name}" \
                                      "$@"
 }
 
@@ -1487,7 +1488,6 @@ function cloud_functions_deploy() {
     trigger_resource+="${spool_collection_path}/{notification_id}"
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           pick_notifications \
-                          --entry-point kcidb_pick_notifications\
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-topic "${pick_notifications_trigger_topic}" \
@@ -1497,7 +1497,6 @@ function cloud_functions_deploy() {
 
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           send_notification \
-                          --entry-point kcidb_send_notification \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-event "${trigger_event}" \
@@ -1509,7 +1508,6 @@ function cloud_functions_deploy() {
 
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           spool_notifications \
-                          --entry-point kcidb_spool_notifications \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-topic "${updated_topic}" \
@@ -1519,7 +1517,6 @@ function cloud_functions_deploy() {
 
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           cache_urls \
-                          --entry-point kcidb_cache_urls \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-topic "${updated_urls_topic}" \
@@ -1529,8 +1526,6 @@ function cloud_functions_deploy() {
 
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           "$cache_redirect_function_name" \
-                          --entry-point \
-                          "kcidb_${cache_redirect_function_name}" \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-http \
@@ -1541,7 +1536,6 @@ function cloud_functions_deploy() {
 
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           load_queue \
-                          --entry-point kcidb_load_queue \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-topic "${load_queue_trigger_topic}" \
