@@ -1749,28 +1749,20 @@ declare -r SECTIONS_NAME_LEN_MAX
 declare -r SECTIONS_DESCRIPTION_LEN_MAX
 
 # Execute an operation on a section of installation, if its name matches a
-# glob. The operation is defined as a command with arguments. The command name
-# must consist of the (multi-word) section name and the single-word operation
-# verb, with all words separated by underscores.
+# glob. The section name is passed as an explicit argument. The operation is
+# also passed explicitly as the operation verb, and the corresponding command
+# to execute.
 #
-# Args: glob command [arg...]
-function sections_run() {
+# Args: glob name verb command [arg...]
+function sections_run_explicit() {
     declare -r glob="$1"; shift
+    declare -r name="$1"; shift
+    declare -r verb="$1"; shift
     declare -r command="$1"; shift
-    declare -r name="${command%_*}"
-    declare -r verb="${command##*_}"
     declare -r action="${verb}ing"
 
-    if [ -z "$name" ]; then
-        echo "No section name found in command name ${command@Q}" >&2
-        exit 1
-    fi
     if ! [[ -v SECTIONS[$name] ]]; then
         echo "Unknown section name ${name@Q}" >&2
-        exit 1
-    fi
-    if [ -z "$verb" ]; then
-        echo "No operation verb found in command name ${command@Q}" >&2
         exit 1
     fi
 
@@ -1783,6 +1775,30 @@ function sections_run() {
     aterr_push "echo Failed ${action@Q} ${SECTIONS[$name]@Q} '['${name@Q}']'"
     "${command}" "$@"
     aterr_pop
+}
+
+# Execute an operation on a section of installation, if its name matches a
+# glob. The operation is defined as a command with arguments. The command name
+# must consist of the (multi-word) section name and the single-word operation
+# verb, with all words separated by underscores.
+#
+# Args: glob command [arg...]
+function sections_run() {
+    declare -r glob="$1"; shift
+    declare -r command="$1"; shift
+    declare -r name="${command%_*}"
+    declare -r verb="${command##*_}"
+
+    if [ -z "$name" ]; then
+        echo "No section name found in command name ${command@Q}" >&2
+        exit 1
+    fi
+    if [ -z "$verb" ]; then
+        echo "No operation verb found in command name ${command@Q}" >&2
+        exit 1
+    fi
+
+    sections_run_explicit "$glob" "$name" "$verb" "$command" "$@"
 }
 
 # Escape backslashes and whitespace with backslashes in text.
