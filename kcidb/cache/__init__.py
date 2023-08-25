@@ -50,8 +50,8 @@ class Client:
         """
         object_name = self._format_object_name(url)
 
-        # Cache every 4096th URL only for the trial period
-        if not object_name.endswith("000"):
+        # Cache every 256th URL only for the trial period
+        if not object_name.endswith("00"):
             return
 
         blob = self.client.bucket(self.bucket_name).blob(object_name)
