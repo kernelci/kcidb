@@ -2417,12 +2417,13 @@ function execute() {
         fi
         declare glob="${1:-*}"
         declare name
-        for name in "${!SECTIONS[@]}"; do
-            if [[ $name == $glob ]]; then
-                printf "%-${SECTIONS_NAME_LEN_MAX}s %s\\n" \
-                       "$name" "${SECTIONS[$name]}"
-            fi
-        done
+        printf '%s\n' "${!SECTIONS[@]}" | sort |
+            while read -r name; do
+                if [[ $name == $glob ]]; then
+                    printf "%-${SECTIONS_NAME_LEN_MAX}s %s\\n" \
+                           "$name" "${SECTIONS[$name]}"
+                fi
+            done
         exit 0
     elif [ "$command" == "shell" ]; then
         if (( $# < 2 )); then
