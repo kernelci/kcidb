@@ -1513,7 +1513,8 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$project" "${cache_redirect_function_name}" \
+    cloud_function_deploy "$project" \
+                          "${prefix}${cache_redirect_function_name}" \
                           "$source" \
                           --entry-point kcidb_cache_redirect \
                           --env-vars-file "$env_yaml_file" \
@@ -1549,7 +1550,8 @@ function cloud_functions_withdraw() {
     cloud_function_withdraw "$project" "${prefix}send_notification"
     cloud_function_withdraw "$project" "${prefix}spool_notifications"
     cloud_function_withdraw "$project" "${prefix}cache_urls"
-    cloud_function_withdraw "$project" "${cache_redirect_function_name}"
+    cloud_function_withdraw "$project" \
+                            "${prefix}${cache_redirect_function_name}"
     cloud_function_withdraw "$project" "${prefix}load_queue"
 }
 
@@ -1852,9 +1854,11 @@ function execute_command() {
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
     declare -r cache_bucket_name="${project}_${prefix}cache"
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
-    declare -r cache_redirect_function_name="${prefix}cache_redirect"
-    declare cache_redirector_url="https://${CLOUD_FUNCTION_REGION}-${project}.cloud"
-    declare -r cache_redirector_url+="functions.net/${cache_redirect_function_name}"
+    declare -r cache_redirect_function_name="cache_redirect"
+    declare cache_redirector_url="https://${CLOUD_FUNCTION_REGION}"
+    declare cache_redirector_url+="-${project}.cloudfunctions.net/"
+    declare cache_redirector_url+="${prefix}"
+    declare -r cache_redirector_url+="${cache_redirect_function_name}"
     declare -r updated_urls_topic="${prefix}updated_urls"
     declare -r new_topic="${prefix}new"
     declare -r new_load_subscription="${prefix}new_load"
