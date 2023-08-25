@@ -1502,7 +1502,7 @@ function cloud_functions_deploy() {
                           --memory 2048MB \
                           --max-instances=10 \
                           --timeout 540
-    
+
     cloud_function_deploy "$project" "${prefix}cache_urls" \
                           "$source" \
                           --entry-point kcidb_cache_urls \
@@ -1538,7 +1538,7 @@ function cloud_functions_deploy() {
 }
 
 # Withdraw Cloud Functions
-# Args: --project=NAME --prefix=PREFIX 
+# Args: --project=NAME --prefix=PREFIX
 #       --cache-redirect-function-name=NAME
 function cloud_functions_withdraw() {
     params="$(getopt_vars project prefix \
