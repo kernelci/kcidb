@@ -1311,16 +1311,19 @@ function storage_withdraw() {
 declare -r CLOUD_FUNCTION_REGION="us-central1"
 
 # Deploy a Cloud Function
-# Args: source project prefix name [param_arg...]
+# Args: sections source project prefix name [param_arg...]
 function cloud_function_deploy() {
+    declare -r sections="$1"; shift
     declare -r source="$1"; shift
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
     declare -r name="$1"; shift
-    verbose echo "    Deploying ${name@Q}"
-    mute gcloud functions deploy --quiet --project="$project" \
-                                 --region="$CLOUD_FUNCTION_REGION" \
-                                 --source "$source" "${prefix}${name}" "$@"
+    sections_run_explicit "$sections" \
+        "cloud_functions.$name" deploy \
+        mute gcloud functions deploy --quiet --project="$project" \
+                                     --region="$CLOUD_FUNCTION_REGION" \
+                                     --source "$source" "${prefix}${name}" \
+                                     "$@"
 }
 
 # Delete a Cloud Function (without complaining it doesn't exist).
@@ -1336,13 +1339,15 @@ function cloud_function_delete()
 }
 
 # Delete a Cloud Function if it exists
-# Args: project prefix name
+# Args: sections project prefix name
 function cloud_function_withdraw() {
+    declare -r sections="$1"; shift
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
     declare -r name="$1"; shift
-    verbose echo "    Withdrawing ${name@Q}"
-    cloud_function_delete --quiet --project="$project" "${prefix}${name}"
+    sections_run_explicit "$sections" \
+        "cloud_functions.$name" withdraw \
+        cloud_function_delete --quiet --project="$project" "${prefix}${name}"
 }
 
 # Output deployment environment for Cloud Functions
@@ -1448,7 +1453,8 @@ function cloud_functions_env() {
 }
 
 # Deploy Cloud Functions
-# Args: --project=NAME --prefix=PREFIX --source=PATH
+# Args: --sections=GLOB
+#       --project=NAME --prefix=PREFIX --source=PATH
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
 #       --updated-urls-topic=NAME
@@ -1457,7 +1463,7 @@ function cloud_functions_env() {
 #       --cache-redirect-function-name=NAME
 #       --env-yaml=YAML
 function cloud_functions_deploy() {
-    params="$(getopt_vars project prefix source \
+    params="$(getopt_vars sections project prefix source \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
                           updated_urls_topic \
@@ -1479,7 +1485,7 @@ function cloud_functions_deploy() {
     trigger_event+="document.create"
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
-    cloud_function_deploy "$source" "$project" "$prefix" \
+    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           pick_notifications \
                           --entry-point kcidb_pick_notifications\
                           --env-vars-file "$env_yaml_file" \
@@ -1489,7 +1495,7 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$source" "$project" "$prefix" \
+    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           send_notification \
                           --entry-point kcidb_send_notification \
                           --env-vars-file "$env_yaml_file" \
@@ -1501,7 +1507,7 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$source" "$project" "$prefix" \
+    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           spool_notifications \
                           --entry-point kcidb_spool_notifications \
                           --env-vars-file "$env_yaml_file" \
@@ -1511,7 +1517,7 @@ function cloud_functions_deploy() {
                           --max-instances=10 \
                           --timeout 540
 
-    cloud_function_deploy "$source" "$project" "$prefix" \
+    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           cache_urls \
                           --entry-point kcidb_cache_urls \
                           --env-vars-file "$env_yaml_file" \
@@ -1521,7 +1527,7 @@ function cloud_functions_deploy() {
                           --max-instances=1 \
                           --timeout 540
 
-    cloud_function_deploy "$source" "$project" "$prefix" \
+    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           "$cache_redirect_function_name" \
                           --entry-point \
                           "kcidb_${cache_redirect_function_name}" \
@@ -1533,7 +1539,7 @@ function cloud_functions_deploy() {
                           --max-instances=16 \
                           --timeout 30
 
-    cloud_function_deploy "$source" "$project" "$prefix" \
+    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           load_queue \
                           --entry-point kcidb_load_queue \
                           --env-vars-file "$env_yaml_file" \
@@ -1547,20 +1553,25 @@ function cloud_functions_deploy() {
 }
 
 # Withdraw Cloud Functions
-# Args: --project=NAME --prefix=PREFIX
+# Args: --sections=GLOB --project=NAME --prefix=PREFIX
 #       --cache-redirect-function-name=NAME
 function cloud_functions_withdraw() {
-    params="$(getopt_vars project prefix \
+    params="$(getopt_vars sections project prefix \
                           cache_redirect_function_name \
                           -- "$@")"
     eval "$params"
-    cloud_function_withdraw "$project" "$prefix" pick_notifications
-    cloud_function_withdraw "$project" "$prefix" send_notification
-    cloud_function_withdraw "$project" "$prefix" spool_notifications
-    cloud_function_withdraw "$project" "$prefix" cache_urls
-    cloud_function_withdraw "$project" \
-                            "$prefix" "$cache_redirect_function_name"
-    cloud_function_withdraw "$project" "$prefix" load_queue
+    cloud_function_withdraw "$sections" "$project" "$prefix" \
+                            pick_notifications
+    cloud_function_withdraw "$sections" "$project" "$prefix" \
+                            send_notification
+    cloud_function_withdraw "$sections" "$project" "$prefix" \
+                            spool_notifications
+    cloud_function_withdraw "$sections" "$project" "$prefix" \
+                            cache_urls
+    cloud_function_withdraw "$sections" "$project" "$prefix" \
+                            "$cache_redirect_function_name"
+    cloud_function_withdraw "$sections" "$project" "$prefix" \
+                            load_queue
 }
 
 # Check if a scheduler job exists
@@ -1736,7 +1747,12 @@ declare -A -r SECTIONS=(
     ["secrets"]="Secrets"
     ["firestore"]="Firestore database"
     ["storage"]="Google cloud storage"
-    ["cloud_functions"]="Cloud Functions"
+    ["cloud_functions.pick_notifications"]="Cloud Functions: kcidb_pick_notifications()"
+    ["cloud_functions.send_notification"]="Cloud Functions: kcidb_send_notification()"
+    ["cloud_functions.spool_notifications"]="Cloud Functions: kcidb_spool_notifications()"
+    ["cloud_functions.cache_redirect"]="Cloud Functions: kcidb_cache_redirect()"
+    ["cloud_functions.cache_urls"]="Cloud Functions: kcidb_cache_urls()"
+    ["cloud_functions.load_queue"]="Cloud Functions: kcidb_load_queue()"
     ["scheduler"]="Scheduler jobs"
     ["submitters"]="Submitter permissions"
 )
@@ -2058,7 +2074,8 @@ function execute_command() {
             --smtp-subscription="$smtp_subscription"
         sections_run "$sections" firestore_deploy "$project"
         sections_run "$sections" storage_deploy "$project" "$cache_bucket_name"
-        sections_run "$sections" cloud_functions_deploy \
+        cloud_functions_deploy \
+            --sections="$sections" \
             --project="$project" \
             --prefix="$prefix" \
             --source="$(dirname "$(realpath "$0")")" \
@@ -2089,7 +2106,8 @@ function execute_command() {
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
-        sections_run "$sections" cloud_functions_withdraw \
+        cloud_functions_withdraw \
+            --sections="$sections" \
             --project="$project" \
             --prefix="$prefix" \
             --cache-redirect-function-name="$cache_redirect_function_name"
