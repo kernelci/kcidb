@@ -1516,7 +1516,8 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$project" \
                           "${prefix}${cache_redirect_function_name}" \
                           "$source" \
-                          --entry-point kcidb_cache_redirect \
+                          --entry-point \
+                          "kcidb_${cache_redirect_function_name}" \
                           --env-vars-file "$env_yaml_file" \
                           --runtime python37 \
                           --trigger-http \
