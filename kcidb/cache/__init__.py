@@ -57,6 +57,8 @@ class Client:
         blob = self.client.bucket(self.bucket_name).blob(object_name)
 
         if blob.exists():
+            LOGGER.debug("URL '%s' already exists, "
+                         "not caching.", url)
             return
 
         try:
@@ -69,10 +71,14 @@ class Client:
                 # Check the size of the content before downloading
                 content_length = response.headers.get("Content-Length")
                 if content_length is None:
+                    LOGGER.debug("No Content-Length for '%s', "
+                                 "not caching.", url)
                     return
 
                 content_length = int(content_length)
                 if content_length > self.max_store_size:
+                    LOGGER.debug("URL '%s' size exceeds max_store_size, not "
+                                 "caching.", url)
                     return
 
                 # Perform the GET request to download the contents
@@ -87,6 +93,7 @@ class Client:
                         contents,
                         content_type=content_type
                     )
+                    LOGGER.debug("URL '%s' successfully cached.", url)
                 else:
                     LOGGER.debug("Failed download URL '%s'. "
                                  "Status code: %d", url, response.status_code)
@@ -95,7 +102,7 @@ class Client:
                              "Status code: %d", url, response.status_code)
 
         except requests.exceptions.RequestException as err:
-            print(f"Error occurred while downloading URL '{url}': {str(err)}")
+            LOGGER.debug("Error downloading URL '%s': %s", url, str(err))
 
     @classmethod
     def _format_object_name(cls, url):
