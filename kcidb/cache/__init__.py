@@ -33,8 +33,8 @@ class Client:
             original_filename = parsed_url.path.rsplit('/', 1)[-1]
             if original_filename:
                 encoded_filename = Header(original_filename, "utf-8").encode()
-                content_disposition = f'attachment; filename=" \
-                    {encoded_filename}"'
+                content_disposition = \
+                    f'attachment; filename="{encoded_filename}"'
             else:
                 content_disposition = 'attachment'
 
