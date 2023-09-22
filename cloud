@@ -1659,16 +1659,6 @@ function submitter_deploy() {
 
     member="serviceAccount:$submitter@$project.iam.gserviceaccount.com"
 
-    role="roles/bigquery.dataViewer"
-    mute gcloud projects add-iam-policy-binding "$project" \
-                                                --quiet \
-                                                --member "$member" \
-                                                --role "$role"
-    role="roles/bigquery.jobUser"
-    mute gcloud projects add-iam-policy-binding "$project" \
-                                                --quiet \
-                                                --member "$member" \
-                                                --role "$role"
     role="roles/pubsub.publisher"
     mute gcloud pubsub topics add-iam-policy-binding --project="$project" \
                                                      "$new_topic" \
