@@ -6,6 +6,7 @@ from functools import reduce
 import datetime
 import logging
 import sqlite3
+import dateutil.parser
 import kcidb.io as io
 import kcidb.orm as orm
 from kcidb.misc import LIGHT_ASSERTS
@@ -124,6 +125,25 @@ class Connection(AbstractConnection):
                 if number:
                     return int(number / 1000), int(number % 1000)
                 return None
+            finally:
+                cursor.close()
+
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+        # Oh, but sqlite3 connection is, pylint: disable=not-context-manager
+        with self:
+            cursor = self.cursor()
+            try:
+                cursor.execute(
+                    "SELECT strftime('%Y-%m-%dT%H:%M:%f000+00:00', 'now')"
+                )
+                return dateutil.parser.isoparse(cursor.fetchone()[0])
             finally:
                 cursor.close()
 

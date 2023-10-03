@@ -78,6 +78,16 @@ class Driver(ABC):
         assert self.is_initialized()
 
     @abstractmethod
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+
+    @abstractmethod
     def get_last_modified(self):
         """
         Get the time the data in the driven database was last modified.

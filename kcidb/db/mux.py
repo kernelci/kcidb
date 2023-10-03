@@ -252,6 +252,16 @@ class Driver(AbstractDriver):
         for driver in self.drivers:
             driver.empty()
 
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+        return max(driver.get_current_time() for driver in self.drivers)
+
     def get_last_modified(self):
         """
         Get the time the data in the driven databases was last modified.

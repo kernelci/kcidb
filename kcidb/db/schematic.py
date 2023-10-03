@@ -79,6 +79,16 @@ class Connection(ABC, metaclass=MetaConnection):
         """
 
     @abstractmethod
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+
+    @abstractmethod
     def get_last_modified(self):
         """
         Get the time the data in the connected database was last modified.
@@ -459,6 +469,16 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         """
         assert self.is_initialized()
         self.schema.empty()
+
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+        return self.conn.get_current_time()
 
     def get_last_modified(self):
         """

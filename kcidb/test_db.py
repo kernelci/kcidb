@@ -2,6 +2,7 @@
 
 import re
 import textwrap
+import time
 import datetime
 import json
 from itertools import permutations
@@ -373,6 +374,19 @@ COMPREHENSIVE_IO_DATA = {
         )
     ]
 }
+
+
+def test_get_current_time(clean_database):
+    """
+    Check get_current_time() works correctly
+    """
+    client = clean_database
+    timestamp = client.get_current_time()
+    assert timestamp is not None
+    assert isinstance(timestamp, datetime.datetime)
+    assert timestamp.tzinfo is not None
+    time.sleep(1)
+    assert client.get_current_time() > timestamp
 
 
 def test_get_last_modified(empty_database):
