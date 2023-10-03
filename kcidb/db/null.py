@@ -106,6 +106,16 @@ class Driver(AbstractDriver):
         The database must be initialized.
         """
 
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+        return datetime.datetime.now(datetime.timezone.utc)
+
     def get_last_modified(self):
         """
         Get the time the data in the driven database was last modified.

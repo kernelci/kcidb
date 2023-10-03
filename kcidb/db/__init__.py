@@ -143,6 +143,19 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         self.driver.empty()
 
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+        current_time = self.driver.get_current_time()
+        assert isinstance(current_time, datetime.datetime)
+        assert current_time.tzinfo
+        return current_time
+
     def get_last_modified(self):
         """
         Get the time the data in the connected database was last modified.

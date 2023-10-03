@@ -148,6 +148,18 @@ class Connection(AbstractConnection):
             return io.schema.V1.major, io.schema.V1.minor
         return None
 
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+        return next(iter(
+            self.query_create("SELECT CURRENT_TIMESTAMP").result()
+        ))[0]
+
     def get_last_modified(self):
         """
         Get the time the data in the connected database was last modified.

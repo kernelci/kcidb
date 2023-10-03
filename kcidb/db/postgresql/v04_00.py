@@ -169,6 +169,19 @@ class Connection(AbstractConnection):
         except psycopg2.errors.UndefinedFunction:
             return None
 
+    def get_current_time(self):
+        """
+        Get the current time from the database server.
+
+        Returns:
+            A timezone-aware datetime object representing the current
+            time on the database server.
+        """
+        # Oh, but the connection is, pylint: disable=not-context-manager
+        with self, self.cursor() as cursor:
+            cursor.execute("SELECT CURRENT_TIMESTAMP")
+            return cursor.fetchone()[0]
+
     def get_last_modified(self):
         """
         Get the time the data in the connected database was last modified.
