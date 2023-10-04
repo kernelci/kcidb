@@ -143,6 +143,29 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         self.driver.empty()
 
+    def purge(self, before=None):
+        """
+        Remove all the data from the database that arrived before the
+        specified time, if the database supports that.
+        The database must be initialized.
+
+        Args:
+            before: An "aware" datetime.datetime object specifying the
+                    the earliest (database server) time the data to be
+                    *preserved* should've arrived. Any other data will be
+                    purged.
+                    Can be None to have nothing removed. The latter can be
+                    used to test if the database supports purging.
+
+        Returns:
+            True if the database supports purging, and the requested data was
+            purged. False if the database doesn't support purging.
+        """
+        assert self.is_initialized()
+        assert before is None or \
+            isinstance(before, datetime.datetime) and before.tzinfo
+        return self.driver.purge(before)
+
     def get_current_time(self):
         """
         Get the current time from the database server.
@@ -818,3 +841,26 @@ def empty_main():
         client.empty()
     else:
         raise Exception(f"Database {args.database!r} is not initialized")
+
+
+def purge_main():
+    """Execute the kcidb-db-purge command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = 'kcidb-db-purge - Try removing all data from a ' \
+        'Kernel CI report database that arrived before a certain time. ' \
+        'Exit with status 2, if not supported by database.'
+    parser = ArgumentParser(description=description)
+    parser.add_argument(
+        'before',
+        metavar='BEFORE',
+        type=kcidb.misc.iso_timestamp,
+        nargs='?',
+        help="An ISO-8601 timestamp specifying the earliest time the data to "
+        "be *preserved* should've arrived. "
+        "No data is removed if not specified."
+    )
+    args = parser.parse_args()
+    client = Client(args.database)
+    if not client.is_initialized():
+        raise Exception(f"Database {args.database!r} is not initialized")
+    return 0 if client.purge(before=args.before) else 2

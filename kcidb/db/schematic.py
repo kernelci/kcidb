@@ -2,6 +2,7 @@
 
 import inspect
 from abc import ABCMeta, ABC, abstractmethod
+import datetime
 import kcidb.io as io
 import kcidb.orm as orm
 from kcidb.db.misc import UnsupportedSchema
@@ -251,6 +252,28 @@ class Schema(ABC, metaclass=MetaSchema):
         The database must be initialized.
         """
 
+    def purge(self, before):
+        """
+        Remove all the data from the database that arrived before the
+        specified time, if the database supports that.
+        The database must be initialized.
+
+        Args:
+            before: An "aware" datetime.datetime object specifying the
+                    the earliest (database server) time the data to be
+                    *preserved* should've arrived. Any other data will be
+                    purged.
+                    Can be None to have nothing removed. The latter can be
+                    used to test if the database supports purging.
+
+        Returns:
+            True if the database supports purging, and the requested data was
+            purged. False if the database doesn't support purging.
+        """
+        assert before is None or \
+            isinstance(before, datetime.datetime) and before.tzinfo
+        return False
+
     @abstractmethod
     def dump_iter(self, objects_per_report, with_metadata):
         """
@@ -469,6 +492,29 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         """
         assert self.is_initialized()
         self.schema.empty()
+
+    def purge(self, before):
+        """
+        Remove all the data from the database that arrived before the
+        specified time, if the database supports that.
+        The database must be initialized.
+
+        Args:
+            before: An "aware" datetime.datetime object specifying the
+                    the earliest (database server) time the data to be
+                    *preserved* should've arrived. Any other data will be
+                    purged.
+                    Can be None to have nothing removed. The latter can be
+                    used to test if the database supports purging.
+
+        Returns:
+            True if the database supports purging, and the requested data was
+            purged. False if the database doesn't support purging.
+        """
+        assert self.is_initialized()
+        assert before is None or \
+            isinstance(before, datetime.datetime) and before.tzinfo
+        return self.schema.purge(before)
 
     def get_current_time(self):
         """

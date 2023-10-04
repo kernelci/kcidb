@@ -1149,3 +1149,10 @@ def test_cleanup(clean_database):
     for version in reversed(list(client.get_schemas())[:-1]):
         client.init(version)
         client.cleanup()
+
+
+def test_purge(empty_database):
+    """Test the purge() method behaves as documented"""
+    client = empty_database
+    # No databases support purging yet
+    assert not client.purge(None)
