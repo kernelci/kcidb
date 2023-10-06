@@ -469,7 +469,7 @@ class Schema(AbstractSchema):
     )
 
     # A map of table names and their "primary key" fields
-    KEY_MAP = dict(
+    KEYS_MAP = dict(
         checkouts=("id",),
         builds=("id",),
         tests=("id",),
@@ -593,12 +593,12 @@ class Schema(AbstractSchema):
         view.view_query = \
             "SELECT " + \
             ", ".join(
-                f"`{n}`" if n in cls.KEY_MAP[name]
+                f"`{n}`" if n in cls.KEYS_MAP[name]
                 else f"ANY_VALUE(`{n}`) AS `{n}`"
                 for n in (f.name for f in schema)
             ) + \
             f" FROM `{table_ref}` GROUP BY " + \
-            ", ".join(cls.KEY_MAP[name])
+            ", ".join(cls.KEYS_MAP[name])
         conn.client.create_table(view)
 
     def init(self):

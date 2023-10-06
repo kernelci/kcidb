@@ -140,8 +140,8 @@ class Schema(PreviousSchema):
     )
 
     # A map of table names and their "primary key" fields
-    KEY_MAP = dict(
-        **PreviousSchema.KEY_MAP,
+    KEYS_MAP = dict(
+        **PreviousSchema.KEYS_MAP,
         issues=("id", "version",),
         incidents=("id",),
     )
