@@ -571,34 +571,34 @@ class Schema(AbstractSchema):
     )
 
     @classmethod
-    def _create_table(cls, conn, table_name, table_schema):
+    def _create_table(cls, conn, name, schema):
         """
         Create a table and its view.
 
         Args:
-            conn:           The connection to create the table with.
-            table_name:     Name of the table being created.
-            table_schema:   Schema of the table being created.
+            conn:   The connection to create the table with.
+            name:   Name of the table being created.
+            schema: Schema of the table being created.
         """
         assert isinstance(conn, cls.Connection)
-        assert isinstance(table_name, str)
-        assert isinstance(table_schema, list)
+        assert isinstance(name, str)
+        assert isinstance(schema, list)
         # Create raw table with duplicate records
-        table_ref = conn.dataset_ref.table("_" + table_name)
-        table = bigquery.table.Table(table_ref, schema=table_schema)
+        table_ref = conn.dataset_ref.table("_" + name)
+        table = bigquery.table.Table(table_ref, schema=schema)
         conn.client.create_table(table)
         # Create a view deduplicating the table records
-        view_ref = conn.dataset_ref.table(table_name)
+        view_ref = conn.dataset_ref.table(name)
         view = bigquery.table.Table(view_ref)
         view.view_query = \
             "SELECT " + \
             ", ".join(
-                f"`{n}`" if n in cls.KEY_MAP[table_name]
+                f"`{n}`" if n in cls.KEY_MAP[name]
                 else f"ANY_VALUE(`{n}`) AS `{n}`"
-                for n in (f.name for f in table_schema)
+                for n in (f.name for f in schema)
             ) + \
             f" FROM `{table_ref}` GROUP BY " + \
-            ", ".join(cls.KEY_MAP[table_name])
+            ", ".join(cls.KEY_MAP[name])
         conn.client.create_table(view)
 
     def init(self):
