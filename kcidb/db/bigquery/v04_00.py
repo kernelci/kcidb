@@ -583,6 +583,7 @@ class Schema(AbstractSchema):
         assert isinstance(name, str)
         assert name in cls.TABLE_MAP
         schema = cls.TABLE_MAP[name]
+        keys = cls.KEYS_MAP[name]
         # Create raw table with duplicate records
         table_ref = conn.dataset_ref.table("_" + name)
         table = bigquery.table.Table(table_ref, schema=schema)
@@ -593,12 +594,12 @@ class Schema(AbstractSchema):
         view.view_query = \
             "SELECT " + \
             ", ".join(
-                f"`{n}`" if n in cls.KEYS_MAP[name]
+                f"`{n}`" if n in keys
                 else f"ANY_VALUE(`{n}`) AS `{n}`"
                 for n in (f.name for f in schema)
             ) + \
             f" FROM `{table_ref}` GROUP BY " + \
-            ", ".join(cls.KEYS_MAP[name])
+            ", ".join(keys)
         conn.client.create_table(view)
 
     def init(self):
