@@ -571,18 +571,18 @@ class Schema(AbstractSchema):
     )
 
     @classmethod
-    def _create_table(cls, conn, name, schema):
+    def _create_table(cls, conn, name):
         """
         Create a table and its view.
 
         Args:
             conn:   The connection to create the table with.
             name:   Name of the table being created.
-            schema: Schema of the table being created.
         """
         assert isinstance(conn, cls.Connection)
         assert isinstance(name, str)
-        assert isinstance(schema, list)
+        assert name in cls.TABLE_MAP
+        schema = cls.TABLE_MAP[name]
         # Create raw table with duplicate records
         table_ref = conn.dataset_ref.table("_" + name)
         table = bigquery.table.Table(table_ref, schema=schema)
@@ -606,8 +606,8 @@ class Schema(AbstractSchema):
         Initialize the database. The database must be uninitialized.
         """
         # Create tables and corresponding views
-        for table_name, table_schema in self.TABLE_MAP.items():
-            self._create_table(self.conn, table_name, table_schema)
+        for table_name in self.TABLE_MAP:
+            self._create_table(self.conn, table_name)
 
     def cleanup(self):
         """
