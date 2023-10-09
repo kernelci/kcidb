@@ -475,6 +475,10 @@ class Schema(AbstractSchema):
         tests=("id",),
     )
 
+    # A map of table names to the dictionary of fields and the names of their
+    # aggregation function, if any (the default is "ANY_VALUE").
+    AGGS_MAP = dict()
+
     # Queries for each type of raw object-oriented data
     OO_QUERIES = dict(
         revision="SELECT\n"
@@ -584,6 +588,7 @@ class Schema(AbstractSchema):
         assert name in cls.TABLE_MAP
         schema = cls.TABLE_MAP[name]
         keys = cls.KEYS_MAP[name]
+        aggs = cls.AGGS_MAP.get(name, {})
         # Create raw table with duplicate records
         table_ref = conn.dataset_ref.table("_" + name)
         table = bigquery.table.Table(table_ref, schema=schema)
@@ -595,7 +600,7 @@ class Schema(AbstractSchema):
             "SELECT " + \
             ", ".join(
                 f"`{n}`" if n in keys
-                else f"ANY_VALUE(`{n}`) AS `{n}`"
+                else f"{aggs.get(n, 'ANY_VALUE')}(`{n}`) AS `{n}`"
                 for n in (f.name for f in schema)
             ) + \
             f" FROM `{table_ref}` GROUP BY " + \
