@@ -318,23 +318,27 @@ class Driver(AbstractDriver):
                     driver.upgrade(driver_version)
                 self.version = version
 
-    def dump_iter(self, objects_per_report):
+    def dump_iter(self, objects_per_report, with_metadata):
         """
         Dump all data from the first database in object number-limited chunks.
 
         Args:
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
         """
-        yield from self.drivers[0].dump_iter(objects_per_report)
+        yield from self.drivers[0].dump_iter(objects_per_report,
+                                             with_metadata)
 
     # We can live with this for now, pylint: disable=too-many-arguments
-    def query_iter(self, ids, children, parents, objects_per_report):
+    def query_iter(self, ids, children, parents, objects_per_report,
+                   with_metadata):
         """
         Match and fetch objects from the first database, in object
         number-limited chunks.
@@ -349,6 +353,8 @@ class Driver(AbstractDriver):
                                 matched as well.
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current I/O
@@ -356,7 +362,8 @@ class Driver(AbstractDriver):
             objects.
         """
         yield from self.drivers[0].query_iter(
-            ids, children, parents, objects_per_report
+            ids, children, parents, objects_per_report,
+            with_metadata=with_metadata
         )
 
     def oo_query(self, pattern_set):
@@ -372,23 +379,30 @@ class Driver(AbstractDriver):
         """
         return self.drivers[0].oo_query(pattern_set)
 
-    def load(self, data):
+    def load(self, data, with_metadata):
         """
         Load data into the databases.
+        The databases must be initialized.
 
         Args:
-            data:   The JSON data to load into the databases.
-                    Must adhere to the current schema's version of the I/O
-                    schema.
+            data:           The JSON data to load into the databases.
+                            Must adhere to the current database schema's
+                            version of the I/O schema.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the databases. False if it
+                            should be discarded and the databases should
+                            generate their metadata themselves.
         """
         # The mux driver I/O schema is the oldest across member drivers
         io_schema = self.get_schema()[1]
         assert io_schema.is_compatible_directly(data)
+        assert isinstance(with_metadata, bool)
         # Load data into every driver
         for driver in self.drivers:
             # Only copy if we need to upgrade
             driver_io_schema = driver.get_schema()[1]
             driver.load(
                 driver_io_schema.upgrade(data)
-                if driver_io_schema != io_schema else data
+                if driver_io_schema != io_schema else data,
+                with_metadata=with_metadata
             )

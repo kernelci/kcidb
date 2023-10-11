@@ -242,7 +242,7 @@ class Schema(ABC, metaclass=MetaSchema):
         """
 
     @abstractmethod
-    def dump_iter(self, objects_per_report):
+    def dump_iter(self, objects_per_report, with_metadata):
         """
         Dump all data from the database in object number-limited chunks.
         The database must be initialized.
@@ -250,6 +250,8 @@ class Schema(ABC, metaclass=MetaSchema):
         Args:
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current
@@ -258,9 +260,12 @@ class Schema(ABC, metaclass=MetaSchema):
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
 
+    # We can live with this for now, pylint: disable=too-many-arguments
     @abstractmethod
-    def query_iter(self, ids, children, parents, objects_per_report):
+    def query_iter(self, ids, children, parents, objects_per_report,
+                   with_metadata):
         """
         Match and fetch objects from the database, in object number-limited
         chunks. The database must be initialized.
@@ -274,6 +279,8 @@ class Schema(ABC, metaclass=MetaSchema):
                                 matched as well.
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current
@@ -288,6 +295,7 @@ class Schema(ABC, metaclass=MetaSchema):
         del parents
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
 
     @abstractmethod
     def oo_query(self, pattern_set):
@@ -307,14 +315,17 @@ class Schema(ABC, metaclass=MetaSchema):
                    for r in pattern_set)
 
     @abstractmethod
-    def load(self, data):
+    def load(self, data, with_metadata):
         """
         Load data into the database.
-        The database must be initialized.
 
         Args:
-            data:   The JSON data to load into the database.
-                    Must adhere to the schema's version of the I/O schema.
+            data:           The JSON data to load into the database. Must
+                            adhere to the schema's version of the I/O schema.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
         """
         # Relying on the driver to check compatibility/validity
 
@@ -528,7 +539,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
             self.conn.set_schema_version(schema.version)
             self.schema = schema(self.conn)
 
-    def dump_iter(self, objects_per_report):
+    def dump_iter(self, objects_per_report, with_metadata):
         """
         Dump all data from the database in object number-limited chunks.
         The database must be initialized.
@@ -536,6 +547,8 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         Args:
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the schema's
@@ -544,10 +557,13 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
         assert self.is_initialized()
-        return self.schema.dump_iter(objects_per_report)
+        return self.schema.dump_iter(objects_per_report, with_metadata)
 
-    def query_iter(self, ids, children, parents, objects_per_report):
+    # We can live with this for now, pylint: disable=too-many-arguments
+    def query_iter(self, ids, children, parents, objects_per_report,
+                   with_metadata):
         """
         Match and fetch objects from the database, in object number-limited
         chunks. The database must be initialized.
@@ -561,6 +577,8 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
                                 matched as well.
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the schema's
@@ -574,8 +592,10 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert self.is_initialized()
+        assert isinstance(with_metadata, bool)
         return self.schema.query_iter(
-            ids, children, parents, objects_per_report
+            ids, children, parents, objects_per_report,
+            with_metadata=with_metadata
         )
 
     def oo_query(self, pattern_set):
@@ -596,16 +616,22 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         assert self.is_initialized()
         return self.schema.oo_query(pattern_set)
 
-    def load(self, data):
+    def load(self, data, with_metadata):
         """
         Load data into the database.
         The database must be initialized.
 
         Args:
-            data:   The JSON data to load into the database.
-                    Must adhere to the schema's version of the I/O schema.
+            data:           The JSON data to load into the database.
+                            Must adhere to the current database schema's
+                            version of the I/O schema.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
         """
         assert self.is_initialized()
         assert self.schema.io.is_compatible_directly(data)
         assert LIGHT_ASSERTS or self.schema.io.is_valid_exactly(data)
-        self.schema.load(data)
+        assert isinstance(with_metadata, bool)
+        self.schema.load(data, with_metadata=with_metadata)

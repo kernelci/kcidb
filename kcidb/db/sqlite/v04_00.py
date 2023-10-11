@@ -465,13 +465,15 @@ class Schema(AbstractSchema):
             finally:
                 cursor.close()
 
-    def dump_iter(self, objects_per_report):
+    def dump_iter(self, objects_per_report, with_metadata):
         """
         Dump all data from the database in object number-limited chunks.
 
         Args:
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the I/O version
@@ -480,6 +482,7 @@ class Schema(AbstractSchema):
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
 
         obj_num = 0
         data = self.io.new()
@@ -488,10 +491,11 @@ class Schema(AbstractSchema):
             try:
                 for table_name, table_schema in self.TABLES.items():
                     result = cursor.execute(
-                        table_schema.format_dump(table_name)
+                        table_schema.format_dump(table_name, with_metadata)
                     )
                     obj_list = None
-                    for obj in table_schema.unpack_iter(result):
+                    for obj in table_schema.unpack_iter(result,
+                                                        with_metadata):
                         if obj_list is None:
                             obj_list = []
                             data[table_name] = obj_list
@@ -515,7 +519,8 @@ class Schema(AbstractSchema):
             yield data
 
     # We can live with this for now, pylint: disable=too-many-arguments
-    def query_iter(self, ids, children, parents, objects_per_report):
+    def query_iter(self, ids, children, parents, objects_per_report,
+                   with_metadata):
         """
         Match and fetch objects from the database, in object number-limited
         chunks.
@@ -530,6 +535,8 @@ class Schema(AbstractSchema):
                                 matched as well.
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the I/O version
@@ -546,6 +553,7 @@ class Schema(AbstractSchema):
                    for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
 
         # Build a dictionary of object list (table) names and tuples
         # containing a SELECT statement and the list of its parameters,
@@ -624,13 +632,15 @@ class Schema(AbstractSchema):
                     query_string = \
                         "SELECT " + ", ".join(
                             c.name for c in table_schema.columns.values()
+                            if with_metadata or not c.schema.metadata_expr
                         ) + "\n" + \
                         f" FROM {obj_list_name} INNER JOIN (\n" + \
                         textwrap.indent(query[0], " " * 4) + \
                         ") USING(id)\n"
                     result = cursor.execute(query_string, query_parameters)
                     obj_list = None
-                    for obj in table_schema.unpack_iter(result):
+                    for obj in table_schema.unpack_iter(result,
+                                                        with_metadata):
                         if obj_list is None:
                             obj_list = []
                             data[obj_list_name] = obj_list
@@ -772,6 +782,7 @@ class Schema(AbstractSchema):
                     objs[obj_type.name] = list(
                         self.OO_QUERIES[obj_type.name]["schema"].unpack_iter(
                             cursor.execute(query_string, query_parameters),
+                            with_metadata=False,
                             drop_null=False
                         )
                     )
@@ -781,16 +792,21 @@ class Schema(AbstractSchema):
         assert LIGHT_ASSERTS or orm.data.SCHEMA.is_valid(objs)
         return objs
 
-    def load(self, data):
+    def load(self, data, with_metadata):
         """
         Load data into the database.
 
         Args:
-            data:   The JSON data to load into the database.
-                    Must adhere to the I/O version of the database schema.
+            data:           The JSON data to load into the database. Must
+                            adhere to the I/O version of the database schema.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
         """
         assert self.io.is_compatible_directly(data)
         assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
+        assert isinstance(with_metadata, bool)
         with self.conn:
             cursor = self.conn.cursor()
             try:
@@ -798,9 +814,11 @@ class Schema(AbstractSchema):
                     if table_name in data:
                         cursor.executemany(
                             table_schema.format_insert(
-                                table_name, self.conn.load_prio_db
+                                table_name, self.conn.load_prio_db,
+                                with_metadata
                             ),
-                            table_schema.pack_iter(data[table_name])
+                            table_schema.pack_iter(data[table_name],
+                                                   with_metadata)
                         )
             finally:
                 cursor.close()

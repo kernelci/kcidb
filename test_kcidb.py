@@ -132,7 +132,8 @@ def test_query_main():
                      incidents=["test:incident:1"]),
             parents=True,
             children=True,
-            objects_per_report=10
+            objects_per_report=10,
+            with_metadata=False
         )
         return status
     """)

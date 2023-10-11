@@ -239,13 +239,15 @@ class Client(kcidb.orm.Source):
             "Target schema is older than the current schema"
         self.driver.upgrade(target_version)
 
-    def dump_iter(self, objects_per_report=0):
+    def dump_iter(self, objects_per_report=0, with_metadata=True):
         """
         Dump all data from the database in object number-limited chunks.
 
         Args:
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current I/O
@@ -255,13 +257,19 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
         yield from self.driver.dump_iter(
-            objects_per_report=objects_per_report
+            objects_per_report=objects_per_report,
+            with_metadata=with_metadata
         )
 
-    def dump(self):
+    def dump(self, with_metadata=True):
         """
         Dump all data from the database.
+
+        Args:
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             The JSON data from the database adhering to the current I/O schema
@@ -269,13 +277,15 @@ class Client(kcidb.orm.Source):
         """
         assert self.is_initialized()
         try:
-            return next(self.dump_iter(objects_per_report=0))
+            return next(self.dump_iter(objects_per_report=0,
+                                       with_metadata=with_metadata))
         except StopIteration:
             return self.get_schema()[1].new()
 
+    # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids=None,
                    children=False, parents=False,
-                   objects_per_report=0):
+                   objects_per_report=0, with_metadata=False):
         """
         Match and fetch objects from the database, in object number-limited
         chunks.
@@ -290,6 +300,8 @@ class Client(kcidb.orm.Source):
                                 matched as well.
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current I/O
@@ -305,13 +317,16 @@ class Client(kcidb.orm.Source):
                    for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
         yield from self.driver.query_iter(
             ids=ids,
             children=children, parents=parents,
-            objects_per_report=objects_per_report
+            objects_per_report=objects_per_report,
+            with_metadata=with_metadata
         )
 
-    def query(self, ids=None, children=False, parents=False):
+    def query(self, ids=None, children=False, parents=False,
+              with_metadata=False):
         """
         Match and fetch objects from the database.
 
@@ -322,6 +337,8 @@ class Client(kcidb.orm.Source):
                         as well.
             parents:    True if parents of matched objects should be matched
                         as well.
+            with_metadata:  True, if metadata fields should be fetched as
+                            well. False, if not.
 
         Returns:
             The JSON data from the database adhering to the current I/O schema
@@ -334,10 +351,12 @@ class Client(kcidb.orm.Source):
                 all(isinstance(e, str) for e in v)
                 for k, v in ids.items())
         )
+        assert isinstance(with_metadata, bool)
         try:
             return next(self.query_iter(ids=ids,
                                         children=children, parents=parents,
-                                        objects_per_report=0))
+                                        objects_per_report=0,
+                                        with_metadata=with_metadata))
         except StopIteration:
             return self.get_schema()[1].new()
 
@@ -359,20 +378,25 @@ class Client(kcidb.orm.Source):
         LOGGER.debug("OO Query: %r", pattern_set)
         return self.driver.oo_query(pattern_set)
 
-    def load(self, data):
+    def load(self, data, with_metadata=False):
         """
         Load data into the database.
 
         Args:
-            data:   The JSON data to load into the database.
-                    Must adhere to the database's supported I/O schema
-                    version, or an earlier one.
+            data:           The JSON data to load into the database.
+                            Must adhere to the database's supported I/O schema
+                            version, or an earlier one.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
         io_schema = self.get_schema()[1]
         assert io_schema.is_compatible_directly(data)
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
-        self.driver.load(data)
+        assert isinstance(with_metadata, bool)
+        self.driver.load(data, with_metadata=with_metadata)
 
 
 class DBHelpAction(argparse.Action):
@@ -574,6 +598,11 @@ class QueryArgumentParser(SplitOutputArgumentParser):
             help='Match children of matching objects',
             action='store_true'
         )
+        self.add_argument(
+            '--with-metadata',
+            help='Fetch metadata fields as well',
+            action='store_true'
+        )
 
 
 def dump_main():
@@ -582,12 +611,18 @@ def dump_main():
     description = \
         'kcidb-db-dump - Dump all data from Kernel CI report database'
     parser = SplitOutputArgumentParser(description=description)
+    parser.add_argument(
+        '--without-metadata',
+        help='Do not dump metadata fields',
+        action='store_true'
+    )
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
     kcidb.misc.json_dump_stream(
-        client.dump_iter(args.objects_per_report),
+        client.dump_iter(objects_per_report=args.objects_per_report,
+                         with_metadata=not args.without_metadata),
         sys.stdout, indent=args.indent, seq=args.seq
     )
 
@@ -610,7 +645,8 @@ def query_main():
                  incidents=args.incident_ids),
         parents=args.parents,
         children=args.children,
-        objects_per_report=args.objects_per_report
+        objects_per_report=args.objects_per_report,
+        with_metadata=args.with_metadata
     )
     kcidb.misc.json_dump_stream(
         query_iter, sys.stdout, indent=args.indent, seq=args.seq
@@ -623,6 +659,11 @@ def load_main():
     description = \
         'kcidb-db-load - Load reports into Kernel CI report database'
     parser = ArgumentParser(description=description)
+    parser.add_argument(
+        '--with-metadata',
+        help='Load metadata fields as well',
+        action='store_true'
+    )
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
@@ -630,7 +671,7 @@ def load_main():
     io_schema = client.get_schema()[1]
     for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno()):
         data = io_schema.upgrade(io_schema.validate(data), copy=False)
-        client.load(data)
+        client.load(data, with_metadata=args.with_metadata)
 
 
 def schemas_main():

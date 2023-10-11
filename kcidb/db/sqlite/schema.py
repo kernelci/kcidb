@@ -18,7 +18,7 @@ class BoolColumn(Column):
         return bool(value) if value is not None else None
 
     def __init__(self, constraint=None,
-                 conflict_func=None):
+                 conflict_func=None, metadata_expr=None):
         """
         Initialize the column description.
 
@@ -30,17 +30,21 @@ class BoolColumn(Column):
                             SQL function to use to resolve insertion conflicts
                             for this column. None to resolve
                             non-deterministically.
+            metadata_expr:  A (non-empty) SQL expression string to use as the
+                            value for this (metadata) column, if not supplied
+                            explicitly. None to consider this a normal column.
         """
         assert constraint is None or isinstance(constraint, Constraint)
         super().__init__("INT", constraint=constraint,
-                         conflict_func=conflict_func)
+                         conflict_func=conflict_func,
+                         metadata_expr=metadata_expr)
 
 
 class TextColumn(Column):
     """A text column"""
 
     def __init__(self, constraint=None,
-                 conflict_func=None):
+                 conflict_func=None, metadata_expr=None):
         """
         Initialize the column description.
 
@@ -52,17 +56,21 @@ class TextColumn(Column):
                             SQL function to use to resolve insertion conflicts
                             for this column. None to resolve
                             non-deterministically.
+            metadata_expr:  A (non-empty) SQL expression string to use as the
+                            value for this (metadata) column, if not supplied
+                            explicitly. None to consider this a normal column.
         """
         assert constraint is None or isinstance(constraint, Constraint)
         super().__init__("TEXT", constraint=constraint,
-                         conflict_func=conflict_func)
+                         conflict_func=conflict_func,
+                         metadata_expr=metadata_expr)
 
 
 class IntegerColumn(Column):
     """An integer column"""
 
     def __init__(self, constraint=None,
-                 conflict_func=None):
+                 conflict_func=None, metadata_expr=None):
         """
         Initialize the column description.
 
@@ -74,10 +82,14 @@ class IntegerColumn(Column):
                             SQL function to use to resolve insertion conflicts
                             for this column. None to resolve
                             non-deterministically.
+            metadata_expr:  A (non-empty) SQL expression string to use as the
+                            value for this (metadata) column, if not supplied
+                            explicitly. None to consider this a normal column.
         """
         assert constraint is None or isinstance(constraint, Constraint)
         super().__init__("INTEGER", constraint=constraint,
-                         conflict_func=conflict_func)
+                         conflict_func=conflict_func,
+                         metadata_expr=metadata_expr)
 
 
 class JSONColumn(TextColumn):
@@ -100,7 +112,7 @@ class JSONColumn(TextColumn):
         return json.loads(value) if value is not None else None
 
     def __init__(self, constraint=None,
-                 conflict_func=None):
+                 conflict_func=None, metadata_expr=None):
         """
         Initialize the column description.
 
@@ -112,11 +124,15 @@ class JSONColumn(TextColumn):
                             SQL function to use to resolve insertion conflicts
                             for this column. None to resolve
                             non-deterministically.
+            metadata_expr:  A (non-empty) SQL expression string to use as the
+                            value for this (metadata) column, if not supplied
+                            explicitly. None to consider this a normal column.
         """
         assert constraint is None or isinstance(constraint, Constraint)
 
         super().__init__(constraint=constraint,
-                         conflict_func=conflict_func)
+                         conflict_func=conflict_func,
+                         metadata_expr=metadata_expr)
 
 
 class TimestampColumn(TextColumn):
@@ -133,7 +149,7 @@ class TimestampColumn(TextColumn):
         )
 
     def __init__(self, constraint=None,
-                 conflict_func=None):
+                 conflict_func=None, metadata_expr=None):
         """
         Initialize the column description.
 
@@ -145,11 +161,15 @@ class TimestampColumn(TextColumn):
                             SQL function to use to resolve insertion conflicts
                             for this column. None to resolve
                             non-deterministically.
+            metadata_expr:  A (non-empty) SQL expression string to use as the
+                            value for this (metadata) column, if not supplied
+                            explicitly. None to consider this a normal column.
         """
         assert constraint is None or isinstance(constraint, Constraint)
 
         super().__init__(constraint=constraint,
-                         conflict_func=conflict_func)
+                         conflict_func=conflict_func,
+                         metadata_expr=metadata_expr)
 
 
 class Table(_SQLTable):
