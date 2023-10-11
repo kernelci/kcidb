@@ -31,7 +31,8 @@ class Column:
         """
         return value
 
-    def __init__(self, type, constraint=None):
+    def __init__(self, type, constraint=None,
+                 conflict_func=None):
         """
         Initialize the column schema.
 
@@ -41,11 +42,18 @@ class Column:
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
+            conflict_func:  The (non-empty) string containing the name of the
+                            SQL function to use to resolve insertion conflicts
+                            for this column. None to resolve
+                            non-deterministically.
         """
         assert isinstance(type, str)
         assert constraint is None or isinstance(constraint, Constraint)
+        assert conflict_func is None or \
+            isinstance(conflict_func, str) and conflict_func
         self.type = type
         self.constraint = constraint
+        self.conflict_func = conflict_func
 
     def format_nameless_def(self):
         """
@@ -210,11 +218,18 @@ class Table:
                 c in (self.primary_key or [])
             ) + ") DO UPDATE SET\n" + \
             ",\n".join(
-                f"    {c.name} = COALESCE(" + (
-                    f"{name}.{c.name}, excluded.{c.name}"
-                    if prio_db else
-                    f"excluded.{c.name}, {name}.{c.name}"
-                ) + ")"
+                f"    {c.name} = " + (
+                    f"{c.schema.conflict_func}("
+                    f"COALESCE({name}.{c.name}, excluded.{c.name}), "
+                    f"COALESCE(excluded.{c.name}, {name}.{c.name})"
+                    f")"
+                    if c.schema.conflict_func else
+                    (
+                        f"COALESCE({name}.{c.name}, excluded.{c.name})"
+                        if prio_db else
+                        f"COALESCE(excluded.{c.name}, {name}.{c.name})"
+                    )
+                )
                 for c in self.columns
                 if c.schema.constraint != Constraint.PRIMARY_KEY and
                 c not in (self.primary_key or [])
