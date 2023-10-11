@@ -575,6 +575,33 @@ class Schema(AbstractSchema):
     )
 
     @classmethod
+    def _format_view_query(cls, conn, name):
+        """
+        Format the view query for a table.
+
+        Args:
+            conn:   The connection to the dataset to format the query for.
+            name:   Name of the table to format the view query for.
+        """
+        assert isinstance(conn, cls.Connection)
+        assert isinstance(name, str)
+        assert name in cls.TABLE_MAP
+        schema = cls.TABLE_MAP[name]
+        keys = cls.KEYS_MAP[name]
+        aggs = cls.AGGS_MAP.get(name, {})
+        table_ref = conn.dataset_ref.table("_" + name)
+        return (
+            "SELECT " +
+            ", ".join(
+                f"`{n}`" if n in keys
+                else f"{aggs.get(n, 'ANY_VALUE')}(`{n}`) AS `{n}`"
+                for n in (f.name for f in schema)
+            ) +
+            f" FROM `{table_ref}` GROUP BY " +
+            ", ".join(keys)
+        )
+
+    @classmethod
     def _create_table(cls, conn, name):
         """
         Create a table and its view.
@@ -586,25 +613,14 @@ class Schema(AbstractSchema):
         assert isinstance(conn, cls.Connection)
         assert isinstance(name, str)
         assert name in cls.TABLE_MAP
-        schema = cls.TABLE_MAP[name]
-        keys = cls.KEYS_MAP[name]
-        aggs = cls.AGGS_MAP.get(name, {})
         # Create raw table with duplicate records
         table_ref = conn.dataset_ref.table("_" + name)
-        table = bigquery.table.Table(table_ref, schema=schema)
+        table = bigquery.table.Table(table_ref, schema=cls.TABLE_MAP[name])
         conn.client.create_table(table)
         # Create a view deduplicating the table records
         view_ref = conn.dataset_ref.table(name)
         view = bigquery.table.Table(view_ref)
-        view.view_query = \
-            "SELECT " + \
-            ", ".join(
-                f"`{n}`" if n in keys
-                else f"{aggs.get(n, 'ANY_VALUE')}(`{n}`) AS `{n}`"
-                for n in (f.name for f in schema)
-            ) + \
-            f" FROM `{table_ref}` GROUP BY " + \
-            ", ".join(keys)
+        view.view_query = cls._format_view_query(conn, name)
         conn.client.create_table(view)
 
     def init(self):
