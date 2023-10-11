@@ -667,7 +667,9 @@ class Schema(AbstractSchema):
             for obj_list_name, query in obj_list_queries.items():
                 table_schema = self.TABLES[obj_list_name]
                 cursor.execute(
-                    f"SELECT {table_schema.columns_list}\n"
+                    "SELECT " + ", ".join(
+                        c.name for c in table_schema.columns
+                    ) + "\n" +
                     f"FROM {obj_list_name} INNER JOIN (\n" +
                     textwrap.indent(query[0], " " * 4) +
                     ") AS ids USING(id)\n",

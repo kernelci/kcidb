@@ -610,7 +610,9 @@ class Schema(AbstractSchema):
                     table_schema = self.TABLES[obj_list_name]
                     query_parameters = query[1]
                     query_string = \
-                        f"SELECT {table_schema.columns_list}\n" \
+                        "SELECT " + ", ".join(
+                            c.name for c in table_schema.columns
+                        ) + "\n" + \
                         f" FROM {obj_list_name} INNER JOIN (\n" + \
                         textwrap.indent(query[0], " " * 4) + \
                         ") USING(id)\n"
