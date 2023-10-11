@@ -5,8 +5,10 @@ import textwrap
 import time
 import datetime
 import json
+from copy import deepcopy
 from itertools import permutations
 import pytest
+import dateutil.parser
 import kcidb
 from kcidb.unittest import assert_executes
 
@@ -17,7 +19,7 @@ def test_schemas_main():
     """Check kcidb-db-schemas works"""
     argv = ["kcidb.db.schemas_main", "-d", "sqlite::memory:"]
     assert_executes("", *argv,
-                    stdout_re=r"4\.0: 4\.0\n4\.1: 4\.2\n")
+                    stdout_re=r"4\.0: 4\.0\n4\.1: 4\.2\n4\.2: 4\.3\n")
 
 
 def test_reset(clean_database):
@@ -411,6 +413,235 @@ def test_all_fields(empty_database):
     assert io_data == client.dump(with_metadata=False)
 
 
+def test_metadata_introduction(clean_database):
+    """
+    Check metadata generation works right on database upgrade.
+    """
+    # It's OK, pylint: disable=too-many-branches
+    client = clean_database
+
+    # Find DB/IO schemas on both sides of the metadata introduction
+    pre_metadata_schema = None
+    post_metadata_schema = None
+    for schema in client.get_schemas().items():
+        if schema[1] >= kcidb.io.schema.V4_3:
+            post_metadata_schema = schema
+            break
+        # Find oldest DB schema version with previous I/O schema version
+        # (the oldest is needed for handling partial mux upgrades)
+        # Oh, but it is, pylint: disable=unsubscriptable-object
+        if not pre_metadata_schema or schema[1] != pre_metadata_schema[1]:
+            pre_metadata_schema = schema
+    assert pre_metadata_schema
+    assert pre_metadata_schema[1] >= kcidb.io.schema.V4_1
+    assert post_metadata_schema
+
+    # Initialize the database with pre-metadata schema
+    client.init(pre_metadata_schema[0])
+    # Load data both with and without start_time fields
+    pre_metadata_io = dict(
+        version=dict(major=4, minor=1),
+        checkouts=[
+            dict(
+                id="origin:1",
+                origin="origin",
+                start_time="2020-08-14T23:08:06.967000+00:00",
+            ),
+            dict(
+                id="origin:2",
+                origin="origin",
+            ),
+        ],
+        builds=[
+            dict(
+                checkout_id="origin:1",
+                id="origin:1",
+                origin="origin",
+                start_time="2020-08-14T23:08:06.967000+00:00",
+            ),
+            dict(
+                checkout_id="origin:2",
+                id="origin:2",
+                origin="origin",
+            ),
+        ],
+        tests=[
+            dict(
+                build_id="origin:1",
+                id="origin:1",
+                origin="origin",
+                start_time="2020-08-14T23:08:07.967000+00:00",
+            ),
+            dict(
+                build_id="origin:2",
+                id="origin:2",
+                origin="origin",
+            ),
+        ],
+        issues=[
+            dict(
+                id="origin:1",
+                version=1,
+                origin="origin",
+            ),
+        ],
+        incidents=[
+            dict(
+                id="origin:1",
+                origin="origin",
+                issue_id="origin:1",
+                issue_version=1,
+            ),
+        ]
+    )
+    client.load(pre_metadata_schema[1].upgrade(pre_metadata_io))
+    after_load = client.get_current_time()
+    # Upgrade to post-metadata schema
+    client.upgrade(post_metadata_schema[0])
+    after_upgrade = client.get_current_time()
+    # Get the upgraded data with metadata
+    post_metadata_io = client.dump(with_metadata=True)
+
+    # Sort I/O objects by IDs, so we could compare them
+    for obj_list_name in pre_metadata_schema[1].graph:
+        if obj_list_name:
+            pre_metadata_io[obj_list_name].sort(key=lambda x: x["id"])
+            post_metadata_io[obj_list_name].sort(key=lambda x: x["id"])
+
+    # Check _timestamp is properly inherited/generated
+    for obj_list_name in pre_metadata_schema[1].graph:
+        if obj_list_name:
+            for pre_obj, post_obj in zip(pre_metadata_io[obj_list_name],
+                                         post_metadata_io[obj_list_name]):
+                assert pre_obj["id"] == post_obj["id"]
+                assert "_timestamp" in post_obj, \
+                    f"_timestamp is missing in " \
+                    f"{obj_list_name[:-1]} ID {post_obj['id']}"
+                if "start_time" in pre_obj:
+                    assert post_obj["start_time"] == pre_obj["start_time"], \
+                        f"start_time unexpectedly modified in " \
+                        f"{obj_list_name[:-1]} ID {post_obj['id']}"
+                    assert post_obj["_timestamp"] == pre_obj["start_time"], \
+                        f"_timestamp doesn't match start_time in " \
+                        f"{obj_list_name[:-1]} ID {post_obj['id']}"
+                else:
+                    timestamp = dateutil.parser.isoparse(
+                        post_obj["_timestamp"]
+                    )
+                    assert after_load <= timestamp <= after_upgrade, \
+                        f"Generated _timestamp out range in " \
+                        f"{obj_list_name[:-1]} ID {post_obj['id']}"
+
+    # Check the upgraded schema can generate _timestamp correctly
+    client.empty()
+    before_load = client.get_current_time()
+    client.load(post_metadata_schema[1].upgrade(pre_metadata_io))
+    after_load = client.get_current_time()
+    post_metadata_io = client.dump(with_metadata=True)
+    for obj_list_name in pre_metadata_schema[1].graph:
+        if obj_list_name:
+            for post_obj in post_metadata_io[obj_list_name]:
+                assert "_timestamp" in post_obj, \
+                    f"_timestamp is missing in " \
+                    f"{obj_list_name[:-1]} ID {post_obj['id']}"
+                timestamp = dateutil.parser.isoparse(
+                    post_obj["_timestamp"]
+                )
+                assert before_load <= timestamp <= after_load, \
+                    f"Generated _timestamp out range in " \
+                    f"{obj_list_name[:-1]} ID {post_obj['id']}"
+
+
+def test_metadata_generation_and_fetching(empty_database):
+    """
+    Check metadata generation and fetching works right.
+    """
+    client = empty_database
+    io_data = COMPREHENSIVE_IO_DATA
+    ids = {
+        obj_list_name: [obj["id"] for obj in io_data[obj_list_name]]
+        for obj_list_name in kcidb.io.SCHEMA.graph
+        if obj_list_name
+    }
+
+    # Check metadata is generated
+    before_load = client.get_current_time()
+    client.load(io_data)
+    after_load = client.get_current_time()
+    dump_with_metadata = client.dump()
+    dump_without_metadata = kcidb.io.SCHEMA.new()
+    for obj_list_name in kcidb.io.SCHEMA.graph:
+        if obj_list_name:
+            dump_without_metadata[obj_list_name] = []
+            for obj in dump_with_metadata[obj_list_name]:
+                assert "_timestamp" in obj
+                obj = obj.copy()
+                timestamp = dateutil.parser.isoparse(obj.pop("_timestamp"))
+                assert timestamp >= before_load
+                assert timestamp <= after_load
+                dump_without_metadata[obj_list_name].append(obj)
+    assert dump_without_metadata == io_data
+    assert client.dump(with_metadata=False) == dump_without_metadata
+
+    # Check queries can be done both with and without metadata
+    query_with_metadata = client.query(ids=ids, with_metadata=True)
+    query_without_metadata = kcidb.io.SCHEMA.new()
+    for obj_list_name in kcidb.io.SCHEMA.graph:
+        if obj_list_name:
+            query_without_metadata[obj_list_name] = []
+            for obj in query_with_metadata[obj_list_name]:
+                assert "_timestamp" in obj
+                obj = obj.copy()
+                timestamp = dateutil.parser.isoparse(obj.pop("_timestamp"))
+                assert timestamp >= before_load
+                assert timestamp <= after_load
+                query_without_metadata[obj_list_name].append(obj)
+    assert query_without_metadata == io_data
+    assert client.query(ids=ids, with_metadata=False) == \
+        query_without_metadata
+
+
+def test_metadata_ignoring_and_updating(empty_database):
+    """
+    Check metadata ignoring and updating works right.
+    """
+    client = empty_database
+
+    # Generate a dump with metadata
+    client.load(COMPREHENSIVE_IO_DATA)
+    dump_with_metadata = client.dump()
+    dump_without_metadata = client.dump(with_metadata=False)
+
+    # Check loaded metadata is ignored by default and new one is generated
+    before_later_load = client.get_current_time()
+    client.load(dump_with_metadata)
+    after_later_load = client.get_current_time()
+    later_dump_with_metadata = client.dump()
+    assert later_dump_with_metadata != dump_with_metadata
+    for obj_list_name in kcidb.io.SCHEMA.graph:
+        if obj_list_name:
+            for obj in later_dump_with_metadata[obj_list_name]:
+                assert "_timestamp" in obj
+                timestamp = dateutil.parser.isoparse(obj["_timestamp"])
+                assert timestamp >= before_later_load
+                assert timestamp <= after_later_load
+
+    # Empty the database
+    empty_database.empty()
+
+    # Check metadata can be loaded when requested
+    client.load(dump_with_metadata, with_metadata=True)
+    assert client.dump() == dump_with_metadata
+
+    # Check metadata can be overwritten
+    client.load(later_dump_with_metadata, with_metadata=True)
+    assert client.dump() == later_dump_with_metadata
+
+    # Check loading missing metadata has no effect
+    client.load(dump_without_metadata, with_metadata=True)
+    assert client.dump() == later_dump_with_metadata
+
+
 def test_upgrade(clean_database):
     """
     Test database schema upgrade affects accepted I/O schema, and doesn't
@@ -698,6 +929,169 @@ def test_upgrade(clean_database):
         kcidb.io.schema.V4_2: dict(
             io={
                 "version": {"major": 4, "minor": 2},
+                "checkouts": [{
+                    "id": "_:kernelci:5acb9c2a7bc836e"
+                          "9e5172bbcd2311499c5b4e5f1",
+                    "origin": "kernelci",
+                    "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                       "cd2311499c5b4e5f1",
+                    "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_hash": ""
+                }],
+                "builds": [{
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "origin": "google",
+                    "checkout_id": "_:google:bd355732283c23a365f7c"
+                                   "55206c0385100d1c389"
+                }],
+                "tests": [{
+                    "id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "build_id": "google:google.org:a1d993c3n4c448b2"
+                                "j0l1hbf1",
+                    "origin": "google",
+                    "status": "MISS",
+                }],
+                "issues": [{
+                    "id": "redhat:878234322",
+                    "version": 3,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi"
+                        "?id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit": {
+                        "code": True,
+                        "tool": False,
+                        "harness": False,
+                    },
+                    "comment": "Match USB Bidirectional printer dev",
+                }],
+                "incidents": [{
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "origin": "redhat",
+                    "test_id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "present": True,
+                }],
+            },
+            oo={
+                "revision": [{
+                    "contacts": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_name":
+                        "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_files": None,
+                    "patchset_hash": "",
+                }],
+                "checkout": [{
+                    "comment": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_repository_branch": None,
+                    "git_repository_url": None,
+                    "id":
+                        "_:kernelci:"
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "message_id": None,
+                    "misc": None,
+                    "origin": "kernelci",
+                    "patchset_hash": "",
+                    "start_time": None,
+                    "tree_name": None,
+                    "valid": None,
+                }],
+                "build": [{
+                    "architecture": None,
+                    "checkout_id":
+                        "_:google:"
+                        "bd355732283c23a365f7c55206c0385100d1c389",
+                    "command": None,
+                    "comment": None,
+                    "compiler": None,
+                    "config_name": None,
+                    "config_url": None,
+                    "duration": None,
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "input_files": None,
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "start_time": None,
+                    "valid": None,
+                }],
+                "test": [{
+                    "build_id":
+                        "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "comment": None,
+                    "duration": None,
+                    "environment_comment": None,
+                    "environment_misc": None,
+                    "id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "path": None,
+                    "start_time": None,
+                    "status": "MISS",
+                    "waived": None,
+                }],
+                "bug": [{
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "url":
+                        "https://bugzilla.redhat.com/show_bug.cgi"
+                        "?id=873123",
+                    "subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                }],
+                "issue": [{
+                    "comment": "Match USB Bidirectional printer dev",
+                    "id": "redhat:878234322",
+                    "misc": None,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi?"
+                        "id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "build_valid": None,
+                    "test_status": None,
+                    "version": 3,
+                }],
+                "incident": [{
+                    "build_id": None,
+                    "comment": None,
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "misc": None,
+                    "origin": "redhat",
+                    "test_id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                }],
+            }
+        ),
+        kcidb.io.schema.V4_3: dict(
+            io={
+                "version": {"major": 4, "minor": 3},
                 "checkouts": [{
                     "id": "_:kernelci:5acb9c2a7bc836e"
                           "9e5172bbcd2311499c5b4e5f1",
@@ -1154,5 +1548,39 @@ def test_cleanup(clean_database):
 def test_purge(empty_database):
     """Test the purge() method behaves as documented"""
     client = empty_database
-    # No databases support purging yet
-    assert not client.purge(None)
+
+    # If this is a database and schema which *should* support purging
+    if isinstance(client.driver, (kcidb.db.bigquery.Driver,
+                                  kcidb.db.postgresql.Driver,
+                                  kcidb.db.sqlite.Driver)) and \
+            client.driver.get_schema()[0] >= (4, 2):
+        io_data_1 = deepcopy(COMPREHENSIVE_IO_DATA)
+        io_data_2 = deepcopy(COMPREHENSIVE_IO_DATA)
+        for obj_list_name in kcidb.io.SCHEMA.graph:
+            if obj_list_name:
+                for obj in io_data_2[obj_list_name]:
+                    obj["id"] = "origin:2"
+
+        assert client.purge(None)
+        client.load(io_data_1)
+        assert client.dump(with_metadata=False) == io_data_1
+        after_first_load = client.get_current_time()
+        time.sleep(1)
+        client.load(io_data_2)
+
+        # Check both datasets are in the database
+        # regardless of the object order
+        dump = client.dump(with_metadata=False)
+        for io_data in (io_data_1, io_data_2):
+            for obj_list_name in kcidb.io.SCHEMA.graph:
+                if obj_list_name:
+                    assert obj_list_name in dump
+                    for obj in io_data[obj_list_name]:
+                        assert obj in dump[obj_list_name]
+
+        assert client.purge(after_first_load)
+        assert client.dump(with_metadata=False) == io_data_2
+        assert client.purge(client.get_current_time())
+        assert client.dump() == kcidb.io.SCHEMA.new()
+    else:
+        assert not client.purge(None)
