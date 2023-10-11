@@ -17,7 +17,8 @@ class BoolColumn(Column):
         """
         return bool(value) if value is not None else None
 
-    def __init__(self, constraint=None):
+    def __init__(self, constraint=None,
+                 conflict_func=None):
         """
         Initialize the column description.
 
@@ -25,15 +26,21 @@ class BoolColumn(Column):
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
+            conflict_func:  The (non-empty) string containing the name of the
+                            SQL function to use to resolve insertion conflicts
+                            for this column. None to resolve
+                            non-deterministically.
         """
         assert constraint is None or isinstance(constraint, Constraint)
-        super().__init__("INT", constraint=constraint)
+        super().__init__("INT", constraint=constraint,
+                         conflict_func=conflict_func)
 
 
 class TextColumn(Column):
     """A text column"""
 
-    def __init__(self, constraint=None):
+    def __init__(self, constraint=None,
+                 conflict_func=None):
         """
         Initialize the column description.
 
@@ -41,15 +48,21 @@ class TextColumn(Column):
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
+            conflict_func:  The (non-empty) string containing the name of the
+                            SQL function to use to resolve insertion conflicts
+                            for this column. None to resolve
+                            non-deterministically.
         """
         assert constraint is None or isinstance(constraint, Constraint)
-        super().__init__("TEXT", constraint=constraint)
+        super().__init__("TEXT", constraint=constraint,
+                         conflict_func=conflict_func)
 
 
 class IntegerColumn(Column):
     """An integer column"""
 
-    def __init__(self, constraint=None):
+    def __init__(self, constraint=None,
+                 conflict_func=None):
         """
         Initialize the column description.
 
@@ -57,9 +70,14 @@ class IntegerColumn(Column):
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
+            conflict_func:  The (non-empty) string containing the name of the
+                            SQL function to use to resolve insertion conflicts
+                            for this column. None to resolve
+                            non-deterministically.
         """
         assert constraint is None or isinstance(constraint, Constraint)
-        super().__init__("INTEGER", constraint=constraint)
+        super().__init__("INTEGER", constraint=constraint,
+                         conflict_func=conflict_func)
 
 
 class JSONColumn(TextColumn):
@@ -81,7 +99,8 @@ class JSONColumn(TextColumn):
         """
         return json.loads(value) if value is not None else None
 
-    def __init__(self, constraint=None):
+    def __init__(self, constraint=None,
+                 conflict_func=None):
         """
         Initialize the column description.
 
@@ -89,10 +108,15 @@ class JSONColumn(TextColumn):
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
+            conflict_func:  The (non-empty) string containing the name of the
+                            SQL function to use to resolve insertion conflicts
+                            for this column. None to resolve
+                            non-deterministically.
         """
         assert constraint is None or isinstance(constraint, Constraint)
 
-        super().__init__(constraint=constraint)
+        super().__init__(constraint=constraint,
+                         conflict_func=conflict_func)
 
 
 class TimestampColumn(TextColumn):
@@ -108,7 +132,8 @@ class TimestampColumn(TextColumn):
             timespec='microseconds'
         )
 
-    def __init__(self, constraint=None):
+    def __init__(self, constraint=None,
+                 conflict_func=None):
         """
         Initialize the column description.
 
@@ -116,10 +141,15 @@ class TimestampColumn(TextColumn):
             constraint:     The column's constraint.
                             A member of the Constraint enum, or None,
                             meaning no constraint.
+            conflict_func:  The (non-empty) string containing the name of the
+                            SQL function to use to resolve insertion conflicts
+                            for this column. None to resolve
+                            non-deterministically.
         """
         assert constraint is None or isinstance(constraint, Constraint)
 
-        super().__init__(constraint=constraint)
+        super().__init__(constraint=constraint,
+                         conflict_func=conflict_func)
 
 
 class Table(_SQLTable):
