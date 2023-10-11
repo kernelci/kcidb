@@ -152,8 +152,6 @@ class Table:
             TableColumn(name, column, key_sep)
             for name, column in columns.items()
         ]
-        # A string of comma-separated column names for use in commands
-        self.columns_list = ", ".join(column.name for column in self.columns)
         # A list of columns in the explicitly-specified primary key
         self.primary_key = None if primary_key is None else [
             column
@@ -234,7 +232,8 @@ class Table:
             The formatted "SELECT" command.
         """
         assert isinstance(name, str)
-        return f"SELECT {self.columns_list} FROM {name}"
+        return "SELECT " + ", ".join(c.name for c in self.columns) + \
+            f" FROM {name}"
 
     def format_delete(self, name):
         """
