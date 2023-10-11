@@ -97,7 +97,7 @@ class TableColumn:
         assert isinstance(key_sep, str)
         # Name parts (keys)
         self.keys = name.split(".")
-        # Column name within the table
+        # Column name within the table, quoted for use in SQL statements
         self.name = self.quote_name(key_sep.join(self.keys))
         # Column schema
         self.schema = schema
