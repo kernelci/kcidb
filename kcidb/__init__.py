@@ -130,7 +130,7 @@ class Client:
     # We can live with this for now, pylint: disable=too-many-arguments
     def query_iter(self, ids=None,
                    children=False, parents=False,
-                   objects_per_report=0):
+                   objects_per_report=0, with_metadata=False):
         """
         Match and fetch reports, in object number-limited chunks.
 
@@ -144,6 +144,8 @@ class Client:
                                 matched as well.
             objects_per_report: A positive integer number of objects per each
                                 returned report, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current I/O
@@ -163,25 +165,31 @@ class Client:
 
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
 
         if not self.db_client:
             raise NotImplementedError
 
         return self.db_client.query_iter(ids=ids,
                                          children=children, parents=parents,
-                                         objects_per_report=objects_per_report)
+                                         objects_per_report=objects_per_report,
+                                         with_metadata=with_metadata)
 
-    def query(self, ids=None, children=False, parents=False):
+    def query(self, ids=None, children=False, parents=False,
+              with_metadata=False):
         """
         Match and fetch report objects.
 
         Args:
-            ids:        A dictionary of object list names, and lists of IDs of
-                        objects to match. None means empty dictionary.
-            children:   True if children of matched objects should be matched
-                        as well.
-            parents:    True if parents of matched objects should be matched
-                        as well.
+            ids:            A dictionary of object list names, and lists of
+                            IDs of objects to match. None means empty
+                            dictionary.
+            children:       True if children of matched objects should be
+                            matched as well.
+            parents:        True if parents of matched objects should be
+                            matched as well.
+            with_metadata:  True, if metadata fields should be fetched as
+                            well. False, if not.
 
         Returns:
             The fetched JSON data adhering to the database I/O schema
@@ -197,11 +205,13 @@ class Client:
         assert all(isinstance(k, str) and isinstance(v, list) and
                    all(isinstance(e, str) for e in v)
                    for k, v in ids.items())
+        assert isinstance(with_metadata, bool)
 
         if not self.db_client:
             raise NotImplementedError
         return self.db_client.query(ids=ids,
-                                    children=children, parents=parents)
+                                    children=children, parents=parents,
+                                    with_metadata=with_metadata)
 
 
 def submit_main():
@@ -250,7 +260,8 @@ def query_main():
                  incidents=args.incident_ids),
         parents=args.parents,
         children=args.children,
-        objects_per_report=args.objects_per_report
+        objects_per_report=args.objects_per_report,
+        with_metadata=args.with_metadata
     )
     misc.json_dump_stream(
         query_iter, sys.stdout, indent=args.indent, seq=args.seq

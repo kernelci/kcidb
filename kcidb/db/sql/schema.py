@@ -32,7 +32,7 @@ class Column:
         return value
 
     def __init__(self, type, constraint=None,
-                 conflict_func=None):
+                 conflict_func=None, metadata_expr=None):
         """
         Initialize the column schema.
 
@@ -46,14 +46,20 @@ class Column:
                             SQL function to use to resolve insertion conflicts
                             for this column. None to resolve
                             non-deterministically.
+            metadata_expr:  A (non-empty) SQL expression string to use as the
+                            value for this (metadata) column, if not supplied
+                            explicitly. None to consider this a normal column.
         """
         assert isinstance(type, str)
         assert constraint is None or isinstance(constraint, Constraint)
         assert conflict_func is None or \
             isinstance(conflict_func, str) and conflict_func
+        assert metadata_expr is None or \
+            isinstance(metadata_expr, str) and metadata_expr
         self.type = type
         self.constraint = constraint
         self.conflict_func = conflict_func
+        self.metadata_expr = metadata_expr
 
     def format_nameless_def(self):
         """
@@ -193,26 +199,35 @@ class Table:
         return "CREATE TABLE IF NOT EXISTS " + name + \
             " (\n    " + ",\n    ".join(items) + "\n)"
 
-    def format_insert(self, name, prio_db):
+    def format_insert(self, name, prio_db, with_metadata):
         """
         Format the "INSERT/UPDATE" command template for loading a row into a
         database, observing deduplication logic.
 
         Args:
-            name:       The name of the target table of the command.
-            prio_db:    If true, format the UPDATE part of the command so that
-                        the values already in the database take priority over
-                        the loaded ones, and vice versa otherwise.
+            name:           The name of the target table of the command.
+            prio_db:        If true, format the UPDATE part of the command so
+                            that the values already in the database take
+                            priority over the loaded ones, and vice versa
+                            otherwise.
+            with_metadata:  True, if metadata fields should be inserted too.
+                            False, if not.
         Returns:
             The formatted "INSERT/UPDATE" command template, expecting
             parameters packed by the pack() method.
         """
         assert isinstance(name, str)
+        assert isinstance(with_metadata, bool)
         return \
             f"INSERT INTO {name} (\n" + \
             ",\n".join(f"    {c.name}" for c in self.columns.values()) + \
             "\n)\nVALUES (\n    " + \
-            ", ".join((self.placeholder, ) * len(self.columns)) + \
+            ", ".join(
+                self.placeholder
+                if with_metadata or not c.schema.metadata_expr
+                else c.schema.metadata_expr
+                for c in self.columns.values()
+            ) + \
             "\n)\nON CONFLICT (" + \
             ", ".join(
                 c.name for c in self.columns.values()
@@ -237,20 +252,26 @@ class Table:
                 c not in self.primary_key
             )
 
-    def format_dump(self, name):
+    def format_dump(self, name, with_metadata):
         """
         Format the "SELECT" command for dumping the table contents, returning
         data suitable for unpacking with unpack*() methods.
 
         Args:
-            name:   The name of the target table of the command.
+            name:           The name of the target table of the command.
+            with_metadata:  True, if metadata fields should be dumped too.
+                            False, if not.
 
         Returns:
             The formatted "SELECT" command.
         """
         assert isinstance(name, str)
+        assert isinstance(with_metadata, bool)
         return "SELECT " + \
-            ", ".join(c.name for c in self.columns.values()) + \
+            ", ".join(
+                c.name for c in self.columns.values()
+                if with_metadata or not c.schema.metadata_expr
+            ) + \
             f" FROM {name}"
 
     def format_delete(self, name):
@@ -269,20 +290,26 @@ class Table:
         assert isinstance(name, str)
         return f"DELETE FROM {name}"
 
-    def pack(self, obj):
+    def pack(self, obj, with_metadata):
         """
         Pack a JSON object into its database representation for use with the
         "INSERT" command formatted by the format_insert() method.
 
         Args:
-            obj:    The object to pack.
+            obj:            The object to pack.
+            with_metadata:  True, if any metadata fields in the JSON object
+                            should be included into the packed object.
+                            False, if not.
 
         Returns:
             The packed object.
         """
         assert isinstance(obj, dict)
+        assert isinstance(with_metadata, bool)
         packed_obj = []
         for column in self.columns.values():
+            if not with_metadata and column.schema.metadata_expr:
+                continue
             node = obj
             for i, key in enumerate(column.keys):
                 if key in node:
@@ -296,36 +323,45 @@ class Table:
                     break
         return packed_obj
 
-    def pack_iter(self, obj_seq):
+    def pack_iter(self, obj_seq, with_metadata):
         """
         Create a generator packing JSON objects from the specified sequence
         into their database representation, for use with the "INSERT"
         command formatted by the format_insert() method.
 
         Args:
-            obj_seq:    The object sequence to create the generator for.
+            obj_seq:        The object sequence to create the generator for.
+            with_metadata:  True, if any metadata fields in the JSON objects
+                            should be included into the packed objects.
+                            False, if not.
 
         Returns:
             The generator packing the object sequence.
         """
+        assert isinstance(with_metadata, bool)
         for obj in obj_seq:
-            yield self.pack(obj)
+            yield self.pack(obj, with_metadata)
 
-    def unpack(self, obj, drop_null=True):
+    def unpack(self, obj, with_metadata, drop_null=True):
         """
         Unpack a database representation of an object into its JSON
         representation.
 
         Args:
-            obj:        The object to unpack.
-            drop_null:  Drop fields with NULL values, if true.
-                        Keep them otherwise.
+            obj:            The object to unpack.
+            with_metadata:  Expect metadata columns in the object.
+            drop_null:      Drop fields with NULL values, if true.
+                            Keep them otherwise.
 
         Returns:
             The unpacked object.
         """
         unpacked_obj = {}
-        for column, value in zip(self.columns.values(), obj):
+        columns = filter(
+            lambda c: with_metadata or not c.schema.metadata_expr,
+            self.columns.values()
+        )
+        for column, value in zip(columns, obj):
             if value is None and drop_null:
                 continue
             node = unpacked_obj
@@ -337,18 +373,21 @@ class Table:
                 None if value is None else column.schema.unpack(value)
         return unpacked_obj
 
-    def unpack_iter(self, obj_seq, drop_null=True):
+    def unpack_iter(self, obj_seq, with_metadata, drop_null=True):
         """
         Create a generator unpacking database object representations from
         the specified sequence into their JSON representation.
 
         Args:
-            obj_seq:    The object sequence to create the generator for.
-            drop_null:  Drop fields with NULL values, if true.
-                        Keep them otherwise.
+            obj_seq:        The object sequence to create the generator for.
+            with_metadata:  Expect metadata columns in the objects.
+            drop_null:      Drop fields with NULL values, if true.
+                            Keep them otherwise.
 
         Returns:
             The generator unpacking the object sequence.
         """
         for obj in obj_seq:
-            yield self.unpack(obj, drop_null)
+            yield self.unpack(obj,
+                              with_metadata=with_metadata,
+                              drop_null=drop_null)

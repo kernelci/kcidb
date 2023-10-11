@@ -693,13 +693,15 @@ class Schema(AbstractSchema):
                     node[key] = cls._unpack_node(value)
         return node
 
-    def dump_iter(self, objects_per_report):
+    def dump_iter(self, objects_per_report, with_metadata):
         """
         Dump all data from the database in object number-limited chunks.
 
         Args:
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the I/O version
@@ -708,11 +710,18 @@ class Schema(AbstractSchema):
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
 
         obj_num = 0
         data = self.io.new()
-        for obj_list_name in self.TABLE_MAP:
-            query_string = f"SELECT * FROM `{obj_list_name}`"
+        for obj_list_name, table_schema in self.TABLE_MAP.items():
+            query_string = \
+                "SELECT " + \
+                ", ".join(
+                    f"`{f.name}`" for f in table_schema
+                    if with_metadata or f.name[0] != '_'
+                ) + \
+                f" FROM `{obj_list_name}`"
             query_job = self.conn.query_create(query_string)
             obj_list = None
             for row in query_job:
@@ -734,7 +743,9 @@ class Schema(AbstractSchema):
             assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
             yield data
 
-    def query_iter(self, ids, children, parents, objects_per_report):
+    # We can live with this for now, pylint: disable=too-many-arguments
+    def query_iter(self, ids, children, parents, objects_per_report,
+                   with_metadata):
         """
         Match and fetch objects from the database, in object number-limited
         chunks.
@@ -748,6 +759,8 @@ class Schema(AbstractSchema):
                                 matched as well.
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the I/O version
@@ -762,6 +775,7 @@ class Schema(AbstractSchema):
                    for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
 
         # A dictionary of object list names and two-element lists,
         # containing a SELECT statement (returning IDs of the objects to
@@ -828,7 +842,12 @@ class Schema(AbstractSchema):
         for obj_list_name, query in obj_list_queries.items():
             query_parameters = query[1]
             query_string = \
-                f"SELECT * FROM `{obj_list_name}` INNER JOIN (\n" + \
+                "SELECT " + \
+                ", ".join(
+                    f"`{f.name}`" for f in self.TABLE_MAP[obj_list_name]
+                    if with_metadata or f.name[0] != '_'
+                ) + \
+                f" FROM `{obj_list_name}` INNER JOIN (\n" + \
                 textwrap.indent(query[0], " " * 4) + \
                 ") USING(id)\n"
             query_job = self.conn.query_create(query_string, query_parameters)
@@ -978,13 +997,15 @@ class Schema(AbstractSchema):
         return objs
 
     @classmethod
-    def _pack_node(cls, node):
+    def _pack_node(cls, node, with_metadata):
         """
         Pack a loaded data node (and all its children) to
         the BigQuery storage-compatible representation.
 
         Args:
-            node:   The node to pack.
+            node:           The node to pack.
+            with_metadata:  True, if meta fields (with leading underscore "_")
+                            should be preserved. False, if omitted.
 
         Returns:
             The packed node.
@@ -992,36 +1013,48 @@ class Schema(AbstractSchema):
         if isinstance(node, list):
             node = node.copy()
             for index, value in enumerate(node):
-                node[index] = cls._pack_node(value)
+                node[index] = cls._pack_node(value, with_metadata)
         elif isinstance(node, dict):
             node = node.copy()
             for key, value in list(node.items()):
                 # Flatten the "misc" fields
                 if key == "misc":
                     node[key] = json.dumps(value)
+                # Remove masked metadata
+                elif key.startswith('_') and not with_metadata:
+                    del node[key]
+                # Pack everything else
                 else:
-                    node[key] = cls._pack_node(value)
+                    node[key] = cls._pack_node(value, with_metadata)
         return node
 
-    def load(self, data):
+    def load(self, data, with_metadata):
         """
         Load data into the database.
 
         Args:
-            data:   The JSON data to load into the database.
-                    Must adhere to the I/O version of the database schema.
+            data:           The JSON data to load into the database. Must
+                            adhere to the I/O version of the database schema.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
         """
         assert self.io.is_compatible_directly(data)
         assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
+        assert isinstance(with_metadata, bool)
 
         # Load the data
         for obj_list_name, table_schema in self.TABLE_MAP.items():
             if obj_list_name in data:
-                obj_list = self._pack_node(data[obj_list_name])
+                obj_list = self._pack_node(data[obj_list_name], with_metadata)
                 if not LIGHT_ASSERTS:
                     validate_json_obj_list(table_schema, obj_list)
-                job_config = bigquery.job.LoadJobConfig(autodetect=False,
-                                                        schema=table_schema)
+                job_config = bigquery.job.LoadJobConfig(
+                    autodetect=False,
+                    schema=[f for f in table_schema
+                            if with_metadata or not f.name.startswith("_")]
+                )
                 job = self.conn.client.load_table_from_json(
                     obj_list,
                     self.conn.dataset_ref.table("_" + obj_list_name),

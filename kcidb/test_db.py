@@ -158,7 +158,8 @@ def test_query_main():
                      incidents=["test:incident:1"]),
             parents=True,
             children=True,
-            objects_per_report=10
+            objects_per_report=10,
+            with_metadata=False
         )
         return status
     """)
@@ -201,7 +202,8 @@ def test_load_main():
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
         Client.assert_called_once_with("bigquery:project.dataset")
-        client.load.assert_called_once_with({repr(empty)})
+        client.load.assert_called_once_with({repr(empty)},
+                                            with_metadata=False)
         return status
     """)
     assert_executes(json.dumps(empty), *argv,
@@ -217,8 +219,10 @@ def test_load_main():
             status = function()
         Client.assert_called_once_with("bigquery:project.dataset")
         assert client.load.call_count == 2
-        client.load.assert_has_calls([call({repr(empty)}),
-                                      call({repr(empty)})])
+        client.load.assert_has_calls([
+            call({repr(empty)}, with_metadata=False),
+            call({repr(empty)}, with_metadata=False)
+        ])
         return status
     """)
     assert_executes(json.dumps(empty) + json.dumps(empty), *argv,
@@ -390,7 +394,7 @@ def test_all_fields(empty_database):
     io_data = COMPREHENSIVE_IO_DATA
     client = empty_database
     client.load(io_data)
-    assert io_data == client.dump()
+    assert io_data == client.dump(with_metadata=False)
 
 
 def test_upgrade(clean_database):
@@ -861,7 +865,7 @@ def test_upgrade(clean_database):
             assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
                 last_params["oo"]
             upgraded_io = io_version.upgrade(last_params["io"])
-            assert database.dump() == upgraded_io
+            assert database.dump(with_metadata=False) == upgraded_io
             assert database.query(io_version.get_ids(upgraded_io)) == \
                 upgraded_io
 
@@ -892,7 +896,7 @@ def test_upgrade(clean_database):
 
             # Check we can query it in various ways
             upgraded_io = io_version.upgrade(load_params["io"])
-            assert database.dump() == upgraded_io
+            assert database.dump(with_metadata=False) == upgraded_io
             assert database.query(io_version.get_ids(upgraded_io)) == \
                 upgraded_io
             assert \
@@ -1103,7 +1107,7 @@ def test_test_status(empty_database):
             for status in status_set
         ]
     })
-    dump = client.dump()
+    dump = client.dump(with_metadata=False)
     assert status_set == set(test["id"][2:] for test in dump["tests"])
     assert status_set == set(test["status"] for test in dump["tests"])
 
@@ -1113,7 +1117,7 @@ def test_empty(empty_database):
     io_data = COMPREHENSIVE_IO_DATA
     client = empty_database
     client.load(io_data)
-    assert io_data == client.dump()
+    assert io_data == client.dump(with_metadata=False)
     client.empty()
     assert kcidb.io.SCHEMA.new() == client.dump()
 

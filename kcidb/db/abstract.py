@@ -137,7 +137,7 @@ class Driver(ABC):
             "Target schema is older than the current schema"
 
     @abstractmethod
-    def dump_iter(self, objects_per_report):
+    def dump_iter(self, objects_per_report, with_metadata):
         """
         Dump all data from the database in object number-limited chunks.
         The database must be initialized.
@@ -145,6 +145,8 @@ class Driver(ABC):
         Args:
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be dumped as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current
@@ -153,10 +155,13 @@ class Driver(ABC):
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
         assert self.is_initialized()
 
+    # We can live with this for now, pylint: disable=too-many-arguments
     @abstractmethod
-    def query_iter(self, ids, children, parents, objects_per_report):
+    def query_iter(self, ids, children, parents, objects_per_report,
+                   with_metadata):
         """
         Match and fetch objects from the database, in object number-limited
         chunks. The database must be initialized.
@@ -170,6 +175,8 @@ class Driver(ABC):
                                 matched as well.
             objects_per_report: An integer number of objects per each returned
                                 report data, or zero for no limit.
+            with_metadata:      True, if metadata fields should be fetched as
+                                well. False, if not.
 
         Returns:
             An iterator returning report JSON data adhering to the current
@@ -182,6 +189,7 @@ class Driver(ABC):
                    for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
+        assert isinstance(with_metadata, bool)
         assert self.is_initialized()
 
     @abstractmethod
@@ -203,17 +211,22 @@ class Driver(ABC):
         assert self.is_initialized()
 
     @abstractmethod
-    def load(self, data):
+    def load(self, data, with_metadata):
         """
         Load data into the database.
         The database must be initialized.
 
         Args:
-            data:   The JSON data to load into the database.
-                    Must adhere to the current database schema's version of
-                    the I/O schema.
+            data:           The JSON data to load into the database.
+                            Must adhere to the current database schema's
+                            version of the I/O schema.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
         """
         assert self.is_initialized()
         io_schema = self.get_schema()[1]
         assert io_schema.is_compatible_directly(data)
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
+        assert isinstance(with_metadata, bool)
