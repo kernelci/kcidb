@@ -164,8 +164,8 @@ class Table(_SQLTable):
                             schemas. Columns cannot specify PRIMARY_KEY
                             constraint, if primary_key_columns is specified.
             primary_key:    A list of names of columns constituting the
-                            primary key. None to use the column with the
-                            PRIMARY_KEY constraint instead.
+                            primary key. None or an empty list to use the
+                            column with the PRIMARY_KEY constraint instead.
         """
         # TODO: Switch to using "_" key_sep, and hardcoding it in base class
         super().__init__("?", columns, primary_key, key_sep=".")
