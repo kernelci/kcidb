@@ -126,8 +126,8 @@ class Table:
                             schemas. Columns cannot specify PRIMARY_KEY
                             constraint, if primary_key is specified.
             primary_key:    A list of names of columns constituting the
-                            primary key. None to use the column with the
-                            PRIMARY_KEY constraint instead.
+                            primary key. None or an empty list to use the
+                            column with the PRIMARY_KEY constraint instead.
             key_sep:        String used to replace dots in column names ("key"
                             separator)
         """
@@ -138,35 +138,34 @@ class Table:
             isinstance(column, Column)
             for name, column in columns.items()
         )
-        # A map of columns with PRIMARY_KEY constraint set
-        primary_key_columns = {
-            name: column
-            for name, column in columns.items()
-            if column.constraint == Constraint.PRIMARY_KEY
-        }
-        assert \
-            len(primary_key_columns) <= 1 \
-            if primary_key is None else \
-            isinstance(primary_key, list) and \
-            all(isinstance(column_name, str) and
-                column_name in columns
-                for column_name in primary_key) and \
-            len(primary_key_columns) == 0
+        # The number of columns with PRIMARY_KEY constraint set
+        primary_key_constraints = sum(
+            c.constraint == Constraint.PRIMARY_KEY for c in columns.values()
+        )
+        assert primary_key is None or isinstance(primary_key, list)
+        if primary_key is None:
+            primary_key = []
+        assert (
+            (
+                set(primary_key) <= set(columns) and
+                primary_key_constraints == 0
+            )
+            if primary_key else
+            primary_key_constraints <= 1
+        )
         assert isinstance(key_sep, str)
+
         # Query parameter placeholder
         self.placeholder = placeholder
-        # Column list
-        self.columns = [
-            TableColumn(name, column, key_sep)
+        # Column name -> table column map
+        table_columns = {
+            name: TableColumn(name, column, key_sep)
             for name, column in columns.items()
-        ]
+        }
+        # Column list
+        self.columns = table_columns.values()
         # A list of columns in the explicitly-specified primary key
-        self.primary_key = None if primary_key is None else [
-            column
-            for column_name in primary_key
-            for column in self.columns
-            if column.name == column_name
-        ]
+        self.primary_key = [table_columns[name] for name in primary_key]
 
     def format_create(self, name):
         """
@@ -215,7 +214,7 @@ class Table:
             ", ".join(
                 c.name for c in self.columns
                 if c.schema.constraint == Constraint.PRIMARY_KEY or
-                c in (self.primary_key or [])
+                c in self.primary_key
             ) + ") DO UPDATE SET\n" + \
             ",\n".join(
                 f"    {c.name} = " + (
@@ -232,7 +231,7 @@ class Table:
                 )
                 for c in self.columns
                 if c.schema.constraint != Constraint.PRIMARY_KEY and
-                c not in (self.primary_key or [])
+                c not in self.primary_key
             )
 
     def format_dump(self, name):
