@@ -151,64 +151,76 @@ class Schema(AbstractSchema):
     # The I/O schema the database schema supports
     io = io.schema.V4_0
 
-    # A map of table names and descriptions
-    TABLES = dict(
-        checkouts=Table({
-            "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
-            "origin": TextColumn(constraint=Constraint.NOT_NULL),
-            "tree_name": TextColumn(),
-            "git_repository_url": TextColumn(),
-            "git_commit_hash": TextColumn(),
-            "git_commit_name": TextColumn(),
-            "git_repository_branch": TextColumn(),
-            "patchset_files": JSONColumn(),
-            "patchset_hash": TextColumn(),
-            "message_id": TextColumn(),
-            "comment": TextColumn(),
-            "start_time": TimestampColumn(),
-            "contacts": JSONColumn(),
-            "log_url": TextColumn(),
-            "log_excerpt": TextColumn(),
-            "valid": BoolColumn(),
-            "misc": JSONColumn(),
-        }),
-        builds=Table({
-            "checkout_id": TextColumn(constraint=Constraint.NOT_NULL),
-            "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
-            "origin": TextColumn(constraint=Constraint.NOT_NULL),
-            "comment": TextColumn(),
-            "start_time": TimestampColumn(),
-            "duration": Column("REAL"),
-            "architecture": TextColumn(),
-            "command": TextColumn(),
-            "compiler": TextColumn(),
-            "input_files": JSONColumn(),
-            "output_files": JSONColumn(),
-            "config_name": TextColumn(),
-            "config_url": TextColumn(),
-            "log_url": TextColumn(),
-            "log_excerpt": TextColumn(),
-            "valid": BoolColumn(),
-            "misc": JSONColumn(),
-        }),
-        tests=Table({
-            "build_id": TextColumn(constraint=Constraint.NOT_NULL),
-            "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
-            "origin": TextColumn(constraint=Constraint.NOT_NULL),
-            "environment.comment": TextColumn(),
-            "environment.misc": JSONColumn(),
-            "path": TextColumn(),
-            "comment": TextColumn(),
-            "log_url": TextColumn(),
-            "log_excerpt": TextColumn(),
-            "status": TextColumn(),
-            "waived": BoolColumn(),
-            "start_time": TimestampColumn(),
-            "duration": Column("REAL"),
-            "output_files": JSONColumn(),
-            "misc": JSONColumn()
-        }),
+    # A map of table names and Table constructor arguments
+    # For use by descendants
+    TABLES_ARGS = dict(
+        checkouts=dict(
+            columns={
+                "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
+                "origin": TextColumn(constraint=Constraint.NOT_NULL),
+                "tree_name": TextColumn(),
+                "git_repository_url": TextColumn(),
+                "git_commit_hash": TextColumn(),
+                "git_commit_name": TextColumn(),
+                "git_repository_branch": TextColumn(),
+                "patchset_files": JSONColumn(),
+                "patchset_hash": TextColumn(),
+                "message_id": TextColumn(),
+                "comment": TextColumn(),
+                "start_time": TimestampColumn(),
+                "contacts": JSONColumn(),
+                "log_url": TextColumn(),
+                "log_excerpt": TextColumn(),
+                "valid": BoolColumn(),
+                "misc": JSONColumn(),
+            }
+        ),
+        builds=dict(
+            columns={
+                "checkout_id": TextColumn(constraint=Constraint.NOT_NULL),
+                "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
+                "origin": TextColumn(constraint=Constraint.NOT_NULL),
+                "comment": TextColumn(),
+                "start_time": TimestampColumn(),
+                "duration": Column("REAL"),
+                "architecture": TextColumn(),
+                "command": TextColumn(),
+                "compiler": TextColumn(),
+                "input_files": JSONColumn(),
+                "output_files": JSONColumn(),
+                "config_name": TextColumn(),
+                "config_url": TextColumn(),
+                "log_url": TextColumn(),
+                "log_excerpt": TextColumn(),
+                "valid": BoolColumn(),
+                "misc": JSONColumn(),
+            }
+        ),
+        tests=dict(
+            columns={
+                "build_id": TextColumn(constraint=Constraint.NOT_NULL),
+                "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
+                "origin": TextColumn(constraint=Constraint.NOT_NULL),
+                "environment.comment": TextColumn(),
+                "environment.misc": JSONColumn(),
+                "path": TextColumn(),
+                "comment": TextColumn(),
+                "log_url": TextColumn(),
+                "log_excerpt": TextColumn(),
+                "status": TextColumn(),
+                "waived": BoolColumn(),
+                "start_time": TimestampColumn(),
+                "duration": Column("REAL"),
+                "output_files": JSONColumn(),
+                "misc": JSONColumn()
+            }
+        ),
     )
+
+    # A map of table names and schemas
+    TABLES = {
+        name: Table(**args) for name, args in TABLES_ARGS.items()
+    }
 
     # Queries and their columns for each type of raw object-oriented data.
     # Both should have columns in the same order.
