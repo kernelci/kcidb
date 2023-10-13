@@ -110,6 +110,14 @@ class TableColumn:
         # Column schema
         self.schema = schema
 
+    def format_def(self):
+        """
+        Format the column's definition.
+
+        Returns: The formatted column definition.
+        """
+        return self.name + " " + self.schema.format_nameless_def()
+
 
 class Table:
     """A table schema"""
@@ -177,10 +185,7 @@ class Table:
         Returns:
             The formatted "CREATE" command.
         """
-        items = [
-            column.name + " " + column.schema.format_nameless_def()
-            for column in self.columns
-        ]
+        items = [column.format_def() for column in self.columns]
         if self.primary_key:
             items.append(
                 "PRIMARY KEY(" +
