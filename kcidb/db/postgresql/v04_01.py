@@ -20,35 +20,47 @@ class Schema(PreviousSchema):
     # The I/O schema the database schema supports
     io = io.schema.V4_2
 
-    # A map of table names to table definitions
-    TABLES = dict(
-        **PreviousSchema.TABLES,
-        issues=Table({
-            "id": TextColumn(constraint=Constraint.NOT_NULL),
-            "version": IntegerColumn(constraint=Constraint.NOT_NULL),
-            "origin": TextColumn(constraint=Constraint.NOT_NULL),
-            "report_url": TextColumn(),
-            "report_subject": TextColumn(),
-            "culprit.code": BoolColumn(),
-            "culprit.tool": BoolColumn(),
-            "culprit.harness": BoolColumn(),
-            "build_valid": BoolColumn(),
-            "test_status": TextColumn(),
-            "comment": TextColumn(),
-            "misc": JSONColumn()
-        }, primary_key=["id", "version"]),
-        incidents=Table({
-            "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
-            "origin": TextColumn(constraint=Constraint.NOT_NULL),
-            "issue_id": TextColumn(constraint=Constraint.NOT_NULL),
-            "issue_version": IntegerColumn(constraint=Constraint.NOT_NULL),
-            "build_id": TextColumn(),
-            "test_id": TextColumn(),
-            "present": BoolColumn(),
-            "comment": TextColumn(),
-            "misc": JSONColumn(),
-        }),
+    # A map of table names and Table constructor arguments
+    # For use by descendants
+    TABLES_ARGS = dict(
+        **PreviousSchema.TABLES_ARGS,
+        issues=dict(
+            columns={
+                "id": TextColumn(constraint=Constraint.NOT_NULL),
+                "version": IntegerColumn(constraint=Constraint.NOT_NULL),
+                "origin": TextColumn(constraint=Constraint.NOT_NULL),
+                "report_url": TextColumn(),
+                "report_subject": TextColumn(),
+                "culprit.code": BoolColumn(),
+                "culprit.tool": BoolColumn(),
+                "culprit.harness": BoolColumn(),
+                "build_valid": BoolColumn(),
+                "test_status": TextColumn(),
+                "comment": TextColumn(),
+                "misc": JSONColumn()
+            },
+            primary_key=["id", "version"]
+        ),
+        incidents=dict(
+            columns={
+                "id": TextColumn(constraint=Constraint.PRIMARY_KEY),
+                "origin": TextColumn(constraint=Constraint.NOT_NULL),
+                "issue_id": TextColumn(constraint=Constraint.NOT_NULL),
+                "issue_version":
+                    IntegerColumn(constraint=Constraint.NOT_NULL),
+                "build_id": TextColumn(),
+                "test_id": TextColumn(),
+                "present": BoolColumn(),
+                "comment": TextColumn(),
+                "misc": JSONColumn(),
+            }
+        ),
     )
+
+    # A map of table names and schemas
+    TABLES = {
+        name: Table(**args) for name, args in TABLES_ARGS.items()
+    }
 
     # Queries and their columns for each type of raw object-oriented data.
     # Both should have columns in the same order.
