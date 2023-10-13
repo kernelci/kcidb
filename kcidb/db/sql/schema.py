@@ -166,14 +166,12 @@ class Table:
         # Query parameter placeholder
         self.placeholder = placeholder
         # Column name -> table column map
-        table_columns = {
+        self.columns = {
             name: TableColumn(name, column, key_sep)
             for name, column in columns.items()
         }
-        # Column list
-        self.columns = table_columns.values()
         # A list of columns in the explicitly-specified primary key
-        self.primary_key = [table_columns[name] for name in primary_key]
+        self.primary_key = [self.columns[name] for name in primary_key]
 
     def format_create(self, name):
         """
@@ -185,7 +183,7 @@ class Table:
         Returns:
             The formatted "CREATE" command.
         """
-        items = [column.format_def() for column in self.columns]
+        items = [column.format_def() for column in self.columns.values()]
         if self.primary_key:
             items.append(
                 "PRIMARY KEY(" +
@@ -212,12 +210,12 @@ class Table:
         assert isinstance(name, str)
         return \
             f"INSERT INTO {name} (\n" + \
-            ",\n".join(f"    {c.name}" for c in self.columns) + \
+            ",\n".join(f"    {c.name}" for c in self.columns.values()) + \
             "\n)\nVALUES (\n    " + \
             ", ".join((self.placeholder, ) * len(self.columns)) + \
             "\n)\nON CONFLICT (" + \
             ", ".join(
-                c.name for c in self.columns
+                c.name for c in self.columns.values()
                 if c.schema.constraint == Constraint.PRIMARY_KEY or
                 c in self.primary_key
             ) + ") DO UPDATE SET\n" + \
@@ -234,7 +232,7 @@ class Table:
                         f"COALESCE(excluded.{c.name}, {name}.{c.name})"
                     )
                 )
-                for c in self.columns
+                for c in self.columns.values()
                 if c.schema.constraint != Constraint.PRIMARY_KEY and
                 c not in self.primary_key
             )
@@ -251,7 +249,8 @@ class Table:
             The formatted "SELECT" command.
         """
         assert isinstance(name, str)
-        return "SELECT " + ", ".join(c.name for c in self.columns) + \
+        return "SELECT " + \
+            ", ".join(c.name for c in self.columns.values()) + \
             f" FROM {name}"
 
     def format_delete(self, name):
@@ -283,7 +282,7 @@ class Table:
         """
         assert isinstance(obj, dict)
         packed_obj = []
-        for column in self.columns:
+        for column in self.columns.values():
             node = obj
             for i, key in enumerate(column.keys):
                 if key in node:
@@ -326,7 +325,7 @@ class Table:
             The unpacked object.
         """
         unpacked_obj = {}
-        for column, value in zip(self.columns, obj):
+        for column, value in zip(self.columns.values(), obj):
             if value is None and drop_null:
                 continue
             node = unpacked_obj

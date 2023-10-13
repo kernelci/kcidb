@@ -680,7 +680,7 @@ class Schema(AbstractSchema):
                 table_schema = self.TABLES[obj_list_name]
                 cursor.execute(
                     "SELECT " + ", ".join(
-                        c.name for c in table_schema.columns
+                        c.name for c in table_schema.columns.values()
                     ) + "\n" +
                     f"FROM {obj_list_name} INNER JOIN (\n" +
                     textwrap.indent(query[0], " " * 4) +
