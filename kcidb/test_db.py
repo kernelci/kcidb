@@ -943,7 +943,8 @@ def test_query(empty_database):
     assert client.query(ids=dict(checkouts=["_:1"]), children=True) in \
         [
             {
-                "version": {"major": 4, "minor": 2},
+                "version": {"major": kcidb.io.SCHEMA.major,
+                            "minor": kcidb.io.SCHEMA.minor},
                 "checkouts": [
                     {"id": "_:1", "origin": "_"}
                 ],
@@ -981,7 +982,8 @@ def test_query(empty_database):
         ]
 
     unambigious_result = {
-        "version": {"major": 4, "minor": 2},
+        "version": {"major": kcidb.io.SCHEMA.major,
+                    "minor": kcidb.io.SCHEMA.minor},
         "checkouts": [
             {"id": "_:2", "origin": "_"}
         ],
@@ -1020,7 +1022,8 @@ def test_query(empty_database):
 
     assert client.query(ids=dict(incidents=["_:3"]), parents=True) == \
         {
-            "version": {"major": 4, "minor": 2},
+            "version": {"major": kcidb.io.SCHEMA.major,
+                        "minor": kcidb.io.SCHEMA.minor},
             "checkouts": [
                 {"id": "_:2", "origin": "_"}
             ],
@@ -1046,7 +1049,8 @@ def test_query(empty_database):
         }
 
     unambigious_result = {
-        "version": {"major": 4, "minor": 2},
+        "version": {"major": kcidb.io.SCHEMA.major,
+                    "minor": kcidb.io.SCHEMA.minor},
         "checkouts": [
             {"id": "_:2", "origin": "_"}
         ],
