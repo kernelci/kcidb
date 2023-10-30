@@ -51,6 +51,7 @@ def execute(stdin, name, *args, driver_source="return function()"):
     )
 
 
+# It's OK, pylint: disable=too-many-arguments
 def assert_executes(stdin, name, *args,
                     driver_source="return function()",
                     stdout_re="", stderr_re="", status=0):
