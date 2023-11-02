@@ -12,11 +12,8 @@ import argparse
 import logging
 import json
 from textwrap import indent
+from importlib import metadata
 import dateutil.parser
-try:  # Python 3.9
-    from importlib import metadata
-except ImportError:  # Python 3.6
-    import importlib_metadata as metadata
 from google.cloud import secretmanager
 import jq
 import kcidb.io as io

@@ -5,7 +5,7 @@ draft: false
 weight: 10
 description: "How to install the KCIDB package"
 ---
-KCIDB requires Python v3.6 or later.
+KCIDB requires Python v3.9 or later.
 
 To install the package for the current user, run this command:
 
