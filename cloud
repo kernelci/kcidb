@@ -1322,6 +1322,7 @@ function cloud_function_deploy() {
         "cloud_functions.$name" deploy \
         mute gcloud functions deploy --quiet --project="$project" \
                                      --region="$CLOUD_FUNCTION_REGION" \
+                                     --docker-registry=artifact-registry \
                                      --source "$source" "${prefix}${name}" \
                                      --entry-point "kcidb_${name}" \
                                      "$@"
