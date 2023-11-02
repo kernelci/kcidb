@@ -56,13 +56,7 @@ def validate(catalog):
         `jsonschema.exceptions.ValidationError` if the catalog
             is invalid
     """
-    try:
-        format_checker = jsonschema.Draft7Validator.FORMAT_CHECKER
-    except AttributeError:
-        # Nevermind, pylint: disable=fixme
-        # TODO Remove once we stop supporting Python 3.6
-        format_checker = jsonschema.draft7_format_checker
-
+    format_checker = jsonschema.Draft7Validator.FORMAT_CHECKER
     jsonschema.validate(instance=catalog, schema=JSON,
                         format_checker=format_checker)
     return catalog

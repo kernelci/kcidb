@@ -24,7 +24,7 @@ with open("README.md", "r", encoding='utf8') as fh:
 setuptools.setup(
     name="kcidb",
     version="10",
-    python_requires=">=3.6",
+    python_requires=">=3.9",
     author="kernelci.org",
     author_email="kernelci@lists.linux.dev",
     description="KCIDB = Linux Kernel CI reporting tools",
@@ -37,7 +37,7 @@ setuptools.setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GPLv2+",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Database :: Front-Ends",
     ],
     # Must match requirements.txt.
@@ -50,8 +50,6 @@ setuptools.setup(
         "google-cloud-firestore",
         "google-cloud-secret-manager",
         "psycopg2",
-        # TODO: remove with minimal requirement of Python 3.8
-        "importlib_metadata",
         "jsonschema[format]",
         "requests",
         "pyyaml",

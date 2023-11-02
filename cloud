@@ -1353,6 +1353,7 @@ function cloud_function_withdraw() {
 
 # Output deployment environment for Cloud Functions
 # Args: --format=yaml|sh
+#       --project=ID
 #       --log-level=NAME
 #       --cache-bucket-name=NAME
 #       --optimize=PYTHONOPTIMIZE
@@ -1373,6 +1374,7 @@ function cloud_function_withdraw() {
 #       --empty-test-databases=SPEC_LIST
 function cloud_functions_env() {
     params="$(getopt_vars format \
+                          project \
                           log_level \
                           optimize \
                           heavy_asserts \
@@ -1392,6 +1394,7 @@ function cloud_functions_env() {
                           -- "$@")"
     eval "$params"
     declare -A env=(
+        [GCP_PROJECT]="$project"
         [KCIDB_LOG_LEVEL]="$log_level"
         [PYTHONOPTIMIZE]="${optimize}"
         [KCIDB_LOAD_QUEUE_TOPIC]="$new_topic"
@@ -1489,7 +1492,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           pick_notifications \
                           --env-vars-file "$env_yaml_file" \
-                          --runtime python37 \
+                          --runtime python39 \
                           --trigger-topic "${pick_notifications_trigger_topic}" \
                           --memory 256MB \
                           --max-instances=1 \
@@ -1498,7 +1501,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           send_notification \
                           --env-vars-file "$env_yaml_file" \
-                          --runtime python37 \
+                          --runtime python39 \
                           --trigger-event "${trigger_event}" \
                           --trigger-resource "${trigger_resource}" \
                           --memory 256MB \
@@ -1509,7 +1512,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           spool_notifications \
                           --env-vars-file "$env_yaml_file" \
-                          --runtime python37 \
+                          --runtime python39 \
                           --trigger-topic "${updated_topic}" \
                           --memory 2048MB \
                           --max-instances=10 \
@@ -1518,7 +1521,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           "$cache_redirect_function_name" \
                           --env-vars-file "$env_yaml_file" \
-                          --runtime python37 \
+                          --runtime python39 \
                           --trigger-http \
                           --allow-unauthenticated \
                           --memory 256MB \
@@ -1528,7 +1531,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           cache_urls \
                           --env-vars-file "$env_yaml_file" \
-                          --runtime python37 \
+                          --runtime python39 \
                           --trigger-topic "${updated_urls_topic}" \
                           --memory 256MB \
                           --max-instances=1 \
@@ -1537,7 +1540,7 @@ function cloud_functions_deploy() {
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
                           load_queue \
                           --env-vars-file "$env_yaml_file" \
-                          --runtime python37 \
+                          --runtime python39 \
                           --trigger-topic "${load_queue_trigger_topic}" \
                           --memory 1024MB \
                           --max-instances=1 \
@@ -1991,6 +1994,7 @@ function execute_command() {
     )
 
     declare -r -a env_args=(
+        --project="$project"
         --log-level="$log_level"
         --cache-bucket-name="$cache_bucket_name"
         --cache-redirector-url="$cache_redirector_url"

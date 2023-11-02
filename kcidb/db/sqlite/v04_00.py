@@ -212,7 +212,6 @@ class Schema(AbstractSchema):
 
     # Queries and their columns for each type of raw object-oriented data.
     # Both should have columns in the same order.
-    # NOTE: Relying on dictionaries preserving order in Python 3.6+
     OO_QUERIES = dict(
         revision=dict(
             statement="SELECT\n"
