@@ -424,6 +424,7 @@ def test_metadata_introduction(clean_database):
     pre_metadata_schema = None
     post_metadata_schema = None
     for schema in client.get_schemas().items():
+        print("schema:", schema)
         if schema[1] >= kcidb.io.schema.V4_3:
             post_metadata_schema = schema
             break
@@ -432,9 +433,11 @@ def test_metadata_introduction(clean_database):
         # Oh, but it is, pylint: disable=unsubscriptable-object
         if not pre_metadata_schema or schema[1] != pre_metadata_schema[1]:
             pre_metadata_schema = schema
+            print("pre_metadata_schema:", pre_metadata_schema)
     assert pre_metadata_schema
     assert pre_metadata_schema[1] >= kcidb.io.schema.V4_1
     assert post_metadata_schema
+    print("post_metadata_schema:", post_metadata_schema)
 
     # Initialize the database with pre-metadata schema
     client.init(pre_metadata_schema[0])
