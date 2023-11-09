@@ -4,6 +4,7 @@ from itertools import zip_longest
 import textwrap
 import pytest
 from kcidb_io.schema import V1_1, V2_0, V3_0, V4_0, V4_1
+from kcidb.db import Client
 from kcidb.db.mux import Driver as MuxDriver
 from kcidb.db.null import Driver as NullDriver
 from kcidb.db.misc import UnsupportedSchema
@@ -434,3 +435,27 @@ def test_schemas():  # It's OK, pylint: disable=too-many-branches
         if version > driver.get_schema()[0]:
             driver.upgrade(version)
     assert driver.get_schema() == ((8, 1), V4_1)
+
+
+def test_schemas_refresh(clean_database):
+    """Check that schemas are refreshed after cleanup/reset"""
+    client = clean_database
+    if not isinstance(client.driver, MuxDriver):
+        pytest.skip("Applicable to mux driver only")
+
+    clean_schemas = client.get_schemas()
+    client.init()
+    assert client.get_schemas() == clean_schemas
+
+    second_client = Client(client.database)
+    initialized_schemas = second_client.get_schemas()
+    assert initialized_schemas != clean_schemas
+
+    client.reset()
+    assert client.get_schemas() == initialized_schemas
+
+    second_client.cleanup()
+    assert second_client.get_schemas() == clean_schemas
+
+    client.reset()
+    assert client.get_schemas() == clean_schemas

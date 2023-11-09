@@ -240,6 +240,8 @@ class Driver(AbstractDriver):
         """
         for driver in self.drivers:
             driver.cleanup()
+        # Get full range of schemas from the drivers for clean databases
+        self.schemas = Driver._drivers_get_schemas(self.drivers)
         self.version = None
 
     def empty(self):
