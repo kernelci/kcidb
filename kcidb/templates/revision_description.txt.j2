@@ -15,11 +15,10 @@ OVERVIEW
        Patches: {{ misc_macros.valid_badge(revision.checkouts_valid) }}
 {% endif %}
 {% if revision.builds %}
-        Builds: {{ misc_macros.valid_badge(revision.builds_valid) }}
+        Builds: {{ build_macros.build_status(revision.builds) }}
 {% endif %}
 {% if revision.tests %}
-         Tests: {{ test_macros.waived_status_badge(revision.tests_root.waived,
-                                                   revision.tests_root.status) }}
+         Tests: {{ test_macros.test_status(revision.tests_root.waived_status_nodes) }}
 {% endif %}
 
 REVISION

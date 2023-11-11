@@ -13,11 +13,10 @@ OVERVIEW
 
       Checkout: {{ misc_macros.valid_badge(checkout.valid) }}
 {% if checkout.builds %}
-        Builds: {{ misc_macros.valid_badge(checkout.builds_valid) }}
+        Builds: {{ build_macros.build_status(checkout.builds) }}
 {% endif %}
 {% if checkout.tests %}
-         Tests: {{ test_macros.waived_status_badge(checkout.tests_root.waived,
-                                                   checkout.tests_root.status) }}
+         Tests: {{ test_macros.test_status(checkout.tests_root.waived_status_nodes) }}
 {% endif %}
 
 CHECKOUT
