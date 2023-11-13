@@ -35,11 +35,10 @@ This is Red Hat’s kernel CI service.  They run tests on a variety of
 enterprise class machines.  This service is used to test the kernel package
 in the Red Hat Enterprise Linux (RHEL) product.
 
-* See [Contributing to
-  CKI](https://cki-project.org/docs/test-maintainers/onboarding/) for
+* See [Contributing to CKI](https://cki-project.org/l/adding-tests) for
   instructions to add tests
 * See [Contributing a submaintainer
-  tree](https://cki-project.org/docs/user_docs/onboarding/) for instructions to
+  tree](https://cki-project.org/l/adding-kernel-tree) for instructions to
   test a git branch
 * You can find more details at the [cki-project.org](https://cki-project.org)
 * Contact: Send questions to **cki-project@redhat.com**
