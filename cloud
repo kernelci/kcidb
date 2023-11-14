@@ -2479,7 +2479,7 @@ function execute() {
     if (( $# )); then
         declare version="$1"; shift
     else
-        version="0"
+        declare version="0"
     fi
     if [[ $version =~ ^[0-9]+$ ]]; then
         version=$(printf %02u "$version")
