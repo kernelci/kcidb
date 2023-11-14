@@ -18,6 +18,11 @@ def test_light_asserts_are_disabled():
         "environment variable set to a non-empty string"
 
 
+def test_assertions_enabled():
+    """Check python assertions are enabled"""
+    assert __debug__, "Tests must run with assertions enabled"
+
+
 def test_json_output_options():
     """Check JSON output options work"""
     assert_executes("", "kcidb.schema_main",
