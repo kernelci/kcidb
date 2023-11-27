@@ -49,7 +49,7 @@ setuptools.setup(
         "functions-framework",
         "google-cloud-firestore",
         "google-cloud-secret-manager",
-        "psycopg2",
+        "psycopg2-binary",
         "jsonschema[format]",
         "requests",
         "pyyaml",
