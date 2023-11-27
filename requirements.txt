@@ -5,7 +5,7 @@ google-cloud-pubsub
 google-cloud-firestore
 google-cloud-storage
 google-cloud-secret-manager
-psycopg2
+psycopg2-binary
 functions-framework
 jsonschema[format]
 requests
