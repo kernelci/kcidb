@@ -12,6 +12,7 @@ import datetime
 import email
 import email.policy
 from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 from kcidb.misc import ArgumentParser, iso_timestamp, log_and_print_excepthook
 from kcidb.monitor.misc import is_valid_firestore_id
 from kcidb.monitor.output import Notification
@@ -238,8 +239,9 @@ class Client:
             isinstance(until, datetime.datetime) and until.tzinfo
         if until is None:
             until = datetime.datetime.now(datetime.timezone.utc)
+        field_filter = FieldFilter("created_at", "<=", until)
         for snapshot in \
-            self._get_coll().where("created_at", "<=", until). \
+            self._get_coll().where(filter=field_filter). \
                 select([]).stream():
             snapshot.reference.delete()
 
@@ -259,8 +261,9 @@ class Client:
             isinstance(timestamp, datetime.datetime) and timestamp.tzinfo
         if timestamp is None:
             timestamp = datetime.datetime.now(datetime.timezone.utc)
+        field_filter = FieldFilter("picked_until", "<", timestamp)
         for snapshot in \
-            self._get_coll().where("picked_until", "<", timestamp). \
+            self._get_coll().where(filter=field_filter). \
                 select([]).stream():
             id = snapshot.id
             assert Client.is_valid_id(id)
