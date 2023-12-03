@@ -434,3 +434,144 @@ def test_notify_main():
                               "Subject: Test build: .*\x00"
                               "Subject: Test test: .*\x00"
                               "Subject: Test test: .*\x00")
+
+
+def test_ingest_main():
+    """Check kcidb-ingest works"""
+    assert_executes('', "kcidb.ingest_main")
+    assert_executes('{', "kcidb.ingest_main",
+                    status=1, stderr_re=".*JSONParseError.*")
+    assert_executes('{}', "kcidb.ingest_main",
+                    status=1, stderr_re=".*ValidationError.*")
+    empty = json.dumps(dict(version=dict(major=SCHEMA.major,
+                                         minor=SCHEMA.minor)))
+    assert_executes(empty, "kcidb.ingest_main")
+    assert_executes(empty + empty, "kcidb.ingest_main")
+    git_commit_hash1 = "4ff6a2469104218a044ff595a0c1eb469ca7ea01"
+    git_commit_hash2 = "fe3fc1bc47d6333d7d06bc530c6e0c1044bab536"
+
+    one_of_everything = json.dumps(dict(
+        version=dict(major=SCHEMA.major, minor=SCHEMA.minor),
+        checkouts=[
+            dict(id="test:checkout:1",
+                 git_commit_hash=git_commit_hash1,
+                 patchset_hash="",
+                 origin="test")
+        ],
+        builds=[
+            dict(id="test:build:1",
+                 origin="test",
+                 checkout_id="test:checkout:1",
+                 valid=False)
+        ],
+        tests=[
+            dict(id="test:test:1",
+                 origin="test",
+                 build_id="test:build:1",
+                 waived=False,
+                 status="PASS")
+        ],
+        issues=[
+            dict(id="test:issue:1",
+                 version=1,
+                 origin="test",
+                 report_url="https://test.com/bug/1",
+                 report_subject="Bug in kernel",
+                 culprit=dict(code=True)),
+        ],
+        incidents=[
+            dict(id="test:incident:1",
+                 issue_id="test:issue:1",
+                 issue_version=1,
+                 origin="test",
+                 test_id="test:test:1",
+                 present=True),
+        ],
+    ))
+    assert_executes(one_of_everything, "kcidb.ingest_main",
+                    stdout_re="Subject: Test revision: .*\x00"
+                              "Subject: Test checkout: .*\x00"
+                              "Subject: Test build: .*\x00"
+                              "Subject: Test test: .*\x00"
+                              "Subject: Test bug: .*\x00"
+                              "Subject: Test issue: .*\x00"
+                              "Subject: Test incident: .*\x00")
+
+    two_of_everything = json.dumps(dict(
+        version=dict(major=SCHEMA.major, minor=SCHEMA.minor),
+        checkouts=[
+            dict(id="test:checkout:1",
+                 git_commit_hash=git_commit_hash1,
+                 patchset_hash="",
+                 origin="test"),
+            dict(id="test:checkout:2",
+                 git_commit_hash=git_commit_hash2,
+                 patchset_hash="",
+                 origin="test"),
+        ],
+        builds=[
+            dict(id="test:build:1",
+                 origin="test",
+                 checkout_id="test:checkout:1",
+                 valid=False),
+            dict(id="test:build:2",
+                 origin="test",
+                 checkout_id="test:checkout:2",
+                 valid=False),
+        ],
+        tests=[
+            dict(id="test:test:1",
+                 origin="test",
+                 build_id="test:build:1",
+                 waived=False,
+                 status="PASS"),
+            dict(id="test:test:2",
+                 origin="test",
+                 build_id="test:build:2",
+                 waived=False,
+                 status="FAIL"),
+        ],
+        issues=[
+            dict(id="test:issue:1",
+                 version=1,
+                 origin="test",
+                 report_url="https://test.com/bug/1",
+                 report_subject="Bug in kernel",
+                 culprit=dict(code=True)),
+            dict(id="test:issue:2",
+                 version=1,
+                 origin="test",
+                 report_url="https://non-test.com/bug/1",
+                 report_subject="Another bug in kernel",
+                 culprit=dict(tool=True))
+        ],
+        incidents=[
+            dict(id="test:incident:1",
+                 issue_id="test:issue:1",
+                 issue_version=1,
+                 origin="test",
+                 test_id="test:test:1",
+                 present=True),
+            dict(id="test:incident:2",
+                 issue_id="test:issue:2",
+                 issue_version=1,
+                 origin="test",
+                 test_id="test:test:2",
+                 present=True)
+        ],
+    ))
+
+    assert_executes(two_of_everything,
+                    "kcidb.ingest_main",
+                    stdout_re="Subject: Test revision: .*\x00"
+                              "Subject: Test revision: .*\x00"
+                              "Subject: Test checkout: .*\x00"
+                              "Subject: Test checkout: .*\x00"
+                              "Subject: Test build: .*\x00"
+                              "Subject: Test build: .*\x00"
+                              "Subject: Test bug: .*\x00"
+                              "Subject: Test bug: .*\x00"
+                              "Subject: Test issue: .*\x00"
+                              "Subject: Test issue: .*\x00"
+                              "Subject: Test incident: .*\x00"
+                              "Subject: Test incident: .*\x00")
