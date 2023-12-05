@@ -493,7 +493,7 @@ def argparse_add_args(parser, database=None):
         help=("Specify DATABASE to use, formatted as <DRIVER>:<PARAMS>. " +
               "Use --database-help for more details." +
               ("" if database is None
-               else f"Default is {database!r}.")),
+               else f" Default is {database!r}.")),
         default=database,
         required=(database is None)
     )
