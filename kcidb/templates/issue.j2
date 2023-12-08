@@ -42,7 +42,9 @@
     In {{ branches | length -}}
     {{- " branch" if (branches | length) == 1 else " branches" }}:
         {% for branch in branches[:max_list_len] %}
-            {{- "        " + branch[0] + " " + branch[1] }}
+            {{- "        " +
+                ("?" if branch[0] is none else branch[0]) + " " +
+                ("?" if branch[1] is none else branch[1]) }}
         {% endfor %}
         {% if (branches | length) > max_list_len %}
             {{- "        ..." }}

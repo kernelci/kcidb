@@ -3,10 +3,13 @@
 {% macro summary(incident) %}
     {%- if incident.test -%}
         {{- "Incident in " +
-            (incident.test.path | default("an unknown test")) +
+            ("an unknown test"
+             if incident.test.path | default(none) is none
+             else incident.test.path) +
             " on " +
-            (incident.test.build.architecture |
-             default("an unknown architecture")) -}}
+            ("an unknown architecture"
+             if incident.test.build.architecture | default(none) is none
+             else incident.test.build.architecture) -}}
         {%- if incident.issue.report_subject -%}
             {{- ": " + incident.issue.report_subject -}}
         {%- endif -%}
