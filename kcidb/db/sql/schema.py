@@ -95,6 +95,28 @@ class TableColumn:
             return re.sub(r'(^|$|")', r'"\1', name)
         return '""'
 
+    @classmethod
+    def adapt_name(cls, name, key_sep):
+        """
+        Convert a dot-separated name to a quoted table column name (safe for
+        use in SQL statements), and the list of its keys, using the specified
+        "key" separator.
+
+        Args:
+            name:       The name of the column consisting of dot-separated
+                        parts ("keys").
+            key_sep:    String used to replace dots in column names ("key"
+                        separator)
+
+        Returns: The quoted name, and the list of name "keys".
+        """
+        assert isinstance(name, str)
+        assert isinstance(key_sep, str)
+        # Name parts (keys)
+        keys = name.split(".")
+        # Column name within the table, quoted for use in SQL statements
+        return cls.quote_name(key_sep.join(keys)), keys
+
     def __init__(self, name, schema, key_sep):
         """
         Initialize the table schema column.
@@ -109,10 +131,9 @@ class TableColumn:
         assert isinstance(name, str)
         assert isinstance(schema, Column)
         assert isinstance(key_sep, str)
-        # Name parts (keys)
-        self.keys = name.split(".")
-        # Column name within the table, quoted for use in SQL statements
-        self.name = self.quote_name(key_sep.join(self.keys))
+        # Column name within the table, quoted for use in SQL statements,
+        # and column name parts (keys)
+        self.name, self.keys = self.adapt_name(name, key_sep)
         # Column schema
         self.schema = schema
 
