@@ -1634,12 +1634,18 @@ function scheduler_job_withdraw() {
 }
 
 # Deploy to scheduler
-# Args: project prefix load_queue_trigger_topic pick_notifications_trigger_topic
+# Args: --project=NAME
+#       --prefix=STRING
+#       --load-queue-trigger-topic=NAME
+#       --pick-notifications-trigger-topic=NAME
 function scheduler_deploy() {
-    declare -r project="$1"; shift
-    declare -r prefix="$1"; shift
-    declare -r load_queue_trigger_topic="$1"; shift
-    declare -r pick_notifications_trigger_topic="$1"; shift
+    declare params
+    params="$(getopt_vars project \
+                          prefix \
+                          load_queue_trigger_topic \
+                          pick_notifications_trigger_topic \
+                          -- "$@")"
+    eval "$params"
     # Deploy the jobs
     scheduler_job_pubsub_deploy "$project" "${prefix}load_queue_trigger" \
                                 "$load_queue_trigger_topic" '* * * * *' '{}'
@@ -2083,8 +2089,10 @@ function execute_command() {
             --spool-collection-path="$spool_collection_path" \
             --env-yaml="${env_yaml}"
         sections_run "$sections" scheduler_deploy \
-            "$project" "$prefix" "$load_queue_trigger_topic" \
-            "$pick_notifications_trigger_topic"
+            --project="$project" \
+            --prefix="$prefix" \
+            --load-queue-trigger-topic="$load_queue_trigger_topic" \
+            --pick-notifications-trigger-topic="$pick_notifications_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
     elif [ "$command" == "shell" ]; then
