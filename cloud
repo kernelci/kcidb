@@ -1207,6 +1207,7 @@ function pubsub_subscription_withdraw() {
 #       --smtp-topic=NAME
 #       --smtp-subscription=NAME
 function pubsub_deploy() {
+    declare params
     params="$(getopt_vars project \
                           load_queue_trigger_topic \
                           new_topic \
@@ -1256,6 +1257,7 @@ function pubsub_deploy() {
 #       --smtp-topic=NAME
 #       --smtp-subscription=NAME
 function pubsub_withdraw() {
+    declare params
     params="$(getopt_vars project \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
@@ -1374,6 +1376,7 @@ function cloud_function_withdraw() {
 #       --clean-test-databases=SPEC_LIST
 #       --empty-test-databases=SPEC_LIST
 function cloud_functions_env() {
+    declare params
     params="$(getopt_vars format \
                           project \
                           log_level \
@@ -1468,6 +1471,7 @@ function cloud_functions_env() {
 #       --cache-redirect-function-name=NAME
 #       --env-yaml=YAML
 function cloud_functions_deploy() {
+    declare params
     params="$(getopt_vars sections project prefix source \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
@@ -1554,6 +1558,7 @@ function cloud_functions_deploy() {
 # Args: --sections=GLOB --project=NAME --prefix=PREFIX
 #       --cache-redirect-function-name=NAME
 function cloud_functions_withdraw() {
+    declare params
     params="$(getopt_vars sections project prefix \
                           cache_redirect_function_name \
                           -- "$@")"
@@ -1841,6 +1846,7 @@ function escape_whitespace() {
 #       --submitters=WORDS
 #       --argv=WORDS
 function execute_command() {
+    declare params
     params="$(getopt_vars command \
                           format \
                           project \
