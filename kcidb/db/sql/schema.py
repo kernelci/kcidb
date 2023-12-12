@@ -412,3 +412,48 @@ class Table:
             yield self.unpack(obj,
                               with_metadata=with_metadata,
                               drop_null=drop_null)
+
+
+class Index:
+    """An index schema"""
+
+    # The type of table columns used in the index
+    TableColumn = TableColumn
+
+    def __init__(self, table, columns, key_sep="_"):
+        """
+        Initialize the index schema.
+
+        Args:
+            table:      The name of the table this index belongs to.
+            columns:    The list of names of table columns belonging to the
+                        index. The names consist of dot-separated parts, same
+                        as used for the Table creation parameters.
+            key_sep:    String used to replace dots in column names ("key"
+                        separator) when adapting them to the tables.
+        """
+        assert isinstance(table, str)
+        assert isinstance(columns, list)
+        assert all(isinstance(c, str) for c in columns)
+        self.table = table
+        # Dot-separated column names => quoted table column names
+        self.columns = {
+            name: self.TableColumn.adapt_name(name, key_sep)[0]
+            for name in columns
+        }
+
+    def format_create(self, name):
+        """
+        Format the "CREATE INDEX" command for the table.
+
+        Args:
+            name:       The name of the target index of the command.
+
+        Returns:
+            The formatted "CREATE INDEX" command.
+        """
+        return (
+            f"CREATE INDEX IF NOT EXISTS {name} ON {self.table} (" +
+            ", ".join(self.columns.values()) +
+            ")"
+        )
