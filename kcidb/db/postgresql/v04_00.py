@@ -277,6 +277,9 @@ class Schema(AbstractSchema):
         name: Table(**args) for name, args in TABLES_ARGS.items()
     }
 
+    # A map of index names and schemas
+    INDEXES = {}
+
     # Queries and their columns for each type of raw object-oriented data.
     # Both should have columns in the same order.
     OO_QUERIES = dict(
@@ -518,6 +521,14 @@ class Schema(AbstractSchema):
                 except Exception as exc:
                     raise Exception(
                         f"Failed creating table {table_name!r}"
+                    ) from exc
+            # Create the indexes
+            for index_name, index_schema in self.INDEXES.items():
+                try:
+                    cursor.execute(index_schema.format_create(index_name))
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed creating index {index_name!r}"
                     ) from exc
 
     def cleanup(self):

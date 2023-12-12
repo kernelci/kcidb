@@ -2,7 +2,8 @@
 Kernel CI PostgreSQL report database - misc schema definitions
 """
 import json
-from kcidb.db.sql.schema import Constraint, Column, Table as _SQLTable
+from kcidb.db.sql.schema import Constraint, Column, \
+    Table as _SQLTable, Index as _SQLIndex
 
 
 class BoolColumn(Column):
@@ -225,3 +226,22 @@ class Table(_SQLTable):
         """
         # TODO: Switch to hardcoding "_" key_sep in base class
         super().__init__("%s", columns, primary_key, key_sep="_")
+
+
+class Index(_SQLIndex):
+    """An index schema"""
+    def __init__(self, table, columns):
+        """
+        Initialize the index schema.
+
+        Args:
+            table:      The name of the table this index belongs to.
+            columns:    The list of names of table columns belonging to the
+                        index. The names consist of dot-separated parts, same
+                        as used for the Table creation parameters.
+        """
+        assert isinstance(table, str)
+        assert isinstance(columns, list)
+        assert all(isinstance(c, str) for c in columns)
+        # TODO: Switch to hardcoding "_" key_sep in base class
+        super().__init__(table, columns, key_sep="_")
