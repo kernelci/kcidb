@@ -483,13 +483,6 @@ class Schema(AbstractSchema):
         The database must be uninitialized.
         """
         with self.conn, self.conn.cursor() as cursor:
-            for table_name, table_schema in self.TABLES.items():
-                try:
-                    cursor.execute(table_schema.format_create(table_name))
-                except Exception as exc:
-                    raise Exception(
-                        f"Failed creating table {table_name!r}"
-                    ) from exc
             # Create the "first" and "last" aggregations
             # Source: https://wiki.postgresql.org/wiki/First/last_(aggregate)
             cursor.execute(textwrap.dedent("""\
@@ -518,6 +511,14 @@ class Schema(AbstractSchema):
                     PARALLEL = safe
                 )
             """))
+            # Create the tables
+            for table_name, table_schema in self.TABLES.items():
+                try:
+                    cursor.execute(table_schema.format_create(table_name))
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed creating table {table_name!r}"
+                    ) from exc
 
     def cleanup(self):
         """
