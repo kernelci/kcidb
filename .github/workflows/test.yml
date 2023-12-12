@@ -62,7 +62,9 @@ jobs:
         env:
           KCIDB_HOOKS: "pre-commit"
       - name: Test with pytest
-        run: KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 pytest --tb=native
+        run: |
+          KCIDB_IO_HEAVY_ASSERTS=1 KCIDB_HEAVY_ASSERTS=1 \
+            pytest --tb=native --durations=0 --durations-min=1
         env:
           KCIDB_HOOKS: "pre-commit"
 
@@ -172,7 +174,8 @@ jobs:
           ./cloud deploy "${env_args[@]}" --verbose &&
             KCIDB_DEPLOYMENT="This deployment is empty" \
               ./cloud shell  "${env_args[@]}" -- \
-                      pytest --tb=native --verbosity=2 --log-level=DEBUG ||
+                      pytest --tb=native --verbosity=2 --log-level=DEBUG \
+                             --durations=0 --durations-min=1 ||
               status=$((status || $?))
 
           ./cloud withdraw "${args[@]}" --verbose || status=$((status || $?))
