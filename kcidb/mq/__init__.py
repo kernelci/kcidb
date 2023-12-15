@@ -343,7 +343,26 @@ class Subscriber(ABC):
                                         ack_deadline_seconds=0)
 
 
-class IOPublisher(Publisher):
+class JSONPublisher(Publisher):
+    """JSON queue publisher"""
+
+    def encode_data(self, data):
+        """
+        Encode JSON data into message data.
+
+        Args:
+            data:   JSON data to be encoded.
+
+        Returns
+            The encoded message data.
+
+        Raises:
+            An exception in case data encoding failed.
+        """
+        return json.dumps(data).encode()
+
+
+class IOPublisher(JSONPublisher):
     """I/O data queue publisher"""
 
     def encode_data(self, data):
@@ -364,7 +383,7 @@ class IOPublisher(Publisher):
         assert self.schema.is_compatible(data)
         if not LIGHT_ASSERTS:
             self.schema.validate(data)
-        return json.dumps(data).encode()
+        return super().encode_data(data)
 
     def __init__(self, *args, schema=io.SCHEMA, **kwargs):
         """
@@ -380,7 +399,28 @@ class IOPublisher(Publisher):
         self.schema = schema
 
 
-class IOSubscriber(Subscriber):
+class JSONSubscriber(Subscriber):
+    """JSON queue subscriber"""
+
+    def decode_data(self, message_data):
+        """
+        Decode message data to extract the JSON data.
+
+        Args:
+            message_data:   The message data from the message queue
+                            ("data" field of pubsub.types.PubsubMessage) to be
+                            decoded.
+
+        Returns
+            The decoded JSON data.
+
+        Raises:
+            An exception in case data decoding failed.
+        """
+        return json.loads(message_data.decode())
+
+
+class IOSubscriber(JSONSubscriber):
     """I/O data queue subscriber"""
 
     def decode_data(self, message_data):
@@ -402,7 +442,7 @@ class IOSubscriber(Subscriber):
         """
         return self.schema.upgrade(
             self.schema.validate(
-                json.loads(message_data.decode())
+                super().decode_data(message_data)
             )
         )
 
