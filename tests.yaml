@@ -79,6 +79,9 @@ kunit:
 kvm-unit-tests:
   title: KVM unit tests
   home: https://www.linux-kvm.org/page/KVM-unit-tests
+libevdev:
+  title: Libevdev unit tests
+  home: https://gitlab.freedesktop.org/libevdev/libevdev/
 libhugetlbfs:
   title: Libhugetlbfs test suite
   home: https://github.com/libhugetlbfs/libhugetlbfs
