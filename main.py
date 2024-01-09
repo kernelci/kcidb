@@ -1,6 +1,8 @@
 """Google Cloud Functions for Kernel CI reporting"""
 
 import os
+import atexit
+import tempfile
 import base64
 import datetime
 import logging
@@ -135,9 +137,16 @@ def get_updated_queue_publisher():
 def get_db_credentials():
     """Fetch the database credentials, if needed and present"""
     # Put PostgreSQL .pgpass (if any) into PGPASSFILE environment variable
-    pgpass_secret = os.environ.get("KCIDB_PGPASS_SECRET")
-    if pgpass_secret is not None:
-        kcidb.misc.get_secret_pgpass(PROJECT_ID, pgpass_secret)
+    secret_id = os.environ.get("KCIDB_PGPASS_SECRET")
+    if secret_id is None:
+        return
+
+    pgpass = kcidb.misc.get_secret(PROJECT_ID, secret_id)
+    (pgpass_fd, pgpass_filename) = tempfile.mkstemp(suffix=".pgpass")
+    with os.fdopen(pgpass_fd, mode="w", encoding="utf-8") as pgpass_file:
+        pgpass_file.write(pgpass)
+    os.environ["PGPASSFILE"] = pgpass_filename
+    atexit.register(os.remove, pgpass_filename)
 
 
 def get_db_client():
