@@ -132,15 +132,22 @@ def get_updated_queue_publisher():
     return _UPDATED_QUEUE_PUBLISHER
 
 
+def get_db_credentials():
+    """Fetch the database credentials, if needed and present"""
+    # Put PostgreSQL .pgpass (if any) into PGPASSFILE environment variable
+    pgpass_secret = os.environ.get("KCIDB_PGPASS_SECRET")
+    if pgpass_secret is not None:
+        kcidb.misc.get_secret_pgpass(PROJECT_ID, pgpass_secret)
+
+
 def get_db_client():
     """Create or retrieve the cached database client."""
     # It's alright, pylint: disable=global-statement
     global _DB_CLIENT
     if _DB_CLIENT is None:
-        # Put PostgreSQL .pgpass (if any) into PGPASSFILE environment variable
-        pgpass_secret = os.environ.get("KCIDB_PGPASS_SECRET")
-        if pgpass_secret is not None:
-            kcidb.misc.get_secret_pgpass(PROJECT_ID, pgpass_secret)
+        # Get the credentials
+        get_db_credentials()
+        # Create the client
         _DB_CLIENT = kcidb.db.Client(os.environ["KCIDB_DATABASE"])
     return _DB_CLIENT
 
