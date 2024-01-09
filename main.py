@@ -136,7 +136,8 @@ def get_updated_queue_publisher():
 
 def get_db_credentials():
     """Fetch the database credentials, if needed and present"""
-    # Put PostgreSQL .pgpass (if any) into PGPASSFILE environment variable
+    if "PGPASSFILE" in os.environ:
+        return
     secret_id = os.environ.get("KCIDB_PGPASS_SECRET")
     if secret_id is None:
         return
