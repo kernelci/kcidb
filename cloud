@@ -858,6 +858,10 @@ function password_get_pgpass() {
         fi
         username="$1"; shift
 
+        # Cache the password in the current shell
+        password_get "$name" > /dev/null
+
+        # Output the pgpass line
         echo -n "*:*:*:"
         echo -n "$username" | "${escape_argv[@]}"
         echo -n ":"
