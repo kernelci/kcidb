@@ -841,23 +841,28 @@ function password_get() {
     echo -n "$password"
 }
 
-# Get a password as a PostgreSQL's .pgpass file, generated with the specified
-# username.
-# Args: name username
+# Get the passwords with the specified names as a PostgreSQL's .pgpass file,
+# generated with the corresponding specified usernames.
+# Args: [name username]...
 # Output: The generated .pgpass file
 function password_get_pgpass() {
-    declare -r name="$1"; shift
-    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-        echo "Unknown password name ${name@Q}" >&2
-        exit 1
-    fi
-    declare -r username="$1"; shift
     declare -r -a escape_argv=(sed -e 's/[:\\]/\\&/g')
+    declare name
+    declare username
 
-    echo -n "*:*:*:"
-    echo -n "$username" | "${escape_argv[@]}"
-    echo -n ":"
-    password_get "$name" | "${escape_argv[@]}"
+    while (($#)); do
+        name="$1"; shift
+        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+            echo "Unknown password name ${name@Q}" >&2
+            exit 1
+        fi
+        username="$1"; shift
+
+        echo -n "*:*:*:"
+        echo -n "$username" | "${escape_argv[@]}"
+        echo -n ":"
+        password_get "$name" | "${escape_argv[@]}"
+    done
 }
 
 # Set the source file for a password with specified name. The file will be
