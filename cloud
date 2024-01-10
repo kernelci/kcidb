@@ -1023,7 +1023,7 @@ function secrets_deploy() {
 
     # Make sure the shared PostgreSQL's superuser password secret is deployed
     exists=$(secret_exists "$project" "$PSQL_SUPERUSER_SECRET")
-    if ! "$exists" || password_is_specified psql_submitter; then
+    if ! "$exists" || password_is_specified psql_superuser; then
         # Get and cache the password in the current shell first
         password_get psql_superuser > /dev/null
         # Deploy the cached password
