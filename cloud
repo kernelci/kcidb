@@ -916,15 +916,22 @@ function password_set_generate() {
     PASSWORD_GENERATE[$name]="$generate"
 }
 
-# Check if a password with the specified name is explicitly specified by the
-# command-line user. That is, if it has a source file.
+# Check if any of the passwords with specified names are explicitly specified
+# by the command-line user. That is, if any of them has a source file.
+# Args: name...
 function password_is_specified() {
-    declare -r name="$1"; shift
-    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-        echo "Unknown password name ${name@Q}" >&2
-        exit 1
-    fi
-    [[ -v PASSWORD_FILES[$name] ]]
+    declare name
+    while (($#)); do
+        name="$1"; shift
+        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+            echo "Unknown password name ${name@Q}" >&2
+            exit 1
+        fi
+        if ! [[ -v PASSWORD_FILES[$name] ]]; then
+            return 1
+        fi
+    done
+    return 0
 }
 
 # Check if a secret exists
