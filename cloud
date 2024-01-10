@@ -934,6 +934,60 @@ function password_is_specified() {
     return 0
 }
 
+# Deploy passwords to their secrets (assuming they're set with
+# "password_set_secret"). For every password deploy only if the password is
+# specified, or the secret doesn't exist.
+# Args: name...
+function password_deploy_secret() {
+    declare name
+    declare project
+    declare secret
+    declare exists
+    while (($#)); do
+        name="$1"; shift
+        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+            echo "Unknown password name ${name@Q}" >&2
+            exit 1
+        fi
+        if ! [[ -v PASSWORD_SECRETS[$name] ]]; then
+            echo "Password ${name@Q} has no secret specified" >&2
+            exit 1
+        fi
+        project="${PASSWORD_SECRETS[$name]%%:*}"
+        secret="${PASSWORD_SECRETS[$name]#*:}"
+        exists=$(secret_exists "$project" "$secret")
+        if ! "$exists" || password_is_specified "$name"; then
+            # Get and cache the password in the current shell first
+            password_get "$name" > /dev/null
+            # Deploy the cached password
+            password_get "$name" | secret_deploy "$project" "$name"
+        fi
+    done
+}
+
+# Withdraw passwords from their secrets (assuming they're set with
+# "password_set_secret").
+# Args: name...
+function password_withdraw_secret() {
+    declare name
+    declare project
+    declare secret
+    while (($#)); do
+        name="$1"; shift
+        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+            echo "Unknown password name ${name@Q}" >&2
+            exit 1
+        fi
+        if ! [[ -v PASSWORD_SECRETS[$name] ]]; then
+            echo "Password ${name@Q} has no secret specified" >&2
+            exit 1
+        fi
+        project="${PASSWORD_SECRETS[$name]%%:*}"
+        secret="${PASSWORD_SECRETS[$name]#*:}"
+        secret_withdraw "$project" "$secret"
+    done
+}
+
 # Check if a secret exists
 # Args: project name
 # Output: "true" if the secret exists, "false" otherwise.
