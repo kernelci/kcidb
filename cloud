@@ -988,6 +988,30 @@ function password_withdraw_secret() {
     done
 }
 
+# Deploy passwords (with corresponding user names) as a pgpass secret.
+# Deploy only if one of the passwords is specified, or if the pgpass secret
+# doesn't exist.
+# Args: project pgpass_secret [password_name user_name]...
+function password_deploy_pgpass_secret() {
+    declare -r project="$1"; shift
+    declare -r pgpass_secret="$1"; shift
+    declare -a -r password_and_user_names=("$@")
+    declare -a password_names
+    while (($#)); do
+        password_names+=("$1")
+        shift 2
+    done
+    declare exists
+    exists=$(secret_exists "$project" "$pgpass_secret")
+    if ! "$exists" || password_is_specified "${password_names[@]}"; then
+        # Cache the passwords in the current shell
+        password_get_pgpass "${password_and_user_names[@]}" > /dev/null
+        # Generate and deploy the .pgpass
+        password_get_pgpass "${password_and_user_names[@]}" |
+            secret_deploy "$project" "$pgpass_secret"
+    fi
+}
+
 # Check if a secret exists
 # Args: project name
 # Output: "true" if the secret exists, "false" otherwise.
@@ -1084,14 +1108,8 @@ function secrets_deploy() {
     password_deploy_secret psql_submitter
 
     # Make sure PostgreSQL's .pgpass secret is deployed
-    exists=$(secret_exists "$project" "$psql_pgpass_secret")
-    if ! "$exists" || password_is_specified psql_submitter; then
-        # Get and cache the password in the current shell first
-        password_get psql_submitter > /dev/null
-        # Deploy the .pgpass with cached password
-        password_get_pgpass psql_submitter "$psql_submitter_username" |
-            secret_deploy "$project" "$psql_pgpass_secret"
-    fi
+    password_deploy_pgpass_secret "$project" "$psql_pgpass_secret" \
+        psql_submitter "$psql_submitter_username"
 
     # Give Cloud Functions access to the .pgpass secret
     mute gcloud secrets add-iam-policy-binding \
