@@ -1973,8 +1973,10 @@ function execute_command() {
     if "$test"; then
         psql_args+=(
             # Do not initialize the clean database
-            "#$psql_clean_test_database" "$psql_submitter"
-            "$psql_empty_test_database" "$psql_submitter"
+            "#$psql_clean_test_database"
+            "${psql_clean_test_database}_submitter"
+            "$psql_empty_test_database"
+            "${psql_empty_test_database}_submitter"
         )
     fi
     declare -a -r psql_args
