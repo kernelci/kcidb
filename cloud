@@ -1060,13 +1060,13 @@ declare -r PSQL_VIEWER_SECRET="kcidb_psql_viewer"
 
 # Deploy secrets
 # Args: project
+#       psql_pgpass_secret
 #       psql_submitter_secret
-#       psql_submitter_pgpass_secret
 #       psql_submitter_username
 function secrets_deploy() {
     declare -r project="$1"; shift
+    declare -r psql_pgpass_secret="$1"; shift
     declare -r psql_submitter_secret="$1"; shift
-    declare -r psql_submitter_pgpass_secret="$1"; shift
     declare -r psql_submitter_username="$1"; shift
     declare exists
 
@@ -1108,20 +1108,19 @@ function secrets_deploy() {
             secret_deploy "$project" "$psql_submitter_secret"
     fi
 
-    # Make sure PostgreSQL's submitter .pgpass secret is deployed
-    exists=$(secret_exists "$project" "$psql_submitter_pgpass_secret")
+    # Make sure PostgreSQL's .pgpass secret is deployed
+    exists=$(secret_exists "$project" "$psql_pgpass_secret")
     if ! "$exists" || password_is_specified psql_submitter; then
         # Get and cache the password in the current shell first
         password_get psql_submitter > /dev/null
         # Deploy the .pgpass with cached password
         password_get_pgpass psql_submitter "$psql_submitter_username" |
-            secret_deploy "$project" "$psql_submitter_pgpass_secret"
+            secret_deploy "$project" "$psql_pgpass_secret"
     fi
 
-    # Give Cloud Functions access to the .pgpass secret,
-    # but not the bare password secret
+    # Give Cloud Functions access to the .pgpass secret
     mute gcloud secrets add-iam-policy-binding \
-        --quiet --project="$project" "$psql_submitter_pgpass_secret" \
+        --quiet --project="$project" "$psql_pgpass_secret" \
         --role roles/secretmanager.secretAccessor \
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
 
@@ -1140,14 +1139,14 @@ function secrets_deploy() {
 
 # Withdraw secrets
 # Args: project
+#       psql_pgpass_secret
 #       psql_submitter_secret
-#       psql_submitter_pgpass_secret
 function secrets_withdraw() {
     declare -r project="$1"; shift
+    declare -r psql_pgpass_secret="$1"; shift
     declare -r psql_submitter_secret="$1"; shift
-    declare -r psql_submitter_pgpass_secret="$1"; shift
     secret_withdraw "$project" "$psql_submitter_secret"
-    secret_withdraw "$project" "$psql_submitter_pgpass_secret"
+    secret_withdraw "$project" "$psql_pgpass_secret"
     # NOTE: Not withdrawing the shared secrets
 }
 
@@ -1975,7 +1974,7 @@ function execute_command() {
     declare -r psql_empty_test_database="${prefix}${version}_empty_test"
     declare -r psql_submitter="${psql_database}_submitter"
     declare -r psql_submitter_secret="${prefix}psql_submitter"
-    declare -r psql_submitter_pgpass_secret="${prefix}psql_submitter_pgpass"
+    declare -r psql_pgpass_secret="${prefix}psql_pgpass"
     declare -r psql_kcidb_db=$(
         echo -n "postgresql: "
         # Use the local proxy for the shell
@@ -2096,7 +2095,7 @@ function execute_command() {
         --smtp-password-secret="$SMTP_PASSWORD_SECRET"
         --smtp-topic="$smtp_topic"
         --smtp-subscription="$smtp_subscription"
-        --pgpass-secret="$psql_submitter_pgpass_secret"
+        --pgpass-secret="$psql_pgpass_secret"
         --database="$database"
         --clean-test-databases="$clean_test_databases"
         --empty-test-databases="$empty_test_databases"
@@ -2128,8 +2127,8 @@ function execute_command() {
 
     if [ "$command" == "deploy" ]; then
         sections_run "$sections" secrets_deploy "$project" \
-            "$psql_submitter_secret" "$psql_submitter_pgpass_secret" \
-            "$psql_submitter"
+            "$psql_pgpass_secret" \
+            "$psql_submitter_secret" "$psql_submitter"
         sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
         sections_run "$sections" psql_deploy "${psql_args[@]}"
         sections_run "$sections" pubsub_deploy \
@@ -2205,7 +2204,7 @@ function execute_command() {
         sections_run "$sections" psql_withdraw "${psql_args[@]}"
         sections_run "$sections" bigquery_withdraw "${bigquery_args[@]}"
         sections_run "$sections" secrets_withdraw "$project" \
-            "$psql_submitter_secret" "$psql_submitter_pgpass_secret"
+            "$psql_pgpass_secret" "$psql_submitter_secret"
     fi
 }
 
