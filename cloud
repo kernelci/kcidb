@@ -1100,12 +1100,9 @@ function secrets_deploy() {
         --role roles/secretmanager.secretAccessor \
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
 
-    # Make sure the shared PostgreSQL's superuser password secret is deployed
-    password_deploy_secret psql_superuser
-    # DO NOT give Cloud Functions access to the superuser password secret
-
-    # Make sure PostgreSQL's submitter password secret is deployed
-    password_deploy_secret psql_submitter
+    # Make sure all PostgreSQL's password secrets are deployed
+    password_deploy_secret psql_superuser psql_submitter psql_viewer
+    # DO NOT give Cloud Functions access to *any* PostgreSQL password secrets
 
     # Make sure PostgreSQL's .pgpass secret is deployed
     password_deploy_pgpass_secret "$project" "$psql_pgpass_secret" \
@@ -1116,10 +1113,6 @@ function secrets_deploy() {
         --quiet --project="$project" "$psql_pgpass_secret" \
         --role roles/secretmanager.secretAccessor \
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
-
-    # Make sure the shared PostgreSQL's viewer password secret is deployed
-    password_deploy_secret psql_viewer
-    # Do not give Cloud Functions access to the viewer password secret
 }
 
 # Withdraw secrets
