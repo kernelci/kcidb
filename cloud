@@ -1061,25 +1061,15 @@ declare -r PSQL_VIEWER_SECRET="kcidb_psql_viewer"
 # Deploy secrets
 # Args: project
 #       psql_pgpass_secret
-#       psql_submitter_secret
 #       psql_submitter_username
 function secrets_deploy() {
     declare -r project="$1"; shift
     declare -r psql_pgpass_secret="$1"; shift
-    declare -r psql_submitter_secret="$1"; shift
     declare -r psql_submitter_username="$1"; shift
     declare exists
 
     # Make sure the shared SMTP password secret is deployed
-    exists=$(secret_exists "$project" "$SMTP_PASSWORD_SECRET")
-    if ! "$exists" || password_is_specified smtp; then
-        # Get and cache the password in the current shell first
-        password_get smtp > /dev/null
-        # Deploy the cached password
-        password_get smtp |
-            secret_deploy "$project" "$SMTP_PASSWORD_SECRET"
-    fi
-
+    password_deploy_secret smtp
     # Give Cloud Functions access to the shared SMTP password secret
     mute gcloud secrets add-iam-policy-binding \
         --quiet --project="$project" "$SMTP_PASSWORD_SECRET" \
@@ -1087,26 +1077,11 @@ function secrets_deploy() {
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
 
     # Make sure the shared PostgreSQL's superuser password secret is deployed
-    exists=$(secret_exists "$project" "$PSQL_SUPERUSER_SECRET")
-    if ! "$exists" || password_is_specified psql_superuser; then
-        # Get and cache the password in the current shell first
-        password_get psql_superuser > /dev/null
-        # Deploy the cached password
-        password_get psql_superuser |
-            secret_deploy "$project" "$PSQL_SUPERUSER_SECRET"
-    fi
-
+    password_deploy_secret psql_superuser
     # DO NOT give Cloud Functions access to the superuser password secret
 
     # Make sure PostgreSQL's submitter password secret is deployed
-    exists=$(secret_exists "$project" "$psql_submitter_secret")
-    if ! "$exists" || password_is_specified psql_submitter; then
-        # Get and cache the password in the current shell first
-        password_get psql_submitter > /dev/null
-        # Deploy the cached password
-        password_get psql_submitter |
-            secret_deploy "$project" "$psql_submitter_secret"
-    fi
+    password_deploy_secret psql_submitter
 
     # Make sure PostgreSQL's .pgpass secret is deployed
     exists=$(secret_exists "$project" "$psql_pgpass_secret")
@@ -1125,27 +1100,17 @@ function secrets_deploy() {
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
 
     # Make sure the shared PostgreSQL's viewer password secret is deployed
-    exists=$(secret_exists "$project" "$PSQL_VIEWER_SECRET")
-    if ! "$exists" || password_is_specified psql_viewer; then
-        # Get and cache the password in the current shell first
-        password_get psql_viewer >/dev/null
-        # Deploy the cached password
-        password_get psql_viewer |
-            secret_deploy "$project" "$PSQL_VIEWER_SECRET"
-    fi
-
+    password_deploy_secret psql_viewer
     # Do not give Cloud Functions access to the viewer password secret
 }
 
 # Withdraw secrets
 # Args: project
 #       psql_pgpass_secret
-#       psql_submitter_secret
 function secrets_withdraw() {
     declare -r project="$1"; shift
     declare -r psql_pgpass_secret="$1"; shift
-    declare -r psql_submitter_secret="$1"; shift
-    secret_withdraw "$project" "$psql_submitter_secret"
+    password_withdraw_secret psql_submitter
     secret_withdraw "$project" "$psql_pgpass_secret"
     # NOTE: Not withdrawing the shared secrets
 }
@@ -1973,7 +1938,6 @@ function execute_command() {
     declare -r psql_clean_test_database="${prefix}${version}_clean_test"
     declare -r psql_empty_test_database="${prefix}${version}_empty_test"
     declare -r psql_submitter="${psql_database}_submitter"
-    declare -r psql_submitter_secret="${prefix}psql_submitter"
     declare -r psql_pgpass_secret="${prefix}psql_pgpass"
     declare -r psql_kcidb_db=$(
         echo -n "postgresql: "
@@ -2007,7 +1971,7 @@ function execute_command() {
     # Enable fetching PostgreSQL passwords from their secrets
     password_set_secret "psql_superuser" "$project" "$PSQL_SUPERUSER_SECRET"
     password_set_secret "psql_viewer" "$project" "$PSQL_VIEWER_SECRET"
-    password_set_secret "psql_submitter" "$project" "$psql_submitter_secret"
+    password_set_secret "psql_submitter" "$project" "${prefix}psql_submitter"
 
     declare -r bigquery_dataset="${prefix}${version}"
     declare -r bigquery_clean_test_dataset="${prefix}${version}_clean_test"
@@ -2072,6 +2036,9 @@ function execute_command() {
         declare -r empty_test_databases=""
     fi
 
+    # Register SMTP password secret
+    password_set_secret "smtp" "$project" "$SMTP_PASSWORD_SECRET"
+
     declare -r smtp_topic=$("$smtp_mocked" && echo "${prefix}smtp" || true)
     declare -r smtp_subscription=$(
         "$smtp_mocked" && echo "${prefix}smtp_received" || true
@@ -2127,8 +2094,7 @@ function execute_command() {
 
     if [ "$command" == "deploy" ]; then
         sections_run "$sections" secrets_deploy "$project" \
-            "$psql_pgpass_secret" \
-            "$psql_submitter_secret" "$psql_submitter"
+            "$psql_pgpass_secret" "$psql_submitter"
         sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
         sections_run "$sections" psql_deploy "${psql_args[@]}"
         sections_run "$sections" pubsub_deploy \
@@ -2204,7 +2170,7 @@ function execute_command() {
         sections_run "$sections" psql_withdraw "${psql_args[@]}"
         sections_run "$sections" bigquery_withdraw "${bigquery_args[@]}"
         sections_run "$sections" secrets_withdraw "$project" \
-            "$psql_pgpass_secret" "$psql_submitter_secret"
+            "$psql_pgpass_secret"
     fi
 }
 
