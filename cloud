@@ -16,6 +16,7 @@ shopt -s extglob
 PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 
 . aterr.sh
+. atexit.sh
 
 # The original TMPDIR value
 declare -r TMPDIR_ORIG=${TMPDIR:-}
@@ -49,7 +50,7 @@ function _cleanup() {
 }
 
 # Cleanup on exit
-trap _cleanup EXIT
+atexit_push _cleanup
 
 # "true" if verbose output is enabled, "false" otherwise
 declare VERBOSE="false"
