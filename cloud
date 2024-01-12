@@ -105,7 +105,7 @@ function app_deploy() {
 }
 
 # The name of the shared SMTP password secret
-declare -r SMTP_PASSWORD_SECRET="kcidb_smtp_password"
+declare -r SECRETS_SMTP_PASSWORD="kcidb_smtp_password"
 
 # Deploy secrets
 # Args: project
@@ -121,7 +121,7 @@ function secrets_deploy() {
     password_deploy_secret smtp
     # Give Cloud Functions access to the shared SMTP password secret
     mute gcloud secrets add-iam-policy-binding \
-        --quiet --project="$project" "$SMTP_PASSWORD_SECRET" \
+        --quiet --project="$project" "$SECRETS_SMTP_PASSWORD" \
         --role roles/secretmanager.secretAccessor \
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
 
@@ -404,7 +404,7 @@ function execute_command() {
     fi
 
     # Register SMTP password secret
-    password_set_secret "smtp" "$project" "$SMTP_PASSWORD_SECRET"
+    password_set_secret "smtp" "$project" "$SECRETS_SMTP_PASSWORD"
 
     declare -r smtp_topic=$("$smtp_mocked" && echo "${prefix}smtp" || true)
     declare -r smtp_subscription=$(
@@ -426,7 +426,7 @@ function execute_command() {
         --spool-collection-path="$spool_collection_path"
         --extra-cc="$extra_cc"
         --smtp-to-addrs="$smtp_to_addrs"
-        --smtp-password-secret="$SMTP_PASSWORD_SECRET"
+        --smtp-password-secret="$SECRETS_SMTP_PASSWORD"
         --smtp-topic="$smtp_topic"
         --smtp-subscription="$smtp_subscription"
         --pgpass-secret="$psql_pgpass_secret"
