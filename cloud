@@ -15,7 +15,7 @@ shopt -s extglob
 
 PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 
-. submitter.sh
+. submitters.sh
 . sections.sh
 . psql.sh
 . pubsub.sh
@@ -128,28 +128,6 @@ function storage_withdraw() {
         # Remove the bucket and its contents if it exists
         TMPDIR="$TMPDIR_ORIG" gsutil -q -m rm -r "gs://$bucket"
     fi
-}
-
-# Deploy submitter permissions
-# Args: project new_topic [submitter...]
-function submitters_deploy() {
-    declare -r project="$1"; shift
-    declare -r new_topic="$1"; shift
-    declare -r -a submitters=("$@")
-    for submitter in "${submitters[@]}"; do
-        submitter_deploy "$project" "$new_topic" "$submitter"
-    done
-}
-
-# Withdraw submitter permissions
-# Args: project new_topic [submitter...]
-function submitters_withdraw() {
-    declare -r project="$1"; shift
-    declare -r new_topic="$1"; shift
-    declare -r -a submitters=("$@")
-    for submitter in "${submitters[@]}"; do
-        submitter_withdraw "$project" "$new_topic" "$submitter"
-    done
 }
 
 # Execute a deploy/withdraw command
