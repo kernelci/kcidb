@@ -1076,12 +1076,6 @@ function secret_withdraw() {
 # The name of the shared SMTP password secret
 declare -r SMTP_PASSWORD_SECRET="kcidb_smtp_password"
 
-# The name of the shared secret with PostgreSQL superuser password
-declare -r PSQL_SUPERUSER_SECRET="kcidb_psql_superuser"
-
-# The name of the shared secret with PostgreSQL viewer password
-declare -r PSQL_VIEWER_SECRET="kcidb_psql_viewer"
-
 # Deploy secrets
 # Args: project
 #       psql_pgpass_secret
@@ -1982,8 +1976,8 @@ function execute_command() {
     declare -a -r psql_args
 
     # Enable fetching PostgreSQL passwords from their secrets
-    password_set_secret "psql_superuser" "$project" "$PSQL_SUPERUSER_SECRET"
-    password_set_secret "psql_viewer" "$project" "$PSQL_VIEWER_SECRET"
+    password_set_secret "psql_superuser" "$project" "kcidb_psql_superuser"
+    password_set_secret "psql_viewer" "$project" "kcidb_psql_viewer"
     password_set_secret "psql_submitter" "$project" "${prefix}psql_submitter"
 
     declare -r bigquery_dataset="${prefix}${version}"
