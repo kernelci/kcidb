@@ -16,7 +16,7 @@ declare _CLOUD_FUNCTIONS_SH=
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-publish=true|false
 #       --updated-topic=NAME
-#       --updated_urls_topic=NAME
+#       --updated-urls-topic=NAME
 #       --cache-bucket-name=NAME
 #       --cache-redirector-url=URL
 #       --spool-collection-path=PATH
