@@ -263,6 +263,8 @@ function execute_command() {
         --smtp-topic="$smtp_topic"
         --smtp-subscription="$smtp_subscription"
         --pgpass-secret="$psql_pgpass_secret"
+        --op-database="$psql_kcidb_db"
+        --ar-database="$bigquery_kcidb_db"
         --database="$database"
         --clean-test-databases="$clean_test_databases"
         --empty-test-databases="$empty_test_databases"

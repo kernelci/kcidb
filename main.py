@@ -28,6 +28,12 @@ LOAD_QUEUE_OBJ_MAX = int(os.environ["KCIDB_LOAD_QUEUE_OBJ_MAX"])
 # Maximum time for pulling maximum amount of submissions from the queue
 LOAD_QUEUE_TIMEOUT_SEC = float(os.environ["KCIDB_LOAD_QUEUE_TIMEOUT_SEC"])
 
+# The specification for the operational database (a part of DATABASE spec)
+OPERATIONAL_DATABASE = os.environ["KCIDB_OPERATIONAL_DATABASE"]
+
+# The specification for the archive database (a part of DATABASE spec)
+ARCHIVE_DATABASE = os.environ["KCIDB_ARCHIVE_DATABASE"]
+
 # The specification for the database submissions should be loaded into
 DATABASE = os.environ["KCIDB_DATABASE"]
 
