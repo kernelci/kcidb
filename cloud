@@ -135,7 +135,7 @@ function execute_command() {
     declare -r psql_database="${prefix}${version}"
     declare -r psql_clean_test_database="${prefix}${version}_clean_test"
     declare -r psql_empty_test_database="${prefix}${version}_empty_test"
-    declare -r psql_submitter="${psql_database}_submitter"
+    declare -r psql_editor="${psql_database}_editor"
     declare -r psql_pgpass_secret="${prefix}psql_pgpass"
     declare -r psql_kcidb_db=$(
         echo -n "postgresql: "
@@ -143,7 +143,7 @@ function execute_command() {
         if [ "$command" != "shell" ]; then
             echo -n "host=${psql_socket_dir}" | escape_whitespace
             echo -n " "
-            echo -n "user=${psql_submitter}"
+            echo -n "user=${psql_editor}"
             echo -n " "
         fi
         echo -n "dbname=${psql_database}" | escape_whitespace
@@ -156,14 +156,14 @@ function execute_command() {
         echo -n "postgresql:"
         echo -n "dbname=${psql_empty_test_database}" | escape_whitespace
     )
-    declare -a psql_args=("$project" "$psql_database" "$psql_submitter")
+    declare -a psql_args=("$project" "$psql_database" "$psql_editor")
     if "$test"; then
         psql_args+=(
             # Do not initialize the clean database
             "#$psql_clean_test_database"
-            "${psql_clean_test_database}_submitter"
+            "${psql_clean_test_database}_editor"
             "$psql_empty_test_database"
-            "${psql_empty_test_database}_submitter"
+            "${psql_empty_test_database}_editor"
         )
     fi
     declare -a -r psql_args
@@ -171,7 +171,7 @@ function execute_command() {
     # Enable fetching PostgreSQL passwords from their secrets
     password_set_secret "psql_superuser" "$project" "kcidb_psql_superuser"
     password_set_secret "psql_viewer" "$project" "kcidb_psql_viewer"
-    password_set_secret "psql_submitter" "$project" "${prefix}psql_submitter"
+    password_set_secret "psql_editor" "$project" "${prefix}psql_editor"
 
     declare -r bigquery_dataset="${prefix}${version}"
     declare -r bigquery_clean_test_dataset="${prefix}${version}_clean_test"
@@ -294,7 +294,7 @@ function execute_command() {
 
     if [ "$command" == "deploy" ]; then
         sections_run "$sections" secrets_deploy "$project" \
-            "$psql_pgpass_secret" "$psql_submitter"
+            "$psql_pgpass_secret" "$psql_editor"
         sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
         sections_run "$sections" psql_deploy "${psql_args[@]}"
         sections_run "$sections" pubsub_deploy \

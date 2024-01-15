@@ -9,7 +9,7 @@ declare _PASSWORD_SH=
 declare -r -A PASSWORD_DESCS=(
     [smtp]="SMTP"
     [psql_superuser]="PostgreSQL superuser"
-    [psql_submitter]="PostgreSQL submitter user"
+    [psql_editor]="PostgreSQL editor user"
     [psql_viewer]="PostgreSQL viewer user"
 )
 
@@ -17,7 +17,7 @@ declare -r -A PASSWORD_DESCS=(
 # The corresponding password will be auto-generated if the flag is "true", and
 # no source file nor secret was specified for it.
 declare -A PASSWORD_GENERATE=(
-    [psql_submitter]="true"
+    [psql_editor]="true"
     [psql_viewer]="true"
 )
 
