@@ -4,6 +4,7 @@ import os
 import atexit
 import tempfile
 import base64
+import json
 import datetime
 import logging
 import smtplib
@@ -419,6 +420,27 @@ def kcidb_pick_notifications(data, context):
         send_message(message)
         # Acknowledge notification as sent
         spool_client.ack(notification_id)
+
+
+def kcidb_purge_op_db(event, context):
+    """
+    Purge data from the operational database, older than the optional delta
+    from the current (or specified) database timestamp, rounded to smallest
+    delta component. Require that either the delta or the timestamp are
+    present.
+    """
+    # Parse the input JSON
+    string = base64.b64decode(event["data"]).decode()
+    data = json.loads(string)
+
+    # Get the operational database client
+    client = get_db_client(OPERATIONAL_DATABASE)
+
+    # Parse/calculate the cut-off timestamp
+    stamp = kcidb.misc.parse_timedelta_json(data, client.get_current_time())
+
+    # Purge the data
+    client.purge(stamp)
 
 
 def send_message(message):

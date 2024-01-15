@@ -9,10 +9,14 @@ import itertools
 import argparse
 import logging
 import json
+import datetime
 from textwrap import indent
 from importlib import metadata
+import dateutil
+import dateutil.relativedelta
 import dateutil.parser
 from google.cloud import secretmanager
+import jsonschema
 import jq
 import kcidb.io as io
 
@@ -482,3 +486,72 @@ def isliced(iterable, size):
         if not iterator_slice:
             break
         yield iterator_slice
+
+
+def parse_timedelta_json(data, stamp):
+    """
+    Parse JSON data for a time delta: an optional timestamp, and an optional
+    delta, but at least one of them must be present. If the timestamp is not
+    present the "stamp" is used instead. The delta can only be positive and is
+    subtracted from the timestamp. The timestamp is rounded down to the
+    precision of the delta, based on the presence of its components in the
+    JSON.
+
+    Args:
+        data:   The JSON data to parse.
+        stamp:  The (aware) timestamp to use, if not present in the data.
+    """
+    # Recognized time components, smaller to larger, and their minimums
+    components_min = dict(
+        microseconds=0,
+        seconds=0,
+        minutes=0,
+        hours=0,
+        days=1,
+        months=1,
+        years=1,
+    )
+    # The timedelta schema
+    schema = dict(
+        type="object",
+        properties=dict(
+            delta=dict(
+                type="object",
+                properties={
+                    # Delta is always positive and is subtracted to reduce
+                    # chance of forgetting the sign and going to the future,
+                    # wiping everything
+                    c: dict(type="integer", minimum=0)
+                    for c in components_min
+                },
+                anyOf=[dict(required=[c]) for c in components_min],
+                additionalProperties=False,
+            ),
+            stamp=dict(type="string", format="date-time",),
+        ),
+        anyOf=[{"required": ["delta"]}, {"required": ["stamp"]},],
+        additionalProperties=False,
+    )
+
+    assert isinstance(stamp, datetime.datetime) and stamp.tzinfo
+    jsonschema.validate(
+        instance=data, schema=schema,
+        format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER
+    )
+
+    # Use the base timestamp from the data, if present
+    if "stamp" in data:
+        stamp = dateutil.parser.isoparse(data["stamp"])
+
+    # Retrieve and apply the timedelta from input, if any
+    if "delta" in data:
+        delta = data["delta"].copy()
+        # Round the timestamp down to delta precision and subtract delta
+        for component, minimum in components_min.items():
+            if component in delta:
+                break
+            # Singular means replace with value
+            delta[component[:-1]] = minimum
+        stamp = stamp - dateutil.relativedelta.relativedelta(**delta)
+
+    return stamp
