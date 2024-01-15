@@ -225,22 +225,22 @@ function psql_database_exists() {
 # Setup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
 # to connect to the database as a superuser.
-# Args: database init submitter viewer
+# Args: database init editor viewer
 function _psql_database_setup() {
     declare -r database="$1"; shift
     declare -r init="$1"; shift
-    declare -r submitter="$1"; shift
+    declare -r editor="$1"; shift
     declare -r viewer="$1"; shift
-    # Deploy viewer and submitter permissions
+    # Deploy viewer and editor permissions
     mute psql --dbname="$database" -e <<<"
         \\set ON_ERROR_STOP on
 
-        GRANT USAGE ON SCHEMA public TO $submitter, $viewer;
+        GRANT USAGE ON SCHEMA public TO $editor, $viewer;
 
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT SELECT, INSERT, UPDATE ON TABLES TO $submitter;
-        GRANT SELECT, INSERT, UPDATE ON ALL TABLES
-        IN SCHEMA public TO $submitter;
+        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO $editor;
+        GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES
+        IN SCHEMA public TO $editor;
 
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
         GRANT SELECT ON TABLES TO $viewer;
@@ -257,16 +257,16 @@ function _psql_database_setup() {
 # Cleanup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
 # to connect to the database as a superuser.
-# Args: database submitter viewer
+# Args: database editor viewer
 function _psql_database_cleanup() {
     declare -r database="$1"; shift
-    declare -r submitter="$1"; shift
+    declare -r editor="$1"; shift
     declare -r viewer="$1"; shift
-    # Withdraw viewer and submitter permissions
+    # Withdraw viewer and editor permissions
     mute psql --dbname="$database" -e <<<"
         /* Do not stop on errors in case users are already removed */
-        REVOKE SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public
-        FROM $submitter;
+        REVOKE SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public
+        FROM $editor;
         REVOKE SELECT ON ALL TABLES IN SCHEMA public
         FROM $viewer;
         \\set ON_ERROR_STOP on
@@ -282,18 +282,18 @@ function _psql_database_cleanup() {
 
 # Deploy PostgreSQL databases, if they don't exist
 # Do not initialize databases that are prepended with the hash sign ('#').
-# Args: project instance viewer [database submitter]...
+# Args: project instance viewer [database editor]...
 function psql_databases_deploy() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
     declare database
-    declare submitter
+    declare editor
     declare init
 
     while (($#)); do
         database="$1"; shift
-        submitter="$1"; shift
+        editor="$1"; shift
 
         # Handle possible leading hash sign
         if [[ $database == \#* ]]; then
@@ -313,46 +313,46 @@ function psql_databases_deploy() {
                 --instance="$instance"
         fi
 
-        # Deploy the per-database submitter user
-        exists=$(psql_user_exists "$project" "$instance" "$submitter")
-        if ! "$exists" || password_is_specified psql_submitter; then
+        # Deploy the per-database editor user
+        exists=$(psql_user_exists "$project" "$instance" "$editor")
+        if ! "$exists" || password_is_specified psql_editor; then
             # Get and cache the password in the current shell first
-            password_get psql_submitter >/dev/null
+            password_get psql_editor >/dev/null
             # Create the user with the cached password
-            password_get psql_submitter |
-                psql_user_deploy "$project" "$instance" "$submitter"
+            password_get psql_editor |
+                psql_user_deploy "$project" "$instance" "$editor"
         fi
 
         # NOTE: The viewer user is created per-instance
 
         # Setup the database
         psql_proxy_session "$project" "$instance" \
-            _psql_database_setup "$database" "$init" "$submitter" "$viewer"
+            _psql_database_setup "$database" "$init" "$editor" "$viewer"
     done
 }
 
 # Withdraw PostgreSQL databases, if they exist
 # Cleanup all databases, even those prepended with the hash sign ('#').
-# Args: project instance viewer [database submitter]...
+# Args: project instance viewer [database editor]...
 function psql_databases_withdraw() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
-    declare -a -r databases_and_submitters=("$@")
+    declare -a -r databases_and_editors=("$@")
     declare database
-    declare submitter
+    declare editor
 
     # Cleanup and remove the databases
-    set -- "${databases_and_submitters[@]}"
+    set -- "${databases_and_editors[@]}"
     while (($#)); do
         # Ignore possible leading hash sign
         database="${1###}"; shift
-        submitter="$1"; shift
+        editor="$1"; shift
         exists=$(psql_database_exists "$project" "$instance" "$database")
         if "$exists"; then
             # Cleanup the database
             psql_proxy_session "$project" "$instance" \
-                _psql_database_cleanup "$database" "$submitter" "$viewer"
+                _psql_database_cleanup "$database" "$editor" "$viewer"
             # Delete the database
             mute gcloud sql databases delete \
                 "$database" \
@@ -363,13 +363,13 @@ function psql_databases_withdraw() {
     done
 
     # Remove the users afterwards as they could be shared by databases
-    set -- "${databases_and_submitters[@]}"
+    set -- "${databases_and_editors[@]}"
     while (($#)); do
         # Discard the database name
         shift
-        submitter="$1"; shift
-        # Withdraw the submitter user
-        psql_user_withdraw "$project" "$instance" "$submitter"
+        editor="$1"; shift
+        # Withdraw the editor user
+        psql_user_withdraw "$project" "$instance" "$editor"
         # NOTE: The viewer user is per-instance
     done
 }
@@ -444,7 +444,7 @@ function psql_user_withdraw() {
 
 # Deploy (to) PostgreSQL.
 # Do not initialize databases that are prepended with the hash sign ('#').
-# Args: project [database submitter]...
+# Args: project [database editor]...
 function psql_deploy() {
     declare -r project="$1"; shift
     # Deploy the instance
@@ -455,7 +455,7 @@ function psql_deploy() {
 
 # Withdraw (from) PostgreSQL
 # Cleanup all databases, even those prepended with the hash sign ('#').
-# Args: project [database submitter]...
+# Args: project [database editor]...
 function psql_withdraw() {
     declare -r project="$1"; shift
     psql_databases_withdraw "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" "$@"
