@@ -89,6 +89,7 @@ function psql_instance_deploy() {
             --region="$PSQL_INSTANCE_REGION" \
             --tier="$PSQL_INSTANCE_TIER" \
             --assign-ip \
+            --no-storage-auto-increase \
             --database-flags=cloudsql.iam_authentication=on \
             --root-password="$(password_get psql_superuser)" \
             --database-version=POSTGRES_14
