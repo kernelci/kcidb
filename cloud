@@ -125,7 +125,6 @@ function execute_command() {
     declare -r updated_topic="${prefix}updated"
     declare -r updated_debug_subscription="${prefix}updated_debug"
     declare -r spool_collection_path="${prefix}notifications"
-    declare -r smtp_password_secret="kcidb_smtp_password"
 
     declare -r psql_connection=$(
         echo -n "${project}:"
