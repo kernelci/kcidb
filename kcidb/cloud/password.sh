@@ -261,15 +261,27 @@ function password_deploy_pgpass_secret() {
         password_names+=("$1")
         shift 2
     done
+    declare new_pgpass
     declare exists
+
+    # Generate the (potentially) new pgpass with cached passwords
+    new_pgpass="$(password_get_pgpass "${password_and_user_names[@]}")"
+
+    # If the secret already exists
     exists=$(secret_exists "$project" "$pgpass_secret")
-    if ! "$exists" || password_is_specified "${password_names[@]}"; then
-        # Cache the passwords in the current shell
-        password_get_pgpass "${password_and_user_names[@]}" > /dev/null
-        # Generate and deploy the .pgpass
-        password_get_pgpass "${password_and_user_names[@]}" |
-            secret_deploy "$project" "$pgpass_secret"
+    if "$exists"; then
+        declare old_pgpass
+        # Retrieve the current pgpass
+        old_pgpass="$(secret_get "$project" "$pgpass_secret")"
+        # If the pgpass hasn't changed
+        if [ "$new_pgpass" == "$old_pgpass" ]; then
+            # Don't deploy
+            return
+        fi
     fi
+
+    # Deploy the .pgpass
+    secret_deploy "$project" "$pgpass_secret" <<<"$new_pgpass"
 }
 
 fi # _PASSWORD_SH
