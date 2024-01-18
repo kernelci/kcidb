@@ -220,7 +220,7 @@ function password_deploy_secret() {
             # Get and cache the password in the current shell first
             password_get "$name" > /dev/null
             # Deploy the cached password
-            password_get "$name" | secret_deploy "$project" "$name"
+            password_get "$name" | secret_deploy "$project" "$secret"
         fi
     done
 }
