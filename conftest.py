@@ -50,6 +50,8 @@ EMPTY_DATABASES = {
     params=["empty_deployment"]
     if os.environ.get("KCIDB_DEPLOYMENT", "") == "This deployment is empty"
     else [],
+    # Only clean up after all tests have run, to reduce testing time
+    # Tests are supposed to avoid interfering with each other
     scope="session"
 )
 def empty_deployment():
