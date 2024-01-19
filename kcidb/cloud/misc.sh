@@ -14,6 +14,32 @@ export TMPDIR=$(mktemp -d -t "kcidb_cloud.XXXXXXXXXX")
 # Remove the directory with all the temporary files on exit
 atexit_push "rm -Rf ${TMPDIR@Q}"
 
+# Evaluate and execute a command string,
+# exit shell with error message and status 1 if unsuccessfull.
+# Args: [eval_arg]...
+function assert()
+{
+    # Use private global-style variable names
+    # to avoid clashes with "evaled" names
+    declare _ASSERT_ATTRS
+    declare _ASSERT_STATUS
+
+    # Prevent shell from exiting due to `set -e` if the command fails
+    read -rd '' _ASSERT_ATTRS < <(set +o) || [ $? == 1 ]
+    set +o errexit
+    (
+        eval "$_ASSERT_ATTRS"
+        eval "$@"
+    )
+    _ASSERT_STATUS=$?
+    eval "$_ASSERT_ATTRS"
+
+    if [ "$_ASSERT_STATUS" != 0 ]; then
+        echo "Assertion failed: $*" >&1
+        exit 1
+    fi
+}
+
 # Generate code declaring parameter variables with names and values passed
 # through long-option command-line argument list, and assigning the positional
 # arguments.
