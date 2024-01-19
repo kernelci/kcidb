@@ -162,6 +162,21 @@ function password_secret_set() {
     PASSWORD_SECRETS[$name]="$project:$secret"
 }
 
+# Check if every specified password has its secret set
+# Assumes every specified password is known/exists.
+# Args: name...
+function password_secret_is_specified() {
+    declare name
+    assert password_exists "$@"
+    while (($#)); do
+        name="$1"; shift
+        if ! [[ -v PASSWORD_SECRETS[$name] ]]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
 # Specify the single-word command returning exit status specifying if the
 # password with specified name could be auto-generated or not.
 # Args: name generate
@@ -197,12 +212,9 @@ function password_secret_deploy() {
     declare secret
     declare exists
     assert password_exists "$@"
+    assert password_secret_is_specified "$@"
     while (($#)); do
         name="$1"; shift
-        if ! [[ -v PASSWORD_SECRETS[$name] ]]; then
-            echo "Password ${name@Q} has no secret specified" >&2
-            exit 1
-        fi
         project="${PASSWORD_SECRETS[$name]%%:*}"
         secret="${PASSWORD_SECRETS[$name]#*:}"
         exists=$(secret_exists "$project" "$secret")
