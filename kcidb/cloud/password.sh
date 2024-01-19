@@ -148,7 +148,7 @@ function password_set_file() {
 # specified name. The password will be retrieved from the secret, if it wasn't
 # cached, and if its source file wasn't specified.
 # Args: name project secret
-function password_set_secret() {
+function password_secret_set() {
     declare -r name="$1"; shift
     declare -r project="$1"; shift
     declare -r secret="$1"; shift
@@ -195,10 +195,10 @@ function password_is_specified() {
 }
 
 # Deploy passwords to their secrets (assuming they're set with
-# "password_set_secret"). For every password deploy only if the password is
+# "password_secret_set"). For every password deploy only if the password is
 # specified, or the secret doesn't exist.
 # Args: name...
-function password_deploy_secret() {
+function password_secret_deploy() {
     declare name
     declare project
     declare secret
@@ -226,9 +226,9 @@ function password_deploy_secret() {
 }
 
 # Withdraw passwords from their secrets (assuming they're set with
-# "password_set_secret").
+# "password_secret_set").
 # Args: name...
-function password_withdraw_secret() {
+function password_secret_withdraw() {
     declare name
     declare project
     declare secret
@@ -252,7 +252,7 @@ function password_withdraw_secret() {
 # Deploy only if one of the passwords is specified, or if the pgpass secret
 # doesn't exist.
 # Args: project pgpass_secret [password_name user_name]...
-function password_deploy_pgpass_secret() {
+function password_secret_deploy_pgpass() {
     declare -r project="$1"; shift
     declare -r pgpass_secret="$1"; shift
     declare -a -r password_and_user_names=("$@")
