@@ -226,6 +226,32 @@ function password_is_specified() {
     return 0
 }
 
+# Check if any of the passwords with specified names are (going to be) updated
+# (specified on the command line, or missing).
+# Args: name...
+# Output: "true" if all secrets exists, "false" otherwise.
+function password_is_updated() {
+    declare name
+    declare secret_exists
+    assert password_exists "$@"
+    while (($#)); do
+        name="$1"; shift
+        if password_is_specified "$name"; then
+            echo true
+            return
+        fi
+        if password_secret_is_specified "$name"; then
+            secret_exists="$(password_secret_exists "$name")"
+            if "$secret_exists"; then
+                continue
+            fi
+        fi
+        echo true
+        return
+    done
+    echo false
+}
+
 # Deploy passwords to their secrets (assuming they're set with
 # "password_secret_set"). For every password deploy only if the password is
 # specified, or the secret doesn't exist.
