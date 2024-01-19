@@ -169,9 +169,9 @@ function execute_command() {
     declare -a -r psql_args
 
     # Enable fetching PostgreSQL passwords from their secrets
-    password_set_secret "psql_superuser" "$project" "kcidb_psql_superuser"
-    password_set_secret "psql_viewer" "$project" "kcidb_psql_viewer"
-    password_set_secret "psql_editor" "$project" "${prefix}psql_editor"
+    password_secret_set "psql_superuser" "$project" "kcidb_psql_superuser"
+    password_secret_set "psql_viewer" "$project" "kcidb_psql_viewer"
+    password_secret_set "psql_editor" "$project" "${prefix}psql_editor"
 
     declare -r bigquery_dataset="${prefix}${version}"
     declare -r bigquery_clean_test_dataset="${prefix}${version}_clean_test"
@@ -237,7 +237,7 @@ function execute_command() {
     fi
 
     # Register SMTP password secret
-    password_set_secret "smtp" "$project" "$SECRETS_SMTP_PASSWORD"
+    password_secret_set "smtp" "$project" "$SECRETS_SMTP_PASSWORD"
 
     declare -r smtp_topic=$("$smtp_mocked" && echo "${prefix}smtp" || true)
     declare -r smtp_subscription=$(
