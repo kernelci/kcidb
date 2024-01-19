@@ -75,6 +75,7 @@ function psql_instance_deploy() {
     declare -r name="$1"; shift
     declare -r viewer="$1"; shift
     declare exists
+    declare updated
 
     exists=$(psql_instance_exists "$project" "$name")
     if ! "$exists"; then
@@ -97,7 +98,8 @@ function psql_instance_deploy() {
 
     # Deploy the shared viewer user
     exists=$(psql_user_exists "$project" "$name" "$viewer")
-    if ! "$exists" || password_is_specified psql_viewer; then
+    updated=$(password_is_updated psql_viewer)
+    if ! "$exists" || "$updated"; then
         # Get and cache the password in the current shell first
         password_get psql_viewer >/dev/null
         # Create the user with the cached password
@@ -292,6 +294,7 @@ function psql_databases_deploy() {
     declare editor
     declare init
     declare exists
+    declare updated
 
     while (($#)); do
         database="$1"; shift
@@ -317,7 +320,8 @@ function psql_databases_deploy() {
 
         # Deploy the per-database editor user
         exists=$(psql_user_exists "$project" "$instance" "$editor")
-        if ! "$exists" || password_is_specified psql_editor; then
+        updated=$(password_is_updated psql_editor)
+        if ! "$exists" || "$updated"; then
             # Get and cache the password in the current shell first
             password_get psql_editor >/dev/null
             # Create the user with the cached password
