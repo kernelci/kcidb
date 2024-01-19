@@ -254,24 +254,24 @@ function password_is_updated() {
 
 # Deploy passwords to their secrets (assuming they're set with
 # "password_secret_set"). For every password deploy only if the password is
-# specified, or the secret doesn't exist.
+# updated, or the secret doesn't exist.
 # Args: name...
 function password_secret_deploy() {
     declare name
+    declare updated
     declare project
     declare secret
-    declare exists
     assert password_exists "$@"
     assert password_secret_is_specified "$@"
     while (($#)); do
         name="$1"; shift
-        project="${PASSWORD_SECRETS[$name]%%:*}"
-        secret="${PASSWORD_SECRETS[$name]#*:}"
-        exists=$(secret_exists "$project" "$secret")
-        if ! "$exists" || password_is_specified "$name"; then
+        updated=$(password_is_updated "$name")
+        if "$updated"; then
             # Get and cache the password in the current shell first
             password_get "$name" > /dev/null
             # Deploy the cached password
+            project="${PASSWORD_SECRETS[$name]%%:*}"
+            secret="${PASSWORD_SECRETS[$name]#*:}"
             password_get "$name" | secret_deploy "$project" "$secret"
         fi
     done
