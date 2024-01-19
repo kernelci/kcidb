@@ -291,6 +291,7 @@ function psql_databases_deploy() {
     declare database
     declare editor
     declare init
+    declare exists
 
     while (($#)); do
         database="$1"; shift
