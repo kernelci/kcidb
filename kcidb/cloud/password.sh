@@ -177,6 +177,30 @@ function password_secret_is_specified() {
     return 0
 }
 
+# Check if every specified password's secret exists.
+# Assumes every specified password is known/exists and has its secret set.
+# Args: name...
+# Output: "true" if all secrets exists, "false" otherwise.
+function password_secret_exists() {
+    declare name
+    declare project
+    declare secret
+    declare exists
+    assert password_exists "$@"
+    assert password_secret_is_specified "$@"
+    while (($#)); do
+        name="$1"; shift
+        project="${PASSWORD_SECRETS[$name]%%:*}"
+        secret="${PASSWORD_SECRETS[$name]#*:}"
+        exists=$(secret_exists "$project" "$secret")
+        if ! "$exists"; then
+            echo false
+            return
+        fi
+    done
+    echo true
+}
+
 # Specify the single-word command returning exit status specifying if the
 # password with specified name could be auto-generated or not.
 # Args: name generate
