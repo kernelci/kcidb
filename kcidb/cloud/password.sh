@@ -4,6 +4,7 @@ if [ -z "${_PASSWORD_SH+set}" ]; then
 declare _PASSWORD_SH=
 
 . secret.sh
+. misc.sh
 
 # A map of password names and their descriptions
 declare -r -A PASSWORD_DESCS=(
@@ -31,15 +32,25 @@ declare -A PASSWORD_FILES=()
 # A map of password names and their strings
 declare -A PASSWORD_STRINGS=()
 
+# Check that every specified password exists.
+# Args: name...
+function password_exists() {
+    declare name
+    while (($#)); do
+        name="$1"; shift
+        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
 # Ask the user to input a password with specified name.
 # Args: name
 # Output: The retrieved password
 function password_input() {
     declare -r name="$1"; shift
-    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-        echo "Unknown password name ${name@Q}" >&2
-        exit 1
-    fi
+    assert password_exists "$name"
     declare password
     read -p "Enter ${PASSWORD_DESCS[$name]:-a} password: " -r -s password
     echo "" >&2
@@ -53,10 +64,7 @@ function password_input() {
 # Output: The retrieved password
 function password_get() {
     declare -r name="$1"; shift
-    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-        echo "Unknown password name ${name@Q}" >&2
-        exit 1
-    fi
+    assert password_exists "$name"
 
     declare password
     declare -r password_file="${PASSWORD_FILES[$name]:-}"
@@ -112,10 +120,7 @@ function password_get_pgpass() {
 
     while (($#)); do
         name="$1"; shift
-        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-            echo "Unknown password name ${name@Q}" >&2
-            exit 1
-        fi
+        assert password_exists "$name"
         username="$1"; shift
 
         # Cache the password in the current shell
@@ -136,10 +141,7 @@ function password_get_pgpass() {
 # Args: name file
 function password_set_file() {
     declare -r name="$1"; shift
-    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-        echo "Unknown password name ${name@Q}" >&2
-        exit 1
-    fi
+    assert password_exists "$name"
     declare -r file="$1"; shift
     PASSWORD_FILES[$name]="$file"
 }
@@ -152,10 +154,7 @@ function password_secret_set() {
     declare -r name="$1"; shift
     declare -r project="$1"; shift
     declare -r secret="$1"; shift
-    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-        echo "Unknown password name ${name@Q}" >&2
-        exit 1
-    fi
+    assert password_exists "$name"
     if [[ "$project" = *:* ]]; then
         echo "Invalid project name ${project@Q}" >&2
         exit 1
@@ -169,10 +168,7 @@ function password_secret_set() {
 function password_set_generate() {
     declare -r name="$1"; shift
     declare -r generate="$1"; shift
-    if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-        echo "Unknown password name ${name@Q}" >&2
-        exit 1
-    fi
+    assert password_exists "$name"
     PASSWORD_GENERATE[$name]="$generate"
 }
 
@@ -181,12 +177,9 @@ function password_set_generate() {
 # Args: name...
 function password_is_specified() {
     declare name
+    assert password_exists "$@"
     while (($#)); do
         name="$1"; shift
-        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-            echo "Unknown password name ${name@Q}" >&2
-            exit 1
-        fi
         if ! [[ -v PASSWORD_FILES[$name] ]]; then
             return 1
         fi
@@ -203,12 +196,9 @@ function password_secret_deploy() {
     declare project
     declare secret
     declare exists
+    assert password_exists "$@"
     while (($#)); do
         name="$1"; shift
-        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-            echo "Unknown password name ${name@Q}" >&2
-            exit 1
-        fi
         if ! [[ -v PASSWORD_SECRETS[$name] ]]; then
             echo "Password ${name@Q} has no secret specified" >&2
             exit 1
@@ -232,12 +222,9 @@ function password_secret_withdraw() {
     declare name
     declare project
     declare secret
+    assert password_exists "$@"
     while (($#)); do
         name="$1"; shift
-        if ! [[ -v PASSWORD_DESCS[$name] ]]; then
-            echo "Unknown password name ${name@Q}" >&2
-            exit 1
-        fi
         if ! [[ -v PASSWORD_SECRETS[$name] ]]; then
             echo "Password ${name@Q} has no secret specified" >&2
             exit 1
