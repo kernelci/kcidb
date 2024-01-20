@@ -32,6 +32,9 @@ declare -A PASSWORD_FILES=()
 # A map of password names and their strings
 declare -A PASSWORD_STRINGS=()
 
+# A map of password names and their update status
+declare -A PASSWORD_UPDATED=()
+
 # Check that every specified password exists.
 # Args: name...
 function password_exists() {
@@ -91,6 +94,7 @@ function password_get() {
         else
             password=$(<"$password_file")
         fi
+        PASSWORD_UPDATED[$name]="true"
     # If secret exists
     elif "$password_secret_exists"; then
         password=$(
@@ -99,9 +103,11 @@ function password_get() {
     # If can be generated
     elif "$password_generate"; then
         password=$(dd if=/dev/random bs=32 count=1 status=none | base64)
+        PASSWORD_UPDATED[$name]="true"
     # Else read from user
     else
         password=$(password_input "$name")
+        PASSWORD_UPDATED[$name]="true"
     fi
 
     PASSWORD_STRINGS[$name]="$password"
@@ -226,8 +232,7 @@ function password_is_specified() {
     return 0
 }
 
-# Check if any of the passwords with specified names are (going to be) updated
-# (specified on the command line, or missing).
+# Check if any of the passwords with specified names are (to be) updated.
 # Args: name...
 # Output: "true" if all secrets exists, "false" otherwise.
 function password_is_updated() {
@@ -236,6 +241,12 @@ function password_is_updated() {
     assert password_exists "$@"
     while (($#)); do
         name="$1"; shift
+        # If the password was updated
+        if "${PASSWORD_UPDATED[$name]:-false}"; then
+            echo true
+            return
+        fi
+        # If the password is going to be read from a file
         if password_is_specified "$name"; then
             echo true
             return
@@ -243,6 +254,7 @@ function password_is_updated() {
         if password_secret_is_specified "$name"; then
             secret_exists="$(password_secret_exists "$name")"
             if "$secret_exists"; then
+                # We're going to use the password's secret
                 continue
             fi
         fi
