@@ -130,8 +130,6 @@ jobs:
         run: |
           declare -a args=(
             kernelci-production "" 1
-            # Mute updates until we clear the queue
-            --mute-updates
             --extra-cc=kernelci-results-staging@groups.io
           )
           ./cloud deploy "${args[@]}" -v
