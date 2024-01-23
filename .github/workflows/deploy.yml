@@ -62,7 +62,7 @@ jobs:
       - name: Deploy to Staging and Test
         run: |
           declare -a args=(
-            kernelci-staging "" 1
+            kernelci-staging ""
             --smtp-mocked
           )
           ./cloud deploy "${args[@]}" -v
@@ -121,7 +121,7 @@ jobs:
       - name: Deploy Playground
         run: |
           declare -a args=(
-            kernelci-production "playground" 1
+            kernelci-production "playground"
             --smtp-mocked
             --optimize=2
           )
@@ -129,7 +129,7 @@ jobs:
       - name: Deploy Production
         run: |
           declare -a args=(
-            kernelci-production "" 1
+            kernelci-production ""
             --extra-cc=kernelci-results-staging@groups.io
           )
           ./cloud deploy "${args[@]}" -v
