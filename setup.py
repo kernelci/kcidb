@@ -49,6 +49,7 @@ setuptools.setup(
         "functions-framework",
         "google-cloud-firestore",
         "google-cloud-secret-manager",
+        "google-cloud-logging",
         "psycopg2",
         "jsonschema[format]",
         "requests",
