@@ -15,7 +15,7 @@ from importlib import metadata
 import dateutil
 import dateutil.relativedelta
 import dateutil.parser
-from google.cloud import secretmanager
+import google.cloud.secretmanager
 import jsonschema
 import jq
 import kcidb.io as io
@@ -440,7 +440,7 @@ def get_secret(project_id, secret_id):
     """
     assert isinstance(project_id, str) and project_id
     assert isinstance(secret_id, str) and secret_id
-    client = secretmanager.SecretManagerServiceClient()
+    client = google.cloud.secretmanager.SecretManagerServiceClient()
     path = client.secret_version_path(project_id, secret_id, "latest")
     return client.access_secret_version(
         request={"name": path}
