@@ -35,7 +35,7 @@ atexit_push _psql_cleanup
 
 # The name of the Cloud SQL instance we're creating/using
 # Specified statically as instance names have 7-day recycling period
-declare -r PSQL_INSTANCE="postgresql"
+declare -r PSQL_INSTANCE="postgresql2"
 
 # The region used to host our PostgreSQL instance
 declare -r PSQL_INSTANCE_REGION="us-central1"
