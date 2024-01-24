@@ -74,7 +74,6 @@ function app_deploy() {
 #       --sections=EXTGLOB
 #       --project=NAME
 #       --prefix=STRING
-#       --version=STRING
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=STRING
 #       --smtp-mocked=true|false
@@ -92,7 +91,6 @@ function execute_command() {
                           project \
                           sections \
                           prefix \
-                          version \
                           extra_cc \
                           smtp_to_addrs \
                           smtp_mocked \
@@ -132,9 +130,9 @@ function execute_command() {
         echo -n "${PSQL_INSTANCE}"
     )
     declare -r psql_socket_dir="/cloudsql/${psql_connection}"
-    declare -r psql_database="${prefix}${version}"
-    declare -r psql_clean_test_database="${prefix}${version}_clean_test"
-    declare -r psql_empty_test_database="${prefix}${version}_empty_test"
+    declare -r psql_database="${prefix}"
+    declare -r psql_clean_test_database="${prefix}clean_test"
+    declare -r psql_empty_test_database="${prefix}empty_test"
     declare -r psql_editor="${psql_database}_editor"
     declare -r psql_pgpass_secret="${prefix}psql_pgpass"
     declare -r psql_kcidb_db=$(
@@ -173,9 +171,9 @@ function execute_command() {
     password_secret_set "psql_viewer" "$project" "kcidb_psql_viewer"
     password_secret_set "psql_editor" "$project" "${prefix}psql_editor"
 
-    declare -r bigquery_dataset="${prefix}${version}"
-    declare -r bigquery_clean_test_dataset="${prefix}${version}_clean_test"
-    declare -r bigquery_empty_test_dataset="${prefix}${version}_empty_test"
+    declare -r bigquery_dataset="${prefix}"
+    declare -r bigquery_clean_test_dataset="${prefix}clean_test"
+    declare -r bigquery_empty_test_dataset="${prefix}empty_test"
     declare -r bigquery_kcidb_db="bigquery:${project}.${bigquery_dataset}"
     declare bigquery_clean_test_kcidb_db="bigquery:${project}."
     declare -r bigquery_clean_test_kcidb_db+="${bigquery_clean_test_dataset}"
@@ -405,8 +403,7 @@ function usage() {
 
 # Output deploy command usage information
 function usage_deploy() {
-    echo "Usage: $(basename "$0") deploy [OPTION...]" \
-         "PROJECT NAMESPACE [VERSION]"
+    echo "Usage: $(basename "$0") deploy [OPTION...] PROJECT NAMESPACE"
     echo "Deploy a KCIDB installation to a Google Cloud project."
     echo ""
     echo "Options:"
@@ -455,14 +452,12 @@ function usage_deploy() {
     echo ""
     echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
     echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
-    echo "    VERSION   Optional version of the dataset, e.g. 4."
     echo ""
 }
 
 # Output env command usage information
 function usage_env() {
-    echo "Usage: $(basename "$0") env [OPTION...]" \
-         "PROJECT NAMESPACE [VERSION]"
+    echo "Usage: $(basename "$0") env [OPTION...] PROJECT NAMESPACE"
     echo "Output environment YAML used by KCIDB Cloud Functions."
     echo ""
     echo "Options:"
@@ -498,14 +493,13 @@ function usage_env() {
     echo ""
     echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
     echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
-    echo "    VERSION   Optional version of the dataset, e.g. 4."
     echo ""
 }
 
 # Output shell command usage information
 function usage_shell() {
     echo "Usage: $(basename "$0") shell [OPTION...]" \
-         "PROJECT NAMESPACE [VERSION [CMD [ARG...]]"
+         "PROJECT NAMESPACE [CMD [ARG...]]"
     echo "Execute a shell with deployment environment."
     echo ""
     echo "Options:"
@@ -538,7 +532,6 @@ function usage_shell() {
     echo ""
     echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
     echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
-    echo "    VERSION   Optional version of the dataset, e.g. 4."
     echo "    CMD       The command to execute inside the shell."
     echo "              If not specified, an interactive shell is started."
     echo "    ARG       An argument to pass to the command, if specified."
@@ -547,8 +540,7 @@ function usage_shell() {
 
 # Output withdraw command usage information
 function usage_withdraw() {
-    echo "Usage: $(basename "$0") withdraw [OPTION...]" \
-         "PROJECT NAMESPACE [VERSION]"
+    echo "Usage: $(basename "$0") withdraw [OPTION...] PROJECT NAMESPACE"
     echo "Withdraw a KCIDB installation from a Google Cloud project."
     echo ""
     echo "Options:"
@@ -576,7 +568,6 @@ function usage_withdraw() {
     echo ""
     echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
     echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
-    echo "    VERSION   Optional version of the dataset, e.g. 4."
     echo ""
 }
 
@@ -724,7 +715,7 @@ function execute() {
             exit 1
         fi
     else
-        if (( $# < 2 || $# > 3 )); then
+        if (( $# != 2 )); then
             echo "Invalid number of positional arguments" >&2
             "usage_${command//-/_}" >&2
             exit 1
@@ -734,19 +725,6 @@ function execute() {
     # Read and normalize positional arguments
     declare -r project="$1"; shift
     declare -r namespace="$1"; shift
-    if (( $# )); then
-        declare version="$1"; shift
-    else
-        declare version="0"
-    fi
-    if [[ $version =~ ^[0-9]+$ ]]; then
-        version=$(printf %02u "$version")
-    else
-        echo "Invalid version: $version" >&2
-        usage >&2
-        exit 1
-    fi
-    declare -r version
     declare -r -a argv=("$@")
 
     # Execute the command
@@ -755,7 +733,6 @@ function execute() {
                     --sections="$sections" \
                     --project="$project" \
                     --prefix="${namespace:-}${namespace:+_}kcidb_" \
-                    --version="$version" \
                     --extra-cc="$extra_cc" \
                     --smtp-to-addrs="$smtp_to_addrs" \
                     --smtp-mocked="$smtp_mocked" \
