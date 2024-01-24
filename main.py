@@ -9,15 +9,26 @@ import datetime
 import logging
 import smtplib
 from urllib.parse import unquote
+import google.cloud.logging
 import functions_framework
 import kcidb
 
 # Name of the Google Cloud project we're deployed in
 PROJECT_ID = os.environ["GCP_PROJECT"]
 
+# Setup Google Cloud logging
+try:
+    google.cloud.logging.Client().setup_logging()
+except google.auth.exceptions.DefaultCredentialsError:
+    # Ignore missing credentials when testing
+    if os.environ.get("GCP_PROJECT") != "TEST_PROJECT":
+        raise
+
+# Setup KCIDB-specific logging
 kcidb.misc.logging_setup(
     kcidb.misc.LOGGING_LEVEL_MAP[os.environ.get("KCIDB_LOG_LEVEL", "NONE")]
 )
+# Get the module's logger
 LOGGER = logging.getLogger()
 
 # The subscriber object for the submission queue
