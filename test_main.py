@@ -30,7 +30,7 @@ def test_import():
     env = yaml.safe_load(
         subprocess.check_output([
             cloud_path,
-            "env", "kernelci-production", "", "0",
+            "env", "kernelci-production", "",
             "--log-level=DEBUG"
         ])
     )
