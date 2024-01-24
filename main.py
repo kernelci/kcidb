@@ -1,21 +1,14 @@
 """Google Cloud Functions for Kernel CI reporting"""
 
 import os
-import atexit
-import tempfile
-import base64
-import json
-import datetime
-import logging
-import smtplib
-from urllib.parse import unquote
-import google.cloud.logging
-import functions_framework
-import kcidb
 
 # Name of the Google Cloud project we're deployed in
 PROJECT_ID = os.environ["GCP_PROJECT"]
 
+# Setup Google Cloud logging first to avoid deployment failures
+# We're battling Google Cloud here,
+# pylint: disable=wrong-import-order,wrong-import-position
+import google.cloud.logging  # noqa: E402
 # Setup Google Cloud logging
 try:
     google.cloud.logging.Client().setup_logging()
@@ -23,6 +16,17 @@ except google.auth.exceptions.DefaultCredentialsError:
     # Ignore missing credentials when testing
     if PROJECT_ID != "TEST_PROJECT":
         raise
+
+import atexit  # noqa: E402
+import tempfile  # noqa: E402
+import base64  # noqa: E402
+import json  # noqa: E402
+import datetime  # noqa: E402
+import logging  # noqa: E402
+import smtplib  # noqa: E402
+from urllib.parse import unquote  # noqa: E402
+import functions_framework  # noqa: E402
+import kcidb  # noqa: E402
 
 # Setup KCIDB-specific logging
 kcidb.misc.logging_setup(
