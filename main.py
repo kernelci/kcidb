@@ -1,6 +1,7 @@
 """Google Cloud Functions for Kernel CI reporting"""
 
 import os
+import time
 import atexit
 import tempfile
 import base64
@@ -19,6 +20,8 @@ PROJECT_ID = os.environ["GCP_PROJECT"]
 # Setup Google Cloud logging, unless testing
 if PROJECT_ID != "TEST_PROJECT":
     google.cloud.logging.Client().setup_logging()
+    # Give logging some time to avoid occasional deployment failures
+    time.sleep(5)
 # Setup KCIDB-specific logging
 kcidb.misc.logging_setup(
     kcidb.misc.LOGGING_LEVEL_MAP[os.environ.get("KCIDB_LOG_LEVEL", "NONE")]
