@@ -130,7 +130,7 @@ function execute_command() {
         echo -n "${PSQL_INSTANCE}"
     )
     declare -r psql_socket_dir="/cloudsql/${psql_connection}"
-    declare -r psql_database="${prefix}"
+    declare -r psql_database="${prefix%_}"
     declare -r psql_clean_test_database="${prefix}clean_test"
     declare -r psql_empty_test_database="${prefix}empty_test"
     declare -r psql_editor="${psql_database}_editor"
@@ -171,7 +171,7 @@ function execute_command() {
     password_secret_set "psql_viewer" "$project" "kcidb_psql_viewer"
     password_secret_set "psql_editor" "$project" "${prefix}psql_editor"
 
-    declare -r bigquery_dataset="${prefix}"
+    declare -r bigquery_dataset="${prefix%_}"
     declare -r bigquery_clean_test_dataset="${prefix}clean_test"
     declare -r bigquery_empty_test_dataset="${prefix}empty_test"
     declare -r bigquery_kcidb_db="bigquery:${project}.${bigquery_dataset}"
