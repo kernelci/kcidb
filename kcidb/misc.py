@@ -52,10 +52,6 @@ def logging_setup(level):
     """
     assert isinstance(level, int)
     logging.getLogger().setLevel(level)
-    # Add timestamps to log messages
-    for handler in logging.getLogger().handlers:
-        handler.setFormatter(logging.Formatter(
-            '%(asctime)s:%(levelname)s:%(name)s:%(message)s'))
     # TODO Consider separate arguments for controlling the below
     logging.getLogger("urllib3").setLevel(LOGGING_LEVEL_MAP["NONE"])
     logging.getLogger("google").setLevel(LOGGING_LEVEL_MAP["NONE"])
@@ -149,6 +145,10 @@ class ArgumentParser(argparse.ArgumentParser):
         args = super().parse_args(args=args, namespace=namespace)
         logging.basicConfig()
         logging_setup(LOGGING_LEVEL_MAP[args.log_level])
+        # Add timestamps to log messages
+        for handler in logging.getLogger().handlers:
+            handler.setFormatter(logging.Formatter(
+                '%(asctime)s:%(levelname)s:%(name)s:%(message)s'))
         return args
 
 
