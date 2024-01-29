@@ -163,11 +163,13 @@ function pubsub_deploy() {
                                --max-retry-delay=600s
 
     pubsub_subscription_deploy "$project" "${new_topic}" \
-                               "${new_debug_subscription}"
+                               "${new_debug_subscription}" \
+                               --message-retention-duration=12h
 
     pubsub_topic_deploy "$project" "${updated_topic}"
     pubsub_subscription_deploy "$project" "${updated_topic}" \
-                               "${updated_debug_subscription}"
+                               "${updated_debug_subscription}" \
+                               --message-retention-duration=12h
     pubsub_topic_deploy "$project" "${pick_notifications_trigger_topic}"
     pubsub_topic_deploy "$project" "${purge_op_db_trigger_topic}"
     pubsub_topic_deploy "$project" "${updated_urls_topic}"
