@@ -328,18 +328,17 @@ def test_purge_op_db(empty_deployment):
     # Wait and check for the purge
     deadline = datetime.now(timezone.utc) + timedelta(minutes=5)
     while datetime.now(timezone.utc) < deadline:
+        time.sleep(5)
         dump = filter_test_data(client.dump())
-        # If data has changed
-        if not all(
-            len(dump.get(n, [])) == 2
+        # If everything was purged
+        # NOTE: For some reason we're hitting incomplete purges sometimes
+        if all(
+            len(dump.get(n, [])) == 1
             for n in kcidb.io.SCHEMA.graph
             if n
         ):
-            assert dump == data_after
             break
-        time.sleep(5)
-    else:
-        assert False, "Operational database purge timed out"
+    assert dump == data_after
 
     # Make sure we were getting the operational DB dump
     op_client = kcidb.db.Client(os.environ["KCIDB_OPERATIONAL_DATABASE"])
