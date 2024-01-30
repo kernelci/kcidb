@@ -253,6 +253,7 @@ function execute_command() {
         --new-load-subscription="$new_load_subscription"
         --updated-publish="$updated_publish"
         --updated-topic="$updated_topic"
+        --load-queue-trigger-topic="$load_queue_trigger_topic"
         --purge-op-db-trigger-topic="$purge_op_db_trigger_topic"
         --updated-urls-topic="$updated_urls_topic"
         --spool-collection-path="$spool_collection_path"

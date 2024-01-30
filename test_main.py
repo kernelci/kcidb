@@ -172,12 +172,18 @@ def test_url_caching(empty_deployment):
     # Submit data to submission queue
     client.submit(data)
 
-    current_time = time.time()
-    # The time when caching system should be done with all our data
-    deadline_time = current_time + 180
+    # Trigger a submission queue pull
+    kcidb.mq.JSONPublisher(
+        os.environ["GCP_PROJECT"],
+        os.environ["KCIDB_LOAD_QUEUE_TRIGGER_TOPIC"]
+    ).publish({})
 
-    # URLs to be check, as they should be cached
-    urls_expected = [
+    current_time = time.time()
+    deadline_time = current_time + 300  # 5 minutes
+    retry_interval = 5  # seconds
+
+    # URLs to check, as they should be cached
+    urls_expected = {
         "https://github.com/kernelci/kcidb/blob/main/setup.py?padding=4673",
         "https://github.com/kernelci/kcidb/blob/main/requirements.txt?"
         "padding=1649",
@@ -190,40 +196,37 @@ def test_url_caching(empty_deployment):
         "deploy.yml?padding=4821",
         "https://github.com/kernelci/kcidb/blob/main/doc/installation.md?"
         "padding=1505"
-    ]
+    }
 
-    # Retry checking URLs in the cache for a minute
-    retry_interval = 5  # seconds
-
-    for url in urls_expected:
-        while True:
-            if check_url_in_cache(url):
-                break
-            if time.time() > deadline_time:
-                raise AssertionError(f"URL '{url}' not found in the cache")
-            time.sleep(retry_interval)
+    while urls_expected and time.time() < deadline_time:
+        time.sleep(retry_interval)
+        urls_expected = {
+            url for url in urls_expected
+            if not check_url_in_cache(url)
+        }
+    assert not urls_expected, \
+        f"Expected URLs '{urls_expected}' not found in the cache"
 
     current_time = time.time()
     if current_time < deadline_time:
         time.sleep(deadline_time - current_time)
 
     # URL cases not to be cached
-    urls_not_expected = [
-        # Invalid url
-        'https://non-existing-name.kernel.org/pub/linux/',
-        # Larger-than-maximum size URL
-        "https://cdn.kernel.org/pub/linux/kernel/v6.x/"
-        "linux-6.4.11.tar.xz",
-        # Wrong hash URL
-        "https://github.com/kernelci/kcidb/blob/main/Dockerfile",
-        # URL from a wrong field
-        "https://github.com/kernelci/kcidb/tree/main/kcidb/?padding=4165"
-    ]
-
-    for url_not_expected in urls_not_expected:
-        if check_url_in_cache(url_not_expected):
-            raise AssertionError(f"Unexpected URL '{url_not_expected}' \
-                found in the cache")
+    urls_not_expected = {
+        url for url in (
+            # Invalid url
+            'https://non-existing-name.kernel.org/pub/linux/',
+            # Larger-than-maximum size URL
+            "https://cdn.kernel.org/pub/linux/kernel/v6.x/"
+            "linux-6.4.11.tar.xz",
+            # Wrong hash URL
+            "https://github.com/kernelci/kcidb/blob/main/Dockerfile",
+            # URL from a wrong field
+            "https://github.com/kernelci/kcidb/tree/main/kcidb/?padding=4165"
+        ) if check_url_in_cache(url)
+    }
+    assert not urls_not_expected, \
+        f"Unexpected URLs {urls_not_expected} found in the cache"
 
 
 def test_purge_op_db(empty_deployment):
@@ -325,18 +328,17 @@ def test_purge_op_db(empty_deployment):
     # Wait and check for the purge
     deadline = datetime.now(timezone.utc) + timedelta(minutes=5)
     while datetime.now(timezone.utc) < deadline:
+        time.sleep(5)
         dump = filter_test_data(client.dump())
-        # If data has changed
-        if not all(
-            len(dump.get(n, [])) == 2
+        # If everything was purged
+        # NOTE: For some reason we're hitting incomplete purges sometimes
+        if all(
+            len(dump.get(n, [])) == 1
             for n in kcidb.io.SCHEMA.graph
             if n
         ):
-            assert dump == data_after
             break
-        time.sleep(5)
-    else:
-        assert False, "Operational database purge timed out"
+    assert dump == data_after
 
     # Make sure we were getting the operational DB dump
     op_client = kcidb.db.Client(os.environ["KCIDB_OPERATIONAL_DATABASE"])
