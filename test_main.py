@@ -172,6 +172,12 @@ def test_url_caching(empty_deployment):
     # Submit data to submission queue
     client.submit(data)
 
+    # Trigger a submission queue pull
+    kcidb.mq.JSONPublisher(
+        os.environ["GCP_PROJECT"],
+        os.environ["KCIDB_LOAD_QUEUE_TRIGGER_TOPIC"]
+    ).publish({})
+
     current_time = time.time()
     deadline_time = current_time + 300  # 5 minutes
     retry_interval = 5  # seconds
