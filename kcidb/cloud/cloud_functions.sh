@@ -16,6 +16,7 @@ declare _CLOUD_FUNCTIONS_SH=
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-publish=true|false
 #       --updated-topic=NAME
+#       --load-queue-trigger-topic=NAME
 #       --purge-op-db-trigger-topic=NAME
 #       --updated-urls-topic=NAME
 #       --cache-bucket-name=NAME
@@ -39,6 +40,7 @@ function cloud_functions_env() {
                           heavy_asserts \
                           new_topic new_load_subscription \
                           updated_publish updated_topic \
+                          load_queue_trigger_topic \
                           purge_op_db_trigger_topic \
                           updated_urls_topic \
                           spool_collection_path \
@@ -72,6 +74,7 @@ function cloud_functions_env() {
         [KCIDB_CLEAN_TEST_DATABASES]="$clean_test_databases"
         [KCIDB_EMPTY_TEST_DATABASES]="$empty_test_databases"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
+        [KCIDB_LOAD_QUEUE_TRIGGER_TOPIC]="$load_queue_trigger_topic"
         [KCIDB_PURGE_OP_DB_TRIGGER_TOPIC]="$purge_op_db_trigger_topic"
         [KCIDB_UPDATED_URLS_TOPIC]="$updated_urls_topic"
         [KCIDB_SELECTED_SUBSCRIPTIONS]=""
