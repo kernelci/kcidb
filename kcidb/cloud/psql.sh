@@ -8,20 +8,20 @@ declare _PSQL_SH=
 . misc.sh
 
 # Location of the PostgreSQL proxy binary we (could) download
-declare PSQL_PROXY_BINARY="$TMPDIR/cloud_sql_proxy"
+declare PSQL_PROXY_BINARY="$TMPDIR/cloud-sql-proxy"
 
 # Location of the PostgreSQL proxy socket directory
-declare PSQL_PROXY_DIR="$TMPDIR/cloud_sql_sockets"
+declare PSQL_PROXY_DIR="$TMPDIR/cloud-sql-sockets"
 
 # File containing the PID of the shell executing PostgreSQL proxy, if started
-declare PSQL_PROXY_SHELL_PID_FILE="$TMPDIR/cloud_sql_proxy.pid"
+declare PSQL_PROXY_SHELL_PID_FILE="$TMPDIR/cloud-sql-proxy.pid"
 
 # The .pgpass file for the command running through PostgreSQL proxy
-declare PSQL_PROXY_PGPASS="$TMPDIR/cloud_sql_proxy.pgpass"
+declare PSQL_PROXY_PGPASS="$TMPDIR/cloud-sql-proxy.pgpass"
 
 # Cleanup PostgreSQL after the script
 function _psql_cleanup() {
-    # Kill the cloud_sql_proxy, if started
+    # Kill the cloud-sql-proxy, if started
     if [ -e "$PSQL_PROXY_SHELL_PID_FILE" ]; then
         declare pid
         pid=$(< "$PSQL_PROXY_SHELL_PID_FILE")
@@ -115,7 +115,9 @@ function psql_instance_deploy() {
 function psql_proxy_session() {
     # Source:
     # https://cloud.google.com/sql/docs/postgres/connect-admin-proxy#install
-    declare -r url_base="https://dl.google.com/cloudsql/cloud_sql_proxy."
+    declare url_base="https://storage.googleapis.com/"
+    declare url_base+="cloud-sql-connectors/cloud-sql-proxy/v2.8.2/"
+    declare -r url_base+="cloud-sql-proxy."
     declare -r -A url_os_sfx=(
         ["x86_64 GNU/Linux"]="linux.amd64"
         ["i386 GNU/Linux"]="linux.386"
@@ -124,7 +126,7 @@ function psql_proxy_session() {
     declare -r instance="$1"; shift
     declare -r fq_instance="$project:$PSQL_INSTANCE_REGION:$instance"
     # The default proxy binary, if installed
-    declare proxy="cloud_sql_proxy"
+    declare proxy="cloud-sql-proxy"
     declare pid
     declare pgpass
 
@@ -148,7 +150,8 @@ function psql_proxy_session() {
     fi
 
     # Start the proxy in background
-    mute "$proxy" "-instances=$fq_instance" "-dir=$PSQL_PROXY_DIR" &
+    mute "$proxy" "$fq_instance" "--unix-socket=$PSQL_PROXY_DIR" \
+                                  --exit-zero-on-sigterm &
     pid="$!"
     # Store the PID of the shell running the proxy, for errexit cleanup
     echo -n "$pid" > "$PSQL_PROXY_SHELL_PID_FILE"
