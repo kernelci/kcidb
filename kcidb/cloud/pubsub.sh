@@ -176,7 +176,8 @@ function pubsub_deploy() {
     if [ -n "$smtp_topic" ]; then
         pubsub_topic_deploy "$project" "$smtp_topic"
         pubsub_subscription_deploy "$project" "$smtp_topic" \
-                                   "$smtp_subscription"
+                                   "$smtp_subscription" \
+                                   --message-retention-duration=12h
     fi
 }
 
