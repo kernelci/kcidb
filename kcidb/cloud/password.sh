@@ -168,6 +168,15 @@ function password_secret_set() {
     PASSWORD_SECRETS[$name]="$project:$secret"
 }
 
+# Get the name of the secret storing the password with specified name.
+# Args: name
+# Output: secret
+function password_secret_get_name() {
+    declare -r name="$1"; shift
+    assert password_exists "$name"
+    echo -n "${PASSWORD_SECRETS[$name]#*:}"
+}
+
 # Check if every specified password has its secret set
 # Assumes every specified password is known/exists.
 # Args: name...
