@@ -228,6 +228,49 @@ function psql_database_exists() {
     fi
 }
 
+# Setup a Grafana PostgreSQL database and its paraphernalia.
+# Expect the environment to be set up with variables permitting a libpq user
+# to connect to the database as a superuser.
+# Args: database user
+function _psql_grafana_database_setup() {
+    declare -r database="$1"; shift
+    declare -r user="$1"; shift
+    # Deploy user permissions
+    mute psql --dbname="$database" -e <<<"
+        \\set ON_ERROR_STOP on
+
+        GRANT USAGE ON SCHEMA public TO $user;
+
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO $user;
+
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO $user;
+    "
+}
+
+# Cleanup a Grafana PostgreSQL database and its paraphernalia.
+# Expect the environment to be set up with variables permitting a libpq user
+# to connect to the database as a superuser.
+# Args: database user
+function _psql_grafana_database_cleanup() {
+    declare -r database="$1"; shift
+    declare -r user="$1"; shift
+    # Withdraw user permissions
+    mute psql --dbname="$database" -e <<<"
+        /* Do not stop on errors in case users are already removed */
+        REVOKE SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public
+        FROM $user;
+        REVOKE USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public
+        FROM $user;
+        \\set ON_ERROR_STOP on
+        /* Terminate all connections to the database except this one */
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = :'DBNAME' AND pid <> pg_backend_pid();
+    "
+}
+
 # Setup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
 # to connect to the database as a superuser.
@@ -288,17 +331,46 @@ function _psql_database_cleanup() {
 
 # Deploy PostgreSQL databases, if they don't exist
 # Do not initialize databases that are prepended with the hash sign ('#').
-# Args: project instance viewer [database editor]...
+# Args: project instance viewer grafana_database grafana_user
+#       [database editor]...
 function psql_databases_deploy() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
+    declare -r grafana_database="$1"; shift
+    declare -r grafana_user="$1"; shift
     declare database
     declare editor
     declare init
     declare exists
     declare updated
 
+    # Create the Grafana database, if not exists
+    exists=$(psql_database_exists "$project" "$instance" "$grafana_database")
+    if ! "$exists"; then
+        mute gcloud sql databases create \
+            "$grafana_database" \
+            --quiet \
+            --project="$project" \
+            --instance="$instance"
+    fi
+
+    # Deploy the Grafana user
+    exists=$(psql_user_exists "$project" "$instance" "$grafana_user")
+    updated=$(password_is_updated psql_grafana)
+    if ! "$exists" || "$updated"; then
+        # Get and cache the password in the current shell first
+        password_get psql_grafana >/dev/null
+        # Create the user with the cached password
+        password_get psql_grafana |
+            psql_user_deploy "$project" "$instance" "$grafana_user"
+    fi
+
+    # Setup the Grafana database
+    psql_proxy_session "$project" "$instance" \
+        _psql_grafana_database_setup "$grafana_database" "$grafana_user"
+
+    # Deploy the regular KCIDB databases
     while (($#)); do
         database="$1"; shift
         editor="$1"; shift
@@ -342,11 +414,14 @@ function psql_databases_deploy() {
 
 # Withdraw PostgreSQL databases, if they exist
 # Cleanup all databases, even those prepended with the hash sign ('#').
-# Args: project instance viewer [database editor]...
+# Args: project instance viewer grafana_database grafana_user
+#       [database editor]...
 function psql_databases_withdraw() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
+    declare -r grafana_database="$1"; shift
+    declare -r grafana_user="$1"; shift
     declare -a -r databases_and_editors=("$@")
     declare database
     declare editor
@@ -381,6 +456,23 @@ function psql_databases_withdraw() {
         psql_user_withdraw "$project" "$instance" "$editor"
         # NOTE: The viewer user is per-instance
     done
+
+    # Cleanup and remove the Grafana database
+    exists=$(psql_database_exists "$project" "$instance" "$grafana_database")
+    if "$exists"; then
+        # Cleanup the database
+        psql_proxy_session "$project" "$instance" \
+            _psql_grafana_database_cleanup "$grafana_database" "$grafana_user"
+        # Delete the database
+        mute gcloud sql databases delete \
+            "$grafana_database" \
+            --quiet \
+            --project="$project" \
+            --instance="$instance"
+    fi
+
+    # Withdraw the Grafana user
+    psql_user_withdraw "$project" "$instance" "$grafana_user"
 }
 
 # Check if a PostgreSQL user exists
@@ -453,7 +545,7 @@ function psql_user_withdraw() {
 
 # Deploy (to) PostgreSQL.
 # Do not initialize databases that are prepended with the hash sign ('#').
-# Args: project [database editor]...
+# Args: project grafana_database grafana_user [database editor]...
 function psql_deploy() {
     declare -r project="$1"; shift
     # Deploy the instance
@@ -464,7 +556,7 @@ function psql_deploy() {
 
 # Withdraw (from) PostgreSQL
 # Cleanup all databases, even those prepended with the hash sign ('#').
-# Args: project [database editor]...
+# Args: project grafana_database grafana_user [database editor]...
 function psql_withdraw() {
     declare -r project="$1"; shift
     psql_databases_withdraw "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" "$@"

@@ -12,6 +12,7 @@ declare -r -A PASSWORD_DESCS=(
     [psql_superuser]="PostgreSQL superuser"
     [psql_editor]="PostgreSQL editor user"
     [psql_viewer]="PostgreSQL viewer user"
+    [psql_grafana]="PostgreSQL Grafana user"
 )
 
 # A map of password names and their "can be auto-generated" flags.
@@ -20,6 +21,7 @@ declare -r -A PASSWORD_DESCS=(
 declare -A PASSWORD_GENERATE=(
     [psql_editor]="true"
     [psql_viewer]="true"
+    [psql_grafana]="true"
 )
 
 # A map of password names and their project and secret names, separated by a
