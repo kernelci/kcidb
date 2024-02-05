@@ -27,7 +27,7 @@ function secrets_deploy() {
         --member "serviceAccount:$project@appspot.gserviceaccount.com"
 
     # Make sure all PostgreSQL's password secrets are deployed
-    password_secret_deploy psql_superuser psql_editor psql_viewer
+    password_secret_deploy psql_superuser psql_editor psql_viewer psql_grafana
     # DO NOT give Cloud Functions access to *any* PostgreSQL password secrets
 
     # Make sure PostgreSQL's .pgpass secret is deployed
@@ -47,7 +47,7 @@ function secrets_deploy() {
 function secrets_withdraw() {
     declare -r project="$1"; shift
     declare -r psql_pgpass_secret="$1"; shift
-    password_secret_withdraw psql_editor
+    password_secret_withdraw psql_editor psql_grafana
     secret_withdraw "$project" "$psql_pgpass_secret"
     # NOTE: Not withdrawing the shared secrets
 }

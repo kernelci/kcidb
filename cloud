@@ -132,6 +132,8 @@ function execute_command() {
         echo -n "${PSQL_INSTANCE}"
     )
     declare -r psql_socket_dir="/cloudsql/${psql_connection}"
+    declare -r psql_grafana_database="${prefix}grafana"
+    declare -r psql_grafana_user="${prefix}grafana"
     declare -r psql_database="${namespace}"
     declare -r psql_clean_test_database="${prefix}clean_test"
     declare -r psql_empty_test_database="${prefix}empty_test"
@@ -156,7 +158,11 @@ function execute_command() {
         echo -n "postgresql:"
         echo -n "dbname=${psql_empty_test_database}" | escape_whitespace
     )
-    declare -a psql_args=("$project" "$psql_database" "$psql_editor")
+    declare -a psql_args=(
+        "$project"
+        "$psql_grafana_database" "$psql_grafana_user"
+        "$psql_database" "$psql_editor"
+    )
     if "$test"; then
         psql_args+=(
             # Do not initialize the clean database
@@ -172,6 +178,7 @@ function execute_command() {
     password_secret_set "psql_superuser" "$project" "kcidb_psql_superuser"
     password_secret_set "psql_viewer" "$project" "kcidb_psql_viewer"
     password_secret_set "psql_editor" "$project" "${prefix}psql_editor"
+    password_secret_set "psql_grafana" "$project" "${prefix}psql_grafana"
 
     declare -r bigquery_dataset="${namespace}"
     declare -r bigquery_clean_test_dataset="${prefix}clean_test"
