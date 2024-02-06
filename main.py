@@ -446,7 +446,7 @@ def kcidb_purge_op_db(event, context):
     client = get_db_client(OPERATIONAL_DATABASE)
 
     # Parse/calculate the cut-off timestamp
-    stamp = kcidb.misc.parse_timedelta_json(data, client.get_current_time())
+    stamp = kcidb.misc.timedelta_json_parse(data, client.get_current_time())
 
     # Purge the data
     client.purge(stamp)
