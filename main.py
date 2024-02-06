@@ -10,6 +10,7 @@ import datetime
 import logging
 import smtplib
 from urllib.parse import unquote
+import jsonschema
 import functions_framework
 import google.cloud.logging
 import kcidb
@@ -426,22 +427,39 @@ def kcidb_pick_notifications(data, context):
         spool_client.ack(notification_id)
 
 
-def kcidb_purge_op_db(event, context):
+def kcidb_purge_db(event, context):
     """
     Purge data from the operational database, older than the optional delta
     from the current (or specified) database timestamp, rounded to smallest
     delta component. Require that either the delta or the timestamp are
     present.
     """
+    # Accepted databases and their specs
+    databases = dict(op=OPERATIONAL_DATABASE)
+
+    # Describe the expected event data
+    schema = dict(
+        type="object",
+        properties=dict(
+            database=dict(type="string", enum=list(databases)),
+            timedelta=kcidb.misc.TIMEDELTA_JSON_SCHEMA,
+        )
+    )
+
     # Parse the input JSON
     string = base64.b64decode(event["data"]).decode()
     data = json.loads(string)
+    jsonschema.validate(
+        instance=data, schema=schema,
+        format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER
+    )
 
-    # Get the operational database client
-    client = get_db_client(OPERATIONAL_DATABASE)
+    # Get the database client
+    client = get_db_client(databases[data["database"]])
 
     # Parse/calculate the cut-off timestamp
-    stamp = kcidb.misc.timedelta_json_parse(data, client.get_current_time())
+    stamp = kcidb.misc.timedelta_json_parse(data["timedelta"],
+                                            client.get_current_time())
 
     # Purge the data
     client.purge(stamp)
