@@ -73,7 +73,7 @@ function app_deploy() {
 #       --format=yaml|sh
 #       --sections=EXTGLOB
 #       --project=NAME
-#       --prefix=STRING
+#       --namespace=STRING
 #       --extra-cc=ADDRS
 #       --smtp-to-addrs=STRING
 #       --smtp-mocked=true|false
@@ -90,7 +90,7 @@ function execute_command() {
                           format \
                           project \
                           sections \
-                          prefix \
+                          namespace \
                           extra_cc \
                           smtp_to_addrs \
                           smtp_mocked \
@@ -106,6 +106,8 @@ function execute_command() {
     # Convert submitters and extra args from a string of words to an array
     eval "declare -a submitters=($submitters)"
     eval "declare -a argv=($argv)"
+
+    declare -r prefix="${namespace}_"
 
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
     declare -r cache_bucket_name="${project}_${prefix}cache"
@@ -130,7 +132,7 @@ function execute_command() {
         echo -n "${PSQL_INSTANCE}"
     )
     declare -r psql_socket_dir="/cloudsql/${psql_connection}"
-    declare -r psql_database="${prefix%_}"
+    declare -r psql_database="${namespace}"
     declare -r psql_clean_test_database="${prefix}clean_test"
     declare -r psql_empty_test_database="${prefix}empty_test"
     declare -r psql_editor="${psql_database}_editor"
@@ -171,7 +173,7 @@ function execute_command() {
     password_secret_set "psql_viewer" "$project" "kcidb_psql_viewer"
     password_secret_set "psql_editor" "$project" "${prefix}psql_editor"
 
-    declare -r bigquery_dataset="${prefix%_}"
+    declare -r bigquery_dataset="${namespace}"
     declare -r bigquery_clean_test_dataset="${prefix}clean_test"
     declare -r bigquery_empty_test_dataset="${prefix}empty_test"
     declare -r bigquery_kcidb_db="bigquery:${project}.${bigquery_dataset}"
@@ -733,7 +735,7 @@ function execute() {
                     --format="$format" \
                     --sections="$sections" \
                     --project="$project" \
-                    --prefix="${namespace:-}${namespace:+_}kcidb_" \
+                    --namespace="${namespace:-}${namespace:+_}kcidb" \
                     --extra-cc="$extra_cc" \
                     --smtp-to-addrs="$smtp_to_addrs" \
                     --smtp-mocked="$smtp_mocked" \
