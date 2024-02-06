@@ -6,9 +6,9 @@ from jsonschema.exceptions import ValidationError
 import kcidb.misc
 
 
-def test_parse_timedelta_json():
+def test_timedelta_json_parse():
     """Check kcidb-tests-validate works"""
-    f = kcidb.misc.parse_timedelta_json
+    f = kcidb.misc.timedelta_json_parse
     min_stamp = datetime.datetime(1, 1, 1, 0, 0, 0, 0,
                                   tzinfo=datetime.timezone.utc)
     stamp = datetime.datetime(1, 2, 3, 4, 5, 6, 7,
