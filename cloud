@@ -15,6 +15,7 @@ shopt -s extglob
 
 PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 
+. run.sh
 . submitters.sh
 . sections.sh
 . bigquery.sh
@@ -26,6 +27,7 @@ PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 . scheduler.sh
 . password.sh
 . secrets.sh
+. iam.sh
 . misc.sh
 
 # Enable Google Cloud services using their short names
@@ -83,6 +85,7 @@ function app_deploy() {
 #       --heavy-asserts=true|false
 #       --updated-publish=true|false
 #       --submitters=WORDS
+#       --grafana-public=true|false
 #       --argv=WORDS
 function execute_command() {
     declare params
@@ -100,6 +103,7 @@ function execute_command() {
                           heavy_asserts \
                           updated_publish \
                           submitters \
+                          grafana_public \
                           argv \
                           -- "$@")"
     eval "$params"
@@ -126,12 +130,12 @@ function execute_command() {
     declare -r updated_debug_subscription="${prefix}updated_debug"
     declare -r spool_collection_path="${prefix}notifications"
 
-    declare -r psql_connection=$(
+    declare -r psql_conn=$(
         echo -n "${project}:"
         echo -n "${PSQL_INSTANCE_REGION}:"
         echo -n "${PSQL_INSTANCE}"
     )
-    declare -r psql_socket_dir="/cloudsql/${psql_connection}"
+    declare -r psql_socket_dir="/cloudsql/${psql_conn}"
     declare -r psql_grafana_database="${prefix}grafana"
     declare -r psql_grafana_user="${prefix}grafana"
     declare -r psql_database="${namespace}"
@@ -251,6 +255,9 @@ function execute_command() {
         "$smtp_mocked" && echo "${prefix}smtp_received" || true
     )
 
+    # Grafana Cloud Run service name (must match [a-z0-9-]{0,62}[a-z0-9])
+    declare -r grafana_service="${prefix//[^a-z0-9-]/-}grafana"
+
     declare -r -a env_args=(
         --project="$project"
         --log-level="$log_level"
@@ -293,7 +300,7 @@ function execute_command() {
     app_deploy "$project"
     services_enable "$project" appengine secretmanager cloudfunctions \
                                cloudbuild cloudscheduler firestore \
-                               sqladmin storage
+                               sqladmin storage run iam
 
     # Enable generating PostgreSQL superuser password (if not specified),
     # if the instance doesn't exist yet
@@ -304,8 +311,9 @@ function execute_command() {
     fi
 
     if [ "$command" == "deploy" ]; then
+        sections_run "$sections" iam_deploy "$project" "$grafana_service"
         sections_run "$sections" secrets_deploy "$project" \
-            "$psql_pgpass_secret" "$psql_editor"
+            "$psql_pgpass_secret" "$psql_editor" "$grafana_service"
         sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
         sections_run "$sections" psql_deploy "${psql_args[@]}"
         sections_run "$sections" pubsub_deploy \
@@ -346,6 +354,9 @@ function execute_command() {
             --purge-op-db-trigger-topic="$purge_op_db_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
+        sections_run "$sections" run_deploy "$project" \
+            "$grafana_service" "$grafana_public" \
+            "$psql_conn" "$psql_grafana_user" "$psql_grafana_database"
     elif [ "$command" == "shell" ]; then
         export GCP_PROJECT="$project"
         source <(cloud_functions_env --format=sh "${env_args[@]}")
@@ -357,6 +368,7 @@ function execute_command() {
         fi
         psql_proxy_session "$project" "$PSQL_INSTANCE" "${argv[@]}"
     elif [ "$command" == "withdraw" ]; then
+        sections_run "$sections" run_withdraw "$project" "$grafana_service"
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
@@ -386,6 +398,7 @@ function execute_command() {
         sections_run "$sections" bigquery_withdraw "${bigquery_args[@]}"
         sections_run "$sections" secrets_withdraw "$project" \
             "$psql_pgpass_secret"
+        sections_run "$sections" iam_withdraw "$project" "$grafana_service"
     fi
 }
 
@@ -457,6 +470,8 @@ function usage_deploy() {
     echo "    --submitter=NAME"
     echo "              Specify a service account to permit submissions for."
     echo "              Repeat to add more submitters."
+    echo "    --grafana-public"
+    echo "              Permit public access to Grafana deployment in Cloud Run."
     echo ""
     echo "Positional arguments:"
     echo ""
@@ -650,6 +665,7 @@ function execute() {
         if [[ $command == @(deploy) ]]; then
             getopt_longopts+=",smtp-password-file:"
             getopt_longopts+=",psql-password-file:"
+            getopt_longopts+=",grafana-public"
         fi
     elif [ "$command" == "list-sections" ]; then
         :
@@ -678,6 +694,7 @@ function execute() {
     declare updated_publish="true"
     declare -a submitters=()
     declare format="yaml"
+    declare grafana_public="false"
     while true; do
         case "$1" in
             -h|--help) "usage_${command//-/_}"; exit 0;;
@@ -696,6 +713,7 @@ function execute() {
             --test) test="true"; shift;;
             --format) format="$2"; shift 2;;
             --submitter) submitters+=("$2"); shift 2;;
+            --grafana-public) grafana_public="true"; shift;;
             --) shift; break;;
             *) echo "Unknown option: $1" >&2; exit 1;;
         esac
@@ -752,6 +770,7 @@ function execute() {
                     --heavy-asserts="$heavy_asserts" \
                     --updated-publish="$updated_publish" \
                     --submitters="${submitters[*]@Q}" \
+                    --grafana-public="$grafana_public" \
                     --argv="${argv[*]@Q}"
 }
 
