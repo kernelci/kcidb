@@ -8,6 +8,7 @@ declare _SECTIONS_SH=
 
 # Sections of the installation
 declare -A -r SECTIONS=(
+    ["iam"]="Identity and Access Management"
     ["bigquery"]="BigQuery dataset"
     ["psql"]="PostgreSQL database"
     ["pubsub"]="Pub/Sub topics and subscriptions"
@@ -23,6 +24,7 @@ declare -A -r SECTIONS=(
     ["cloud_functions.load_queue"]="Cloud Functions: kcidb_load_queue()"
     ["scheduler"]="Scheduler jobs"
     ["submitters"]="Submitter permissions"
+    ["run"]="Cloud Run"
 )
 # Maximum length of a section name
 declare SECTIONS_NAME_LEN_MAX=0
