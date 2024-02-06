@@ -34,10 +34,6 @@ function submitter_withdraw() {
     declare member
     member="serviceAccount:$submitter@$project.iam.gserviceaccount.com"
 
-    iam_policy_binding_withdraw "$project" "$member" \
-                                "roles/bigquery.dataViewer"
-    iam_policy_binding_withdraw "$project" "$member" \
-                                "roles/bigquery.jobUser"
     pubsub_topic_iam_policy_binding_withdraw "$project" "$new_topic" \
                                              "$member" \
                                              "roles/pubsub.publisher"
