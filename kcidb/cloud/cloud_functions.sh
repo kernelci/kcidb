@@ -17,7 +17,7 @@ declare _CLOUD_FUNCTIONS_SH=
 #       --updated-publish=true|false
 #       --updated-topic=NAME
 #       --load-queue-trigger-topic=NAME
-#       --purge-op-db-trigger-topic=NAME
+#       --purge-db-trigger-topic=NAME
 #       --updated-urls-topic=NAME
 #       --cache-bucket-name=NAME
 #       --cache-redirector-url=URL
@@ -41,7 +41,7 @@ function cloud_functions_env() {
                           new_topic new_load_subscription \
                           updated_publish updated_topic \
                           load_queue_trigger_topic \
-                          purge_op_db_trigger_topic \
+                          purge_db_trigger_topic \
                           updated_urls_topic \
                           spool_collection_path \
                           extra_cc \
@@ -75,7 +75,7 @@ function cloud_functions_env() {
         [KCIDB_EMPTY_TEST_DATABASES]="$empty_test_databases"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
         [KCIDB_LOAD_QUEUE_TRIGGER_TOPIC]="$load_queue_trigger_topic"
-        [KCIDB_PURGE_OP_DB_TRIGGER_TOPIC]="$purge_op_db_trigger_topic"
+        [KCIDB_PURGE_DB_TRIGGER_TOPIC]="$purge_db_trigger_topic"
         [KCIDB_UPDATED_URLS_TOPIC]="$updated_urls_topic"
         [KCIDB_SELECTED_SUBSCRIPTIONS]=""
         [KCIDB_SPOOL_COLLECTION_PATH]="$spool_collection_path"
@@ -129,7 +129,7 @@ function cloud_functions_env() {
 #       --project=NAME --prefix=PREFIX --source=PATH
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
-#       --purge-op-db-trigger-topic=NAME
+#       --purge-db-trigger-topic=NAME
 #       --updated-urls-topic=NAME
 #       --updated-topic=NAME
 #       --spool-collection-path=PATH
@@ -140,7 +140,7 @@ function cloud_functions_deploy() {
     params="$(getopt_vars sections project prefix source \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
-                          purge_op_db_trigger_topic \
+                          purge_db_trigger_topic \
                           updated_urls_topic \
                           updated_topic \
                           spool_collection_path \
@@ -161,9 +161,9 @@ function cloud_functions_deploy() {
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
     cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          purge_op_db \
+                          purge_db \
                           --env-vars-file "$env_yaml_file" \
-                          --trigger-topic "${purge_op_db_trigger_topic}" \
+                          --trigger-topic "${purge_db_trigger_topic}" \
                           --memory 256MB \
                           --max-instances=1 \
                           --timeout 540
@@ -232,7 +232,7 @@ function cloud_functions_withdraw() {
                           -- "$@")"
     eval "$params"
     cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            purge_op_db
+                            purge_db
     cloud_function_withdraw "$sections" "$project" "$prefix" \
                             pick_notifications
     cloud_function_withdraw "$sections" "$project" "$prefix" \

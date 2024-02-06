@@ -134,7 +134,7 @@ function pubsub_subscription_withdraw() {
 #       --updated-topic=NAME
 #       --updated-debug-subscription=NAME
 #       --pick-notifications-trigger-topic=NAME
-#       --purge-op-db-trigger-topic=NAME
+#       --purge-db-trigger-topic=NAME
 #       --updated-urls-topic=NAME
 #       --smtp-topic=NAME
 #       --smtp-subscription=NAME
@@ -148,7 +148,7 @@ function pubsub_deploy() {
                           updated_topic \
                           updated_debug_subscription \
                           pick_notifications_trigger_topic \
-                          purge_op_db_trigger_topic \
+                          purge_db_trigger_topic \
                           updated_urls_topic \
                           smtp_topic smtp_subscription \
                           -- "$@")"
@@ -171,7 +171,7 @@ function pubsub_deploy() {
                                "${updated_debug_subscription}" \
                                --message-retention-duration=12h
     pubsub_topic_deploy "$project" "${pick_notifications_trigger_topic}"
-    pubsub_topic_deploy "$project" "${purge_op_db_trigger_topic}"
+    pubsub_topic_deploy "$project" "${purge_db_trigger_topic}"
     pubsub_topic_deploy "$project" "${updated_urls_topic}"
     if [ -n "$smtp_topic" ]; then
         pubsub_topic_deploy "$project" "$smtp_topic"
@@ -185,7 +185,7 @@ function pubsub_deploy() {
 # Args: --project=NAME
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
-#       --purge-op-db-trigger-topic=NAME
+#       --purge-db-trigger-topic=NAME
 #       --updated-urls-topic=NAME
 #       --new-topic=NAME
 #       --new-load-subscription=NAME
@@ -199,7 +199,7 @@ function pubsub_withdraw() {
     params="$(getopt_vars project \
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
-                          purge_op_db_trigger_topic \
+                          purge_db_trigger_topic \
                           updated_urls_topic \
                           new_topic \
                           new_load_subscription \
@@ -221,7 +221,7 @@ function pubsub_withdraw() {
     pubsub_topic_withdraw "$project" "$load_queue_trigger_topic"
     pubsub_topic_withdraw "$project" "$pick_notifications_trigger_topic"
     pubsub_topic_withdraw "$project" "$updated_urls_topic"
-    pubsub_topic_withdraw "$project" "$purge_op_db_trigger_topic"
+    pubsub_topic_withdraw "$project" "$purge_db_trigger_topic"
 }
 
 fi # _PUBSUB_SH
