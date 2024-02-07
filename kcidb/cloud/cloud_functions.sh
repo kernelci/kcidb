@@ -28,6 +28,7 @@ declare _CLOUD_FUNCTIONS_SH=
 #       --pgpass-secret=NAME
 #       --op-database=SPEC
 #       --ar-database=SPEC
+#       --sm-database=SPEC
 #       --database=SPEC
 #       --clean-test-databases=SPEC_LIST
 #       --empty-test-databases=SPEC_LIST
@@ -52,6 +53,7 @@ function cloud_functions_env() {
                           cache_redirector_url \
                           op_database \
                           ar_database \
+                          sm_database \
                           database \
                           clean_test_databases \
                           empty_test_databases \
@@ -69,6 +71,7 @@ function cloud_functions_env() {
         [KCIDB_PGPASS_SECRET]="$pgpass_secret"
         [KCIDB_OPERATIONAL_DATABASE]="$op_database"
         [KCIDB_ARCHIVE_DATABASE]="$ar_database"
+        [KCIDB_SAMPLE_DATABASE]="$sm_database"
         [KCIDB_DATABASE]="$database"
         [KCIDB_DATABASE_LOAD_PERIOD_SEC]="180"
         [KCIDB_CLEAN_TEST_DATABASES]="$clean_test_databases"

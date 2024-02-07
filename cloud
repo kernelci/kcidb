@@ -188,11 +188,15 @@ function execute_command() {
     declare -r bigquery_clean_test_dataset="${prefix}clean_test"
     declare -r bigquery_empty_test_dataset="${prefix}empty_test"
     declare -r bigquery_kcidb_db="bigquery:${project}.${bigquery_dataset}"
+    declare -r bigquery_sample_dataset="${prefix}sample"
+    declare -r bigquery_sample_kcidb_db="bigquery:${project}.${bigquery_sample_dataset}"
     declare bigquery_clean_test_kcidb_db="bigquery:${project}."
     declare -r bigquery_clean_test_kcidb_db+="${bigquery_clean_test_dataset}"
     declare bigquery_empty_test_kcidb_db="bigquery:${project}."
     declare -r bigquery_empty_test_kcidb_db+="${bigquery_empty_test_dataset}"
-    declare -a bigquery_args=("$project" "$bigquery_dataset")
+    declare -a bigquery_args=(
+        "$project" "$bigquery_dataset" "$bigquery_sample_dataset"
+    )
     if "$test"; then
         bigquery_args+=(
             # Do not initialize the clean dataset
@@ -207,6 +211,8 @@ function execute_command() {
         echo -n "$psql_kcidb_db" | escape_whitespace
         echo -n " "
         echo -n "$bigquery_kcidb_db" | escape_whitespace
+        echo -n " "
+        echo -n "$bigquery_sample_kcidb_db" | escape_whitespace
     )
 
     if "$test"; then
@@ -281,6 +287,7 @@ function execute_command() {
         --pgpass-secret="$psql_pgpass_secret"
         --op-database="$psql_kcidb_db"
         --ar-database="$bigquery_kcidb_db"
+        --sm-database="$bigquery_sample_kcidb_db"
         --database="$database"
         --clean-test-databases="$clean_test_databases"
         --empty-test-databases="$empty_test_databases"
