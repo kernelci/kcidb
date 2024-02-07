@@ -86,6 +86,10 @@ function scheduler_deploy() {
         "$project" "${prefix}purge_op_db_trigger" \
         "$purge_db_trigger_topic" '0 6 * * MON' \
         '{"database": "op", "timedelta": {"delta": {"months": 6}}}'
+    scheduler_job_pubsub_deploy \
+        "$project" "${prefix}purge_sm_db_trigger" \
+        "$purge_db_trigger_topic" '0 7 * * *' \
+        '{"database": "sm", "timedelta": {"delta": {"weeks": 4}}}'
 }
 
 # Withdraw from the scheduler

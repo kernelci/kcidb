@@ -46,6 +46,9 @@ OPERATIONAL_DATABASE = os.environ["KCIDB_OPERATIONAL_DATABASE"]
 # The specification for the archive database (a part of DATABASE spec)
 ARCHIVE_DATABASE = os.environ["KCIDB_ARCHIVE_DATABASE"]
 
+# The specification for the archive sample database (a part of DATABASE spec)
+SAMPLE_DATABASE = os.environ["KCIDB_SAMPLE_DATABASE"]
+
 # The specification for the database submissions should be loaded into
 DATABASE = os.environ["KCIDB_DATABASE"]
 
@@ -435,7 +438,7 @@ def kcidb_purge_db(event, context):
     present.
     """
     # Accepted databases and their specs
-    databases = dict(op=OPERATIONAL_DATABASE)
+    databases = dict(op=OPERATIONAL_DATABASE, sm=SAMPLE_DATABASE)
 
     # Describe the expected event data
     schema = dict(
