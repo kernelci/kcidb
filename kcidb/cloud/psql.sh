@@ -8,20 +8,20 @@ declare _PSQL_SH=
 . misc.sh
 
 # Location of the PostgreSQL proxy binary we (could) download
-declare PSQL_PROXY_BINARY="$TMPDIR/cloud_sql_proxy"
+declare PSQL_PROXY_BINARY="$TMPDIR/cloud-sql-proxy"
 
 # Location of the PostgreSQL proxy socket directory
-declare PSQL_PROXY_DIR="$TMPDIR/cloud_sql_sockets"
+declare PSQL_PROXY_DIR="$TMPDIR/cloud-sql-sockets"
 
 # File containing the PID of the shell executing PostgreSQL proxy, if started
-declare PSQL_PROXY_SHELL_PID_FILE="$TMPDIR/cloud_sql_proxy.pid"
+declare PSQL_PROXY_SHELL_PID_FILE="$TMPDIR/cloud-sql-proxy.pid"
 
 # The .pgpass file for the command running through PostgreSQL proxy
-declare PSQL_PROXY_PGPASS="$TMPDIR/cloud_sql_proxy.pgpass"
+declare PSQL_PROXY_PGPASS="$TMPDIR/cloud-sql-proxy.pgpass"
 
 # Cleanup PostgreSQL after the script
 function _psql_cleanup() {
-    # Kill the cloud_sql_proxy, if started
+    # Kill the cloud-sql-proxy, if started
     if [ -e "$PSQL_PROXY_SHELL_PID_FILE" ]; then
         declare pid
         pid=$(< "$PSQL_PROXY_SHELL_PID_FILE")
@@ -115,7 +115,9 @@ function psql_instance_deploy() {
 function psql_proxy_session() {
     # Source:
     # https://cloud.google.com/sql/docs/postgres/connect-admin-proxy#install
-    declare -r url_base="https://dl.google.com/cloudsql/cloud_sql_proxy."
+    declare url_base="https://storage.googleapis.com/"
+    declare url_base+="cloud-sql-connectors/cloud-sql-proxy/v2.8.2/"
+    declare -r url_base+="cloud-sql-proxy."
     declare -r -A url_os_sfx=(
         ["x86_64 GNU/Linux"]="linux.amd64"
         ["i386 GNU/Linux"]="linux.386"
@@ -124,7 +126,7 @@ function psql_proxy_session() {
     declare -r instance="$1"; shift
     declare -r fq_instance="$project:$PSQL_INSTANCE_REGION:$instance"
     # The default proxy binary, if installed
-    declare proxy="cloud_sql_proxy"
+    declare proxy="cloud-sql-proxy"
     declare pid
     declare pgpass
 
@@ -148,7 +150,8 @@ function psql_proxy_session() {
     fi
 
     # Start the proxy in background
-    mute "$proxy" "-instances=$fq_instance" "-dir=$PSQL_PROXY_DIR" &
+    mute "$proxy" "$fq_instance" "--unix-socket=$PSQL_PROXY_DIR" \
+                                  --exit-zero-on-sigterm &
     pid="$!"
     # Store the PID of the shell running the proxy, for errexit cleanup
     echo -n "$pid" > "$PSQL_PROXY_SHELL_PID_FILE"
@@ -225,6 +228,49 @@ function psql_database_exists() {
     fi
 }
 
+# Setup a Grafana PostgreSQL database and its paraphernalia.
+# Expect the environment to be set up with variables permitting a libpq user
+# to connect to the database as a superuser.
+# Args: database user
+function _psql_grafana_database_setup() {
+    declare -r database="$1"; shift
+    declare -r user="$1"; shift
+    # Deploy user permissions
+    mute psql --dbname="$database" -e <<<"
+        \\set ON_ERROR_STOP on
+
+        GRANT USAGE ON SCHEMA public TO $user;
+
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO $user;
+
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO $user;
+    "
+}
+
+# Cleanup a Grafana PostgreSQL database and its paraphernalia.
+# Expect the environment to be set up with variables permitting a libpq user
+# to connect to the database as a superuser.
+# Args: database user
+function _psql_grafana_database_cleanup() {
+    declare -r database="$1"; shift
+    declare -r user="$1"; shift
+    # Withdraw user permissions
+    mute psql --dbname="$database" -e <<<"
+        /* Do not stop on errors in case users are already removed */
+        REVOKE SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public
+        FROM $user;
+        REVOKE USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public
+        FROM $user;
+        \\set ON_ERROR_STOP on
+        /* Terminate all connections to the database except this one */
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = :'DBNAME' AND pid <> pg_backend_pid();
+    "
+}
+
 # Setup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
 # to connect to the database as a superuser.
@@ -285,17 +331,46 @@ function _psql_database_cleanup() {
 
 # Deploy PostgreSQL databases, if they don't exist
 # Do not initialize databases that are prepended with the hash sign ('#').
-# Args: project instance viewer [database editor]...
+# Args: project instance viewer grafana_database grafana_user
+#       [database editor]...
 function psql_databases_deploy() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
+    declare -r grafana_database="$1"; shift
+    declare -r grafana_user="$1"; shift
     declare database
     declare editor
     declare init
     declare exists
     declare updated
 
+    # Create the Grafana database, if not exists
+    exists=$(psql_database_exists "$project" "$instance" "$grafana_database")
+    if ! "$exists"; then
+        mute gcloud sql databases create \
+            "$grafana_database" \
+            --quiet \
+            --project="$project" \
+            --instance="$instance"
+    fi
+
+    # Deploy the Grafana user
+    exists=$(psql_user_exists "$project" "$instance" "$grafana_user")
+    updated=$(password_is_updated psql_grafana)
+    if ! "$exists" || "$updated"; then
+        # Get and cache the password in the current shell first
+        password_get psql_grafana >/dev/null
+        # Create the user with the cached password
+        password_get psql_grafana |
+            psql_user_deploy "$project" "$instance" "$grafana_user"
+    fi
+
+    # Setup the Grafana database
+    psql_proxy_session "$project" "$instance" \
+        _psql_grafana_database_setup "$grafana_database" "$grafana_user"
+
+    # Deploy the regular KCIDB databases
     while (($#)); do
         database="$1"; shift
         editor="$1"; shift
@@ -339,11 +414,14 @@ function psql_databases_deploy() {
 
 # Withdraw PostgreSQL databases, if they exist
 # Cleanup all databases, even those prepended with the hash sign ('#').
-# Args: project instance viewer [database editor]...
+# Args: project instance viewer grafana_database grafana_user
+#       [database editor]...
 function psql_databases_withdraw() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
+    declare -r grafana_database="$1"; shift
+    declare -r grafana_user="$1"; shift
     declare -a -r databases_and_editors=("$@")
     declare database
     declare editor
@@ -378,6 +456,23 @@ function psql_databases_withdraw() {
         psql_user_withdraw "$project" "$instance" "$editor"
         # NOTE: The viewer user is per-instance
     done
+
+    # Cleanup and remove the Grafana database
+    exists=$(psql_database_exists "$project" "$instance" "$grafana_database")
+    if "$exists"; then
+        # Cleanup the database
+        psql_proxy_session "$project" "$instance" \
+            _psql_grafana_database_cleanup "$grafana_database" "$grafana_user"
+        # Delete the database
+        mute gcloud sql databases delete \
+            "$grafana_database" \
+            --quiet \
+            --project="$project" \
+            --instance="$instance"
+    fi
+
+    # Withdraw the Grafana user
+    psql_user_withdraw "$project" "$instance" "$grafana_user"
 }
 
 # Check if a PostgreSQL user exists
@@ -450,7 +545,7 @@ function psql_user_withdraw() {
 
 # Deploy (to) PostgreSQL.
 # Do not initialize databases that are prepended with the hash sign ('#').
-# Args: project [database editor]...
+# Args: project grafana_database grafana_user [database editor]...
 function psql_deploy() {
     declare -r project="$1"; shift
     # Deploy the instance
@@ -461,7 +556,7 @@ function psql_deploy() {
 
 # Withdraw (from) PostgreSQL
 # Cleanup all databases, even those prepended with the hash sign ('#').
-# Args: project [database editor]...
+# Args: project grafana_database grafana_user [database editor]...
 function psql_withdraw() {
     declare -r project="$1"; shift
     psql_databases_withdraw "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" "$@"

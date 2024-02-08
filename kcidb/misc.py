@@ -492,7 +492,41 @@ def isliced(iterable, size):
         yield iterator_slice
 
 
-def parse_timedelta_json(data, stamp):
+# Recognized time components, smaller to larger, and their minimums
+TIME_COMPONENTS_MIN = dict(
+    microseconds=0,
+    seconds=0,
+    minutes=0,
+    hours=0,
+    days=1,
+    months=1,
+    years=1,
+)
+
+# The timedelta schema
+TIMEDELTA_JSON_SCHEMA = dict(
+    type="object",
+    properties=dict(
+        delta=dict(
+            type="object",
+            properties={
+                # Delta is always positive and is subtracted to reduce
+                # chance of forgetting the sign and going to the future,
+                # wiping everything
+                c: dict(type="integer", minimum=0)
+                for c in TIME_COMPONENTS_MIN
+            },
+            anyOf=[dict(required=[c]) for c in TIME_COMPONENTS_MIN],
+            additionalProperties=False,
+        ),
+        stamp=dict(type="string", format="date-time",),
+    ),
+    anyOf=[{"required": ["delta"]}, {"required": ["stamp"]},],
+    additionalProperties=False,
+)
+
+
+def timedelta_json_parse(data, stamp):
     """
     Parse JSON data for a time delta: an optional timestamp, and an optional
     delta, but at least one of them must be present. If the timestamp is not
@@ -505,41 +539,9 @@ def parse_timedelta_json(data, stamp):
         data:   The JSON data to parse.
         stamp:  The (aware) timestamp to use, if not present in the data.
     """
-    # Recognized time components, smaller to larger, and their minimums
-    components_min = dict(
-        microseconds=0,
-        seconds=0,
-        minutes=0,
-        hours=0,
-        days=1,
-        months=1,
-        years=1,
-    )
-    # The timedelta schema
-    schema = dict(
-        type="object",
-        properties=dict(
-            delta=dict(
-                type="object",
-                properties={
-                    # Delta is always positive and is subtracted to reduce
-                    # chance of forgetting the sign and going to the future,
-                    # wiping everything
-                    c: dict(type="integer", minimum=0)
-                    for c in components_min
-                },
-                anyOf=[dict(required=[c]) for c in components_min],
-                additionalProperties=False,
-            ),
-            stamp=dict(type="string", format="date-time",),
-        ),
-        anyOf=[{"required": ["delta"]}, {"required": ["stamp"]},],
-        additionalProperties=False,
-    )
-
     assert isinstance(stamp, datetime.datetime) and stamp.tzinfo
     jsonschema.validate(
-        instance=data, schema=schema,
+        instance=data, schema=TIMEDELTA_JSON_SCHEMA,
         format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER
     )
 
@@ -551,7 +553,7 @@ def parse_timedelta_json(data, stamp):
     if "delta" in data:
         delta = data["delta"].copy()
         # Round the timestamp down to delta precision and subtract delta
-        for component, minimum in components_min.items():
+        for component, minimum in TIME_COMPONENTS_MIN.items():
             if component in delta:
                 break
             # Singular means replace with value
