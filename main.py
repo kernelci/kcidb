@@ -10,6 +10,7 @@ import datetime
 import logging
 import smtplib
 from urllib.parse import unquote
+import jsonschema
 import functions_framework
 import google.cloud.logging
 import kcidb
@@ -29,8 +30,9 @@ kcidb.misc.logging_setup(
 # Get the module's logger
 LOGGER = logging.getLogger()
 
-# The subscriber object for the submission queue
-_LOAD_QUEUE_SUBSCRIBER = None
+# The dictionary of specs for databases and subscriber objects for the
+# corresponding submission queue
+_LOAD_QUEUE_SUBSCRIBERS = {}
 # Maximum number of messages loaded from the submission queue in one go
 LOAD_QUEUE_MSG_MAX = int(os.environ["KCIDB_LOAD_QUEUE_MSG_MAX"])
 # Maximum number of objects loaded from the submission queue in one go
@@ -43,6 +45,9 @@ OPERATIONAL_DATABASE = os.environ["KCIDB_OPERATIONAL_DATABASE"]
 
 # The specification for the archive database (a part of DATABASE spec)
 ARCHIVE_DATABASE = os.environ["KCIDB_ARCHIVE_DATABASE"]
+
+# The specification for the archive sample database (a part of DATABASE spec)
+SAMPLE_DATABASE = os.environ["KCIDB_SAMPLE_DATABASE"]
 
 # The specification for the database submissions should be loaded into
 DATABASE = os.environ["KCIDB_DATABASE"]
@@ -80,10 +85,10 @@ SMTP_SUBSCRIPTION = os.environ.get("KCIDB_SMTP_SUBSCRIPTION", None)
 SMTP_FROM_ADDR = os.environ.get("KCIDB_SMTP_FROM_ADDR", None)
 # A string to be added to the CC header of notifications being sent out
 EXTRA_CC = os.environ.get("KCIDB_EXTRA_CC", None)
-# The database client instance
-_DB_CLIENT = None
-# The object-oriented database client instance
-_OO_CLIENT = None
+# The dictionary of database specs and client instances
+_DB_CLIENTS = {}
+# The dictionary of database specs and object-oriented client instances
+_OO_CLIENTS = {}
 # KCIDB cache client instance
 _CACHE_CLIENT = None
 # The notification spool client
@@ -131,15 +136,14 @@ def get_load_queue_subscriber(database):
                     schema version.
     """
     # It's alright, pylint: disable=global-statement
-    global _LOAD_QUEUE_SUBSCRIBER
-    if _LOAD_QUEUE_SUBSCRIBER is None:
-        _LOAD_QUEUE_SUBSCRIBER = kcidb.mq.IOSubscriber(
+    if database not in _LOAD_QUEUE_SUBSCRIBERS:
+        _LOAD_QUEUE_SUBSCRIBERS[database] = kcidb.mq.IOSubscriber(
             PROJECT_ID,
             os.environ["KCIDB_LOAD_QUEUE_TOPIC"],
             os.environ["KCIDB_LOAD_QUEUE_SUBSCRIPTION"],
             schema=get_db_client(database).get_schema()[1]
         )
-    return _LOAD_QUEUE_SUBSCRIBER
+    return _LOAD_QUEUE_SUBSCRIBERS[database]
 
 
 def get_updated_queue_publisher():
@@ -182,15 +186,12 @@ def get_db_client(database):
         database:   The specification for the database the client should
                     connect to.
     """
-    # It's alright, pylint: disable=global-statement
-    global _DB_CLIENT
-    if _DB_CLIENT is None:
+    if database not in _DB_CLIENTS:
         # Get the credentials
         get_db_credentials()
         # Create the client
-        _DB_CLIENT = kcidb.db.Client(database)
-    assert _DB_CLIENT.database == database
-    return _DB_CLIENT
+        _DB_CLIENTS[database] = kcidb.db.Client(database)
+    return _DB_CLIENTS[database]
 
 
 def get_oo_client(database):
@@ -201,11 +202,9 @@ def get_oo_client(database):
         database:   The specification for the database the client should
                     connect to.
     """
-    # It's alright, pylint: disable=global-statement
-    global _OO_CLIENT
-    if _OO_CLIENT is None:
-        _OO_CLIENT = kcidb.oo.Client(get_db_client(database))
-    return _OO_CLIENT
+    if database not in _OO_CLIENTS:
+        _OO_CLIENTS[database] = kcidb.oo.Client(get_db_client(database))
+    return _OO_CLIENTS[database]
 
 
 def get_spool_client():
@@ -431,22 +430,39 @@ def kcidb_pick_notifications(data, context):
         spool_client.ack(notification_id)
 
 
-def kcidb_purge_op_db(event, context):
+def kcidb_purge_db(event, context):
     """
     Purge data from the operational database, older than the optional delta
     from the current (or specified) database timestamp, rounded to smallest
     delta component. Require that either the delta or the timestamp are
     present.
     """
+    # Accepted databases and their specs
+    databases = dict(op=OPERATIONAL_DATABASE, sm=SAMPLE_DATABASE)
+
+    # Describe the expected event data
+    schema = dict(
+        type="object",
+        properties=dict(
+            database=dict(type="string", enum=list(databases)),
+            timedelta=kcidb.misc.TIMEDELTA_JSON_SCHEMA,
+        )
+    )
+
     # Parse the input JSON
     string = base64.b64decode(event["data"]).decode()
     data = json.loads(string)
+    jsonschema.validate(
+        instance=data, schema=schema,
+        format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER
+    )
 
-    # Get the operational database client
-    client = get_db_client(OPERATIONAL_DATABASE)
+    # Get the database client
+    client = get_db_client(databases[data["database"]])
 
     # Parse/calculate the cut-off timestamp
-    stamp = kcidb.misc.parse_timedelta_json(data, client.get_current_time())
+    stamp = kcidb.misc.timedelta_json_parse(data["timedelta"],
+                                            client.get_current_time())
 
     # Purge the data
     client.purge(stamp)

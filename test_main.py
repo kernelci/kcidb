@@ -229,8 +229,8 @@ def test_url_caching(empty_deployment):
         f"Unexpected URLs {urls_not_expected} found in the cache"
 
 
-def test_purge_op_db(empty_deployment):
-    """Check kcidb_purge_op_db() works correctly"""
+def test_purge_db(empty_deployment):
+    """Check kcidb_purge_db() works correctly"""
 
     # Make empty_deployment appear used to silence pylint warning
     assert empty_deployment is None
@@ -322,8 +322,8 @@ def test_purge_op_db(empty_deployment):
     # Trigger the purge at the boundary
     kcidb.mq.JSONPublisher(
         os.environ["GCP_PROJECT"],
-        os.environ["KCIDB_PURGE_OP_DB_TRIGGER_TOPIC"]
-    ).publish(dict(stamp=str_after))
+        os.environ["KCIDB_PURGE_DB_TRIGGER_TOPIC"]
+    ).publish(dict(database="op", timedelta=dict(stamp=str_after)))
 
     # Wait and check for the purge
     deadline = datetime.now(timezone.utc) + timedelta(minutes=5)

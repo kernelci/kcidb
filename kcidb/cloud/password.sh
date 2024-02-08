@@ -12,6 +12,7 @@ declare -r -A PASSWORD_DESCS=(
     [psql_superuser]="PostgreSQL superuser"
     [psql_editor]="PostgreSQL editor user"
     [psql_viewer]="PostgreSQL viewer user"
+    [psql_grafana]="PostgreSQL Grafana user"
 )
 
 # A map of password names and their "can be auto-generated" flags.
@@ -20,6 +21,7 @@ declare -r -A PASSWORD_DESCS=(
 declare -A PASSWORD_GENERATE=(
     [psql_editor]="true"
     [psql_viewer]="true"
+    [psql_grafana]="true"
 )
 
 # A map of password names and their project and secret names, separated by a
@@ -166,6 +168,15 @@ function password_secret_set() {
         exit 1
     fi
     PASSWORD_SECRETS[$name]="$project:$secret"
+}
+
+# Get the name of the secret storing the password with specified name.
+# Args: name
+# Output: secret
+function password_secret_get_name() {
+    declare -r name="$1"; shift
+    assert password_exists "$name"
+    echo -n "${PASSWORD_SECRETS[$name]#*:}"
 }
 
 # Check if every specified password has its secret set
