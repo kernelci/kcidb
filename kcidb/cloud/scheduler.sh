@@ -100,6 +100,7 @@ function scheduler_withdraw() {
     scheduler_job_withdraw "$project" "${prefix}load_queue_trigger"
     scheduler_job_withdraw "$project" "${prefix}pick_notifications_trigger"
     scheduler_job_withdraw "$project" "${prefix}purge_op_db_trigger"
+    scheduler_job_withdraw "$project" "${prefix}purge_sm_db_trigger"
 }
 
 fi # _SCHEDULER_SH
