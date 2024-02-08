@@ -23,7 +23,7 @@ PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 . storage.sh
 . pubsub.sh
 . firestore.sh
-. cloud_functions.sh
+. functions.sh
 . scheduler.sh
 . password.sh
 . secrets.sh
@@ -118,7 +118,7 @@ function execute_command() {
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
     declare -r purge_db_trigger_topic="${prefix}purge_db_trigger"
     declare -r cache_redirect_function_name="cache_redirect"
-    declare cache_redirector_url="https://${CLOUD_FUNCTION_REGION}"
+    declare cache_redirector_url="https://${FUNCTION_REGION}"
     declare cache_redirector_url+="-${project}.cloudfunctions.net/"
     declare cache_redirector_url+="${prefix}"
     declare -r cache_redirector_url+="${cache_redirect_function_name}"
@@ -295,12 +295,12 @@ function execute_command() {
 
     # Handle "env" command, if specified
     if [ "$command" == "env" ]; then
-        cloud_functions_env --format="$format" "${env_args[@]}"
+        functions_env --format="$format" "${env_args[@]}"
         return
     fi
 
     declare -r -a env_yaml=$(
-        cloud_functions_env --format=yaml "${env_args[@]}"
+        functions_env --format=yaml "${env_args[@]}"
     )
 
     # Make sure requisite services are enabled
@@ -339,7 +339,7 @@ function execute_command() {
             --smtp-subscription="$smtp_subscription"
         sections_run "$sections" firestore_deploy "$project"
         sections_run "$sections" storage_deploy "$project" "$cache_bucket_name"
-        cloud_functions_deploy \
+        functions_deploy \
             --sections="$sections" \
             --project="$project" \
             --prefix="$prefix" \
@@ -366,7 +366,7 @@ function execute_command() {
             "$psql_conn" "$psql_grafana_user" "$psql_grafana_database"
     elif [ "$command" == "shell" ]; then
         export GCP_PROJECT="$project"
-        source <(cloud_functions_env --format=sh "${env_args[@]}")
+        source <(functions_env --format=sh "${env_args[@]}")
         export KCIDB_DEPLOYMENT="${KCIDB_DEPLOYMENT:-1}"
         if (( ${#argv[@]} )); then
             argv=("$SHELL" "-c" "${argv[*]@Q}")
@@ -379,7 +379,7 @@ function execute_command() {
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
-        cloud_functions_withdraw \
+        functions_withdraw \
             --sections="$sections" \
             --project="$project" \
             --prefix="$prefix" \

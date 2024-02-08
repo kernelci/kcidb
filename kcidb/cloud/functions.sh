@@ -1,9 +1,9 @@
 # KCIDB cloud deployment - Cloud Functions
 #
-if [ -z "${_CLOUD_FUNCTIONS_SH+set}" ]; then
-declare _CLOUD_FUNCTIONS_SH=
+if [ -z "${_FUNCTIONS_SH+set}" ]; then
+declare _FUNCTIONS_SH=
 
-. cloud_function.sh
+. function.sh
 . misc.sh
 
 # Output deployment environment for Cloud Functions
@@ -32,7 +32,7 @@ declare _CLOUD_FUNCTIONS_SH=
 #       --database=SPEC
 #       --clean-test-databases=SPEC_LIST
 #       --empty-test-databases=SPEC_LIST
-function cloud_functions_env() {
+function functions_env() {
     declare params
     params="$(getopt_vars format \
                           project \
@@ -138,7 +138,7 @@ function cloud_functions_env() {
 #       --spool-collection-path=PATH
 #       --cache-redirect-function-name=NAME
 #       --env-yaml=YAML
-function cloud_functions_deploy() {
+function functions_deploy() {
     declare params
     params="$(getopt_vars sections project prefix source \
                           load_queue_trigger_topic \
@@ -163,64 +163,64 @@ function cloud_functions_deploy() {
     trigger_event+="document.create"
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
-    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          purge_db \
-                          --env-vars-file "$env_yaml_file" \
-                          --trigger-topic "${purge_db_trigger_topic}" \
-                          --memory 256MB \
-                          --max-instances=1 \
-                          --timeout 540
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    purge_db \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-topic "${purge_db_trigger_topic}" \
+                    --memory 256MB \
+                    --max-instances=1 \
+                    --timeout 540
 
-    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          pick_notifications \
-                          --env-vars-file "$env_yaml_file" \
-                          --trigger-topic "${pick_notifications_trigger_topic}" \
-                          --memory 256MB \
-                          --max-instances=1 \
-                          --timeout 540
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    pick_notifications \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-topic "${pick_notifications_trigger_topic}" \
+                    --memory 256MB \
+                    --max-instances=1 \
+                    --timeout 540
 
-    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          send_notification \
-                          --env-vars-file "$env_yaml_file" \
-                          --trigger-event "${trigger_event}" \
-                          --trigger-resource "${trigger_resource}" \
-                          --memory 256MB \
-                          --retry \
-                          --max-instances=1 \
-                          --timeout 540
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    send_notification \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-event "${trigger_event}" \
+                    --trigger-resource "${trigger_resource}" \
+                    --memory 256MB \
+                    --retry \
+                    --max-instances=1 \
+                    --timeout 540
 
-    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          spool_notifications \
-                          --env-vars-file "$env_yaml_file" \
-                          --trigger-topic "${updated_topic}" \
-                          --memory 2048MB \
-                          --max-instances=10 \
-                          --timeout 540
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    spool_notifications \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-topic "${updated_topic}" \
+                    --memory 2048MB \
+                    --max-instances=10 \
+                    --timeout 540
 
-    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          "$cache_redirect_function_name" \
-                          --env-vars-file "$env_yaml_file" \
-                          --trigger-http \
-                          --allow-unauthenticated \
-                          --memory 256MB \
-                          --max-instances=16 \
-                          --timeout 30
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    "$cache_redirect_function_name" \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-http \
+                    --allow-unauthenticated \
+                    --memory 256MB \
+                    --max-instances=16 \
+                    --timeout 30
 
-    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          cache_urls \
-                          --env-vars-file "$env_yaml_file" \
-                          --trigger-topic "${updated_urls_topic}" \
-                          --memory 256MB \
-                          --max-instances=1 \
-                          --timeout 540
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    cache_urls \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-topic "${updated_urls_topic}" \
+                    --memory 256MB \
+                    --max-instances=1 \
+                    --timeout 540
 
-    cloud_function_deploy "$sections" "$source" "$project" "$prefix" \
-                          load_queue \
-                          --env-vars-file "$env_yaml_file" \
-                          --trigger-topic "${load_queue_trigger_topic}" \
-                          --memory 1024MB \
-                          --max-instances=1 \
-                          --timeout 540
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    load_queue \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-topic "${load_queue_trigger_topic}" \
+                    --memory 1024MB \
+                    --max-instances=1 \
+                    --timeout 540
     # Remove the environment YAML file
     rm "$env_yaml_file"
 }
@@ -228,26 +228,26 @@ function cloud_functions_deploy() {
 # Withdraw Cloud Functions
 # Args: --sections=GLOB --project=NAME --prefix=PREFIX
 #       --cache-redirect-function-name=NAME
-function cloud_functions_withdraw() {
+function functions_withdraw() {
     declare params
     params="$(getopt_vars sections project prefix \
                           cache_redirect_function_name \
                           -- "$@")"
     eval "$params"
-    cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            purge_db
-    cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            pick_notifications
-    cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            send_notification
-    cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            spool_notifications
-    cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            "$cache_redirect_function_name"
-    cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            cache_urls
-    cloud_function_withdraw "$sections" "$project" "$prefix" \
-                            load_queue
+    function_withdraw "$sections" "$project" "$prefix" \
+                      purge_db
+    function_withdraw "$sections" "$project" "$prefix" \
+                      pick_notifications
+    function_withdraw "$sections" "$project" "$prefix" \
+                      send_notification
+    function_withdraw "$sections" "$project" "$prefix" \
+                      spool_notifications
+    function_withdraw "$sections" "$project" "$prefix" \
+                      "$cache_redirect_function_name"
+    function_withdraw "$sections" "$project" "$prefix" \
+                      cache_urls
+    function_withdraw "$sections" "$project" "$prefix" \
+                      load_queue
 }
 
-fi # _CLOUD_FUNCTIONS_SH
+fi # _FUNCTIONS_SH
