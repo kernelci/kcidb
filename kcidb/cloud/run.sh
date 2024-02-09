@@ -87,12 +87,13 @@ function run_deploy() {
             metadata:
               annotations:
                 autoscaling.knative.dev/minScale: "0"
-                autoscaling.knative.dev/maxScale: "1"
+                autoscaling.knative.dev/maxScale: "4"
                 run.googleapis.com/container-dependencies:
                   '{"grafana": ["cloud-sql-proxy"]}'
             spec:
               serviceAccountName:
                 "$grafana_service@$project.iam.gserviceaccount.com"
+              containerConcurrency: 256
               containers:
                 - image: docker.io/grafana/grafana:6.6.0
                   name: grafana
