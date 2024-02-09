@@ -120,6 +120,7 @@ jobs:
         run: |
           declare -a args=(
             kernelci-production "playground"
+            --grafana-public
             --smtp-mocked
             --optimize=2
           )
@@ -128,6 +129,7 @@ jobs:
         run: |
           declare -a args=(
             kernelci-production ""
+            --grafana-public
             --extra-cc=kernelci-results-staging@groups.io
           )
           ./cloud deploy "${args[@]}" -v
