@@ -49,11 +49,14 @@ def check_url_in_cache(url):
     """Check whether the URL is sourced from storage or not."""
     url_encoded = quote(url)
     cache_redirector_url = os.environ["KCIDB_CACHE_REDIRECTOR_URL"]
-    response = requests.get(
-        f"{cache_redirector_url}?{url_encoded}",
-        timeout=10,   # Time in secs
-        allow_redirects=False
-    )
+    try:
+        response = requests.get(
+            f"{cache_redirector_url}?{url_encoded}",
+            timeout=10,   # Time in secs
+            allow_redirects=False
+        )
+    except requests.exceptions.Timeout:
+        return False
     if response.status_code == 302:
         # Check if the redirect URL matches the blob storage URL pattern
         if (
