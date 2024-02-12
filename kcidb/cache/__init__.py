@@ -57,10 +57,8 @@ class Client:
             return
 
         blob = self.client.bucket(self.bucket_name).blob(object_name)
-
         if blob.exists():
-            LOGGER.debug("URL '%s' already exists, "
-                         "not caching.", url)
+            LOGGER.debug("URL %r already exists, not caching.", url)
             return
 
         try:
@@ -73,14 +71,15 @@ class Client:
                 # Check the size of the content before downloading
                 content_length = response.headers.get("Content-Length")
                 if content_length is None:
-                    LOGGER.debug("No Content-Length for '%s', "
-                                 "not caching.", url)
+                    LOGGER.warning("No Content-Length for %r, not caching.",
+                                   url)
                     return
 
                 content_length = int(content_length)
                 if content_length > self.max_store_size:
-                    LOGGER.debug("URL '%s' size exceeds max_store_size, not "
-                                 "caching.", url)
+                    LOGGER.warning("URL %r size (%d) exceeds "
+                                   "max_store_size (%d), not caching.",
+                                   url, content_length, self.max_store_size)
                     return
 
                 # Perform the GET request to download the contents
@@ -95,16 +94,14 @@ class Client:
                         contents,
                         content_type=content_type
                     )
-                    LOGGER.debug("URL '%s' successfully cached.", url)
-                else:
-                    LOGGER.debug("Failed download URL '%s'. "
-                                 "Status code: %d", url, response.status_code)
-            else:
-                LOGGER.debug("Failed download URL '%s'. "
-                             "Status code: %d", url, response.status_code)
+                    LOGGER.info("URL %r successfully cached.", url)
+                    return
+
+            LOGGER.warning("Failed to download URL %r. Status code: %d",
+                           url, response.status_code)
 
         except requests.exceptions.RequestException as err:
-            LOGGER.debug("Error downloading URL '%s': %s", url, str(err))
+            LOGGER.warning("Error downloading URL %r: %s", url, str(err))
 
     @classmethod
     def _format_object_name(cls, url):
