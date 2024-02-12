@@ -151,6 +151,14 @@ function functions_deploy() {
                           env_yaml \
                           -- "$@")"
     eval "$params"
+
+    # Allow the App Engine service account to create its own tokens
+    # so it can sign Google Cloud Storage URLs
+    mute gcloud iam service-accounts add-iam-policy-binding \
+        "$project@appspot.gserviceaccount.com" \
+        --role=roles/iam.serviceAccountTokenCreator \
+        --member="serviceAccount:$project@appspot.gserviceaccount.com"
+
     # Create empty environment YAML
     declare env_yaml_file
     env_yaml_file=`mktemp --tmpdir kcidb_cloud_env.XXXXXXXX`
