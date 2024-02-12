@@ -561,8 +561,8 @@ def kcidb_cache_redirect(request):
 
         if not url_to_fetch:
             # If the URL is empty, return a 400 (Bad Request) error
-            response_body = "Put a valid URL to query from \
-                the caching system."
+            response_body = "Provide a valid URL to query from " \
+                "the caching system."
             return (response_body, 400, {})
 
         # Check if the URL is in the cache
