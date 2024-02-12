@@ -111,6 +111,7 @@ class Client:
 
         Args:
             url:    The (potentially) cached URL to format the object name for.
+
         Returns:
             The object name of the (potentially) cached URL.
         """
@@ -124,6 +125,7 @@ class Client:
 
         Args:
             url:    The (potentially) cached URL to format the public URL for.
+
         Returns:
             The public URL of the (potentially) cached URL.
         """
@@ -138,6 +140,7 @@ class Client:
 
         Args:
             url:    The potentially-cached URL to map.
+
         Returns:
             The public URL of the cached content, if the URL is cached.
             None if the URL is not cached.
@@ -155,6 +158,7 @@ class Client:
 
         Args:
             url:    The URL to check.
+
         Returns:
             True if the URL is cached, False if not.
         """
@@ -168,6 +172,7 @@ class Client:
 
         Args:
             url:    The URL to retrieve the cached content of.
+
         Returns:
             The binary contents of the cached URL or None if not cached.
         """
