@@ -1,10 +1,13 @@
 """KCIDB URL caching system"""
 
+import datetime
 import hashlib
 import logging
 from email.header import Header
 import urllib.parse
 import requests
+import google.auth
+import google.auth.transport.requests
 from google.cloud import storage
 
 # Module's logger
@@ -134,22 +137,36 @@ class Client:
             f"{self.bucket_name}/{self._format_object_name(url)}"
         )
 
-    def map(self, url):
+    def map(self, url, ttl=None):
         """
         Map a URL to the public URL of its cached contents, if it is cached.
 
         Args:
             url:    The potentially-cached URL to map.
+            ttl:    A timedelta representing the expiration time of the
+                    returned (signed) URL, or None to have a permanent URL
+                    pointing to the cached URL (in a public bucket).
 
         Returns:
             The public URL of the cached content, if the URL is cached.
             None if the URL is not cached.
         """
+        assert isinstance(url, str)
+        assert ttl is None or isinstance(ttl, datetime.timedelta)
+
         object_name = self._format_object_name(url)
         blob = self.client.bucket(self.bucket_name).blob(object_name)
-
         if blob.exists():
-            return self._format_public_url(url)
+            if ttl is None:
+                return self._format_public_url(url)
+            credentials = google.auth.default()[0]
+            if credentials.token is None:
+                credentials.refresh(google.auth.transport.requests.Request())
+            return blob.generate_signed_url(
+                version="v4", method="GET", expiration=ttl,
+                service_account_email=credentials.service_account_email,
+                access_token=credentials.token
+            )
         return None
 
     def is_stored(self, url):
