@@ -16,6 +16,7 @@ class Client:
     def __init__(self, bucket_name, max_store_size):
         """
         Initialize a cache client.
+
         Args:
             bucket_name:    The name of the GCS bucket containing the cache.
             max_store_size: Maximum size the file can have to be stored.
@@ -45,6 +46,7 @@ class Client:
         Attempt to store a URL in the cache. The URL contents is not
         downloaded if it's already in the cache or if it doesn't match the
         requirements (max_store_size).
+
         Args:
             url:    The URL to try to cache.
         """
@@ -109,6 +111,7 @@ class Client:
         """
         Format a cache object name for a given (potentially) cached URL.
         Does not access the GCS storage.
+
         Args:
             url:    The (potentially) cached URL to format the object name for.
         Returns:
@@ -121,6 +124,7 @@ class Client:
         """
         Format a public URL for a given (potentially) cached URL.
         Does not access the GCS storage.
+
         Args:
             url:    The (potentially) cached URL to format the public URL for.
         Returns:
@@ -134,6 +138,7 @@ class Client:
     def map(self, url):
         """
         Map a URL to the public URL of its cached contents, if it is cached.
+
         Args:
             url:    The potentially-cached URL to map.
         Returns:
@@ -150,6 +155,7 @@ class Client:
     def is_stored(self, url):
         """
         Check if a URL is stored in the cache or not.
+
         Args:
             url:    The URL to check.
         Returns:
@@ -162,6 +168,7 @@ class Client:
     def fetch(self, url):
         """
         Retrieve the contents of a URL if cached.
+
         Args:
             url:    The URL to retrieve the cached content of.
         Returns:
