@@ -155,7 +155,9 @@ class Client:
         Returns:
             True if the URL is cached, False if not.
         """
-        return self.map(url) is not None
+        object_name = self._format_object_name(url)
+        blob = self.client.bucket(self.bucket_name).blob(object_name)
+        return blob.exists()
 
     def fetch(self, url):
         """
