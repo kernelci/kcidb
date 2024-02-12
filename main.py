@@ -538,6 +538,11 @@ def kcidb_cache_urls(event, context):
         cache.store(url)
 
 
+# The expiration time (a timedelta) of the URLs returned by the cache
+# redirect, or None to return permanent URLs pointing to the public bucket.
+CACHE_REDIRECT_TTL = datetime.timedelta(seconds=10)
+
+
 @functions_framework.http
 def kcidb_cache_redirect(request):
     """
@@ -567,7 +572,7 @@ def kcidb_cache_redirect(request):
 
         # Check if the URL is in the cache
         cache_client = get_cache_client()
-        cache = cache_client.map(url_to_fetch)
+        cache = cache_client.map(url_to_fetch, ttl=CACHE_REDIRECT_TTL)
         if cache:
             LOGGER.info("Redirecting to the cache at %r", cache)
             # Redirect to the cached URL if it exists
