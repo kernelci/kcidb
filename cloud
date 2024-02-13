@@ -70,7 +70,7 @@ function app_deploy() {
     mute gcloud app create --quiet --project="$project" --region=us-central
 }
 
-# Execute a deploy/withdraw command
+# Execute a deploy/env/shell/withdraw command
 # Args: --command=NAME
 #       --format=yaml|sh
 #       --sections=EXTGLOB
@@ -293,9 +293,21 @@ function execute_command() {
         --empty-test-databases="$empty_test_databases"
     )
 
-    # Handle "env" command, if specified
+    # Handle "env" command
     if [ "$command" == "env" ]; then
         functions_env --format="$format" "${env_args[@]}"
+        return
+    # Handle "shell" command
+    elif [ "$command" == "shell" ]; then
+        export GCP_PROJECT="$project"
+        source <(functions_env --format=sh "${env_args[@]}")
+        export KCIDB_DEPLOYMENT="${KCIDB_DEPLOYMENT:-1}"
+        if (( ${#argv[@]} )); then
+            argv=("$SHELL" "-c" "${argv[*]@Q}")
+        else
+            argv=("$SHELL" "-i")
+        fi
+        psql_proxy_session "$project" "$PSQL_INSTANCE" "${argv[@]}"
         return
     fi
 
@@ -317,6 +329,7 @@ function execute_command() {
         password_set_generate psql_superuser true
     fi
 
+    # Handle "deploy" command
     if [ "$command" == "deploy" ]; then
         sections_run "$sections" iam_deploy "$project" "$grafana_service"
         sections_run "$sections" secrets_deploy "$project" \
@@ -364,16 +377,7 @@ function execute_command() {
         sections_run "$sections" run_deploy "$project" \
             "$grafana_service" "$grafana_public" \
             "$psql_conn" "$psql_grafana_user" "$psql_grafana_database"
-    elif [ "$command" == "shell" ]; then
-        export GCP_PROJECT="$project"
-        source <(functions_env --format=sh "${env_args[@]}")
-        export KCIDB_DEPLOYMENT="${KCIDB_DEPLOYMENT:-1}"
-        if (( ${#argv[@]} )); then
-            argv=("$SHELL" "-c" "${argv[*]@Q}")
-        else
-            argv=("$SHELL" "-i")
-        fi
-        psql_proxy_session "$project" "$PSQL_INSTANCE" "${argv[@]}"
+    # Handle "withdraw" command
     elif [ "$command" == "withdraw" ]; then
         sections_run "$sections" run_withdraw "$project" "$grafana_service"
         sections_run "$sections" submitters_withdraw \
