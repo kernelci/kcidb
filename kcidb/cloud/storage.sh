@@ -16,7 +16,8 @@ function storage_deploy() {
         TMPDIR="$TMPDIR_ORIG" gsutil -q mb -p "$project" -c STANDARD \
             -l "us-central1" -b on "gs://$bucket"
     fi
-    TMPDIR="$TMPDIR_ORIG" gsutil -q iam ch allUsers:objectViewer "gs://$bucket/"
+    # Revoke public read access from the bucket
+    TMPDIR="$TMPDIR_ORIG" gsutil -q iam ch -d allUsers:objectViewer "gs://$bucket/"
 }
 
 # Remove a Google Cloud Storage Bucket and its contents

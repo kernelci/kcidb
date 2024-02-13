@@ -1,5 +1,6 @@
 """KCIDB URL caching system"""
 
+import datetime
 import hashlib
 import logging
 from email.header import Header
@@ -111,6 +112,7 @@ class Client:
 
         Args:
             url:    The (potentially) cached URL to format the object name for.
+
         Returns:
             The object name of the (potentially) cached URL.
         """
@@ -124,6 +126,7 @@ class Client:
 
         Args:
             url:    The (potentially) cached URL to format the public URL for.
+
         Returns:
             The public URL of the (potentially) cached URL.
         """
@@ -132,21 +135,30 @@ class Client:
             f"{self.bucket_name}/{self._format_object_name(url)}"
         )
 
-    def map(self, url):
+    def map(self, url, ttl=None):
         """
         Map a URL to the public URL of its cached contents, if it is cached.
 
         Args:
             url:    The potentially-cached URL to map.
+            ttl:    A timedelta representing the expiration time of the
+                    returned (signed) URL, or None to have a permanent URL
+                    pointing to the cached URL (in a public bucket).
+
         Returns:
             The public URL of the cached content, if the URL is cached.
             None if the URL is not cached.
         """
+        assert isinstance(url, str)
+        assert isinstance(ttl, datetime.timedelta)
         object_name = self._format_object_name(url)
         blob = self.client.bucket(self.bucket_name).blob(object_name)
-
         if blob.exists():
-            return self._format_public_url(url)
+            if ttl is None:
+                return self._format_public_url(url)
+            return blob.generate_signed_url(
+                version="v4", expiration=ttl, method="GET"
+            )
         return None
 
     def is_stored(self, url):
@@ -155,6 +167,7 @@ class Client:
 
         Args:
             url:    The URL to check.
+
         Returns:
             True if the URL is cached, False if not.
         """
@@ -168,6 +181,7 @@ class Client:
 
         Args:
             url:    The URL to retrieve the cached content of.
+
         Returns:
             The binary contents of the cached URL or None if not cached.
         """
