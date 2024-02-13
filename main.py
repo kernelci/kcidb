@@ -557,7 +557,7 @@ def kcidb_cache_redirect(request):
     """
     if request.method == 'GET':
         url_to_fetch = unquote(request.query_string.decode("ascii"))
-        LOGGER.debug("URL %s", url_to_fetch)
+        LOGGER.debug("URL %r", url_to_fetch)
 
         if not url_to_fetch:
             # If the URL is empty, return a 400 (Bad Request) error
@@ -569,13 +569,13 @@ def kcidb_cache_redirect(request):
         cache_client = get_cache_client()
         cache = cache_client.map(url_to_fetch)
         if cache:
-            LOGGER.debug("Redirecting to the cache at %s", cache)
+            LOGGER.info("Redirecting to the cache at %r", cache)
             # Redirect to the cached URL if it exists
             return ("", 302, {"Location": cache})
 
         # If the URL is not in the cache or not provided,
         # redirect to the original URL
-        LOGGER.debug("Redirecting to the origin at %s", url_to_fetch)
+        LOGGER.info("Redirecting to the origin at %r", url_to_fetch)
         return ("", 302, {"Location": url_to_fetch})
 
     # If the request method is not GET, return 405 (Method Not Allowed) error
