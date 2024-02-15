@@ -274,12 +274,15 @@ function _psql_grafana_database_cleanup() {
 # Setup a PostgreSQL database and its paraphernalia.
 # Expect the environment to be set up with variables permitting a libpq user
 # to connect to the database as a superuser.
-# Args: database init editor viewer
+# Args: database init cache_redirector_url editor viewer
 function _psql_database_setup() {
     declare -r database="$1"; shift
     declare -r init="$1"; shift
+    declare -r cache_redirector_url="$1"; shift
     declare -r editor="$1"; shift
     declare -r viewer="$1"; shift
+    declare major
+    declare minor
     # Deploy viewer and editor permissions
     mute psql --dbname="$database" -e <<<"
         \\set ON_ERROR_STOP on
@@ -300,6 +303,23 @@ function _psql_database_setup() {
     if "$init"; then
         mute kcidb-db-init -lDEBUG -d "postgresql:dbname=$database" \
                            --ignore-initialized
+        read -r major minor < <(
+            kcidb-db-schemas -d "postgresql:dbname=$database" |
+                awk -F'[*.:]' '/\*/ {print $2 " " $3}'
+        )
+        # Deploy the "format_cached_url" function
+        # NOTE: encode_uri_component() is created by kcidb-db-init
+        # for schema versions starting with v4.5
+        if ((major > 4 || major == 4 && minor >= 5)); then
+            mute psql --dbname="$database" -e <<<"
+                \\set ON_ERROR_STOP on
+                CREATE OR REPLACE FUNCTION format_cached_url(TEXT)
+                RETURNS TEXT AS \$\$
+                    SELECT '$cache_redirector_url?' ||
+                           encode_uri_component(\$1);
+                \$\$ LANGUAGE SQL IMMUTABLE STRICT;
+            "
+        fi
     fi
 }
 
@@ -311,9 +331,10 @@ function _psql_database_cleanup() {
     declare -r database="$1"; shift
     declare -r editor="$1"; shift
     declare -r viewer="$1"; shift
-    # Withdraw viewer and editor permissions
+    # Withdraw viewer and editor permissions, as well as format_cached_url()
     mute psql --dbname="$database" -e <<<"
         /* Do not stop on errors in case users are already removed */
+        DROP FUNCTION IF EXISTS format_cached_url(text);
         REVOKE SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public
         FROM $editor;
         REVOKE SELECT ON ALL TABLES IN SCHEMA public
@@ -332,13 +353,14 @@ function _psql_database_cleanup() {
 # Deploy PostgreSQL databases, if they don't exist
 # Do not initialize databases that are prepended with the hash sign ('#').
 # Args: project instance viewer grafana_database grafana_user
-#       [database editor]...
+#       cache_redirector_url [database editor]...
 function psql_databases_deploy() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
     declare -r grafana_database="$1"; shift
     declare -r grafana_user="$1"; shift
+    declare -r cache_redirector_url="$1"; shift
     declare database
     declare editor
     declare init
@@ -408,20 +430,22 @@ function psql_databases_deploy() {
 
         # Setup the database
         psql_proxy_session "$project" "$instance" \
-            _psql_database_setup "$database" "$init" "$editor" "$viewer"
+            _psql_database_setup "$database" "$init" "$cache_redirector_url" \
+                                 "$editor" "$viewer"
     done
 }
 
 # Withdraw PostgreSQL databases, if they exist
 # Cleanup all databases, even those prepended with the hash sign ('#').
 # Args: project instance viewer grafana_database grafana_user
-#       [database editor]...
+#       cache_redirector_url [database editor]...
 function psql_databases_withdraw() {
     declare -r project="$1"; shift
     declare -r instance="$1"; shift
     declare -r viewer="$1"; shift
     declare -r grafana_database="$1"; shift
     declare -r grafana_user="$1"; shift
+    declare -r cache_redirector_url="$1"; shift
     declare -a -r databases_and_editors=("$@")
     declare database
     declare editor
@@ -545,7 +569,8 @@ function psql_user_withdraw() {
 
 # Deploy (to) PostgreSQL.
 # Do not initialize databases that are prepended with the hash sign ('#').
-# Args: project grafana_database grafana_user [database editor]...
+# Args: project grafana_database grafana_user cache_redirector_url
+#       [database editor]...
 function psql_deploy() {
     declare -r project="$1"; shift
     # Deploy the instance
@@ -556,7 +581,8 @@ function psql_deploy() {
 
 # Withdraw (from) PostgreSQL
 # Cleanup all databases, even those prepended with the hash sign ('#').
-# Args: project grafana_database grafana_user [database editor]...
+# Args: project grafana_database grafana_user cache_redirector_url
+#       [database editor]...
 function psql_withdraw() {
     declare -r project="$1"; shift
     psql_databases_withdraw "$project" "$PSQL_INSTANCE" "$PSQL_VIEWER" "$@"
