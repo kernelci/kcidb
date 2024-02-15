@@ -165,6 +165,7 @@ function execute_command() {
     declare -a psql_args=(
         "$project"
         "$psql_grafana_database" "$psql_grafana_user"
+        "$cache_redirector_url"
         "$psql_database" "$psql_editor"
     )
     if "$test"; then
