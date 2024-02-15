@@ -155,6 +155,7 @@ function functions_deploy() {
     # Allow the App Engine service account to create its own tokens
     # so it can sign Google Cloud Storage URLs
     mute gcloud iam service-accounts add-iam-policy-binding \
+        --quiet --project="$project" \
         "$project@appspot.gserviceaccount.com" \
         --role=roles/iam.serviceAccountTokenCreator \
         --member="serviceAccount:$project@appspot.gserviceaccount.com"
