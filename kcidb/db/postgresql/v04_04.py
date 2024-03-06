@@ -1,5 +1,6 @@
 """Kernel CI report database - PostgreSQL schema v4.4"""
 
+from kcidb.misc import merge_dicts
 from kcidb.db.postgresql.schema import Index
 from .v04_03 import Schema as PreviousSchema
 
@@ -11,7 +12,7 @@ class Schema(PreviousSchema):
     version = (4, 4)
 
     # A map of index names and schemas
-    INDEXES = dict(
+    INDEXES = merge_dicts(PreviousSchema.INDEXES, dict(
         checkouts_git_commit_hash_patchset_hash=Index(
             "checkouts", ["git_commit_hash", "patchset_hash"]
         ),
@@ -20,7 +21,7 @@ class Schema(PreviousSchema):
         incidents_build_id=Index("incidents", ["build_id"]),
         incidents_test_id=Index("incidents", ["test_id"]),
         incidents_issue_id=Index("incidents", ["issue_id"]),
-    )
+    ))
 
     @classmethod
     def _inherit(cls, conn):
