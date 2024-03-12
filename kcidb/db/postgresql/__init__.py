@@ -2,7 +2,7 @@
 
 import textwrap
 from kcidb.db.schematic import Driver as SchematicDriver
-from kcidb.db.postgresql.v04_05 import Schema as LatestSchema
+from kcidb.db.postgresql.v04_06 import Schema as LatestSchema
 
 
 class Driver(SchematicDriver):
