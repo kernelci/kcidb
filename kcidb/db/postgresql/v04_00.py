@@ -147,7 +147,7 @@ class Connection(AbstractConnection):
                     RETURNS integer
                     LANGUAGE SQL
                     IMMUTABLE
-                    RETURN %s
+                    AS 'SELECT %s'
                 """), (number, ))
 
     def get_schema_version(self):
