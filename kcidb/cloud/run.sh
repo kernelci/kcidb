@@ -64,7 +64,9 @@ function run_service_withdraw() {
 # Deploy to Run.
 # Args: --project=ID
 #       --grafana-service=NAME
+#       --grafana-url=URL
 #       --grafana-public=true|false
+#       --grafana-anonymous=true|false
 #       --psql-conn=STRING
 #       --psql-grafana-user=NAME
 #       --psql-grafana-database=NAME
@@ -72,7 +74,9 @@ function run_deploy() {
     declare params
     params="$(getopt_vars project \
                           grafana_service \
+                          grafana_url \
                           grafana_public \
+                          grafana_anonymous \
                           psql_conn \
                           psql_grafana_user \
                           psql_grafana_database \
@@ -129,6 +133,14 @@ function run_deploy() {
                           grafana-singlevalue-panel-2.0.0.zip;\\
                           grafana-singlevalue-panel\\
                       "
+                    - name: GF_SERVER_ROOT_URL
+                      value: "${grafana_url}"
+                    - name: GF_AUTH_ANONYMOUS_ORG_NAME
+                      value: "KernelCI"
+                    - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+                      value: "Viewer"
+                    - name: GF_AUTH_ANONYMOUS_ENABLED
+                      value: "${grafana_anonymous}"
                   resources:
                     limits:
                       cpu: "1"
