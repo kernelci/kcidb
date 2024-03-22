@@ -130,6 +130,7 @@ jobs:
             kernelci-production ""
             --grafana-url=https://kcidb.kernelci.org
             --grafana-public
+            --grafana-anonymous
             --extra-cc=kernelci-results-staging@groups.io
           )
           ./cloud deploy "${args[@]}" -v
