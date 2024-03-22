@@ -62,15 +62,22 @@ function run_service_withdraw() {
 }
 
 # Deploy to Run.
-# Args: project grafana_service grafana_public \
-#       psql_conn psql_grafana_user psql_grafana_database
+# Args: --project=ID
+#       --grafana-service=NAME
+#       --grafana-public=true|false
+#       --psql-conn=STRING
+#       --psql-grafana-user=NAME
+#       --psql-grafana-database=NAME
 function run_deploy() {
-    declare -r project="$1"; shift
-    declare -r grafana_service="$1"; shift
-    declare -r grafana_public="$1"; shift
-    declare -r psql_conn="$1"; shift
-    declare -r psql_grafana_user="$1"; shift
-    declare -r psql_grafana_database="$1"; shift
+    declare params
+    params="$(getopt_vars project \
+                          grafana_service \
+                          grafana_public \
+                          psql_conn \
+                          psql_grafana_user \
+                          psql_grafana_database \
+                          -- "$@")"
+    eval "$params"
     declare iam_command
 
     # Deploy Grafana
@@ -153,10 +160,14 @@ YAML_END
 }
 
 # Withdraw from Run.
-# Args: project grafana_service
+# Args: --project=ID
+#       --grafana-service=NAME
 function run_withdraw() {
-    declare -r project="$1"; shift
-    declare -r grafana_service="$1"; shift
+    declare params
+    params="$(getopt_vars project \
+                          grafana_service \
+                          -- "$@")"
+    eval "$params"
     # Withdraw Grafana
     run_iam_policy_binding_withdraw "$project" "$grafana_service" \
                                     allUsers roles/run.invoker

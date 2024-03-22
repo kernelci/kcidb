@@ -375,12 +375,18 @@ function execute_command() {
             --purge-db-trigger-topic="$purge_db_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
-        sections_run "$sections" run_deploy "$project" \
-            "$grafana_service" "$grafana_public" \
-            "$psql_conn" "$psql_grafana_user" "$psql_grafana_database"
+        sections_run "$sections" run_deploy \
+            --project="$project" \
+            --grafana-service="$grafana_service" \
+            --grafana-public="$grafana_public" \
+            --psql-conn="$psql_conn" \
+            --psql-grafana-user="$psql_grafana_user" \
+            --psql-grafana-database="$psql_grafana_database"
     # Handle "withdraw" command
     elif [ "$command" == "withdraw" ]; then
-        sections_run "$sections" run_withdraw "$project" "$grafana_service"
+        sections_run "$sections" run_withdraw \
+            --project="$project" \
+            --grafana-service="$grafana_service"
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
