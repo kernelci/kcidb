@@ -120,7 +120,6 @@ jobs:
         run: |
           declare -a args=(
             kernelci-production "playground"
-            --grafana-public
             --smtp-mocked
             --optimize=2
           )
