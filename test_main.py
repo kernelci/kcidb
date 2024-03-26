@@ -45,8 +45,8 @@ def test_import():
         os.environ.update(orig_env)
 
 
-def check_url_in_cache(url):
-    """Check whether the URL is sourced from storage or not."""
+def url_is_in_cache(url, content):
+    """Check whether the URL is in the cache or not."""
     url_encoded = quote(url)
     cache_redirector_url = os.environ["KCIDB_CACHE_REDIRECTOR_URL"]
     try:
@@ -59,10 +59,14 @@ def check_url_in_cache(url):
         return False
     if response.status_code == 302:
         # Check if the redirect URL matches the blob storage URL pattern
-        if (
-            response.headers.get("Location", "")
-            .startswith('https://storage.googleapis.com/')
-        ):
+        location = response.headers.get("Location", "")
+        if location.startswith('https://storage.googleapis.com/'):
+            if content is not None:
+                response = requests.get(
+                    location, timeout=10, allow_redirects=True
+                )
+                response.raise_for_status()
+                assert response.content == content
             return True
     return False
 
@@ -72,6 +76,34 @@ def test_url_caching(empty_deployment):
 
     # Make empty_deployment appear used to silence pylint warning
     assert empty_deployment is None
+
+    urls_expected = [
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/"
+        "setup.py?padding=2366",
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/"
+        "requirements.txt?padding=11277",
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/"
+        ".gitignore?padding=1557",
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/"
+        ".pylintrc?padding=1013",
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/"
+        "doc/_index.md?padding=1435",
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/"
+        ".github/workflows/deploy.yml?padding=307",
+        "https://raw.githubusercontent.com/kernelci/kcidb/main/"
+        "doc/installation.md?padding=9761",
+    ]
+    urls_unexpected = [
+        # Invalid url
+        'https://non-existing-name.kernel.org/pub/linux/',
+        # Larger-than-maximum size URL
+        "https://cdn.kernel.org/pub/linux/kernel/v6.x/"
+        "linux-6.4.11.tar.xz",
+        # Wrong hash URL
+        "https://github.com/kernelci/kcidb/blob/main/Dockerfile",
+        # URL from a wrong field
+        "https://github.com/kernelci/kcidb/tree/main/kcidb/?padding=4165",
+    ]
 
     client = kcidb.Client(
         project_id=os.environ["GCP_PROJECT"],
@@ -87,15 +119,11 @@ def test_url_caching(empty_deployment):
             {
                 "id": "_:1",
                 "origin": "_",
-                "log_url":
-                    "https://github.com/kernelci/kcidb/blob/main"
-                    "/.github/workflows/deploy.yml?padding=4821",
+                "log_url": urls_expected[0],
                 "patchset_files": [
                     {
                         "name": "file",
-                        "url":
-                            "https://github.com/kernelci/kcidb/"
-                            "blob/main/doc/installation.md?padding=1505"
+                        "url": urls_expected[1]
                     }
                 ],
             },
@@ -107,27 +135,19 @@ def test_url_caching(empty_deployment):
                 "input_files": [
                     {
                         "name": "kernel_image1",
-                        "url":
-                            "https://github.com/kernelci/kcidb/blob/"
-                            "main/doc/_index.md?padding=7230"
+                        "url": urls_expected[2]
                     }
                 ],
-                "log_url":
-                    "https://github.com/kernelci/kcidb/blob/main"
-                    "/.pylintrc?padding=247",
-                "config_url":
-                    "https://github.com/kernelci/kcidb/blob/main"
-                    "/.gitignore?padding=547",
+                "log_url": urls_expected[3],
+                "config_url": urls_expected[4],
                 "output_files": [
                     {
                         "name": "kernel_image",
-                        "url":
-                            "https://github.com/kernelci/kcidb/"
-                            "blob/main/Dockerfile"
+                        "url": urls_unexpected[0]
                     },
                     {
                         "name": "kernel",
-                        "url": "https://kernelcdn.kernel.org/pub/linux/"
+                        "url": urls_unexpected[1]
                     }
                 ],
                 "checkout_id": "_:1",
@@ -138,9 +158,7 @@ def test_url_caching(empty_deployment):
                 "build_id": "kernelci:kernelci.org:64147283e6021132258c86c0",
                 "id": "_:1",
                 "origin": "_",
-                "log_url":
-                    "https://cdn.kernel.org/pub/linux/"
-                    "kernel/v6.x/linux-6.4.11.tar.xz",
+                "log_url": urls_unexpected[2]
             },
             {
                 "build_id": "kernelci:kernelci.org:64147283e6021132258c86c0",
@@ -149,23 +167,17 @@ def test_url_caching(empty_deployment):
                 "output_files": [
                     {
                         "name": "x86_64_4_console.log",
-                        "url":
-                            "https://github.com/kernelci/kcidb/"
-                            "blob/main/setup.py?padding=4673"
+                        "url": urls_expected[5]
                     },
                     {
                         "name": "x86_64_4_IOMMU_boot_test_dmesg.log",
-                        "url":
-                            "https://github.com/kernelci/kcidb/blob"
-                            "/main/requirements.txt?padding=1649"
+                        "url": urls_expected[6]
                     },
                 ],
                 "environment": {
                     "comment": "meson-s905d-p230 in lab-baylibre",
                     "misc": {
-                        "rootfs_url":
-                            "https://github.com/kernelci/kcidb/tree/main/"
-                            "kcidb/?padding=4165"
+                        "rootfs_url": urls_unexpected[3]
                     }
                 },
             },
@@ -185,51 +197,35 @@ def test_url_caching(empty_deployment):
     deadline_time = current_time + 300  # 5 minutes
     retry_interval = 5  # seconds
 
-    # URLs to check, as they should be cached
-    urls_expected = {
-        "https://github.com/kernelci/kcidb/blob/main/setup.py?padding=4673",
-        "https://github.com/kernelci/kcidb/blob/main/requirements.txt?"
-        "padding=1649",
-        "https://github.com/kernelci/kcidb/blob/main/.gitignore?"
-        "padding=547",
-        "https://github.com/kernelci/kcidb/blob/main/.pylintrc?padding=247",
-        "https://github.com/kernelci/kcidb/blob/main/doc/_index.md?"
-        "padding=7230",
-        "https://github.com/kernelci/kcidb/blob/main/.github/workflows/"
-        "deploy.yml?padding=4821",
-        "https://github.com/kernelci/kcidb/blob/main/doc/installation.md?"
-        "padding=1505"
-    }
+    # URLs and their contents to check, as they should be cached
+    urls_contents_expected = {}
+    for url in urls_expected:
+        response = requests.get(url, timeout=10, allow_redirects=True)
+        response.raise_for_status()
+        urls_contents_expected[url] = response.content
 
-    while urls_expected and time.time() < deadline_time:
+    # Wait until either URLs are cached or we hit the deadline
+    while urls_contents_expected and time.time() < deadline_time:
         time.sleep(retry_interval)
-        urls_expected = {
-            url for url in urls_expected
-            if not check_url_in_cache(url)
+        urls_contents_expected = {
+            url: content
+            for url, content in urls_contents_expected.items()
+            if not url_is_in_cache(url, content)
         }
-    assert not urls_expected, \
-        f"Expected URLs '{urls_expected}' not found in the cache"
+    assert not set(urls_contents_expected), \
+        f"Expected URLs '{set(urls_contents_expected)}' " \
+        f"not found in the cache"
 
     current_time = time.time()
     if current_time < deadline_time:
         time.sleep(deadline_time - current_time)
 
     # URL cases not to be cached
-    urls_not_expected = {
-        url for url in (
-            # Invalid url
-            'https://non-existing-name.kernel.org/pub/linux/',
-            # Larger-than-maximum size URL
-            "https://cdn.kernel.org/pub/linux/kernel/v6.x/"
-            "linux-6.4.11.tar.xz",
-            # Wrong hash URL
-            "https://github.com/kernelci/kcidb/blob/main/Dockerfile",
-            # URL from a wrong field
-            "https://github.com/kernelci/kcidb/tree/main/kcidb/?padding=4165"
-        ) if check_url_in_cache(url)
-    }
-    assert not urls_not_expected, \
-        f"Unexpected URLs {urls_not_expected} found in the cache"
+    urls_unexpected_but_found = set(filter(
+        lambda url: url_is_in_cache(url, None), urls_unexpected
+    ))
+    assert not urls_unexpected_but_found, \
+        f"Unexpected URLs {urls_unexpected_but_found} found in the cache"
 
 
 def test_purge_db(empty_deployment):
