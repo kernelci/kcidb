@@ -79,7 +79,7 @@ def empty_deployment():
             pass
     # Remove contents from the cache bucket
     bucket_name = os.environ.get("KCIDB_CACHE_BUCKET_NAME")
-    client = kcidb.cache.Client(bucket_name, 0)
+    client = kcidb.cache.Client(bucket_name, 0, 0)
     client.empty()
 
 

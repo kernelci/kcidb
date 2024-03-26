@@ -509,8 +509,10 @@ def get_cache_client():
     # It's alright, pylint: disable=global-statement
     global _CACHE_CLIENT
     if _CACHE_CLIENT is None:
+        chunk_size = 1024 * 1024
+        max_size = 5 * chunk_size
         _CACHE_CLIENT = kcidb.cache.Client(
-            CACHE_BUCKET_NAME, 5 * 1024 * 1024
+            CACHE_BUCKET_NAME, max_size, chunk_size
         )
     return _CACHE_CLIENT
 

@@ -16,17 +16,22 @@ LOGGER = logging.getLogger(__name__)
 
 class Client:
     """KCIDB cache urls client."""
-    def __init__(self, bucket_name, max_store_size):
+    def __init__(self, bucket_name, max_store_size, max_chunk_size):
         """
         Initialize a cache client.
 
         Args:
             bucket_name:    The name of the GCS bucket containing the cache.
             max_store_size: Maximum size the file can have to be stored.
+                            Will be completely downloaded to memory first.
+            max_chunk_size: Maximum size of a file chunk to be downloaded in
+                            one go.
         """
         self.bucket_name = bucket_name
         self.max_store_size = max_store_size
+        self.max_chunk_size = max_chunk_size
         self.client = storage.Client()
+        self.session = requests.Session()
 
     @classmethod
     def _extract_content_disposition(cls, response):
@@ -59,49 +64,64 @@ class Client:
         if not object_name.endswith("00"):
             return
 
+        # Get the blob corresponding to the URL, abort if it's there already
         blob = self.client.bucket(self.bucket_name).blob(object_name)
         if blob.exists():
-            LOGGER.debug("URL %r already exists, not caching.", url)
+            LOGGER.debug("URL %r is already cached, not caching.", url)
             return
 
         try:
-            # Performing HEAD request first
-            response = requests.head(url, timeout=10, allow_redirects=True)
-
-            if response.status_code == 200:
-                content_type = response.headers["Content-Type"]
+            # Start a streaming GET request
+            with self.session.get(
+                url, timeout=10, allow_redirects=True, stream=True
+            ) as response:
+                # Check the status code
+                if response.status_code != 200:
+                    LOGGER.warning("Failed to download URL %r: %d %s",
+                                   url, response.status_code, response.reason)
+                    return
 
                 # Check the size of the content before downloading
                 content_length = response.headers.get("Content-Length")
-                if content_length is None:
-                    LOGGER.warning("No Content-Length for %r, not caching.",
-                                   url)
-                    return
+                if content_length is not None:
+                    try:
+                        content_length = int(content_length)
+                    except ValueError:
+                        LOGGER.warning(
+                            "URL %r Content-Length is invalid: %r, "
+                            "trying to download anyway",
+                            url, content_length
+                        )
+                    else:
+                        if content_length > self.max_store_size:
+                            LOGGER.warning(
+                                "URL %r Content-Length (%d) exceeds "
+                                "max_store_size (%d), not caching",
+                                url, content_length, self.max_store_size
+                            )
+                            return
 
-                content_length = int(content_length)
-                if content_length > self.max_store_size:
-                    LOGGER.warning("URL %r size (%d) exceeds "
-                                   "max_store_size (%d), not caching.",
-                                   url, content_length, self.max_store_size)
-                    return
+                # Get the contents a chunk at a time, up to the maximum size
+                content = b''
+                for chunk in response.iter_content(
+                    chunk_size=self.max_chunk_size
+                ):
+                    content += chunk
+                    if len(content) > self.max_store_size:
+                        LOGGER.warning(
+                            "URL %r actual contents exceeds "
+                            "max_store_size (%d), not caching",
+                            url, self.max_store_size
+                        )
+                        return
 
-                # Perform the GET request to download the contents
-                response = requests.get(url, timeout=10, allow_redirects=True)
-                if response.status_code == 200:
-                    contents = response.content
-
-                    blob.content_disposition = \
-                        self._extract_content_disposition(response)
-
-                    blob.upload_from_string(
-                        contents,
-                        content_type=content_type
-                    )
-                    LOGGER.info("URL %r successfully cached.", url)
-                    return
-
-            LOGGER.warning("Failed to download URL %r. Status code: %d",
-                           url, response.status_code)
+                # Upload the contents to the blob
+                blob.content_disposition = \
+                    self._extract_content_disposition(response)
+                blob.upload_from_string(
+                    content, content_type=response.headers["Content-Type"]
+                )
+                LOGGER.info("URL %r successfully cached.", url)
 
         except requests.exceptions.RequestException as err:
             LOGGER.warning("Error downloading URL %r: %s", url, str(err))
