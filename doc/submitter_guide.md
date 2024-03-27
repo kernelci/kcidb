@@ -40,23 +40,22 @@ tools/library:
 
 * Google Cloud project: `kernelci-production`
 * Submission queue topic: `playground_kcidb_new`
-* Dataset name: `playground_kcidb_01`
 
 The above refers to the special "playground" setup we have, where you can
 freely experiment with your submissions, without worrying about any negative
-effects on the system or other submitters. This setup has a [separate
-dashboard](https://kcidb.kernelci.org/?var-dataset=playground_kcidb_01)
-as well. We'll use playground parameters in the examples below.
+effects on the system or other submitters. This setup has a separate database,
+which can be [selected on the
+dashboard](https://kcidb.kernelci.org/?var-datasource=playground). We'll use
+playground parameters in the examples below.
 
 Once you feel comfortable and ready, we'll add extra permissions for your
 account, and you can start using the production parameters:
 
 * Google Cloud project: `kernelci-production`
 * Submission queue topic: `kcidb_new`
-* Dataset name: `kcidb_01`
 
-The submitted data will appear on our [main
-dashboard](https://kcidb.kernelci.org/).
+The submitted data will appear in our production database, [visible on the
+dashboard by default][dashboard].
 
 2\. Install KCIDB
 -----------------
@@ -79,22 +78,16 @@ Then make sure your PATH includes the `~/.local/bin` directory, e.g. with:
 See [Installation](../installation) for alternatives, and if you know your
 Python, feel free to do it your way!
 
-To test your installation, authentication, and the parameters you received
-execute an empty query on the database:
+To test your installation, authentication, and the parameters you received,
+submit an empty report:
 
 ```console
-$ kcidb-query -d bigquery:playground_kcidb_01
-```
-
-and submit an empty report:
-
-```console
-$ echo '{"version":{"major":4,"minor":1}}' |
+$ echo '{"version":{"major":4,"minor":3}}' |
         kcidb-submit -p kernelci-production -t playground_kcidb_new
 ```
 
-Both should execute without errors, produce no output, and finish with zero
-exit status.
+The command should execute without errors, produce the submitted message ID on
+output, and finish with zero exit status.
 
 3\. Generate some report data
 -----------------------------
@@ -110,7 +103,7 @@ Here's a minimal report, containing no data:
 {
     "version": {
         "major": 4,
-        "minor": 1
+        "minor": 3
     }
 }
 ```
@@ -120,19 +113,21 @@ the database or notifications.
 
 ### Objects
 
-The schema describes three types of objects which can be submitted
+The schema describes five types of objects which can be submitted
 independently or in any combination:
 * "checkout" - a checkout of the code being built and tested
 * "build" - a build of a specific checkout
 * "test" - an execution of a test on a specific build in specific environment
+* "issue" - an issue found either in the kernel code, a test, or a CI system
+* "incident" - a record of an issue appearing in a build or a test run
 
-Each of these object types refers to the previous one using an ID. The only
-required fields for each object are their IDs, IDs of the parent object
-(except for checkouts), and the origin. Objects of each type are stored in
-their own top-level array named respectively (in plural).
+Each of these object types refers to on or two of the others IDs. The only
+required fields for each object are their own IDs, IDs of the parent objects
+(except for checkouts and issues), and the origin. Objects of each type are
+stored in their own top-level array named respectively (in plural).
 
 Here's an example of a report, containing only the required fields for a
-checkout with one build and one test:
+checkout with one build and one test, as well as one issue and one incident:
 
 ```json
 {
@@ -173,15 +168,10 @@ checkout with one build and one test:
     ],
     "version": {
         "major": 4,
-        "minor": 1
+        "minor": 3
     }
 }
 ```
-
-If you're curious, you can query the complete objects above with this command:
-
-    kcidb-query -d bigquery:playground_kcidb_01 -t submitter:114353810 \
-                --parents
 
 #### Object IDs
 
@@ -352,6 +342,82 @@ Date/Time Format][datetime_format].
 
 Example: `"2020-08-14T23:41:54+00:00"`
 
+#### Issues
+
+"Issues" describe an issue with either the kernel code being tested, the test,
+or anything running the test, such as test harness, framework, or just the CI
+system as a whole.
+
+##### `version`
+
+The version number of the issue (required). The system always uses the issue
+with the largest version number, so if you want to change your issue, submit a
+new one with the same ID and larger version.
+
+Example: `20240502101105`
+
+##### `report_url`
+
+The URL pointing to the issue report: e.g. an issue in a bug tracker, a
+thread on a mailing list, and so on. Anything helping describe and identify
+the issue to humans.
+
+Example: `https://bugzilla.kernel.org/show_bug.cgi?id=207065`
+
+##### `report_subject`
+
+The subject, or title of the issue report, helping identify the issue in
+reports or dashboards, without following the report URL.
+
+Example: `C-media USB audio device stops working from 5.2.0-rc3 onwards`
+
+##### `culprit`
+
+An object with boolean attributes pointing out the origin, or the "culprit" of
+the issue: `code` - if the bug is in the kernel itself, `tool` - if the bug is
+in the test, or e.g. the build toolchain, and `harness` - if the bug is in the
+test framework, or the CI system in general. These fields help the system
+decide who to notify when the issue is discovered somewhere.
+
+A missing attribute would indicate the unknown status (not "false"), so please
+include each attribute with a value, when you know it.
+
+Example: `{"code": true, "tool": false, "harness": false}'
+
+#### Incidents
+
+"Incidents" record issue occurrences in builds and tests. They always refer to
+a particular version of the issue. This allows the system to use results of
+triaging the previous version of the issue, while triaging of the new one is
+ongoing.
+
+##### `issue_version`
+
+The version of the issue this incident refers to (required, in addition to
+`issue_id`).
+
+Example: `20240502101105`
+
+##### `build_id`
+
+ID of the build the issue was found in, for issues found during a build.
+
+Example: `submitter:32254`
+
+##### `test_id`
+
+ID of the test run the issue was found in, for issues found during a test.
+
+Example: `submitter:114353810`
+
+##### `present`
+
+True if the issue did occur in the linked build or test. False if it did not.
+An absent attribute means that the occurence status is unknown, and can
+signify ongoing triaging.
+
+Example: `true`
+
 ### Extra data
 If you have some data you'd like to provide developers with, but the schema
 doesn't accommodate it, put it as arbitrary JSON under the `misc` field, which
@@ -393,6 +459,10 @@ so you can track where they came from, like CKI does:
 }
 ```
 
+While the `misc` field is primarily aimed at computers, the `comment` field
+for every object can contain free-form text helping people understand the
+data.
+
 4\. Submit report data
 ----------------------
 As soon as you have your report data pass validation (e.g. with the
@@ -416,18 +486,7 @@ client.submit(report)
 ```
 
 Your data could take up to a few minutes to reach the database, but after that
-you should be able to find it in our [dashboard][dashboard], or query using
-the `kcidb-query` command-line tool. For example, if you want to retrieve a
-checkout object you submitted with ID `origin:23223`, execute:
-
-    kcidb-query -d bigquery:playground_kcidb_01 -c origin:23223
-
-If you want to retrieve all its builds and tests as well, execute:
-
-    kcidb-query -d bigquery:playground_kcidb_01 -c origin:23223 --children
-
-See the output of `kcidb-query --help` for usage information, including how to
-retrieve builds, tests, and how to retrieve object parents.
+you should be able to find it in our [dashboard][dashboard].
 
 ### Submitting directly
 
