@@ -104,7 +104,7 @@ function run_deploy() {
             spec:
               serviceAccountName:
                 "$grafana_service@$project.iam.gserviceaccount.com"
-              containerConcurrency: 256
+              containerConcurrency: 512
               containers:
                 - image: docker.io/grafana/grafana:6.6.0
                   name: grafana
