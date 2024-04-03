@@ -140,7 +140,7 @@ checkout with one build and one test, as well as one issue and one incident:
     "builds": [
         {
             "id": "submitter:32254",
-            "checkout_id": "c9c9735c46f589b9877b7fc00c89ef1b61a31e18",
+            "checkout_id": "submitter:c9c9735c46f589b9877b7fc00c89ef1b61a31e18",
             "origin": "submitter"
         }
     ],
