@@ -352,7 +352,7 @@ function execute_command() {
             --updated-urls-topic="$updated_urls_topic" \
             --updated-debug-subscription="$updated_debug_subscription" \
             --pick-notifications-trigger-topic \
-              "$pick_notifications_trigger_topic" \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic "$purge_db_trigger_topic" \
             --smtp-topic="$smtp_topic" \
             --smtp-subscription="$smtp_subscription"
@@ -365,7 +365,7 @@ function execute_command() {
             --source="$(dirname "$(realpath "$0")")" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --pick-notifications-trigger-topic \
-              "$pick_notifications_trigger_topic" \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic "$purge_db_trigger_topic" \
             --updated-urls-topic="$updated_urls_topic" \
             --updated-topic="$updated_topic" \
@@ -376,7 +376,8 @@ function execute_command() {
             --project="$project" \
             --prefix="$prefix" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
-            --pick-notifications-trigger-topic="$pick_notifications_trigger_topic" \
+            --pick-notifications-trigger-topic \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic="$purge_db_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
@@ -409,7 +410,7 @@ function execute_command() {
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --pick-notifications-trigger-topic \
-              "$pick_notifications_trigger_topic" \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic "$purge_db_trigger_topic" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
