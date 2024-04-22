@@ -162,4 +162,20 @@ function yaml_quote() {
     python3 -c "$python_code" "$str"
 }
 
+# Validate JSON against a schema
+# Input: The JSON to validate
+# Args: schema
+function json_validate() {
+    declare -r schema="$1"; shift
+    declare python_code='import sys, json, jsonschema; '
+    python_code+='schema_file = open(sys.argv[1], "r"); '
+    python_code+='schema = json.load(schema_file); '
+    python_code+='jsonschema.validate('
+    python_code+='instance=json.load(sys.stdin), '
+    python_code+='schema=schema, '
+    python_code+='format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER'
+    python_code+=')'
+    python3 -c "$python_code" "$schema"
+}
+
 fi # _MISC_SH

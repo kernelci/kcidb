@@ -46,6 +46,18 @@ function run_service_deploy() {
     mute gcloud run services replace --project="$project" --quiet -
 }
 
+# Retrieve the URL of a service.
+# Args: project name
+# Output: The service URL.
+function run_service_get_url() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    gcloud run services describe --project="$project" \
+                                 --region="$RUN_REGION" \
+                                 "$name" \
+                                 --format="value(status.url)"
+}
+
 # Delete a service from Run, if it exists.
 # Args: project name
 function run_service_withdraw() {
@@ -70,6 +82,10 @@ function run_service_withdraw() {
 #       --psql-conn=STRING
 #       --psql-grafana-user=NAME
 #       --psql-grafana-database=NAME
+#       --cost-thresholds=JSON
+#       --cost-mon-service=NAME
+#       --cost-mon-image=URL
+#       --cost-upd-service-account=EMAIL
 function run_deploy() {
     declare params
     params="$(getopt_vars project \
@@ -80,6 +96,10 @@ function run_deploy() {
                           psql_conn \
                           psql_grafana_user \
                           psql_grafana_database \
+                          cost_thresholds \
+                          cost_mon_service \
+                          cost_mon_image \
+                          cost_upd_service_account \
                           -- "$@")"
     eval "$params"
     declare iam_command
@@ -169,17 +189,66 @@ YAML_END
         iam_command=run_iam_policy_binding_withdraw
     fi
     "$iam_command" "$project" "$grafana_service" allUsers roles/run.invoker
+
+    # Deploy Cost Monitor
+    run_service_deploy "$project" <<YAML_END
+        # Prevent de-indent of the first line
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        metadata:
+          name: $(yaml_quote "$cost_mon_service")
+          labels:
+            cloud.googleapis.com/location: $(yaml_quote "$RUN_REGION")
+        spec:
+          template:
+            metadata:
+              annotations:
+                autoscaling.knative.dev/minScale: "1"
+                autoscaling.knative.dev/maxScale: "1"
+            spec:
+              serviceAccountName:
+                $(yaml_quote \
+                  "$cost_mon_service@$project.iam.gserviceaccount.com")
+              containerConcurrency: 1
+              timeoutSeconds: $((60*30))
+              containers:
+                - image: $(yaml_quote "$cost_mon_image:latest")
+                  name: server
+                  ports:
+                    - containerPort: 8080
+                  args:
+                    - $(yaml_quote "$cost_thresholds")
+                  resources:
+                    limits:
+                      cpu: "0.25"
+                      memory: "256M"
+YAML_END
+    # Allow the cost updater to invoke the cost monitor
+    run_iam_policy_binding_deploy \
+        "$project" "$cost_mon_service" \
+        "serviceAccount:$cost_upd_service_account" \
+        roles/run.invoker
 }
 
 # Withdraw from Run.
 # Args: --project=ID
 #       --grafana-service=NAME
+#       --cost-mon-service=NAME
+#       --cost-upd-service-account=EMAIL
 function run_withdraw() {
     declare params
     params="$(getopt_vars project \
                           grafana_service \
+                          cost_mon_service \
+                          cost_upd_service_account \
                           -- "$@")"
     eval "$params"
+    # Withdraw Cost updater
+    run_iam_policy_binding_withdraw \
+        "$project" "$cost_mon_service" \
+        "serviceAccount:$cost_upd_service_account" \
+        roles/run.invoker
+    run_service_withdraw "$project" "$cost_mon_service"
     # Withdraw Grafana
     run_iam_policy_binding_withdraw "$project" "$grafana_service" \
                                     allUsers roles/run.invoker

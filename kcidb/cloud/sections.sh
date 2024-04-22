@@ -24,6 +24,7 @@ declare -A -r SECTIONS=(
     ["functions.load_queue"]="Cloud Functions: kcidb_load_queue()"
     ["scheduler"]="Scheduler jobs"
     ["submitters"]="Submitter permissions"
+    ["artifacts"]="Artifact repository"
     ["run"]="Cloud Run"
 )
 # Maximum length of a section name
