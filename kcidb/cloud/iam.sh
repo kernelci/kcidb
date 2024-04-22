@@ -30,6 +30,7 @@ function iam_service_account_exists() {
 function iam_service_account_deploy() {
     declare -r project="$1"; shift
     declare -r name="$1"; shift
+    declare exists
     exists=$(iam_service_account_exists "$project" "$name")
     if ! "$exists"; then
         mute gcloud iam service-accounts create \
@@ -42,6 +43,7 @@ function iam_service_account_deploy() {
 function iam_service_account_withdraw() {
     declare -r project="$1"; shift
     declare -r name="$1"; shift
+    declare exists
     exists=$(iam_service_account_exists "$project" "$name")
     if "$exists"; then
         mute gcloud iam service-accounts delete \
