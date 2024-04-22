@@ -40,6 +40,18 @@ function function_delete()
     fi
 }
 
+# Shutdown a Cloud Function if it exists
+# Args: sections project prefix name
+function function_shutdown() {
+    declare -r sections="$1"; shift
+    declare -r project="$1"; shift
+    declare -r prefix="$1"; shift
+    declare -r name="$1"; shift
+    sections_run_explicit "$sections" \
+        "functions.$name" shutdown \
+        function_delete --quiet --project="$project" "${prefix}${name}"
+}
+
 # Delete a Cloud Function if it exists
 # Args: sections project prefix name
 function function_withdraw() {
