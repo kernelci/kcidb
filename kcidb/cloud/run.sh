@@ -230,6 +230,20 @@ YAML_END
         roles/run.invoker
 }
 
+# Shutdown Run services.
+# Args: --project=ID
+#       --grafana-service=NAME
+function run_shutdown() {
+    declare params
+    params="$(getopt_vars project \
+                          grafana_service \
+                          -- "$@")"
+    eval "$params"
+    # Remove public access to Grafana
+    run_iam_policy_binding_withdraw "$project" "$grafana_service" \
+                                    allUsers roles/run.invoker
+}
+
 # Withdraw from Run.
 # Args: --project=ID
 #       --grafana-service=NAME

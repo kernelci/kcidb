@@ -234,29 +234,45 @@ function functions_deploy() {
     rm "$env_yaml_file"
 }
 
-# Withdraw Cloud Functions
-# Args: --sections=GLOB --project=NAME --prefix=PREFIX
+# Withdraw or shutdown Cloud Functions
+# Args: action
+#       --sections=GLOB --project=NAME --prefix=PREFIX
 #       --cache-redirect-function-name=NAME
-function functions_withdraw() {
+function _functions_withdraw_or_shutdown() {
+    declare -r action="$1"; shift
     declare params
     params="$(getopt_vars sections project prefix \
                           cache_redirect_function_name \
                           -- "$@")"
     eval "$params"
-    function_withdraw "$sections" "$project" "$prefix" \
-                      purge_db
-    function_withdraw "$sections" "$project" "$prefix" \
-                      pick_notifications
-    function_withdraw "$sections" "$project" "$prefix" \
-                      send_notification
-    function_withdraw "$sections" "$project" "$prefix" \
-                      spool_notifications
-    function_withdraw "$sections" "$project" "$prefix" \
-                      "$cache_redirect_function_name"
-    function_withdraw "$sections" "$project" "$prefix" \
-                      cache_urls
-    function_withdraw "$sections" "$project" "$prefix" \
-                      load_queue
+    "function_$action" "$sections" "$project" "$prefix" \
+                       purge_db
+    "function_$action" "$sections" "$project" "$prefix" \
+                       pick_notifications
+    "function_$action" "$sections" "$project" "$prefix" \
+                       send_notification
+    "function_$action" "$sections" "$project" "$prefix" \
+                       spool_notifications
+    "function_$action" "$sections" "$project" "$prefix" \
+                       "$cache_redirect_function_name"
+    "function_$action" "$sections" "$project" "$prefix" \
+                       cache_urls
+    "function_$action" "$sections" "$project" "$prefix" \
+                       load_queue
+}
+
+# Shutdown Cloud Functions
+# Args: --sections=GLOB --project=NAME --prefix=PREFIX
+#       --cache-redirect-function-name=NAME
+function functions_shutdown() {
+    _functions_withdraw_or_shutdown shutdown "$@"
+}
+
+# Withdraw Cloud Functions
+# Args: --sections=GLOB --project=NAME --prefix=PREFIX
+#       --cache-redirect-function-name=NAME
+function functions_withdraw() {
+    _functions_withdraw_or_shutdown withdraw "$@"
 }
 
 fi # _FUNCTIONS_SH

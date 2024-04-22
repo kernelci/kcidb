@@ -340,17 +340,19 @@ function execute_command() {
     )
 
     # Make sure requisite services are enabled
-    app_deploy "$project"
-    services_enable "$project" appengine secretmanager cloudfunctions \
-                               cloudbuild cloudscheduler firestore \
-                               sqladmin storage run iam bigquery
+    if [ "$command" != "shutdown" ]; then
+        app_deploy "$project"
+        services_enable "$project" appengine secretmanager cloudfunctions \
+                                   cloudbuild cloudscheduler firestore \
+                                   sqladmin storage run iam bigquery
 
-    # Enable generating PostgreSQL superuser password (if not specified),
-    # if the instance doesn't exist yet
-    declare exists
-    exists=$(psql_instance_exists "$project" "$PSQL_INSTANCE")
-    if ! "$exists"; then
-        password_set_generate psql_superuser true
+        # Enable generating PostgreSQL superuser password (if not specified),
+        # if the instance doesn't exist yet
+        declare exists
+        exists=$(psql_instance_exists "$project" "$PSQL_INSTANCE")
+        if ! "$exists"; then
+            password_set_generate psql_superuser true
+        fi
     fi
 
     # Handle "deploy" command
@@ -419,6 +421,18 @@ function execute_command() {
             --purge-db-trigger-topic="$purge_db_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
+    # Handle "shutdown" command
+    elif [ "$command" == "shutdown" ]; then
+        sections_run "$sections" submitters_shutdown \
+            "$project" "$new_topic" "${submitters[@]}"
+        functions_shutdown \
+            --sections="$sections" \
+            --project="$project" \
+            --prefix="$prefix" \
+            --cache-redirect-function-name="$cache_redirect_function_name"
+        sections_run "$sections" run_shutdown \
+            --project="$project" \
+            --grafana-service="$grafana_service"
     # Handle "withdraw" command
     elif [ "$command" == "withdraw" ]; then
         sections_run "$sections" submitters_withdraw \
@@ -474,6 +488,7 @@ function usage() {
     echo "    deploy        Deploy an installation to the cloud."
     echo "    env           Output environment YAML for Cloud Functions."
     echo "    shell         Execute a shell with deployment environment."
+    echo "    shutdown      Shutdown an installation in the cloud."
     echo "    withdraw      Withdraw an installation from the cloud."
     echo "    list-sections List sections of the installation."
     echo ""
@@ -635,6 +650,40 @@ function usage_shell() {
     echo ""
 }
 
+# Output shutdown command usage information
+function usage_shutdown() {
+    echo "Usage: $(basename "$0") shutdown [OPTION...] PROJECT NAMESPACE"
+    echo "Shutdown a KCIDB installation in a Google Cloud project."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo "    -v, --verbose"
+    echo "              Output the shutdown steps being executed."
+    echo "    -s, --sections=EXTGLOB"
+    echo "              Specify an extended shell glob matching the"
+    echo "              installation sections to limit shutdown to."
+    echo "              See output of \"$(basename "$0") list-sections\""
+    echo "              for a list of available sections."
+    echo "    --smtp-mocked"
+    echo "              The project being shut down uses a PubSub topic for"
+    echo "              receiving notification messages instead of the SMTP"
+    echo "              server"
+    echo "    --test"
+    echo "              The project being shut down has test resources"
+    echo "              deployed."
+    echo "    --submitter=NAME"
+    echo "              Specify a service account to shutdown submissions"
+    echo "              for. Repeat to add more submitters."
+    echo ""
+    echo "Positional arguments:"
+    echo ""
+    echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
+    echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
+    echo ""
+}
+
 # Output withdraw command usage information
 function usage_withdraw() {
     echo "Usage: $(basename "$0") withdraw [OPTION...] PROJECT NAMESPACE"
@@ -721,9 +770,9 @@ function execute() {
     declare getopt_shortopts="h"
     declare getopt_longopts="help"
 
-    if [[ $command == @(deploy|env|shell|withdraw) ]]; then
+    if [[ $command == @(deploy|env|shell|shutdown|withdraw) ]]; then
         getopt_longopts+=",smtp-mocked,test"
-        if [[ $command == @(deploy|withdraw) ]]; then
+        if [[ $command == @(deploy|shutdown|withdraw) ]]; then
             getopt_shortopts+="vs:"
             getopt_longopts+=",verbose,sections:,submitter:"
         fi
