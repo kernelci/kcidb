@@ -15,6 +15,7 @@ shopt -s extglob
 
 PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 
+. artifacts.sh
 . run.sh
 . submitters.sh
 . sections.sh
@@ -85,6 +86,7 @@ function app_deploy() {
 #       --heavy-asserts=true|false
 #       --updated-publish=true|false
 #       --submitters=WORDS
+#       --cost-thresholds=JSON
 #       --grafana-url=URL
 #       --grafana-public=true|false
 #       --grafana-anonymous=true|false
@@ -105,6 +107,7 @@ function execute_command() {
                           heavy_asserts \
                           updated_publish \
                           submitters \
+                          cost_thresholds \
                           grafana_url \
                           grafana_public \
                           grafana_anonymous \
@@ -133,6 +136,7 @@ function execute_command() {
     declare -r new_debug_subscription="${prefix}new_debug"
     declare -r updated_topic="${prefix}updated"
     declare -r updated_debug_subscription="${prefix}updated_debug"
+    declare -r cost_topic="${prefix}cost"
     declare -r spool_collection_path="${prefix}notifications"
 
     declare -r psql_conn=$(
@@ -267,6 +271,20 @@ function execute_command() {
         "$smtp_mocked" && echo "${prefix}smtp_received" || true
     )
 
+    # Docker artifact repository name (must match [a-z0-9-]{0,62}[a-z0-9])
+    declare -r docker_repo="${dashed_prefix}docker"
+    # Cost monitor Cloud Run service name
+    declare -r cost_mon_service="${dashed_prefix}cost-mon"
+    # Cost monitor docker image
+    declare cost_mon_image="${ARTIFACTS_REGION}-docker.pkg.dev/"
+    cost_mon_image+="$project/$docker_repo/cost-mon"
+    declare -r cost_mon_image
+    # Cost Updater service account name (must match [a-z0-9-]{0,62}[a-z0-9])
+    declare -r cost_upd="${dashed_prefix}cost-upd"
+    # Cost updater serice account
+    declare cost_upd_service_account="$cost_upd"
+    cost_upd_service_account+="@$project.iam.gserviceaccount.com"
+    declare -r cost_upd_service_account
     # Grafana Cloud Run service name (must match [a-z0-9-]{0,62}[a-z0-9])
     declare -r grafana_service="${dashed_prefix}grafana"
 
@@ -337,11 +355,15 @@ function execute_command() {
 
     # Handle "deploy" command
     if [ "$command" == "deploy" ]; then
-        sections_run "$sections" iam_deploy "$project" "$grafana_service"
+        sections_run "$sections" iam_deploy \
+            "$project" "$grafana_service" \
+            "$cost_upd" "$cost_mon_service"
         sections_run "$sections" secrets_deploy "$project" \
             "$psql_pgpass_secret" "$psql_editor" "$grafana_service"
         sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
         sections_run "$sections" psql_deploy "${psql_args[@]}"
+        sections_run "$sections" artifacts_deploy "$project" \
+            "$docker_repo" "$cost_mon_image"
         sections_run "$sections" run_deploy \
             --project="$project" \
             --grafana-service="$grafana_service" \
@@ -350,7 +372,11 @@ function execute_command() {
             --grafana-anonymous="$grafana_anonymous" \
             --psql-conn="$psql_conn" \
             --psql-grafana-user="$psql_grafana_user" \
-            --psql-grafana-database="$psql_grafana_database"
+            --psql-grafana-database="$psql_grafana_database" \
+            --cost-thresholds="$cost_thresholds" \
+            --cost-mon-service="$cost_mon_service" \
+            --cost-mon-image="$cost_mon_image" \
+            --cost-upd-service-account="$cost_upd_service_account"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
@@ -364,7 +390,10 @@ function execute_command() {
                 "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic "$purge_db_trigger_topic" \
             --smtp-topic="$smtp_topic" \
-            --smtp-subscription="$smtp_subscription"
+            --smtp-subscription="$smtp_subscription" \
+            --cost-topic="$cost_topic" \
+            --cost-upd-service-account="$cost_upd_service_account" \
+            --cost-mon-service="$cost_mon_service"
         sections_run "$sections" firestore_deploy "$project"
         sections_run "$sections" storage_deploy "$project" "$cache_bucket_name"
         functions_deploy \
@@ -416,15 +445,22 @@ function execute_command() {
             --updated-topic="$updated_topic" \
             --updated-debug-subscription="$updated_debug_subscription" \
             --smtp-topic="$smtp_topic" \
-            --smtp-subscription="$smtp_subscription"
+            --smtp-subscription="$smtp_subscription" \
+            --cost-topic="$cost_topic" \
+            --cost-upd-service-account="$cost_upd_service_account"
         sections_run "$sections" run_withdraw \
             --project="$project" \
-            --grafana-service="$grafana_service"
+            --grafana-service="$grafana_service" \
+            --cost-mon-service="$cost_mon_service" \
+            --cost-upd-service-account="$cost_upd_service_account"
+        sections_run "$sections" artifacts_withdraw "$project" "$docker_repo"
         sections_run "$sections" psql_withdraw "${psql_args[@]}"
         sections_run "$sections" bigquery_withdraw "${bigquery_args[@]}"
         sections_run "$sections" secrets_withdraw "$project" \
             "$psql_pgpass_secret"
-        sections_run "$sections" iam_withdraw "$project" "$grafana_service"
+        sections_run "$sections" iam_withdraw \
+            "$project" "$grafana_service" \
+            "$cost_upd" "$cost_mon_service"
     fi
 }
 
@@ -496,6 +532,11 @@ function usage_deploy() {
     echo "    --submitter=NAME"
     echo "              Specify a service account to permit submissions for."
     echo "              Repeat to add more submitters."
+    echo "    --cost-thresholds=JSON"
+    echo "              Specify thresholds JSON for cost monitor."
+    echo "              Must be an array of arrays, each subarray containing a"
+    echo "              threshold cost and an optional shell command to execute."
+    echo "              A subarray without command can be just the cost instead."
     echo "    --grafana-url=URL"
     echo "              Assume Grafana is served from the specified URL."
     echo "              Default is \"http://localhost:3000\"."
@@ -696,6 +737,7 @@ function execute() {
         if [[ $command == @(deploy) ]]; then
             getopt_longopts+=",smtp-password-file:"
             getopt_longopts+=",psql-password-file:"
+            getopt_longopts+=",cost-thresholds:"
             getopt_longopts+=",grafana-url:"
             getopt_longopts+=",grafana-public"
             getopt_longopts+=",grafana-anonymous"
@@ -727,6 +769,7 @@ function execute() {
     declare updated_publish="true"
     declare -a submitters=()
     declare format="yaml"
+    declare cost_thresholds="[]"
     declare grafana_url="http://localhost:3000"
     declare grafana_public="false"
     declare grafana_anonymous="false"
@@ -748,6 +791,7 @@ function execute() {
             --test) test="true"; shift;;
             --format) format="$2"; shift 2;;
             --submitter) submitters+=("$2"); shift 2;;
+            --cost-thresholds) cost_thresholds="$2"; shift 2;;
             --grafana-url) grafana_url="$2"; shift 2;;
             --grafana-public) grafana_public="true"; shift;;
             --grafana-anonymous) grafana_anonymous="true"; shift;;
@@ -755,6 +799,13 @@ function execute() {
             *) echo "Unknown option: $1" >&2; exit 1;;
         esac
     done
+
+    # Check the thresholds schema is valid
+    if ! json_validate kcidb/cloud/cost-thresholds.schema.json \
+                    <<<"$cost_thresholds"; then
+        echo "Invalid cost thresholds JSON provided: $cost_thresholds" >&2
+        exit 1
+    fi
 
     # Process positional arguments according to the command invoked
     if [ "$command" == "list-sections" ]; then
@@ -807,6 +858,7 @@ function execute() {
                     --heavy-asserts="$heavy_asserts" \
                     --updated-publish="$updated_publish" \
                     --submitters="${submitters[*]@Q}" \
+                    --cost-thresholds="$cost_thresholds" \
                     --grafana-url="$grafana_url" \
                     --grafana-public="$grafana_public" \
                     --grafana-anonymous="$grafana_anonymous" \

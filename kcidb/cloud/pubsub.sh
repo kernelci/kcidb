@@ -4,6 +4,7 @@ if [ -z "${_PUBSUB_SH+set}" ]; then
 declare _PUBSUB_SH=
 
 . misc.sh
+. iam.sh
 
 # Check if a Pub/Sub topic exists
 # Args: project name
@@ -138,6 +139,9 @@ function pubsub_subscription_withdraw() {
 #       --updated-urls-topic=NAME
 #       --smtp-topic=NAME
 #       --smtp-subscription=NAME
+#       --cost-topic=NAME
+#       --cost-upd-service-account=NAME
+#       --cost-mon-service=NAME
 function pubsub_deploy() {
     declare params
     params="$(getopt_vars project \
@@ -151,8 +155,18 @@ function pubsub_deploy() {
                           purge_db_trigger_topic \
                           updated_urls_topic \
                           smtp_topic smtp_subscription \
+                          cost_topic \
+                          cost_upd_service_account \
+                          cost_mon_service \
                           -- "$@")"
     eval "$params"
+    declare project_number
+    project_number=$(gcloud projects describe "$project" \
+                                              --format='value(projectNumber)')
+    # Pub/Sub service account
+    declare service_account="service-$project_number"
+    service_account+="@gcp-sa-pubsub.iam.gserviceaccount.com"
+
     pubsub_topic_deploy "$project" "${load_queue_trigger_topic}"
 
     pubsub_topic_deploy "$project" "${new_topic}"
@@ -179,6 +193,26 @@ function pubsub_deploy() {
                                    "$smtp_subscription" \
                                    --message-retention-duration=12h
     fi
+
+    # Allow the Pub/Sub service account to create cost updater tokens
+    # so it can push to cost updater container subscription
+    iam_service_account_policy_binding_deploy \
+        "$project" "$cost_upd_service_account" \
+        "roles/iam.serviceAccountTokenCreator" \
+        "serviceAccount:$service_account"
+
+    # Get the cost monitor trigger HTTP URL
+    declare cost_mon_service_url
+    cost_mon_service_url=$(
+        run_service_get_url "$project" "$cost_mon_service"
+    )
+    pubsub_topic_deploy "$project" "$cost_topic"
+    pubsub_subscription_deploy \
+        "$project" "$cost_topic" \
+        "${cost_topic}_mon" \
+        --message-retention-duration=12h \
+        --push-endpoint="$cost_mon_service_url" \
+        --push-auth-service-account="$cost_upd_service_account"
 }
 
 # Withdraw from Pub/Sub
@@ -194,6 +228,8 @@ function pubsub_deploy() {
 #       --updated-debug-subscription=NAME
 #       --smtp-topic=NAME
 #       --smtp-subscription=NAME
+#       --cost-topic=NAME
+#       --cost-upd-service-account=NAME
 function pubsub_withdraw() {
     declare params
     params="$(getopt_vars project \
@@ -207,8 +243,17 @@ function pubsub_withdraw() {
                           updated_topic \
                           updated_debug_subscription \
                           smtp_topic smtp_subscription \
+                          cost_topic \
+                          cost_upd_service_account \
                           -- "$@")"
     eval "$params"
+    declare project_number
+    project_number=$(gcloud projects describe "$project" \
+                                              --format='value(projectNumber)')
+    # Pub/Sub service account
+    declare service_account="service-$project_number"
+    service_account+="@gcp-sa-pubsub.iam.gserviceaccount.com"
+
     if [ -n "$smtp_topic" ]; then
         pubsub_subscription_withdraw "$project" "$smtp_subscription"
         pubsub_topic_withdraw "$project" "$smtp_topic"
@@ -222,6 +267,15 @@ function pubsub_withdraw() {
     pubsub_topic_withdraw "$project" "$pick_notifications_trigger_topic"
     pubsub_topic_withdraw "$project" "$updated_urls_topic"
     pubsub_topic_withdraw "$project" "$purge_db_trigger_topic"
+    pubsub_subscription_withdraw "$project" "${cost_topic}_mon"
+    pubsub_topic_withdraw "$project" "$cost_topic"
+
+    # Withdraw the permission for the Pub/Sub service account to create cost
+    # updater tokens
+    iam_service_account_policy_binding_withdraw \
+        "$project" "$cost_upd_service_account" \
+        "roles/iam.serviceAccountTokenCreator" \
+        "serviceAccount:$service_account"
 }
 
 fi # _PUBSUB_SH
