@@ -116,6 +116,7 @@ function execute_command() {
     eval "declare -a argv=($argv)"
 
     declare -r prefix="${namespace}_"
+    declare -r dashed_prefix="${prefix//[^a-z0-9-]/-}"
 
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
     declare -r cache_bucket_name="${project}_${prefix}cache"
@@ -267,7 +268,7 @@ function execute_command() {
     )
 
     # Grafana Cloud Run service name (must match [a-z0-9-]{0,62}[a-z0-9])
-    declare -r grafana_service="${prefix//[^a-z0-9-]/-}grafana"
+    declare -r grafana_service="${dashed_prefix}grafana"
 
     declare -r -a env_args=(
         --project="$project"
