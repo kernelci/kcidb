@@ -5,6 +5,22 @@ declare _IAM_SH=
 
 . misc.sh
 
+# Delete a project's IAM policy binding, if it exists
+# Args: project member role
+function iam_policy_binding_withdraw() {
+    declare -r project="$1"; shift
+    declare -r member="$1"; shift
+    declare -r role="$1"; shift
+    declare output
+    if ! output=$(
+            gcloud projects remove-iam-policy-binding \
+                --quiet "$project" --member="$member" --role="$role" 2>&1
+       ) && [[ $output != *\ not\ found!* ]]; then
+        echo "$output" >&2
+        false
+    fi
+}
+
 # Check if a service account exists
 # Args: project name
 function iam_service_account_exists() {
