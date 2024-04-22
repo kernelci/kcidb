@@ -90,9 +90,9 @@ function run_deploy() {
         apiVersion: serving.knative.dev/v1
         kind: Service
         metadata:
-          name: ${grafana_service@Q}
+          name: $(yaml_quote "$grafana_service")
           labels:
-            cloud.googleapis.com/location: ${RUN_REGION@Q}
+            cloud.googleapis.com/location: $(yaml_quote "$RUN_REGION")
         spec:
           template:
             metadata:
@@ -103,7 +103,7 @@ function run_deploy() {
                   '{"grafana": ["cloud-sql-proxy"]}'
             spec:
               serviceAccountName:
-                "$grafana_service@$project.iam.gserviceaccount.com"
+                $(yaml_quote "$grafana_service@$project.iam.gserviceaccount.com")
               containerConcurrency: 512
               containers:
                 - image: docker.io/grafana/grafana:6.6.0
@@ -116,13 +116,13 @@ function run_deploy() {
                     - name: GF_DATABASE_HOST
                       value: 127.0.0.1:5432
                     - name: GF_DATABASE_USER
-                      value: ${psql_grafana_user@Q}
+                      value: $(yaml_quote "$psql_grafana_user")
                     - name: GF_DATABASE_NAME
-                      value: ${psql_grafana_database@Q}
+                      value: $(yaml_quote "$psql_grafana_database")
                     - name: GF_DATABASE_PASSWORD
                       valueFrom:
                         secretKeyRef:
-                          name: $(password_secret_get_name psql_grafana)
+                          name: $(yaml_quote "$(password_secret_get_name psql_grafana)")
                           key: latest
                     - name: GF_INSTALL_PLUGINS
                       value: "\\
@@ -134,13 +134,13 @@ function run_deploy() {
                           grafana-singlevalue-panel\\
                       "
                     - name: GF_SERVER_ROOT_URL
-                      value: "${grafana_url}"
+                      value: $(yaml_quote "$grafana_url")
                     - name: GF_AUTH_ANONYMOUS_ORG_NAME
                       value: "KernelCI"
                     - name: GF_AUTH_ANONYMOUS_ORG_ROLE
                       value: "Viewer"
                     - name: GF_AUTH_ANONYMOUS_ENABLED
-                      value: "${grafana_anonymous}"
+                      value: $(yaml_quote "$grafana_anonymous")
                   resources:
                     limits:
                       cpu: "1"
@@ -148,7 +148,7 @@ function run_deploy() {
                 - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
                   name: cloud-sql-proxy
                   args:
-                    - "$psql_conn?address=0.0.0.0&port=5432"
+                    - $(yaml_quote "$psql_conn?address=0.0.0.0&port=5432")
                     - --health-check
                     - --http-address=0.0.0.0
                     - --http-port=9090

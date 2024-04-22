@@ -152,4 +152,14 @@ function verbose() {
     fi
 }
 
+# Quote a string according to YAML double-quoted style
+# Args: string_to_quote
+function yaml_quote() {
+    declare -r str="$1"; shift
+    declare python_code='import sys, yaml; yaml.dump('
+    python_code+='sys.argv[1], default_style="\"", stream=sys.stdout'
+    python_code+=')'
+    python3 -c "$python_code" "$str"
+}
+
 fi # _MISC_SH
