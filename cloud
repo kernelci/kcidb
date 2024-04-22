@@ -324,7 +324,7 @@ function execute_command() {
     app_deploy "$project"
     services_enable "$project" appengine secretmanager cloudfunctions \
                                cloudbuild cloudscheduler firestore \
-                               sqladmin storage run iam
+                               sqladmin storage run iam bigquery
 
     # Enable generating PostgreSQL superuser password (if not specified),
     # if the instance doesn't exist yet
