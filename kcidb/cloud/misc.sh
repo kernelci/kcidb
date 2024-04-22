@@ -152,20 +152,4 @@ function verbose() {
     fi
 }
 
-# Delete a project's IAM policy binding, if it exists
-# Args: project member role
-function iam_policy_binding_withdraw() {
-    declare -r project="$1"; shift
-    declare -r member="$1"; shift
-    declare -r role="$1"; shift
-    declare output
-    if ! output=$(
-            gcloud projects remove-iam-policy-binding \
-                --quiet "$project" --member="$member" --role="$role" 2>&1
-       ) && [[ $output != *\ not\ found!* ]]; then
-        echo "$output" >&2
-        false
-    fi
-}
-
 fi # _MISC_SH
