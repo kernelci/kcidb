@@ -54,6 +54,34 @@ function iam_service_account_deploy() {
     fi
 }
 
+# Disable a service account, if it exists
+# Args: project name
+function iam_service_account_disable() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare exists
+    exists=$(iam_service_account_exists "$project" "$name")
+    if "$exists"; then
+        mute gcloud iam service-accounts disable \
+            --quiet --project="$project" \
+            "$name@$project.iam.gserviceaccount.com"
+    fi
+}
+
+# Enable a service account, if it exists
+# Args: project name
+function iam_service_account_enable() {
+    declare -r project="$1"; shift
+    declare -r name="$1"; shift
+    declare exists
+    exists=$(iam_service_account_exists "$project" "$name")
+    if "$exists"; then
+        mute gcloud iam service-accounts enable \
+            --quiet --project="$project" \
+            "$name@$project.iam.gserviceaccount.com"
+    fi
+}
+
 # Delete a service account, if it exists
 # Args: project name
 function iam_service_account_withdraw() {
