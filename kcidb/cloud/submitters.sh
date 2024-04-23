@@ -28,4 +28,11 @@ function submitters_withdraw() {
     done
 }
 
+# Shutdown submitters
+# Args: project new_topic [submitter...]
+function submitters_shutdown() {
+    submitters_withdraw "$@"
+    # Deploying will add permissions again
+}
+
 fi # _SUBMITTERS_SH

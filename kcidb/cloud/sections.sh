@@ -24,6 +24,7 @@ declare -A -r SECTIONS=(
     ["functions.load_queue"]="Cloud Functions: kcidb_load_queue()"
     ["scheduler"]="Scheduler jobs"
     ["submitters"]="Submitter permissions"
+    ["artifacts"]="Artifact repository"
     ["run"]="Cloud Run"
 )
 # Maximum length of a section name
@@ -55,7 +56,13 @@ function sections_run_explicit() {
     declare -r name="$1"; shift
     declare -r verb="$1"; shift
     declare -r command="$1"; shift
-    declare -r action="${verb}ing"
+    declare action
+
+    if [ "$verb" == "shutdown" ]; then
+        action="shutting down"
+    else
+        action="${verb}ing"
+    fi
 
     if ! [[ -v SECTIONS[$name] ]]; then
         echo "Unknown section name ${name@Q}" >&2

@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Monitor and react to cost updates"""
+# It's OK, pylint: disable=invalid-name
+
+import json
+import binascii
+import base64
+import sys
+import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import jsonschema
+
+# The threshold actions JSON schema
+with open(os.path.join(os.path.dirname(__file__),
+                       'cost-thresholds.schema.json'),
+          "r", encoding="utf-8") as file:
+    THRESHOLD_ACTIONS_SCHEMA = json.load(file)
+
+# A sorted array of arrays, each containing a cost threshold and an optional
+# action (shell command)
+THRESHOLD_ACTIONS = []
+
+# Last seen cost
+LAST_COST = None
+
+
+class HTTPRequestHandler(BaseHTTPRequestHandler):
+    """Cost update handler"""
+    def do_POST_respond(self):
+        """
+        Produce POST response parameters
+
+        Returns: The response status code and text contents.
+        """
+        if self.headers.get('Content-Type') != 'application/json':
+            return 415, ""
+        content_length = int(self.headers['Content-Length'])
+        content = self.rfile.read(content_length)
+        try:
+            data = json.loads(
+                base64.b64decode(json.loads(content)["message"]["data"],
+                                 validate=True)
+            )
+            cost = data["costAmount"]
+            currency = data["currencyCode"]
+        except (json.JSONDecodeError, binascii.Error, KeyError) as exc:
+            return 400, type(exc).__name__ + ": " + str(exc)
+
+        global LAST_COST  # It's OK, pylint: disable=global-statement
+
+        print(f"Cost: {cost} {currency}", file=sys.stderr)
+
+        # For each threshold
+        for threshold, action in THRESHOLD_ACTIONS:
+            # If not crossed on the way up
+            if not (LAST_COST or 0) < threshold <= cost:
+                continue
+            print(f"Threshold crossed: {threshold} {currency} "
+                  f"({LAST_COST} -> {cost})",
+                  file=sys.stderr)
+            if not action:
+                continue
+            print(f"Executing {action!r}", file=sys.stderr)
+            status = os.system(action)
+            if status == 0:
+                continue
+            print(
+                f"{action!r} failed with status {status}",
+                file=sys.stderr
+            )
+            return 500, ""
+
+        LAST_COST = cost
+        return 200, ""
+
+    def do_POST(self):
+        """Process a POST request"""
+        response_status, response_text = self.do_POST_respond()
+        self.send_response(response_status)
+        self.send_header('Content-Type', 'text/plain; charset=utf-8')
+        self.end_headers()
+        if response_text:
+            print(response_text, file=sys.stderr)
+        self.wfile.write(response_text.encode('utf-8'))
+
+
+if __name__ == '__main__':
+    try:
+        threshold_actions = json.loads(sys.argv[1])
+        jsonschema.validate(instance=threshold_actions,
+                            schema=THRESHOLD_ACTIONS_SCHEMA)
+        THRESHOLD_ACTIONS.extend(
+            [threshold_action, ""]
+            if isinstance(threshold_action, (float, int))
+            else (
+                threshold_action + [""]
+                if len(threshold_action) == 1
+                else threshold_action
+            )
+            for threshold_action in threshold_actions
+        )
+        THRESHOLD_ACTIONS.sort()
+    # Except regex mismatch
+    except AttributeError:
+        print(f"Invalid command-line arguments supplied: {sys.argv[1:]!r}",
+              file=sys.stderr)
+        sys.exit(1)
+
+    server = HTTPServer(('', 8080), HTTPRequestHandler)
+    server.serve_forever()

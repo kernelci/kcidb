@@ -152,20 +152,30 @@ function verbose() {
     fi
 }
 
-# Delete a project's IAM policy binding, if it exists
-# Args: project member role
-function iam_policy_binding_withdraw() {
-    declare -r project="$1"; shift
-    declare -r member="$1"; shift
-    declare -r role="$1"; shift
-    declare output
-    if ! output=$(
-            gcloud projects remove-iam-policy-binding \
-                --quiet "$project" --member="$member" --role="$role" 2>&1
-       ) && [[ $output != *\ not\ found!* ]]; then
-        echo "$output" >&2
-        false
-    fi
+# Quote a string according to YAML double-quoted style
+# Args: string_to_quote
+function yaml_quote() {
+    declare -r str="$1"; shift
+    declare python_code='import sys, yaml; yaml.dump('
+    python_code+='sys.argv[1], default_style="\"", stream=sys.stdout'
+    python_code+=')'
+    python3 -c "$python_code" "$str"
+}
+
+# Validate JSON against a schema
+# Input: The JSON to validate
+# Args: schema
+function json_validate() {
+    declare -r schema="$1"; shift
+    declare python_code='import sys, json, jsonschema; '
+    python_code+='schema_file = open(sys.argv[1], "r"); '
+    python_code+='schema = json.load(schema_file); '
+    python_code+='jsonschema.validate('
+    python_code+='instance=json.load(sys.stdin), '
+    python_code+='schema=schema, '
+    python_code+='format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER'
+    python_code+=')'
+    python3 -c "$python_code" "$schema"
 }
 
 fi # _MISC_SH

@@ -15,6 +15,7 @@ shopt -s extglob
 
 PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 
+. artifacts.sh
 . run.sh
 . submitters.sh
 . sections.sh
@@ -85,6 +86,7 @@ function app_deploy() {
 #       --heavy-asserts=true|false
 #       --updated-publish=true|false
 #       --submitters=WORDS
+#       --cost-thresholds=JSON
 #       --grafana-url=URL
 #       --grafana-public=true|false
 #       --grafana-anonymous=true|false
@@ -105,6 +107,7 @@ function execute_command() {
                           heavy_asserts \
                           updated_publish \
                           submitters \
+                          cost_thresholds \
                           grafana_url \
                           grafana_public \
                           grafana_anonymous \
@@ -116,6 +119,7 @@ function execute_command() {
     eval "declare -a argv=($argv)"
 
     declare -r prefix="${namespace}_"
+    declare -r dashed_prefix="${prefix//[^a-z0-9-]/-}"
 
     declare -r load_queue_trigger_topic="${prefix}load_queue_trigger"
     declare -r cache_bucket_name="${project}_${prefix}cache"
@@ -132,6 +136,7 @@ function execute_command() {
     declare -r new_debug_subscription="${prefix}new_debug"
     declare -r updated_topic="${prefix}updated"
     declare -r updated_debug_subscription="${prefix}updated_debug"
+    declare -r cost_topic="${prefix}cost"
     declare -r spool_collection_path="${prefix}notifications"
 
     declare -r psql_conn=$(
@@ -266,8 +271,22 @@ function execute_command() {
         "$smtp_mocked" && echo "${prefix}smtp_received" || true
     )
 
+    # Docker artifact repository name (must match [a-z0-9-]{0,62}[a-z0-9])
+    declare -r docker_repo="${dashed_prefix}docker"
+    # Cost monitor Cloud Run service name
+    declare -r cost_mon_service="${dashed_prefix}cost-mon"
+    # Cost monitor docker image
+    declare cost_mon_image="${ARTIFACTS_REGION}-docker.pkg.dev/"
+    cost_mon_image+="$project/$docker_repo/cost-mon"
+    declare -r cost_mon_image
+    # Cost Updater service account name (must match [a-z0-9-]{0,62}[a-z0-9])
+    declare -r cost_upd="${dashed_prefix}cost-upd"
+    # Cost updater serice account
+    declare cost_upd_service_account="$cost_upd"
+    cost_upd_service_account+="@$project.iam.gserviceaccount.com"
+    declare -r cost_upd_service_account
     # Grafana Cloud Run service name (must match [a-z0-9-]{0,62}[a-z0-9])
-    declare -r grafana_service="${prefix//[^a-z0-9-]/-}grafana"
+    declare -r grafana_service="${dashed_prefix}grafana"
 
     declare -r -a env_args=(
         --project="$project"
@@ -321,26 +340,45 @@ function execute_command() {
     )
 
     # Make sure requisite services are enabled
-    app_deploy "$project"
-    services_enable "$project" appengine secretmanager cloudfunctions \
-                               cloudbuild cloudscheduler firestore \
-                               sqladmin storage run iam
+    if [ "$command" != "shutdown" ]; then
+        app_deploy "$project"
+        services_enable "$project" appengine secretmanager cloudfunctions \
+                                   cloudbuild cloudscheduler firestore \
+                                   sqladmin storage run iam bigquery
 
-    # Enable generating PostgreSQL superuser password (if not specified),
-    # if the instance doesn't exist yet
-    declare exists
-    exists=$(psql_instance_exists "$project" "$PSQL_INSTANCE")
-    if ! "$exists"; then
-        password_set_generate psql_superuser true
+        # Enable generating PostgreSQL superuser password (if not specified),
+        # if the instance doesn't exist yet
+        declare exists
+        exists=$(psql_instance_exists "$project" "$PSQL_INSTANCE")
+        if ! "$exists"; then
+            password_set_generate psql_superuser true
+        fi
     fi
 
     # Handle "deploy" command
     if [ "$command" == "deploy" ]; then
-        sections_run "$sections" iam_deploy "$project" "$grafana_service"
+        sections_run "$sections" iam_deploy \
+            "$project" "$grafana_service" \
+            "$cost_upd" "$cost_mon_service"
         sections_run "$sections" secrets_deploy "$project" \
             "$psql_pgpass_secret" "$psql_editor" "$grafana_service"
         sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
         sections_run "$sections" psql_deploy "${psql_args[@]}"
+        sections_run "$sections" artifacts_deploy "$project" \
+            "$docker_repo" "$cost_mon_image"
+        sections_run "$sections" run_deploy \
+            --project="$project" \
+            --grafana-service="$grafana_service" \
+            --grafana-url="$grafana_url" \
+            --grafana-public="$grafana_public" \
+            --grafana-anonymous="$grafana_anonymous" \
+            --psql-conn="$psql_conn" \
+            --psql-grafana-user="$psql_grafana_user" \
+            --psql-grafana-database="$psql_grafana_database" \
+            --cost-thresholds="$cost_thresholds" \
+            --cost-mon-service="$cost_mon_service" \
+            --cost-mon-image="$cost_mon_image" \
+            --cost-upd-service-account="$cost_upd_service_account"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
@@ -351,10 +389,13 @@ function execute_command() {
             --updated-urls-topic="$updated_urls_topic" \
             --updated-debug-subscription="$updated_debug_subscription" \
             --pick-notifications-trigger-topic \
-              "$pick_notifications_trigger_topic" \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic "$purge_db_trigger_topic" \
             --smtp-topic="$smtp_topic" \
-            --smtp-subscription="$smtp_subscription"
+            --smtp-subscription="$smtp_subscription" \
+            --cost-topic="$cost_topic" \
+            --cost-upd-service-account="$cost_upd_service_account" \
+            --cost-mon-service="$cost_mon_service"
         sections_run "$sections" firestore_deploy "$project"
         sections_run "$sections" storage_deploy "$project" "$cache_bucket_name"
         functions_deploy \
@@ -364,7 +405,7 @@ function execute_command() {
             --source="$(dirname "$(realpath "$0")")" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --pick-notifications-trigger-topic \
-              "$pick_notifications_trigger_topic" \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic "$purge_db_trigger_topic" \
             --updated-urls-topic="$updated_urls_topic" \
             --updated-topic="$updated_topic" \
@@ -375,24 +416,25 @@ function execute_command() {
             --project="$project" \
             --prefix="$prefix" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
-            --pick-notifications-trigger-topic="$pick_notifications_trigger_topic" \
+            --pick-notifications-trigger-topic \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic="$purge_db_trigger_topic"
         sections_run "$sections" submitters_deploy \
             "$project" "$new_topic" "${submitters[@]}"
-        sections_run "$sections" run_deploy \
+    # Handle "shutdown" command
+    elif [ "$command" == "shutdown" ]; then
+        sections_run "$sections" submitters_shutdown \
+            "$project" "$new_topic" "${submitters[@]}"
+        functions_shutdown \
+            --sections="$sections" \
             --project="$project" \
-            --grafana-service="$grafana_service" \
-            --grafana-url="$grafana_url" \
-            --grafana-public="$grafana_public" \
-            --grafana-anonymous="$grafana_anonymous" \
-            --psql-conn="$psql_conn" \
-            --psql-grafana-user="$psql_grafana_user" \
-            --psql-grafana-database="$psql_grafana_database"
-    # Handle "withdraw" command
-    elif [ "$command" == "withdraw" ]; then
-        sections_run "$sections" run_withdraw \
+            --prefix="$prefix" \
+            --cache-redirect-function-name="$cache_redirect_function_name"
+        sections_run "$sections" run_shutdown \
             --project="$project" \
             --grafana-service="$grafana_service"
+    # Handle "withdraw" command
+    elif [ "$command" == "withdraw" ]; then
         sections_run "$sections" submitters_withdraw \
             "$project" "$new_topic" "${submitters[@]}"
         sections_run "$sections" scheduler_withdraw "$project" "$prefix"
@@ -408,7 +450,7 @@ function execute_command() {
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
             --pick-notifications-trigger-topic \
-              "$pick_notifications_trigger_topic" \
+                "$pick_notifications_trigger_topic" \
             --purge-db-trigger-topic "$purge_db_trigger_topic" \
             --new-topic="$new_topic" \
             --new-load-subscription="$new_load_subscription" \
@@ -417,12 +459,22 @@ function execute_command() {
             --updated-topic="$updated_topic" \
             --updated-debug-subscription="$updated_debug_subscription" \
             --smtp-topic="$smtp_topic" \
-            --smtp-subscription="$smtp_subscription"
+            --smtp-subscription="$smtp_subscription" \
+            --cost-topic="$cost_topic" \
+            --cost-upd-service-account="$cost_upd_service_account"
+        sections_run "$sections" run_withdraw \
+            --project="$project" \
+            --grafana-service="$grafana_service" \
+            --cost-mon-service="$cost_mon_service" \
+            --cost-upd-service-account="$cost_upd_service_account"
+        sections_run "$sections" artifacts_withdraw "$project" "$docker_repo"
         sections_run "$sections" psql_withdraw "${psql_args[@]}"
         sections_run "$sections" bigquery_withdraw "${bigquery_args[@]}"
         sections_run "$sections" secrets_withdraw "$project" \
             "$psql_pgpass_secret"
-        sections_run "$sections" iam_withdraw "$project" "$grafana_service"
+        sections_run "$sections" iam_withdraw \
+            "$project" "$grafana_service" \
+            "$cost_upd" "$cost_mon_service"
     fi
 }
 
@@ -436,6 +488,7 @@ function usage() {
     echo "    deploy        Deploy an installation to the cloud."
     echo "    env           Output environment YAML for Cloud Functions."
     echo "    shell         Execute a shell with deployment environment."
+    echo "    shutdown      Shutdown an installation in the cloud."
     echo "    withdraw      Withdraw an installation from the cloud."
     echo "    list-sections List sections of the installation."
     echo ""
@@ -483,8 +536,8 @@ function usage_deploy() {
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
     echo "    --optimize=PYTHONOPTIMIZE"
-    echo "              Specify a value for PYTHONOPTIMIZE to be added to the environment"
-    echo "              Default is an empty string."
+    echo "              Specify a value for PYTHONOPTIMIZE to be added to the "
+    echo "              environment. Default is an empty string."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
@@ -494,6 +547,11 @@ function usage_deploy() {
     echo "    --submitter=NAME"
     echo "              Specify a service account to permit submissions for."
     echo "              Repeat to add more submitters."
+    echo "    --cost-thresholds=JSON"
+    echo "              Specify thresholds JSON for cost monitor."
+    echo "              Must be an array of arrays, each subarray containing a"
+    echo "              threshold cost and an optional shell command to execute."
+    echo "              A subarray without command can be just the cost instead."
     echo "    --grafana-url=URL"
     echo "              Assume Grafana is served from the specified URL."
     echo "              Default is \"http://localhost:3000\"."
@@ -534,8 +592,8 @@ function usage_env() {
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
     echo "    --optimize=PYTHONOPTIMIZE"
-    echo "              Specify a value for PYTHONOPTIMIZE to be added to the environment"
-    echo "              Default is an empty string."
+    echo "              Specify a value for PYTHONOPTIMIZE to be added to the "
+    echo "              environment. Default is an empty string."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
@@ -573,8 +631,8 @@ function usage_shell() {
     echo "              Specify Python log level NAME for Cloud Functions."
     echo "              Default is INFO."
     echo "    --optimize=PYTHONOPTIMIZE"
-    echo "              Specify a value for PYTHONOPTIMIZE to be added to the environment"
-    echo "              Default is an empty string."
+    echo "              Specify a value for PYTHONOPTIMIZE to be added to the "
+    echo "              environment. Default is an empty string."
     echo "    --heavy-asserts"
     echo "              Enable heavy assertion checking in deployment."
     echo "    --mute-updates"
@@ -589,6 +647,40 @@ function usage_shell() {
     echo "    CMD       The command to execute inside the shell."
     echo "              If not specified, an interactive shell is started."
     echo "    ARG       An argument to pass to the command, if specified."
+    echo ""
+}
+
+# Output shutdown command usage information
+function usage_shutdown() {
+    echo "Usage: $(basename "$0") shutdown [OPTION...] PROJECT NAMESPACE"
+    echo "Shutdown a KCIDB installation in a Google Cloud project."
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "    -h, --help"
+    echo "              Display this usage message and exit."
+    echo "    -v, --verbose"
+    echo "              Output the shutdown steps being executed."
+    echo "    -s, --sections=EXTGLOB"
+    echo "              Specify an extended shell glob matching the"
+    echo "              installation sections to limit shutdown to."
+    echo "              See output of \"$(basename "$0") list-sections\""
+    echo "              for a list of available sections."
+    echo "    --smtp-mocked"
+    echo "              The project being shut down uses a PubSub topic for"
+    echo "              receiving notification messages instead of the SMTP"
+    echo "              server"
+    echo "    --test"
+    echo "              The project being shut down has test resources"
+    echo "              deployed."
+    echo "    --submitter=NAME"
+    echo "              Specify a service account to shutdown submissions"
+    echo "              for. Repeat to add more submitters."
+    echo ""
+    echo "Positional arguments:"
+    echo ""
+    echo "    PROJECT   Google Cloud project ID, e.g. \"kernelci-production\"."
+    echo "    NAMESPACE Namespace for all objects, e.g. \"test\"."
     echo ""
 }
 
@@ -678,9 +770,9 @@ function execute() {
     declare getopt_shortopts="h"
     declare getopt_longopts="help"
 
-    if [[ $command == @(deploy|env|shell|withdraw) ]]; then
+    if [[ $command == @(deploy|env|shell|shutdown|withdraw) ]]; then
         getopt_longopts+=",smtp-mocked,test"
-        if [[ $command == @(deploy|withdraw) ]]; then
+        if [[ $command == @(deploy|shutdown|withdraw) ]]; then
             getopt_shortopts+="vs:"
             getopt_longopts+=",verbose,sections:,submitter:"
         fi
@@ -694,6 +786,7 @@ function execute() {
         if [[ $command == @(deploy) ]]; then
             getopt_longopts+=",smtp-password-file:"
             getopt_longopts+=",psql-password-file:"
+            getopt_longopts+=",cost-thresholds:"
             getopt_longopts+=",grafana-url:"
             getopt_longopts+=",grafana-public"
             getopt_longopts+=",grafana-anonymous"
@@ -725,6 +818,7 @@ function execute() {
     declare updated_publish="true"
     declare -a submitters=()
     declare format="yaml"
+    declare cost_thresholds="[]"
     declare grafana_url="http://localhost:3000"
     declare grafana_public="false"
     declare grafana_anonymous="false"
@@ -746,6 +840,7 @@ function execute() {
             --test) test="true"; shift;;
             --format) format="$2"; shift 2;;
             --submitter) submitters+=("$2"); shift 2;;
+            --cost-thresholds) cost_thresholds="$2"; shift 2;;
             --grafana-url) grafana_url="$2"; shift 2;;
             --grafana-public) grafana_public="true"; shift;;
             --grafana-anonymous) grafana_anonymous="true"; shift;;
@@ -753,6 +848,13 @@ function execute() {
             *) echo "Unknown option: $1" >&2; exit 1;;
         esac
     done
+
+    # Check the thresholds schema is valid
+    if ! json_validate kcidb/cloud/cost-thresholds.schema.json \
+                    <<<"$cost_thresholds"; then
+        echo "Invalid cost thresholds JSON provided: $cost_thresholds" >&2
+        exit 1
+    fi
 
     # Process positional arguments according to the command invoked
     if [ "$command" == "list-sections" ]; then
@@ -805,6 +907,7 @@ function execute() {
                     --heavy-asserts="$heavy_asserts" \
                     --updated-publish="$updated_publish" \
                     --submitters="${submitters[*]@Q}" \
+                    --cost-thresholds="$cost_thresholds" \
                     --grafana-url="$grafana_url" \
                     --grafana-public="$grafana_public" \
                     --grafana-anonymous="$grafana_anonymous" \
