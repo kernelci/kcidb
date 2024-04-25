@@ -70,6 +70,25 @@ fwts:
 jcstress:
   title: The Java Concurrency Stress tests
   home: https://github.com/openjdk/jcstress
+kernelci_baseline:
+  title: Test plan for checking kernel errors using dmesg
+  home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/baseline.jinja2
+kernelci_kver:
+  title: Kernel Version test
+  home: https://github.com/kernelci/kernelci-pipeline/blob/main/config/runtime/kver.jinja2
+  description: |
+    Checks kernel version using "git describe" and verify it with kernel
+    Makefile version.
+kernelci_sleep:
+  title: KernelCI sleep test
+  home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/sleep.jinja2
+  description: |
+    Runs sleep and wake-up checks for RTC enabled devices.
+kernelci_tast:
+  title: Tast test
+  home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/tast.jinja2
+  description: |
+    Tast is ChromeOS-specific test suite that runs on Chromebooks.
 kselftest:
   title: Kernel self-tests
   home: https://kselftest.wiki.kernel.org/
