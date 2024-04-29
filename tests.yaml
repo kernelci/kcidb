@@ -61,6 +61,9 @@ bpf:
 dacapobench:
   title: DaCapo Java benchmarking suite
   home: http://dacapobench.sourceforge.net/
+dtbs_check:
+  title: Validate Device Tree files
+  home: https://docs.kernel.org/devicetree/bindings/writing-schema.html#running-checks
 fio:
   title: Flexible I/O tester
   home: https://github.com/axboe/fio
