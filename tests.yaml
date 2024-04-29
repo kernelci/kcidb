@@ -87,11 +87,6 @@ kernelci_sleep:
   home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/sleep.jinja2
   description: |
     Runs sleep and wake-up checks for RTC enabled devices.
-kernelci_tast:
-  title: Tast test
-  home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/tast.jinja2
-  description: |
-    Tast is ChromeOS-specific test suite that runs on Chromebooks.
 kselftest:
   title: Kernel self-tests
   home: https://kselftest.wiki.kernel.org/
@@ -301,6 +296,11 @@ stress-ng:
 syzkaller:
   title: syzkaller fuzzer
   home: https://github.com/google/syzkaller
+tast:
+  title: Tast test
+  home: https://chromium.googlesource.com/chromiumos/platform/tast/+/HEAD/README.md
+  description: |
+    Tast is ChromeOS-specific test suite that runs on Chromebooks.
 usex:
   title: UNIX System Exerciser (USEX)
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/standards/usex
