@@ -126,11 +126,21 @@ jobs:
           ./cloud deploy "${args[@]}" -v
       - name: Deploy Production
         run: |
+          declare -r cost_thresholds_json='[
+            100,
+            200,
+            300,
+            400,
+            500,
+            600,
+            [700, "./cloud shutdown kernelci-production \"\" -v"]
+          ]'
           declare -a args=(
             kernelci-production ""
             --grafana-url=https://kcidb.kernelci.org
             --grafana-public
             --grafana-anonymous
             --extra-cc=kernelci-results-staging@groups.io
+            --cost-thresholds="$cost_thresholds_json"
           )
           ./cloud deploy "${args[@]}" -v

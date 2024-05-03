@@ -219,7 +219,7 @@ function functions_deploy() {
                     cache_urls \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${updated_urls_topic}" \
-                    --memory 256MB \
+                    --memory 512MB \
                     --max-instances=1 \
                     --timeout 540
 
