@@ -67,6 +67,11 @@ dtbs_check:
 fio:
   title: Flexible I/O tester
   home: https://github.com/axboe/fio
+fluster:
+  title: Fluster test
+  home: https://github.com/fluendo/fluster
+  description: |
+    Fluster is a testing framework for decoder conformance.
 fwts:
   title: Firmware Test Suite
   home: https://wiki.ubuntu.com/FirmwareTestSuite/
