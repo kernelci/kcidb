@@ -875,6 +875,7 @@ def io_publisher_main():
         'kcidb-mq-io-publisher - ' \
         'Kernel CI I/O data publisher management tool'
     parser = PublisherArgumentParser("I/O data", description=description)
+    misc.argparse_input_add_args(parser.subparsers["publish"])
     args = parser.parse_args()
     publisher = IOPublisher(args.project, args.topic)
     if args.command == "init":
@@ -887,7 +888,8 @@ def io_publisher_main():
             sys.stdout.flush()
         publisher.publish_iter(
             (publisher.schema.validate(data)
-             for data in misc.json_load_stream_fd(sys.stdin.fileno())),
+             for data in
+             misc.json_load_stream_fd(sys.stdin.fileno(), seq=args.seq_in)),
             done_cb=print_publishing_id
         )
 
@@ -909,7 +911,8 @@ def io_subscriber_main():
     elif args.command == "pull":
         for ack_id, data in \
                 subscriber.pull_iter(args.messages, timeout=args.timeout):
-            misc.json_dump(data, sys.stdout, indent=args.indent, seq=args.seq)
+            misc.json_dump(data, sys.stdout, indent=args.indent,
+                           seq=args.seq_out)
             sys.stdout.flush()
             subscriber.ack(ack_id)
 
