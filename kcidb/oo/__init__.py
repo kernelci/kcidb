@@ -837,5 +837,5 @@ def query_main():
         pattern_set |= Pattern.parse(pattern_string)
     kcidb.misc.json_dump(
         db_client.oo_query(pattern_set),
-        sys.stdout, indent=args.indent, seq=args.seq
+        sys.stdout, indent=args.indent, seq=args.seq_out
     )
