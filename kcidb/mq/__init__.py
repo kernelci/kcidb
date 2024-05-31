@@ -19,6 +19,10 @@ from kcidb import misc
 from kcidb.misc import LIGHT_ASSERTS
 
 
+# TODO: Break down the module along data type lines, but meanwhile:
+# Dinna fash yersel', pylint: disable=too-many-lines
+
+
 # Module's logger
 LOGGER = logging.getLogger(__name__)
 
@@ -440,9 +444,26 @@ class IOSubscriber(JSONSubscriber):
         Raises:
             An exception in case data decoding failed.
         """
+        # TODO move the check to the I/O schema
+        def reject_nul_chars(data):
+            """Raise an Exception if a string in data contains NUL"""
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    reject_nul_chars(key)
+                    reject_nul_chars(value)
+            elif isinstance(data, list):
+                for value in data:
+                    reject_nul_chars(value)
+            elif isinstance(data, str):
+                if '\0' in data:
+                    raise Exception(f"NUL character in string {data!r}")
+            return data
+
         return self.schema.upgrade(
             self.schema.validate(
-                super().decode_data(message_data)
+                reject_nul_chars(
+                    super().decode_data(message_data)
+                )
             )
         )
 
