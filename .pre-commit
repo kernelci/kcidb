@@ -2,6 +2,11 @@
 
 set -e -u -o pipefail
 
+if [ -n "$NO_VERIFY" ]; then
+    echo "Skipping pre-commit hook" >&2
+    exit 0
+fi
+
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
 	against=HEAD
