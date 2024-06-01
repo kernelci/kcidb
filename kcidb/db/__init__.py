@@ -524,6 +524,27 @@ class ArgumentParser(kcidb.misc.ArgumentParser):
         argparse_add_args(self, database=database)
 
 
+class InputArgumentParser(kcidb.misc.InputArgumentParser):
+    """
+    Command-line argument parser with common database arguments added, for
+    tools inputting JSON.
+    """
+
+    def __init__(self, *args, database=None, **kwargs):
+        """
+        Initialize the parser, adding common database arguments.
+
+        Args:
+            args:       Positional arguments to initialize ArgumentParser
+                        with.
+            database:   The default database specification to use, or None to
+                        make database specification required.
+            kwargs:     Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        argparse_add_args(self, database=database)
+
+
 class OutputArgumentParser(kcidb.misc.OutputArgumentParser):
     """
     Command-line argument parser for tools outputting JSON,
@@ -659,7 +680,7 @@ def dump_main():
     kcidb.misc.json_dump_stream(
         client.dump_iter(objects_per_report=args.objects_per_report,
                          with_metadata=not args.without_metadata),
-        sys.stdout, indent=args.indent, seq=args.seq
+        sys.stdout, indent=args.indent, seq=args.seq_out
     )
 
 
@@ -685,7 +706,7 @@ def query_main():
         with_metadata=args.with_metadata
     )
     kcidb.misc.json_dump_stream(
-        query_iter, sys.stdout, indent=args.indent, seq=args.seq
+        query_iter, sys.stdout, indent=args.indent, seq=args.seq_out
     )
 
 
@@ -694,7 +715,7 @@ def load_main():
     sys.excepthook = kcidb.misc.log_and_print_excepthook
     description = \
         'kcidb-db-load - Load reports into Kernel CI report database'
-    parser = ArgumentParser(description=description)
+    parser = InputArgumentParser(description=description)
     parser.add_argument(
         '--with-metadata',
         help='Load metadata fields as well',
@@ -705,7 +726,8 @@ def load_main():
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
     io_schema = client.get_schema()[1]
-    for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno()):
+    for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno(),
+                                               seq=args.seq_in):
         data = io_schema.upgrade(io_schema.validate(data), copy=False)
         client.load(data, with_metadata=args.with_metadata)
 

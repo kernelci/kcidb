@@ -219,7 +219,7 @@ def submit_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = \
         'kcidb-submit - Submit Kernel CI reports, print submission IDs'
-    parser = misc.ArgumentParser(description=description)
+    parser = misc.InputArgumentParser(description=description)
     parser.add_argument(
         '-p', '--project',
         help='ID of the Google Cloud project containing the message queue',
@@ -239,7 +239,8 @@ def submit_main():
 
     client.submit_iter(
         (io.SCHEMA.validate(data)
-         for data in misc.json_load_stream_fd(sys.stdin.fileno())),
+         for data in
+         misc.json_load_stream_fd(sys.stdin.fileno(), seq=args.seq_in)),
         done_cb=print_submission_id
     )
 
@@ -264,7 +265,7 @@ def query_main():
         with_metadata=args.with_metadata
     )
     misc.json_dump_stream(
-        query_iter, sys.stdout, indent=args.indent, seq=args.seq
+        query_iter, sys.stdout, indent=args.indent, seq=args.seq_out
     )
 
 
@@ -276,22 +277,23 @@ def schema_main():
     misc.argparse_schema_add_args(parser, "output")
     args = parser.parse_args()
     misc.json_dump(args.schema_version.json, sys.stdout, indent=args.indent,
-                   seq=args.seq)
+                   seq=args.seq_out)
 
 
 def validate_main():
     """Execute the kcidb-validate command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-validate - Validate I/O JSON data'
-    parser = misc.OutputArgumentParser(description=description)
+    parser = misc.InputOutputArgumentParser(description=description)
     misc.argparse_schema_add_args(parser, "validate against")
     args = parser.parse_args()
     misc.json_dump_stream(
         (
             args.schema_version.validate(data)
-            for data in misc.json_load_stream_fd(sys.stdin.fileno())
+            for data in misc.json_load_stream_fd(sys.stdin.fileno(),
+                                                 seq=args.seq_in)
         ),
-        sys.stdout, indent=args.indent, seq=args.seq
+        sys.stdout, indent=args.indent, seq=args.seq_out
     )
 
 
@@ -299,15 +301,16 @@ def upgrade_main():
     """Execute the kcidb-upgrade command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-upgrade - Upgrade I/O JSON data to current schema'
-    parser = misc.OutputArgumentParser(description=description)
+    parser = misc.InputOutputArgumentParser(description=description)
     misc.argparse_schema_add_args(parser, "upgrade")
     args = parser.parse_args()
     misc.json_dump_stream(
         (
             args.schema_version.upgrade(io.SCHEMA.validate(data), copy=False)
-            for data in misc.json_load_stream_fd(sys.stdin.fileno())
+            for data in
+            misc.json_load_stream_fd(sys.stdin.fileno(), seq=args.seq_in)
         ),
-        sys.stdout, indent=args.indent, seq=args.seq
+        sys.stdout, indent=args.indent, seq=args.seq_out
     )
 
 
@@ -315,10 +318,10 @@ def count_main():
     """Execute the kcidb-count command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-count - Count number of objects in I/O JSON data'
-    parser = misc.ArgumentParser(description=description)
-    parser.parse_args()
+    parser = misc.InputArgumentParser(description=description)
+    args = parser.parse_args()
 
-    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+    for data in misc.json_load_stream_fd(sys.stdin.fileno(), seq=args.seq_in):
         print(io.SCHEMA.count(io.SCHEMA.validate(data)), file=sys.stdout)
         sys.stdout.flush()
 
@@ -327,12 +330,13 @@ def merge_main():
     """Execute the kcidb-merge command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-merge - Upgrade and merge I/O data sets'
-    parser = misc.OutputArgumentParser(description=description)
+    parser = misc.InputOutputArgumentParser(description=description)
     args = parser.parse_args()
 
     sources = [
         io.SCHEMA.validate(data)
-        for data in misc.json_load_stream_fd(sys.stdin.fileno())
+        for data in
+        misc.json_load_stream_fd(sys.stdin.fileno(), seq=args.seq_in)
     ]
     target_schema = max(
         (io.SCHEMA.get_exactly_compatible(s) for s in sources),
@@ -340,7 +344,8 @@ def merge_main():
     )
     merged_data = target_schema.merge(target_schema.new(), sources,
                                       copy_target=False, copy_sources=False)
-    misc.json_dump(merged_data, sys.stdout, indent=args.indent, seq=args.seq)
+    misc.json_dump(merged_data, sys.stdout, indent=args.indent,
+                   seq=args.seq_out)
 
 
 def notify_main():
@@ -367,8 +372,8 @@ def ingest_main():
     sys.excepthook = misc.log_and_print_excepthook
     description = 'kcidb-ingest - Load data into a (new) database and ' \
         'generate notifications for new and modified objects'
-    parser = db.ArgumentParser(database="sqlite::memory:",
-                               description=description)
+    parser = db.InputArgumentParser(database="sqlite::memory:",
+                                    description=description)
     args = parser.parse_args()
 
     db_client = db.Client(args.database)
@@ -378,7 +383,7 @@ def ingest_main():
     io_schema = db_client.get_schema()[1]
 
     # For each JSON object in stdin
-    for data in misc.json_load_stream_fd(sys.stdin.fileno()):
+    for data in misc.json_load_stream_fd(sys.stdin.fileno(), seq=args.seq_in):
         # Validate and upgrade the data to the database's I/O schema
         data = io_schema.upgrade(io_schema.validate(data), copy=False)
         # Load into the database

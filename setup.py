@@ -57,7 +57,7 @@ setuptools.setup(
         "jinja2",
         "python-dateutil",
         "cached-property",
-        "jq@git+https://github.com/kernelci/jq.py.git@1.2.3.post1",
+        "jq@git+https://github.com/kernelci/jq.py.git@1.7.0.post1",
         "kcidb-io@git+https://github.com/kernelci/kcidb-io.git",
     ],
     extras_require=dict(

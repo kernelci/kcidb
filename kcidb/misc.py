@@ -250,6 +250,21 @@ def version(string):
     return int(match.group(1)), int(match.group(2))
 
 
+def argparse_input_add_args(parser):
+    """
+    Add JSON input arguments to a command-line argument parser.
+
+    Args:
+        parser: The parser to add arguments to.
+    """
+    parser.add_argument(
+        '--seq-in',
+        help='Expect RS (0x1e) character before each value in JSON input, '
+             'matching RFC 7464 and "application/json-seq" media type.',
+        action='store_true'
+    )
+
+
 def argparse_output_add_args(parser):
     """
     Add JSON output arguments to a command-line argument parser.
@@ -257,6 +272,13 @@ def argparse_output_add_args(parser):
     Args:
         parser: The parser to add arguments to.
     """
+    parser.add_argument(
+        '--seq-out',
+        '--seq',
+        help='Prefix each value in JSON output with the RS (0x1e) character, '
+             'to match RFC 7464 and "application/json-seq" media type.',
+        action='store_true'
+    )
     parser.add_argument(
         '--indent',
         metavar="NUMBER",
@@ -266,12 +288,34 @@ def argparse_output_add_args(parser):
         default=4,
         required=False
     )
-    parser.add_argument(
-        '--seq',
-        help='Prefix JSON output with the RS character, to match '
-             'RFC 7464 and "application/json-seq" media type.',
-        action='store_true'
-    )
+
+
+def argparse_input_output_add_args(parser):
+    """
+    Add JSON input and output arguments to a command-line argument parser.
+
+    Args:
+        parser: The parser to add arguments to.
+    """
+    argparse_input_add_args(parser)
+    argparse_output_add_args(parser)
+
+
+class InputArgumentParser(ArgumentParser):
+    """
+    Command-line argument parser for tools inputting JSON.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding JSON input arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        argparse_input_add_args(self)
 
 
 class OutputArgumentParser(ArgumentParser):
@@ -289,6 +333,23 @@ class OutputArgumentParser(ArgumentParser):
         """
         super().__init__(*args, **kwargs)
         argparse_output_add_args(self)
+
+
+class InputOutputArgumentParser(ArgumentParser):
+    """
+    Command-line argument parser for tools inputting and outputting JSON.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the parser, adding JSON I/O arguments.
+
+        Args:
+            args:   Positional arguments to initialize ArgumentParser with.
+            kwargs: Keyword arguments to initialize ArgumentParser with.
+        """
+        super().__init__(*args, **kwargs)
+        argparse_input_output_add_args(self)
 
 
 class SplitOutputArgumentParser(OutputArgumentParser):
@@ -369,12 +430,15 @@ def argparse_schema_add_args(parser, version_verb):
     )
 
 
-def json_load_stream_fd(stream_fd, chunk_size=4*1024*1024):
+def json_load_stream_fd(stream_fd, seq=False, chunk_size=4*1024*1024):
     """
     Load a series of JSON values from a stream file descriptor.
 
     Args:
         stream_fd:  The file descriptor for the stream to read.
+        seq:        If true, expect an RS character before each value in the
+                    input, matching RFC 7464 and the "application/json-seq"
+                    media type.
         chunk_size: Maximum size of chunks to read from the file, bytes.
 
     Returns:
@@ -388,7 +452,7 @@ def json_load_stream_fd(stream_fd, chunk_size=4*1024*1024):
             else:
                 break
 
-    return jq.parse_json(text_iter=read_chunk())
+    return jq.parse_json(text_iter=read_chunk(), seq=seq)
 
 
 # It's OK, pylint: disable=redefined-outer-name
