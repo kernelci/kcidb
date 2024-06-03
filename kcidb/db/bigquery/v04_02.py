@@ -6,6 +6,7 @@ from google.cloud.bigquery import ScalarQueryParameter
 from google.cloud.bigquery.schema import SchemaField as Field
 from google.cloud.bigquery.table import Table
 import kcidb.io as io
+from kcidb.misc import merge_dicts
 from .v04_01 import Schema as PreviousSchema
 
 # Module's logger
@@ -36,7 +37,10 @@ class Schema(PreviousSchema):
     # A map of table names to the dictionary of fields and the names of their
     # aggregation function, if any (the default is "ANY_VALUE").
     AGGS_MAP = {
-        name: {TIMESTAMP_FIELD.name: "MAX"}
+        name: merge_dicts(
+            PreviousSchema.AGGS_MAP.get(name, {}),
+            {TIMESTAMP_FIELD.name: "MAX"}
+        )
         for name in TABLE_MAP
     }
 
