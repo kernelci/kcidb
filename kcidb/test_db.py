@@ -1274,11 +1274,17 @@ def test_upgrade(clean_database):
             # Check upgrade went well
             # You're wrong, pylint: disable=unsubscriptable-object
             assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
-                last_params["oo"]
+                last_params["oo"], \
+                f"Unexpected OO query result after " \
+                f"{last_io_version} -> {io_version} DB upgrade"
             upgraded_io = io_version.upgrade(last_params["io"])
-            assert database.dump(with_metadata=False) == upgraded_io
+            assert database.dump(with_metadata=False) == upgraded_io, \
+                f"Unexpected IO dump after " \
+                f"{last_io_version} -> {io_version} DB upgrade"
             assert database.query(io_version.get_ids(upgraded_io)) == \
-                upgraded_io
+                upgraded_io, \
+                f"Unexpected IO query result after " \
+                f"{last_io_version} -> {io_version} DB upgrade"
 
         # For each data's I/O version and parameters
         for load_io_version, load_params in io_version_params.items():
@@ -1307,12 +1313,18 @@ def test_upgrade(clean_database):
 
             # Check we can query it in various ways
             upgraded_io = io_version.upgrade(load_params["io"])
-            assert database.dump(with_metadata=False) == upgraded_io
+            assert database.dump(with_metadata=False) == upgraded_io, \
+                f"Unexpected dump result after loading {load_io_version} " \
+                f"data into {io_version} database"
             assert database.query(io_version.get_ids(upgraded_io)) == \
-                upgraded_io
+                upgraded_io, \
+                f"Unexpected I/O query result after loading " \
+                f"{load_io_version} data into {io_version} database"
             assert \
                 database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
-                load_params["oo"]
+                load_params["oo"], \
+                f"Unexpected OO query result after loading " \
+                f"{load_io_version} data into {io_version} database"
 
         # Remeber this I/O version and its parameters for the next round
         last_io_version = io_version
