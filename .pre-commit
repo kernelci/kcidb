@@ -2,7 +2,7 @@
 
 set -e -u -o pipefail
 
-if [ -n "$NO_VERIFY" ]; then
+if [ -n "${NO_VERIFY:-}" ]; then
     echo "Skipping pre-commit hook" >&2
     exit 0
 fi
