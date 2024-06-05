@@ -305,6 +305,8 @@ class Schema:
 
 # Latest I/O schema shared definitions
 _DEFS = io.SCHEMA.json['$defs']
+# Revision ID properties from the current I/O schema
+_REVISION_ID = _DEFS['revision_id']['properties']
 # Checkout properties from the current I/O schema
 _CHECKOUT = _DEFS['checkout']['properties']
 # Build properties from the current I/O schema
@@ -317,6 +319,8 @@ _ISSUE = _DEFS['issue']['properties']
 _ISSUE_CULPRIT = _ISSUE['culprit']['properties']
 # Incident properties from the current I/O schema
 _INCIDENT = _DEFS['incident']['properties']
+# Transition properties from the current I/O schema
+_TRANSITION = _DEFS['transition']['properties']
 # Test environment properties from the current I/O schema
 _TEST_ENVIRONMENT = _TEST['environment']['properties']
 
@@ -342,6 +346,7 @@ SCHEMA = Schema(
             field_json_schemas=dict(
                 id=_CHECKOUT['id'],
                 git_commit_hash=_CHECKOUT['git_commit_hash'],
+                git_commit_generation=_CHECKOUT['git_commit_generation'],
                 patchset_hash=_CHECKOUT['patchset_hash'],
                 origin=_CHECKOUT['origin'],
                 git_repository_url=_CHECKOUT['git_repository_url'],
@@ -445,6 +450,7 @@ SCHEMA = Schema(
             id_fields=("id",),
             children=dict(
                 incident=("issue_id",),
+                transition=("issue_id",),
             ),
         ),
         incident=dict(
@@ -457,6 +463,28 @@ SCHEMA = Schema(
                 test_id=_INCIDENT['test_id'],
                 comment=_INCIDENT['comment'],
                 misc=_INCIDENT['misc'],
+            ),
+            required_fields={'id', 'origin', 'issue_id', 'issue_version'},
+            id_fields=("id",),
+        ),
+        transition=dict(
+            field_json_schemas=dict(
+                id=_TRANSITION['id'],
+                version=_TRANSITION['version'],
+                origin=_TRANSITION['origin'],
+                issue_id=_TRANSITION['issue_id'],
+                issue_version=_TRANSITION['issue_version'],
+                appearance=_TRANSITION['appearance'],
+                revision_before_git_commit_hash=_REVISION_ID[
+                    'git_commit_hash'
+                ],
+                revision_before_patchset_hash=_REVISION_ID['patchset_hash'],
+                revision_after_git_commit_hash=_REVISION_ID[
+                    'git_commit_hash'
+                ],
+                revision_after_patchset_hash=_REVISION_ID['patchset_hash'],
+                comment=_TRANSITION['comment'],
+                misc=_TRANSITION['misc'],
             ),
             required_fields={'id', 'origin', 'issue_id', 'issue_version'},
             id_fields=("id",),

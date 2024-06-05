@@ -504,6 +504,7 @@ class Schema(AbstractSchema):
         checkout="SELECT\n"
                  "    id,\n"
                  "    git_commit_hash,\n"
+                 "    NULL AS git_commit_generation,\n"
                  "    patchset_hash,\n"
                  "    origin,\n"
                  "    git_repository_url,\n"
@@ -583,6 +584,20 @@ class Schema(AbstractSchema):
                  '    "" AS test_id,\n'
                  '    "" AS comment,\n'
                  '    "" AS misc\n'
+                 'FROM UNNEST([])',
+        transition='SELECT\n'
+                 '    ""    AS id,\n'
+                 '    0     AS version,\n'
+                 '    ""    AS origin,\n'
+                 '    ""    AS issue_id,\n'
+                 '    0     AS issue_version,\n'
+                 '    FALSE AS appearance,\n'
+                 '    ""    AS revision_before_git_commit_hash,\n'
+                 '    ""    AS revision_before_patchset_hash,\n'
+                 '    ""    AS revision_after_git_commit_hash,\n'
+                 '    ""    AS revision_after_patchset_hash,\n'
+                 '    ""    AS comment,\n'
+                 '    ""    AS misc\n'
                  'FROM UNNEST([])',
     )
 

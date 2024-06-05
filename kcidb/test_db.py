@@ -234,7 +234,7 @@ def test_load_main():
 
 # I/O data containing all possible fields
 COMPREHENSIVE_IO_DATA = {
-    **kcidb.io.SCHEMA.new(),
+    **kcidb.io.schema.V4_3.new(),
     "checkouts": [
         dict(
             id="origin:1",
@@ -742,6 +742,7 @@ def test_upgrade(clean_database):
                     'comment': None,
                     'git_commit_hash':
                         'f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
+                    'git_commit_generation': None,
                     'git_repository_branch': 'android-mainline',
                     'git_repository_url':
                         'https://android.googlesource.com/kernel/common.git',
@@ -828,6 +829,7 @@ def test_upgrade(clean_database):
                 'bug': [],
                 'issue': [],
                 'incident': [],
+                'transition': [],
             }
         ),
         kcidb.io.schema.V4_0: dict(
@@ -869,6 +871,7 @@ def test_upgrade(clean_database):
                     "comment": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    'git_commit_generation': None,
                     "git_repository_branch": None,
                     "git_repository_url": None,
                     "id":
@@ -927,6 +930,7 @@ def test_upgrade(clean_database):
                 "bug": [],
                 "issue": [],
                 "incident": [],
+                'transition': [],
             }
         ),
         kcidb.io.schema.V4_2: dict(
@@ -995,6 +999,7 @@ def test_upgrade(clean_database):
                     "comment": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    'git_commit_generation': None,
                     "git_repository_branch": None,
                     "git_repository_url": None,
                     "id":
@@ -1090,6 +1095,7 @@ def test_upgrade(clean_database):
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
+                'transition': [],
             }
         ),
         kcidb.io.schema.V4_3: dict(
@@ -1158,6 +1164,7 @@ def test_upgrade(clean_database):
                     "comment": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    'git_commit_generation': None,
                     "git_repository_branch": None,
                     "git_repository_url": None,
                     "id":
@@ -1253,6 +1260,7 @@ def test_upgrade(clean_database):
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
+                'transition': [],
             }
         ),
     }
