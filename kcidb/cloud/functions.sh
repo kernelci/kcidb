@@ -67,7 +67,7 @@ function functions_env() {
         [KCIDB_LOAD_QUEUE_SUBSCRIPTION]="$new_load_subscription"
         [KCIDB_LOAD_QUEUE_MSG_MAX]="1024"
         [KCIDB_LOAD_QUEUE_OBJ_MAX]="16384"
-        [KCIDB_LOAD_QUEUE_TIMEOUT_SEC]="30"
+        [KCIDB_LOAD_QUEUE_TIMEOUT_SEC]="60"
         [KCIDB_PGPASS_SECRET]="$pgpass_secret"
         [KCIDB_OPERATIONAL_DATABASE]="$op_database"
         [KCIDB_ARCHIVE_DATABASE]="$ar_database"
