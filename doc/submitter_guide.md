@@ -315,6 +315,65 @@ Finally, the last line in the table above (without a status) corresponds to
 the absent "status" field, and means that the test is only scheduled to
 execute, the system hasn't got to it yet, and so we have no data on anything.
 
+Another way to visualize the status values and the three layered testing stack,
+is to put them into an execution outcome chart:
+
+```mermaid
+block-beta
+    columns 5
+
+    B1("SKIP\ntest not applicable")
+    space
+    C1("DONE\nno test result required")
+    space
+    D1("PASS\ncode fulfilled requirements")
+
+    space:5
+
+    A["schedule test"]
+    space
+    B["run test"]
+    space
+    C["evaluate result"]
+
+    space:5
+
+    B2("MISS\ntest could not be run\n") space
+    C2("ERROR\ntest could not be completed") space
+    D2("FAIL\ncode failed requirements")
+
+    B3["responsibility: CI maintainer"]
+    space
+    C3["responsibility: test maintainer"]
+    space
+    D3["responsibility: kernel developer"]
+
+    A -.-> B
+    A --> B1
+    A --> B2
+
+    B -.-> C
+    B --> C1
+    B --> C2
+
+    C --> D1
+    C --> D2
+
+    style A  fill:#F5F5F5,stroke:#666666,stroke-width:1px,color:#000
+    style B  fill:#F5F5F5,stroke:#666666,stroke-width:1px,color:#000
+    style C  fill:#F5F5F5,stroke:#666666,stroke-width:1px,color:#000
+    style B1 fill:#D9EAD3,stroke:#82B366,stroke-width:1px,color:#000
+    style C1 fill:#D9EAD3,stroke:#82B366,stroke-width:1px,color:#000
+    style D1 fill:#D9EAD3,stroke:#82B366,stroke-width:1px,color:#000
+    style B2 fill:#FFF2CC,stroke:#D6B656,stroke-width:1px,color:#000
+    style C2 fill:#FFE6CC,stroke:#D79B00,stroke-width:1px,color:#000
+    style D2 fill:#f4cccc,stroke:#B85450,stroke-width:1px,color:#000
+
+    style B3 fill:transparent,stroke:transparent,color:#6C8EBF
+    style C3 fill:transparent,stroke:transparent,color:#6C8EBF
+    style D3 fill:transparent,stroke:transparent,color:#6C8EBF
+```
+
 Example: `"FAIL"`
 
 ##### `waived`
