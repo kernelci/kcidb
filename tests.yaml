@@ -92,6 +92,12 @@ kernelci_sleep:
   home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/sleep.jinja2
   description: |
     Runs sleep and wake-up checks for RTC enabled devices.
+kernelci_watchdog_reset:
+  title: KernelCI watchdog reset test
+  home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/watchdog-reset.jinja2
+  description: |
+    Verifies the watchdog reset functionality. It opens the watchdog device
+    and waits for the timeout to expire, triggering a device reset.
 kselftest:
   title: Kernel self-tests
   home: https://kselftest.wiki.kernel.org/
