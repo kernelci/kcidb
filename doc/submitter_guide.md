@@ -312,8 +312,8 @@ means that the harness worked alright, and either it, or the test itself,
 decided not to run this specific test, because it was inapplicable.
 
 Finally, the last line in the table above (without a status) corresponds to
-the absent "status" field, and means that the test is only scheduled to
-execute, the system hasn't got to it yet, and so we have no data on anything.
+the absent "status" field, and means that the test is either only scheduled,
+or is still executing, and so we have no status data yet.
 
 Another way to visualize the status values and the three layered testing stack,
 is to put them into an execution outcome chart:
