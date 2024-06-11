@@ -13,7 +13,7 @@ name: test
     types: [test]
 
 env:
-  KCIDB_IO_URL: kcidb-io@git+https://github.com/kernelci/kcidb-io.git@${{ github.event.client_payload.kcidb_io_ref || 'main' }}
+  KCIDB_IO_URL: kcidb-io@git+https://github.com/kernelci/kcidb-io.git@${{ github.event.client_payload.kcidb_io_ref || 'add_schema_v4_4' }}
 
 jobs:
   check_python:
