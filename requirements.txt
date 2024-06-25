@@ -6,6 +6,7 @@ google-cloud-firestore
 google-cloud-storage
 google-cloud-secret-manager
 google-cloud-logging
+flask
 psycopg2
 functions-framework
 jsonschema[format]

@@ -213,12 +213,13 @@ function iam_role_withdraw() {
 }
 
 # Deploy IAM
-# Args: project grafana_service cost_upd cost_mon
+# Args: project grafana_service cost_upd cost_mon iss_ed
 function iam_deploy() {
     declare -r project="$1"; shift
     declare -r grafana_service="$1"; shift
     declare -r cost_upd="$1"; shift
     declare -r cost_mon="$1"; shift
+    declare -r iss_ed="$1"; shift
     declare -r cost_mon_role="${cost_mon//-/_}"
     iam_service_account_deploy "$project" "$grafana_service"
     # Give Grafana access to Cloud SQL
@@ -251,16 +252,21 @@ YAML_END
         --role "projects/$project/roles/$cost_mon_role" \
         --member \
         "serviceAccount:$cost_mon@$project.iam.gserviceaccount.com"
+
+    # Deploy the Issue Editor service account
+    iam_service_account_deploy "$project" "$iss_ed"
 }
 
 # Withdraw IAM
-# Args: project grafana_service cost_upd cost_mon
+# Args: project grafana_service cost_upd cost_mon iss_ed
 function iam_withdraw() {
     declare -r project="$1"; shift
     declare -r grafana_service="$1"; shift
     declare -r cost_upd="$1"; shift
     declare -r cost_mon="$1"; shift
+    declare -r iss_ed="$1"; shift
     declare -r cost_mon_role="${cost_mon//-/_}"
+    iam_service_account_withdraw "$project" "$iss_ed"
     iam_service_account_withdraw "$project" "$cost_mon"
     iam_role_withdraw "$project" "$cost_mon_role"
     iam_service_account_withdraw "$project" "$cost_upd"
