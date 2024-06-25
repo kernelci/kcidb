@@ -288,6 +288,12 @@ function execute_command() {
     declare -r cost_upd_service_account
     # Grafana Cloud Run service name (must match [a-z0-9-]{0,62}[a-z0-9])
     declare -r grafana_service="${dashed_prefix}grafana"
+    # Issue editor Cloud Run service name
+    declare -r iss_ed_service="${dashed_prefix}iss-ed"
+    # Issue editor docker image
+    declare iss_ed_image="${ARTIFACTS_REGION}-docker.pkg.dev/"
+    iss_ed_image+="$project/$docker_repo/iss-ed"
+    declare -r iss_ed_image
 
     declare -r -a env_args=(
         --project="$project"
@@ -360,13 +366,13 @@ function execute_command() {
     if [ "$command" == "deploy" ]; then
         sections_run "$sections" iam_deploy \
             "$project" "$grafana_service" \
-            "$cost_upd" "$cost_mon_service"
+            "$cost_upd" "$cost_mon_service" "$iss_ed_service"
         sections_run "$sections" secrets_deploy "$project" \
             "$psql_pgpass_secret" "$psql_editor" "$grafana_service"
         sections_run "$sections" bigquery_deploy "${bigquery_args[@]}"
         sections_run "$sections" psql_deploy "${psql_args[@]}"
         sections_run "$sections" artifacts_deploy "$project" \
-            "$docker_repo" "$cost_mon_image"
+            "$docker_repo" "$cost_mon_image" "$iss_ed_image"
         sections_run "$sections" run_deploy \
             --project="$project" \
             --grafana-service="$grafana_service" \
@@ -379,7 +385,9 @@ function execute_command() {
             --cost-thresholds="$cost_thresholds" \
             --cost-mon-service="$cost_mon_service" \
             --cost-mon-image="$cost_mon_image" \
-            --cost-upd-service-account="$cost_upd_service_account"
+            --cost-upd-service-account="$cost_upd_service_account" \
+            --iss-ed-service="$iss_ed_service" \
+            --iss-ed-image="$iss_ed_image"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
@@ -396,7 +404,8 @@ function execute_command() {
             --smtp-subscription="$smtp_subscription" \
             --cost-topic="$cost_topic" \
             --cost-upd-service-account="$cost_upd_service_account" \
-            --cost-mon-service="$cost_mon_service"
+            --cost-mon-service="$cost_mon_service" \
+            --iss-ed-service="$iss_ed_service"
         sections_run "$sections" firestore_deploy "$project"
         sections_run "$sections" storage_deploy "$project" "$cache_bucket_name"
         functions_deploy \
@@ -467,7 +476,8 @@ function execute_command() {
             --project="$project" \
             --grafana-service="$grafana_service" \
             --cost-mon-service="$cost_mon_service" \
-            --cost-upd-service-account="$cost_upd_service_account"
+            --cost-upd-service-account="$cost_upd_service_account" \
+            --iss-ed-service="$iss_ed_service"
         sections_run "$sections" artifacts_withdraw "$project" "$docker_repo"
         sections_run "$sections" psql_withdraw "${psql_args[@]}"
         sections_run "$sections" bigquery_withdraw "${bigquery_args[@]}"
@@ -475,7 +485,7 @@ function execute_command() {
             "$psql_pgpass_secret"
         sections_run "$sections" iam_withdraw \
             "$project" "$grafana_service" \
-            "$cost_upd" "$cost_mon_service"
+            "$cost_upd" "$cost_mon_service" "$iss_ed_service"
     fi
 }
 

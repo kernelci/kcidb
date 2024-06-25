@@ -86,6 +86,8 @@ function run_service_withdraw() {
 #       --cost-mon-service=NAME
 #       --cost-mon-image=URL
 #       --cost-upd-service-account=EMAIL
+#       --iss-ed-service=NAME
+#       --iss-ed-image=URL
 function run_deploy() {
     declare params
     params="$(getopt_vars project \
@@ -100,6 +102,8 @@ function run_deploy() {
                           cost_mon_service \
                           cost_mon_image \
                           cost_upd_service_account \
+                          iss_ed_service \
+                          iss_ed_image \
                           -- "$@")"
     eval "$params"
     declare iam_command
@@ -228,6 +232,38 @@ YAML_END
         "$project" "$cost_mon_service" \
         "serviceAccount:$cost_upd_service_account" \
         roles/run.invoker
+
+    # Deploy Issue Editor
+    run_service_deploy "$project" <<YAML_END
+        # Prevent de-indent of the first line
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        metadata:
+          name: $(yaml_quote "$iss_ed_service")
+          labels:
+            cloud.googleapis.com/location: $(yaml_quote "$RUN_REGION")
+        spec:
+          template:
+            metadata:
+              annotations:
+                autoscaling.knative.dev/minScale: "0"
+                autoscaling.knative.dev/maxScale: "4"
+            spec:
+              serviceAccountName:
+                $(yaml_quote \
+                  "$iss_ed_service@$project.iam.gserviceaccount.com")
+              containerConcurrency: 1
+              timeoutSeconds: 30
+              containers:
+                - image: $(yaml_quote "$iss_ed_image:latest")
+                  name: server
+                  ports:
+                    - containerPort: 8080
+                  resources:
+                    limits:
+                      cpu: "0.25"
+                      memory: "256M"
+YAML_END
 }
 
 # Shutdown Run services.
@@ -249,14 +285,18 @@ function run_shutdown() {
 #       --grafana-service=NAME
 #       --cost-mon-service=NAME
 #       --cost-upd-service-account=EMAIL
+#       --iss-ed-service=NAME
 function run_withdraw() {
     declare params
     params="$(getopt_vars project \
                           grafana_service \
                           cost_mon_service \
                           cost_upd_service_account \
+                          iss_ed_service \
                           -- "$@")"
     eval "$params"
+    # Withdraw Issue Editor
+    run_service_withdraw "$project" "$iss_ed_service"
     # Withdraw Cost updater
     run_iam_policy_binding_withdraw \
         "$project" "$cost_mon_service" \
