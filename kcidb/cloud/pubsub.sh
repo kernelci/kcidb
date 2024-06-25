@@ -163,6 +163,10 @@ function pubsub_deploy() {
     declare project_number
     project_number=$(gcloud projects describe "$project" \
                                               --format='value(projectNumber)')
+    # Issue Editor service account
+    declare iss_ed_service_account="$iss_ed_service"
+    iss_ed_service_account+="@$project.iam.gserviceaccount.com"
+
     # Pub/Sub service account
     declare service_account="service-$project_number"
     service_account+="@gcp-sa-pubsub.iam.gserviceaccount.com"
@@ -179,6 +183,12 @@ function pubsub_deploy() {
     pubsub_subscription_deploy "$project" "${new_topic}" \
                                "${new_debug_subscription}" \
                                --message-retention-duration=12h
+
+    # Permit issue editor to submit new data
+    mute gcloud pubsub topics add-iam-policy-binding \
+        --project="$project" "$new_topic" --quiet \
+        --member="serviceAccount:$iss_ed_service_account" \
+        --role="roles/pubsub.publisher"
 
     pubsub_topic_deploy "$project" "${updated_topic}"
     pubsub_subscription_deploy "$project" "${updated_topic}" \
