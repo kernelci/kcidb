@@ -12,6 +12,7 @@
 
 set -euCo pipefail
 shopt -s extglob
+shopt -s inherit_errexit
 
 PATH="$(dirname "$(realpath "$0")")/kcidb/cloud:$PATH"
 
