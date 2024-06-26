@@ -56,11 +56,12 @@ function artifacts_repo_withdraw() {
 }
 
 # Deploy all artifacts.
-# Args: project repo cost_mon_image
+# Args: project repo cost_mon_image iss_ed_image
 function artifacts_deploy() {
     declare -r project="$1"; shift
     declare -r docker_repo="$1"; shift
     declare -r cost_mon_image="$1"; shift
+    declare -r iss_ed_image="$1"; shift
 
     # Deploy the Docker repository
     artifacts_repo_deploy "$project" "$docker_repo" --repository-format=docker
@@ -81,6 +82,25 @@ function artifacts_deploy() {
               - '.'
         images:
           - '$cost_mon_image'
+YAML_END
+
+    # Deploy the issue editor docker image
+    mute gcloud builds submit --project="$project" \
+                              --region="$ARTIFACTS_REGION" \
+                              --config /dev/stdin \
+                              . <<YAML_END
+        # Prevent de-indent of the first line
+        steps:
+          - name: 'gcr.io/cloud-builders/docker'
+            args:
+              - 'build'
+              - '-t'
+              - '$iss_ed_image'
+              - '-f'
+              - 'kcidb/cloud/iss-ed.Dockerfile'
+              - '.'
+        images:
+          - '$iss_ed_image'
 YAML_END
 }
 

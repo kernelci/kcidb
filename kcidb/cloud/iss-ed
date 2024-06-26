@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""Handle Issue Editor WebUI requests"""
+# It's OK, pylint: disable=invalid-name
+
+import os
+from flask import Flask
+#import kcidb.issue_editor
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def hello_world():
+    """Example Hello World route."""
+    return "Hello, World!"
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
