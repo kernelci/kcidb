@@ -95,6 +95,11 @@ kernelci_watchdog_reset:
   description: |
     Verifies the watchdog reset functionality. It opens the watchdog device
     and waits for the timeout to expire, triggering a device reset.
+kernelci_wifi_basic:
+  title: KernelCI wifi basic test
+  home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/wifi-basic.jinja2
+  description: |
+    Test to verify basic WiFi functionality on Chromebooks.
 kselftest:
   title: Kernel self-tests
   home: https://kselftest.wiki.kernel.org/
