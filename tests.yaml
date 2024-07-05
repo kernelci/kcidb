@@ -78,9 +78,6 @@ fwts:
 jcstress:
   title: The Java Concurrency Stress tests
   home: https://github.com/openjdk/jcstress
-kernelci_baseline:
-  title: Test plan for checking kernel errors using dmesg
-  home: https://github.com/kernelci/kernelci-core/blob/main/config/runtime/tests/baseline.jinja2
 kernelci_kver:
   title: Kernel Version test
   home: https://github.com/kernelci/kernelci-pipeline/blob/main/config/runtime/kver.jinja2
