@@ -228,7 +228,7 @@ function functions_deploy() {
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${load_queue_trigger_topic}" \
                     --memory 1024MB \
-                    --max-instances=1 \
+                    --max-instances=4 \
                     --timeout 540
     # Remove the environment YAML file
     rm "$env_yaml_file"

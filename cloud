@@ -217,14 +217,7 @@ function execute_command() {
     fi
     declare -a -r bigquery_args
 
-    declare -r database=$(
-        echo -n "mux: "
-        echo -n "$psql_kcidb_db" | escape_whitespace
-        echo -n " "
-        echo -n "$bigquery_kcidb_db" | escape_whitespace
-        echo -n " "
-        echo -n "$bigquery_sample_kcidb_db" | escape_whitespace
-    )
+    declare -r database="$psql_kcidb_db"
 
     if "$test"; then
         declare -r sqlite_clean_test_file="$TMPDIR/clean.sqlite3"
