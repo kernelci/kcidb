@@ -264,6 +264,11 @@ def test_purge_db(empty_deployment):
             issue_id="origin:1", issue_version=1,
             _timestamp=str_before
         )],
+        transitions=[dict(
+            id="origin:1", version=1, origin="origin",
+            issue_id="origin:1", issue_version=1,
+            _timestamp=str_before
+        )],
     )
 
     timestamp_after = timestamp_before + timedelta(microseconds=1)
@@ -291,6 +296,11 @@ def test_purge_db(empty_deployment):
         )],
         incidents=[dict(
             id="origin:2", origin="origin",
+            issue_id="origin:2", issue_version=1,
+            _timestamp=str_after
+        )],
+        transitions=[dict(
+            id="origin:2", version=1, origin="origin",
             issue_id="origin:2", issue_version=1,
             _timestamp=str_after
         )],

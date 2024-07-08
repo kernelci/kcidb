@@ -266,6 +266,7 @@ class Schema(AbstractSchema):
             statement="SELECT\n"
                       "    id,\n"
                       "    git_commit_hash,\n"
+                      "    NULL AS git_commit_generation,\n"
                       "    patchset_hash,\n"
                       "    origin,\n"
                       "    git_repository_url,\n"
@@ -282,6 +283,7 @@ class Schema(AbstractSchema):
             schema=Table(dict(
                 id=TextColumn(),
                 git_commit_hash=TextColumn(),
+                git_commit_generation=IntegerColumn(),
                 patchset_hash=TextColumn(),
                 origin=TextColumn(),
                 git_repository_url=TextColumn(),
@@ -436,6 +438,36 @@ class Schema(AbstractSchema):
                 issue_version=IntegerColumn(),
                 build_id=TextColumn(),
                 test_id=TextColumn(),
+                comment=TextColumn(),
+                misc=JSONColumn(),
+            )),
+        ),
+        transition=dict(
+            statement="SELECT\n"
+                      "    NULL AS id,\n"
+                      "    NULL AS version,\n"
+                      "    NULL AS origin,\n"
+                      "    NULL AS issue_id,\n"
+                      "    NULL AS issue_version,\n"
+                      "    NULL AS appearance,\n"
+                      "    NULL AS revision_before_git_commit_hash,\n"
+                      "    NULL AS revision_before_patchset_hash,\n"
+                      "    NULL AS revision_after_git_commit_hash,\n"
+                      "    NULL AS revision_after_patchset_hash,\n"
+                      "    NULL AS comment,\n"
+                      "    NULL AS misc\n"
+                      "WHERE 0",
+            schema=Table(dict(
+                id=TextColumn(),
+                version=IntegerColumn(),
+                origin=TextColumn(),
+                issue_id=TextColumn(),
+                issue_version=IntegerColumn(),
+                appearance=BoolColumn(),
+                revision_before_git_commit_hash=TextColumn(),
+                revision_before_patchset_hash=TextColumn(),
+                revision_after_git_commit_hash=TextColumn(),
+                revision_after_patchset_hash=TextColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),

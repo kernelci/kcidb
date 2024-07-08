@@ -114,6 +114,18 @@ SCHEMA = kcidb.orm.data.Schema(
             required_fields={'id', 'origin', 'issue_id', 'issue_version'},
             id_fields=("id",),
         ),
+        transition=dict(
+            field_json_schemas=dict(
+                id=dict(type="string"),
+                version=dict(type="integer"),
+                origin=dict(type="string"),
+                issue_id=dict(type="string"),
+                issue_version=dict(type="integer"),
+                appearance=dict(type="boolean"),
+            ),
+            required_fields={'id', 'origin', 'issue_id', 'issue_version'},
+            id_fields=("id",),
+        ),
     )
 )
 
