@@ -1,0 +1,40 @@
+{# Build template macros #}
+
+{% macro build_stats(container) %}
+    {% if container.builds %}
+        {% set invalid_builds =
+                container.builds | selectattr("valid", "false") | list %}
+        {% set valid_builds =
+                container.builds | selectattr("valid", "true") | list %}
+        {% set invalid_build_count = invalid_builds | length %}
+        {% set valid_build_count = valid_builds | length %}
+        {{- valid_build_count | string + " passed, " +
+            invalid_build_count | string + " failed" }}
+    {% endif %}
+{% endmacro %}
+
+{% macro container_summary(container, max_list_len) %}
+    {% if container.builds %}
+        {{- "\nBUILDS" }}
+        {% set invalid_builds =
+                container.builds | selectattr("valid", "false") | list %}
+        {% set invalid_build_count = invalid_builds | length %}
+        {% if invalid_builds %}
+            {{- "\n    Failures" }}
+            {% for origin, builds in invalid_builds|groupby("origin") %}
+                {% for build in builds %}
+                    {{- "       -"+  build.architecture + " (" + build.config_name + ")" }}
+                    {{- "\n       Build detail: https://kcidb.kernelci.org/d/build/build?orgId=1&var-id=" + build.id}}
+                    {% if build.log_excerpt %}
+                        {{- "       Build error: " + build.log_error }}
+                    {% endif %}
+                {% endfor %}
+                {{- "       CI system: " + origin + "\n\n"-}}
+            {% endfor %}
+        {% else %}
+            {{- "\n    No build failures found" }}
+        {% endif %}
+    {% else %}
+        {{- "\n    No builds found" }}
+    {% endif %}
+{% endmacro %}
