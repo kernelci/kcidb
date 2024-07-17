@@ -200,6 +200,14 @@ class TestContainer(ABC):
         """The root test node"""
         return Node(self, "")
 
+    def get_boot_tests(self, tests):
+        """Get boot tests by matching "boot" prefix in test path"""
+        boot_tests = []
+        for test in tests:
+            if test.path.split(".")[0].startswith("boot"):
+                boot_tests.append(test)
+        return boot_tests
+
 
 class BuildTestContainer(BuildContainer, TestContainer):
     """Abstract build container, exposing linked tests"""
