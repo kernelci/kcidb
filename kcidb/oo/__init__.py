@@ -5,6 +5,7 @@ Kernel CI report object-oriented (OO) data representation.
 import sys
 from abc import ABC, abstractmethod
 from functools import reduce
+import re
 from cached_property import cached_property
 import kcidb.db
 from kcidb.misc import LIGHT_ASSERTS
@@ -580,6 +581,43 @@ class Build(Object, TestContainer,
             key=lambda v: VALID_PRIORITY[v], default=None
         )
         return self.__getattr__("valid") if valid is None else valid
+
+    @cached_property
+    def log_error(self):
+        """Get one-liner build error from log_excerpt.
+        Return None if self.log_excerpt is not set or is empty"""
+
+        log_line_list = self.log_excerpt.split("\n")
+
+        patterns = [
+            'Kernel panic',
+            't access tty',
+            r'\.c:.*error',
+            r'\.h:.*error',
+            r'error.*modpost',
+            'No rule to make target',
+            'tail will be killed now',
+            'error',
+            'No such file',
+            r'kern.*No irq handler for vector',
+            'package_dtbs=done',
+            'RESULT=fail'
+        ]
+
+        log_line_list.reverse()
+        for pattern in patterns:
+            for log_line in log_line_list:
+                # Allow leading and trailing optional characters
+                if re.search(r'.*' + pattern + r'.*', log_line):
+                    return log_line
+
+        # If pattern is not found return last non-empty log line
+        for log_line in log_line_list:
+            log_line = log_line.strip()
+            if log_line:
+                return log_line
+
+        return None
 
 
 class Test(Object, IncidentIssueBugContainer):
