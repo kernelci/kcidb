@@ -1,0 +1,84 @@
+{# Test macros #}
+
+{% macro status_emoji(status) %}
+    {{- "❌" if status == "FAIL" else
+        "💥" if status == "ERROR" else
+        "🟩" if status == "MISS" else
+        "✅" if status == "PASS" else
+        "🆗" if status == "DONE" else
+        "⏩" if status == "SKIP" else
+        "❓" -}}
+{% endmacro %}
+
+{% macro waived_emoji(waived) %}
+    {{- "🚧" if waived is true else
+        "" if waived is false else
+        "❓" -}}
+{% endmacro %}
+
+{% macro status_name(status) %}
+    {{- "UNKNOWN" if status is none else status -}}
+{% endmacro %}
+
+{% macro status_badge(status) %}
+    {{- status_emoji(status) + " " + status_name(status) -}}
+{% endmacro %}
+
+{% macro waived_status_emoji(waived, status) %}
+    {{- waived_emoji(waived) + status_emoji(status) -}}
+{% endmacro %}
+
+{% macro waived_status_badge(waived, status) %}
+    {{- waived_status_emoji(waived, status) + " " + status_name(status) -}}
+{% endmacro %}
+
+{% macro summary(test) %}
+    {{- [test.path,
+         none if test.comment is none else ('"' + test.comment + '"')] |
+        reject("none") | join(" ") | default(test.id, true) -}}
+{% endmacro %}
+
+{% macro tests_stats(container) %}
+    {% if container.tests %}
+        {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
+        {% set failed_nodes = waived_status_nodes[false]["FAIL"] %}
+        {% set passed_nodes = waived_status_nodes[false]["PASS"] %}
+        {{- passed_nodes | length | string + " passed, " +
+            failed_nodes | length | string + " failed" }}
+    {% endif %}
+{% endmacro %}
+
+{% macro container_summary(container, max_list_len) %}
+    {% if container.tests %}
+        {{- "\nTESTS" }}
+        {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
+        {% set errored_nodes = waived_status_nodes[false]["ERROR"] %}
+        {% if errored_nodes %}
+            {{- "    Errors" }}
+            {% for node in errored_nodes[:max_list_len] %}
+                {{- "        " +
+                    waived_status_emoji(node.waived, node.status) +
+                    " " + (node.path | default("?", true))
+                }}
+            {% endfor %}
+            {% if (errored_nodes | length) > max_list_len %}
+                {{- "        ..." }}
+            {% endif %}
+        {% endif %}
+        {% set failed_nodes = waived_status_nodes[false]["FAIL"] %}
+        {% if failed_nodes %}
+            {{- "\n    Boot failures" }}
+            {% for origin, tests in container.tests|groupby("origin") %}
+                {% set failed_tests =
+                tests | selectattr('status', 'equalto', 'FAIL') | list %}
+                {% set boot_tests = container.get_boot_tests(failed_tests) %}
+                {%if boot_tests %}
+                    {% for architecture, tests in boot_tests|groupby("build.architecture") %}
+                        {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name")| unique | join(", ") }})
+                    {% endfor %}
+                    {{- "      By: " + origin + "\n" }}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+{% endmacro %}
