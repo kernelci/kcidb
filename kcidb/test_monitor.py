@@ -843,3 +843,87 @@ def test_email_generated(empty_deployment):
         # Check we get no more notification messages
         assert len(email_subscriber.pull(1, 5)) == 0, \
             f"Extra emails for {io_version!r}"
+
+
+def test_linux_stable_rc():
+    """Check stable-rc subscription works"""
+    notifications = match(
+        {
+            "version": {
+                "major": 4,
+                "minor": 3
+            },
+            "checkouts": [
+                {
+                    "id": "broonie:a4f12198395d4dc098bfaff7e9f28207",
+                    "origin": "broonie",
+                    "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git",
+                    "git_commit_name": "v6.6.35-193-g580e509ea1348",
+                    "git_repository_branch": "linux-6.6.y",
+                    "patchset_files": [],
+                    "patchset_hash": "",
+                    "start_time": "2024-06-25T10:49:14+00:00",
+                    "contacts": [],
+                    "git_commit_hash": "d58071a8a76d779eedab38033ae4c821c30295a5",
+                    "valid": True
+                },
+                {
+                    "id": "maestro: 667a9b3e93dd41c1178997e1",
+                    "origin": "maestro",
+                    "tree_name": "stable-rc",
+                    "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git",
+                    "git_commit_hash": "580e509ea1348fc97897cf4052be03c248be6ab6",
+                    "git_repository_branch": "linux-6.6.y",
+                    "patchset_files": [],
+                    "patchset_hash": "",
+                    "start_time": "2024-06-25T10:26:06.678+00:00",
+                    "contacts": [],
+                    "valid": True
+                }
+            ],
+            "builds": [
+                {
+                    "id": "maestro:619fecfc6d932a49b5f2efb0",
+                    "checkout_id": "maestro: 667a9b3e93dd41c1178997e1",
+                    "origin": "maestro",
+                    "comment": "v6.6.35-193-g580e509ea134",
+                    "start_time": "2024-06-25T10:40:06.678+00:00",
+                    "architecture": "arm",
+                    "config_name": "multi_v7_defconfig",
+                    "valid": True
+                },
+                {
+                    "id": "broonie:580e509ea1348fc97897cf4052be03c248be6ab6",
+                    "checkout_id": "broonie:a4f12198395d4dc098bfaff7e9f28207",
+                    "origin": "broonie",
+                    "start_time": "2024-06-25T11:49:14+00:00",
+                    "architecture": "arm",
+                    "config_name": "multi_v7_defconfig",
+                    "valid": False
+                }
+            ],
+            "tests": [
+                {
+                    "id": "maestro: 667aa09a93dd41c117899d99",
+                    "build_id": "maestro:667a9fd493dd41c117899caa",
+                    "origin": "maestro",
+                    "path": "kunit.exec.binfmt_elf.total_mapping_size_test",
+                    "comment": "total_mapping_size_test on kubernetes in k8s-gke-eu-west4",
+                    "status": "PASS",
+                    "waived": False,
+                    "start_time": "2024-06-25T10:48:58.967000+00:00"
+                }
+            ]
+        }
+    )
+
+    subjects = sorted([
+        n.message.subject
+        for n in notifications
+        if n.subscription == "linux_stable_rc" and
+            "Jeny Sadadia <jeny.sadadia@collabora.com>" in n.message.to
+    ])
+
+    assert len(subjects) == 2
+    assert re.match(r"^KernelCI report for stable-rc: ", subjects[0])
+    assert re.match(r"^KernelCI report for stable-rc: ", subjects[1])
