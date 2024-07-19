@@ -1,0 +1,67 @@
+{# Build template macros #}
+
+{% macro summary(build) %}
+    {{- [build.architecture, build.config_name,
+         none if build.comment is none else ('"' + build.comment + '"')] |
+        reject("none") | join(" ") | default(build.id, true) -}}
+{% endmacro %}
+
+{% macro build_stats(container) %}
+    {% if container.builds %}
+        {% set invalid_builds =
+                container.builds | selectattr("valid", "false") | list %}
+        {% set valid_builds =
+                container.builds | selectattr("valid", "true") | list %}
+        {% set unknown_builds =
+                container.builds | selectattr("valid", "none") | list %}
+        {% set invalid_build_count = invalid_builds | length %}
+        {% set valid_build_count = valid_builds | length %}
+        {{- valid_build_count | string + " passed, " +
+            invalid_build_count | string + " failed" }}
+    {% endif %}
+{% endmacro %}
+
+{% macro container_summary(container, max_list_len) %}
+    {% if container.builds %}
+        {{- "\nBUILDS" }}
+        {% set invalid_builds =
+                container.builds | selectattr("valid", "false") | list %}
+        {% set valid_builds =
+                container.builds | selectattr("valid", "true") | list %}
+        {% set unknown_builds =
+                container.builds | selectattr("valid", "none") | list %}
+        {% set invalid_build_count = invalid_builds | length %}
+        {% set valid_build_count = valid_builds | length %}
+        {% set unknown_build_count = unknown_builds | length %}
+        {% set build_fmt =
+            "%" +
+            ((1 + (container.architecture_valid_builds |
+                map("default", "", true) | map("length") | max)) | string) +
+            "s" +
+            (("  %s %" +
+                (invalid_build_count | string | length | string) + "s")
+                if invalid_build_count else
+                "%.0s%.0s") +
+            (("  %s %" +
+                (valid_build_count | string | length | string) + "s")
+                if valid_build_count else
+                "%.0s%.0s") +
+            (("  %s %" +
+                (unknown_build_count | string | length | string) + "s")
+                if unknown_build_count else
+                "%.0s%.0s")
+        %}
+        {% if invalid_builds %}
+            {{- "\n    Failures" }}
+            {% for origin, builds in invalid_builds|groupby("origin") %}
+                {% for build in builds %}
+                    {{- "       -"+  build.architecture + " (" + build.config_name + ")" }}
+                    {% if build.log_excerpt %}
+                        {{- "       Build error: " + container.get_build_failure_log(build.log_excerpt) }}
+                    {% endif %}
+                {% endfor %}
+                {{- "       CI: " + origin + "\n\n"-}}
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+{% endmacro %}
