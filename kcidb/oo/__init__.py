@@ -698,6 +698,10 @@ class Incident(Object):
     """An OO-representation of an incident"""
 
 
+class Transition(Object):
+    """An OO-representation of a transition"""
+
+
 # A map of object type names and Object-derived classes handling their data
 CLASSES = dict(
     revision=Revision,
@@ -707,6 +711,7 @@ CLASSES = dict(
     bug=Bug,
     issue=Issue,
     incident=Incident,
+    transition=Transition,
 )
 
 assert set(CLASSES) == set(SCHEMA.types)
