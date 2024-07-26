@@ -1,0 +1,54 @@
+{# Test macros #}
+
+{% macro tests_stats(container) %}
+    {% if container.tests %}
+        {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
+        {% set failed_nodes = waived_status_nodes[false]["FAIL"] %}
+        {% set passed_nodes = waived_status_nodes[false]["PASS"] %}
+        {{- passed_nodes | length | string + " passed, " +
+            failed_nodes | length | string + " failed" }}
+    {% endif %}
+{% endmacro %}
+
+{% macro container_summary(container, max_list_len) %}
+    {% if container.tests %}
+        {{- "\nBOOT TESTS" }}
+        {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
+        {% set errored_nodes = waived_status_nodes[false]["ERROR"] %}
+        {% if errored_nodes %}
+            {{- "    Errors" }}
+            {% for node in errored_nodes[:max_list_len] %}
+                {{- "        " +
+                    waived_status_emoji(node.waived, node.status) +
+                    " " + (node.path | default("?", true))
+                }}
+            {% endfor %}
+            {% if (errored_nodes | length) > max_list_len %}
+                {{- "        ..." }}
+            {% endif %}
+        {% endif %}
+        {% set failed_nodes = waived_status_nodes[false]["FAIL"] %}
+        {% if failed_nodes %}
+            {{- "\n    Failures" }}
+            {% for origin, tests in container.tests|groupby("origin") %}
+                {% set failed_tests =
+                tests | selectattr('status', 'equalto', 'FAIL') | list %}
+                {% set boot_tests = container.get_boot_tests(failed_tests) %}
+                {%if boot_tests %}
+                    {% for architecture, tests in boot_tests|groupby("build.architecture") %}
+                        {% set device_list = tests | selectattr('misc.platform', 'defined') | list %}
+                        {% if device_list %}
+                            {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | join("") }})
+                        {% endif %}
+                        {% for device in device_list %}
+                            {{- "      -" + device.misc.platform }}
+                        {% endfor %}
+                    {% endfor %}
+                    {{- "      CI system: " + origin + "\n" }}
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {{- "\n    No boot failures found" }}
+        {% endif %}
+    {% endif %}
+{% endmacro %}
