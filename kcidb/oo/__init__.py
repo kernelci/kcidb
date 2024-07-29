@@ -390,6 +390,22 @@ class Node(IncidentIssueBugContainer):
             waived_status_nodes[node.waived][node.status].append(node)
         return waived_status_nodes
 
+    @cached_property
+    def waived_status_tests(self):
+        """
+        A dictionary of all waived values and dictionaries of all status
+        values and lists of tests (test runs) with corresponding waived and
+        status values, for this and all child nodes, all in order of
+        decreasing priority.
+        """
+        waived_status_tests = {
+            waived: {status: [] for status in TEST_STATUS_PRIORITY}
+            for waived in TEST_WAIVED_PRIORITY
+        }
+        for test in self.tests:
+            waived_status_tests[test.waived][test.status].append(test)
+        return waived_status_tests
+
     def __getitem__(self, name):
         assert isinstance(name, (str, type(None)))
         return Node(self, name)
