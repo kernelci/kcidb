@@ -1,0 +1,65 @@
+{# Revision description template #}
+{% import "stable_rc_test.j2" as test_macros %}
+{% import "stable_rc_build.j2" as build_macros %}
+{% import "misc.j2" as misc_macros %}
+{# Maximum length of a list of things (builds/tests/etc.) #}
+{% set max_list_len = 5 %}
+
+OVERVIEW
+
+{% if revision.patchset_files %}
+       Patches: {{ misc_macros.valid_badge(revision.checkouts_valid) }}
+{% endif %}
+{% if revision.builds %}
+        Builds: {{ build_macros.build_stats(revision) }}
+{% endif %}
+{% if revision.tests %}
+         Tests: {{ test_macros.tests_stats(revision) }}
+{% endif %}
+    CI systems: {{ revision.checkouts | map(attribute="origin") |
+           unique | sort | join(", ") }}
+
+REVISION
+
+    Commit
+        {% if revision.git_commit_name %}
+            {{- "        name: " + revision.git_commit_name }}
+        {% endif %}
+        {% if revision.git_commit_hash %}
+            {{- "        hash: " + revision.git_commit_hash }}
+        {% endif %}
+    Checked out from
+        {% for repo, branch_checkouts
+           in revision.repo_branch_checkouts.items() %}
+            {{- "        " +
+                (([repo] + (branch_checkouts | list)) |
+                 reject("none") | join(" ")) }}
+        {% endfor %}
+{% if revision.patchset_files %}
+    {% set patch_count = revision.patchset_files | length %}
+    With {{ patch_count -}}
+    {{- " patches" if patch_count > 1 else "patch" }} applied
+        {% for patchset_file in revision.patchset_files[:max_list_len] %}
+            {{- "        " + patchset_file.url }}
+        {% endfor %}
+        {% if (revision.patchset_files | length) > max_list_len %}
+            {{- "        ..." }}
+        {% endif %}
+{% endif %}
+
+{# #}
+{{- build_macros.container_summary(revision, max_list_len) -}}
+{{- test_macros.container_summary(revision, max_list_len) -}}
+{# #}
+
+See complete and up-to-date report at:
+
+    https://kcidb.kernelci.org/d/revision/revision?orgId=1&var-git_commit_hash={{revision.git_commit_hash | urlencode }}&var-patchset_hash={{revision.patchset_hash | urlencode }}
+
+
+Tested-by: kernelci.org bot <bot@kernelci.org>
+
+Thanks,
+KernelCI team
+
+{# Force git commit hook to ignore trailing newline #}
