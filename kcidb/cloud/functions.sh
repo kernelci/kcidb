@@ -203,7 +203,7 @@ function functions_deploy() {
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${updated_topic}" \
                     --memory 2048MB \
-                    --max-instances=10 \
+                    --max-instances=5 \
                     --timeout 540
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
