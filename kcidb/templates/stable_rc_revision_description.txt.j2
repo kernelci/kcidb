@@ -14,7 +14,7 @@ OVERVIEW
         Builds: {{ build_macros.build_stats(revision) }}
 {% endif %}
 {% if revision.tests %}
-         Tests: {{ test_macros.tests_stats(revision) }}
+    Boot tests: {{ test_macros.tests_stats(revision) }}
 {% endif %}
     CI systems: {{ revision.checkouts | map(attribute="origin") |
            unique | sort | join(", ") }}
