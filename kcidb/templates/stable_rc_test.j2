@@ -2,11 +2,11 @@
 
 {% macro tests_stats(container) %}
     {% if container.tests %}
-        {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
-        {% set failed_nodes = waived_status_nodes[false]["FAIL"] %}
-        {% set passed_nodes = waived_status_nodes[false]["PASS"] %}
-        {{- passed_nodes | length | string + " passed, " +
-            failed_nodes | length | string + " failed" }}
+        {% set boot_tests = container.tests_root["boot"].waived_status_tests %}
+        {% set failed_tests = boot_tests[false]["FAIL"] %}
+        {% set passed_tests = boot_tests[false]["PASS"] %}
+        {{- passed_tests | length | string + " passed, " +
+            failed_tests | length | string + " failed" }}
     {% endif %}
 {% endmacro %}
 
