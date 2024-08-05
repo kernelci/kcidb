@@ -23,7 +23,9 @@
             {{- "\n    Failures" }}
             {% for origin, builds in invalid_builds|groupby("origin") %}
                 {% for build in builds %}
-                    {{- "       -"+  build.architecture + " (" + build.config_name + ")" }}
+                    {{- [('       -') + build.architecture,
+                        none if build.config_name is none else ('(' + build.config_name + ')')] |
+                        reject("none") | join(" ") -}}
                     {{- "\n       Build detail: https://kcidb.kernelci.org/d/build/build?orgId=1&var-id=" + build.id}}
                     {% if build.log_excerpt %}
                         {{- "       Build error: " + build.log_error }}
