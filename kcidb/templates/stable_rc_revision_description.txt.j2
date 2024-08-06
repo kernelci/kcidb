@@ -14,10 +14,11 @@ OVERVIEW
         Builds: {{ build_macros.build_stats(revision) }}
 {% endif %}
 {% if revision.tests %}
-         Tests: {{ test_macros.tests_stats(revision) }}
+    Boot tests: {{ test_macros.tests_stats(revision) }}
 {% endif %}
+    {% set selected_origins = ['maestro', 'broonie'] %}
     CI systems: {{ revision.checkouts | map(attribute="origin") |
-           unique | sort | join(", ") }}
+           unique | sort | select('in', selected_origins) | join(", ") }}
 
 REVISION
 
@@ -28,13 +29,23 @@ REVISION
         {% if revision.git_commit_hash %}
             {{- "        hash: " + revision.git_commit_hash }}
         {% endif %}
+        {% set stable_rc_checkouts, other_checkouts = revision.filter_stable_rc_checkouts() %}
     Checked out from
         {% for repo, branch_checkouts
-           in revision.repo_branch_checkouts.items() %}
+           in stable_rc_checkouts.items() %}
             {{- "        " +
                 (([repo] + (branch_checkouts | list)) |
-                 reject("none") | join(" ")) }}
+                reject("none") | join(" ")) }}
         {% endfor %}
+    {% if other_checkouts %}
+    Also checked out from
+        {% for repo, branch_checkouts
+        in other_checkouts.items() %}
+            {{- "        " +
+                (([repo] + (branch_checkouts | list)) |
+                reject("none") | join(" ")) }}
+        {% endfor %}
+    {% endif %}
 {% if revision.patchset_files %}
     {% set patch_count = revision.patchset_files | length %}
     With {{ patch_count -}}
