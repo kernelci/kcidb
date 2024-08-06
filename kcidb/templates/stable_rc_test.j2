@@ -1,10 +1,11 @@
 {# Test macros #}
+{% import "stable_rc.j2" as stable_rc_macros %}
 
 {% macro tests_stats(container) %}
     {% if container.tests %}
         {% set boot_tests = container.tests_root["boot"].waived_status_tests %}
-        {% set failed_tests = boot_tests[false]["FAIL"] %}
-        {% set passed_tests = boot_tests[false]["PASS"] %}
+        {% set failed_tests = boot_tests[false]["FAIL"] | selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
+        {% set passed_tests = boot_tests[false]["PASS"] | selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
         {{- passed_tests | length | string + " passed, " +
             failed_tests | length | string + " failed" }}
     {% endif %}
@@ -17,16 +18,18 @@
         {% if failed_boot_tests %}
             {{- "\n    Failures" }}
             {% for origin, boot_tests in failed_boot_tests|groupby("origin") %}
-                {% for architecture, tests in boot_tests|groupby("build.architecture") %}
-                    {% set device_list = tests | selectattr('misc.platform', 'defined') | list %}
-                    {% if device_list %}
-                        {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | join("") }})
-                    {% endif %}
-                    {% for device in device_list %}
-                        {{- "      -" + device.misc.platform }}
+                {% if origin in stable_rc_macros.selected_origins %}
+                    {% for architecture, tests in boot_tests|groupby("build.architecture") %}
+                        {% set device_list = tests | selectattr('misc.platform', 'defined') | list %}
+                        {% if device_list %}
+                            {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | join("") }})
+                        {% endif %}
+                        {% for device in device_list %}
+                            {{- "      -" + device.misc.platform }}
+                        {% endfor %}
                     {% endfor %}
-                {% endfor %}
-                {{- "      CI system: " + origin + "\n" }}
+                    {{- "      CI system: " + origin + "\n" }}
+                {% endif %}
             {% endfor %}
         {% else %}
             {{- "\n    No boot failures found" }}

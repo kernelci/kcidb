@@ -1,11 +1,14 @@
 {# Build template macros #}
+{% import "stable_rc.j2" as stable_rc_macros %}
 
 {% macro build_stats(container) %}
     {% if container.builds %}
         {% set invalid_builds =
-                container.builds | selectattr("valid", "false") | list %}
+                container.builds | selectattr("valid", "false") |
+                selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
         {% set valid_builds =
-                container.builds | selectattr("valid", "true") | list %}
+                container.builds | selectattr("valid", "true") |
+                selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
         {% set invalid_build_count = invalid_builds | length %}
         {% set valid_build_count = valid_builds | length %}
         {{- valid_build_count | string + " passed, " +
@@ -22,18 +25,20 @@
         {% if invalid_builds %}
             {{- "\n    Failures" }}
             {% for origin, builds in invalid_builds|groupby("origin") %}
-                {% for build in builds %}
-                    {% if build.architecture %}
-                        {{- [('       -') + build.architecture,
-                            none if build.config_name is none else ('(' + build.config_name + ')')] |
-                            reject("none") | join(" ") -}}
-                        {{- "\n       Build detail: https://kcidb.kernelci.org/d/build/build?orgId=1&var-id=" + build.id}}
-                        {% if build.log_excerpt %}
-                            {{- "       Build error: " + build.log_error }}
+                {% if origin in stable_rc_macros.selected_origins %}
+                    {% for build in builds %}
+                        {% if build.architecture %}
+                            {{- [('       -') + build.architecture,
+                                none if build.config_name is none else ('(' + build.config_name + ')')] |
+                                reject("none") | join(" ") -}}
+                            {{- "\n       Build detail: https://kcidb.kernelci.org/d/build/build?orgId=1&var-id=" + build.id}}
+                            {% if build.log_excerpt %}
+                                {{- "       Build error: " + build.log_error }}
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
-                {% endfor %}
-                {{- "       CI system: " + origin + "\n\n"-}}
+                    {% endfor %}
+                    {{- "       CI system: " + origin + "\n\n"-}}
+                {% endif %}
             {% endfor %}
         {% else %}
             {{- "\n    No build failures found" }}
