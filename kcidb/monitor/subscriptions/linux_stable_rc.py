@@ -19,6 +19,14 @@ def match_revision(revision):
     if revision.builds_valid is None:
         return ()
 
+    # Only take into account results from maestro and broonie as of now
+    revision_objs = [revision.checkouts, revision.builds, revision.tests]
+    for revision_obj in revision_objs:
+        revision_obj_copy = revision_obj.copy()
+        for obj in revision_obj_copy:
+            if obj.origin not in ("maestro", "broonie"):
+                revision_obj.remove(obj)
+
     # Send notification 3 hours after a revision is created/updated
     return (Message(
         subject='KernelCI report for stable-rc: '
