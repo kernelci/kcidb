@@ -500,6 +500,19 @@ class Revision(Object, BuildTestContainer, IncidentIssueBugContainer):
             default=None
         )
 
+    def filter_stable_rc_checkouts(self):
+        """Bifurcate checkouts into stable-rc and other trees"""
+        stable_rc_repo = "https://git.kernel.org/pub/scm/linux/kernel/git/" \
+            "stable/linux-stable-rc.git"
+        stable_rc_checkouts = {}
+        other_checkouts = {}
+        for repo, branch_checkouts in self.repo_branch_checkouts.items():
+            if repo == stable_rc_repo:
+                stable_rc_checkouts.update({repo: branch_checkouts})
+            else:
+                other_checkouts.update({repo: branch_checkouts})
+        return stable_rc_checkouts, other_checkouts
+
 
 # We'll fix it, pylint: disable=too-many-ancestors
 class Checkout(Object, BuildTestContainer, IncidentIssueBugContainer):
