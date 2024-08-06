@@ -29,13 +29,26 @@ REVISION
         {% if revision.git_commit_hash %}
             {{- "        hash: " + revision.git_commit_hash }}
         {% endif %}
+    {# The stable-rc repo's URL #}
+    {% set stable_rc_repo = 'https://git.kernel.org/pub/scm/linux/' +
+                            'kernel/git/stable/linux-stable-rc.git' %}
+    {# List of other repo's URLs #}
+    {% set other_repos = revision.repo_branch_checkouts.keys() |
+                         reject('==', stable_rc_repo) | list %}
     Checked out from
-        {% for repo, branch_checkouts
-           in revision.repo_branch_checkouts.items() %}
-            {{- "        " +
-                (([repo] + (branch_checkouts | list)) |
-                 reject("none") | join(" ")) }}
+        {{- "\n        " +
+            (([stable_rc_repo] + (revision.repo_branch_checkouts[stable_rc_repo] | list)) |
+            reject("none") | join(" ")) }}
+    {% if other_repos %}
+    Also checked out from
+        {% for repo, branch_checkouts in revision.repo_branch_checkouts.items() %}
+            {% if repo in other_repos %}
+                {{- "        " +
+                    (([repo] + (branch_checkouts | list)) |
+                    reject("none") | join(" ")) }}
+            {% endif %}
         {% endfor %}
+    {% endif %}
 {% if revision.patchset_files %}
     {% set patch_count = revision.patchset_files | length %}
     With {{ patch_count -}}
