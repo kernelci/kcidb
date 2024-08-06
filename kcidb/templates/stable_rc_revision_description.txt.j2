@@ -16,8 +16,9 @@ OVERVIEW
 {% if revision.tests %}
     Boot tests: {{ test_macros.tests_stats(revision) }}
 {% endif %}
+    {% set selected_origins = ['maestro', 'broonie'] %}
     CI systems: {{ revision.checkouts | map(attribute="origin") |
-           unique | sort | join(", ") }}
+           unique | sort | select('in', selected_origins) | join(", ") }}
 
 REVISION
 
