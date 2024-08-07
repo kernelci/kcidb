@@ -14,21 +14,23 @@
 {% macro container_summary(container, max_list_len) %}
     {{- "\nBOOT TESTS" }}
     {% if container.tests %}
-        {% set failed_boot_tests = container.tests_root["boot"].waived_status_tests[false]["FAIL"] %}
+        {% set failed_boot_tests = container.tests_root["boot"].waived_status_tests[false]["FAIL"] |
+            selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
         {% if failed_boot_tests %}
             {{- "\n    Failures" }}
             {% for origin, boot_tests in failed_boot_tests|groupby("origin") %}
-                {% if origin in stable_rc_macros.selected_origins %}
-                    {% for architecture, tests in boot_tests|groupby("build.architecture") %}
-                        {% set device_list = tests | selectattr('misc.platform', 'defined') | list %}
-                        {% if device_list %}
-                            {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | join("") }})
-                        {% endif %}
-                        {% for device in device_list %}
-                            {{- "      -" + device.misc.platform }}
+                {% set boot_tests_info = boot_tests | selectattr('environment_misc.platform', 'defined') | list %}
+                {% if boot_tests_info %}
+                    {% for architecture, tests in boot_tests_info|groupby("build.architecture") %}
+                        {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | join("") }})
+                        {% for test in tests %}
+                            {{- "      -" + test.environment_misc.platform }}
                         {% endfor %}
                     {% endfor %}
                     {{- "      CI system: " + origin + "\n" }}
+                {% else %}
+                    {{- "\n      Missing failure information. Sorry, we are working on improving report for this situation." }}
+                    {{- "\n      CI system: " + origin + "\n" }}
                 {% endif %}
             {% endfor %}
         {% else %}
