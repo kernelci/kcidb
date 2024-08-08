@@ -19,7 +19,8 @@
         {% if failed_boot_tests %}
             {{- "\n    Failures" }}
             {% for origin, boot_tests in failed_boot_tests|groupby("origin") %}
-                {% set boot_tests_info = boot_tests | selectattr('environment_misc.platform', 'defined') | list %}
+                {% set boot_tests_info = boot_tests | selectattr('environment_misc.platform', 'defined') |
+                selectattr('build.architecture', 'ne', None) | list %}
                 {% if boot_tests_info %}
                     {% for architecture, tests in boot_tests_info|groupby("build.architecture") %}
                         {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | join("") }})
