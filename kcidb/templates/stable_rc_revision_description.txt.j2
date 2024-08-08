@@ -34,7 +34,7 @@ REVISION
                             'kernel/git/stable/linux-stable-rc.git' %}
     {# List of other repo's URLs #}
     {% set other_repos = revision.repo_branch_checkouts.keys() |
-                         reject('==', stable_rc_repo) | list %}
+                         reject('==', stable_rc_repo) | reject("none") | list %}
     Checked out from
         {{- "\n        " +
             (([stable_rc_repo] + (revision.repo_branch_checkouts[stable_rc_repo] | list)) |
