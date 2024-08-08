@@ -610,7 +610,6 @@ class Build(Object, TestContainer,
             r'\.h:.*error',
             r'error.*modpost',
             'No rule to make target',
-            'tail will be killed now',
             'No such file',
         ]
 
