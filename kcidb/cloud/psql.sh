@@ -79,6 +79,10 @@ function psql_instance_deploy() {
 
     exists=$(psql_instance_exists "$project" "$name")
     if ! "$exists"; then
+        declare -r -a database_flags=(
+            cloudsql.iam_authentication=on
+            max_connections=200
+        )
         # Get and cache the password in the current shell first
         password_get psql_superuser >/dev/null
         # Create the instance with the cached password
@@ -92,9 +96,9 @@ function psql_instance_deploy() {
             --assign-ip \
             --storage-type=SSD \
             --no-storage-auto-increase \
-            --database-flags=cloudsql.iam_authentication=on \
             --root-password="$(password_get psql_superuser)" \
-            --database-version=POSTGRES_14
+            --database-version=POSTGRES_14 \
+            --database-flags="$(IFS=','; echo "${database_flags[*]}")"
     fi
 
     # Deploy the shared viewer user
