@@ -23,15 +23,13 @@
                 selectattr('build.architecture', 'ne', None) | list %}
                 {% if boot_tests_info %}
                     {% for architecture, tests in boot_tests_info|groupby("build.architecture") %}
-                        {{- "      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | join("") }})
-                        {% for test in tests %}
-                            {{- "      -" + test.environment_misc.platform }}
-                        {% endfor %}
+                        {{- "\n      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | reject("none") | join("") }})
+                        {{- "\n      -" + tests|map(attribute="environment_misc.platform") | unique | join("\n      -") }}
                     {% endfor %}
-                    {{- "      CI system: " + origin + "\n" }}
+                    {{- "      CI system: " + origin}}
                 {% else %}
                     {{- "\n      Missing failure information. Sorry, we are working on improving report for this situation." }}
-                    {{- "\n      CI system: " + origin + "\n" }}
+                    {{- "\n      CI system: " + origin}}
                 {% endif %}
             {% endfor %}
         {% else %}
