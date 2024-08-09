@@ -294,6 +294,7 @@ function _psql_database_setup() {
         \\set ON_ERROR_STOP on
 
         GRANT USAGE ON SCHEMA public TO $editor, $viewer;
+        REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
         GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO $editor;
