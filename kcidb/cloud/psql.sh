@@ -79,6 +79,11 @@ function psql_instance_deploy() {
 
     exists=$(psql_instance_exists "$project" "$name")
     if ! "$exists"; then
+        declare -r -a database_flags=(
+            cloudsql.iam_authentication=on
+            max_connections=200
+            random_page_cost=1.5
+        )
         # Get and cache the password in the current shell first
         password_get psql_superuser >/dev/null
         # Create the instance with the cached password
@@ -90,10 +95,11 @@ function psql_instance_deploy() {
             --region="$PSQL_INSTANCE_REGION" \
             --tier="$PSQL_INSTANCE_TIER" \
             --assign-ip \
+            --storage-type=SSD \
             --no-storage-auto-increase \
-            --database-flags=cloudsql.iam_authentication=on \
             --root-password="$(password_get psql_superuser)" \
-            --database-version=POSTGRES_14
+            --database-version=POSTGRES_14 \
+            --database-flags="$(IFS=','; echo "${database_flags[*]}")"
     fi
 
     # Deploy the shared viewer user
@@ -288,6 +294,7 @@ function _psql_database_setup() {
         \\set ON_ERROR_STOP on
 
         GRANT USAGE ON SCHEMA public TO $editor, $viewer;
+        REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
         ALTER DEFAULT PRIVILEGES IN SCHEMA public
         GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO $editor;
