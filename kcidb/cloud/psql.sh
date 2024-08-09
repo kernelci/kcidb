@@ -82,6 +82,7 @@ function psql_instance_deploy() {
         declare -r -a database_flags=(
             cloudsql.iam_authentication=on
             max_connections=200
+            random_page_cost=1.5
         )
         # Get and cache the password in the current shell first
         password_get psql_superuser >/dev/null
