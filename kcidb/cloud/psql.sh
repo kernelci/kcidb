@@ -90,6 +90,7 @@ function psql_instance_deploy() {
             --region="$PSQL_INSTANCE_REGION" \
             --tier="$PSQL_INSTANCE_TIER" \
             --assign-ip \
+            --storage-type=SSD \
             --no-storage-auto-increase \
             --database-flags=cloudsql.iam_authentication=on \
             --root-password="$(password_get psql_superuser)" \
