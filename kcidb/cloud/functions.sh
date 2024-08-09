@@ -202,8 +202,8 @@ function functions_deploy() {
                     spool_notifications \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${updated_topic}" \
-                    --memory 2048MB \
-                    --max-instances=5 \
+                    --memory 4096MB \
+                    --max-instances=2 \
                     --timeout 540
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
