@@ -25,8 +25,8 @@
                     {% for architecture, tests in boot_tests_info|groupby("build.architecture") %}
                         {{- "\n      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | reject("none") | join("") }})
                         {{- "\n      -" + tests|map(attribute="environment_misc.platform") | unique | join("\n      -") }}
+                        {{- "\n      CI system: " + origin}}
                     {% endfor %}
-                    {{- "      CI system: " + origin}}
                 {% else %}
                     {{- "\n      Missing failure information. Sorry, we are working on improving report for this situation." }}
                     {{- "\n      CI system: " + origin}}
