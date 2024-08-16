@@ -1,5 +1,6 @@
 {# Test macros #}
 {% import "stable_rc.j2" as stable_rc_macros %}
+{% from "stable_rc.j2" import indent %}
 
 {% macro tests_stats(container) %}
     {% if container.tests %}
@@ -23,13 +24,13 @@
                 selectattr('build.architecture', 'ne', None) | list %}
                 {% if boot_tests_info %}
                     {% for architecture, tests in boot_tests_info|groupby("build.architecture") %}
-                        {{- "\n      " + architecture }}:({{ tests|map(attribute="build.config_name") | unique | reject("none") | join("") }})
-                        {{- "\n      -" + tests|map(attribute="environment_misc.platform") | unique | join("\n      -") }}
-                        {{- "\n      CI system: " + origin}}
+                        {{- "\n" + indent + architecture }}:({{ tests|map(attribute="build.config_name") | unique | reject("none") | join(",\n" + indent + ' ' * (architecture + ":(") | length ) }})
+                        {{- "\n" + indent + "-" + tests|map(attribute="environment_misc.platform") | unique | join("\n      -") }}
+                        {{- "\n" + indent + "CI system: " + origin}}
                     {% endfor %}
                 {% else %}
-                    {{- "\n      Missing failure information. Sorry, we are working on improving report for this situation." }}
-                    {{- "\n      CI system: " + origin}}
+                    {{- "\n" + indent + "Missing failure information. Sorry, we are working on improving report for this situation." }}
+                    {{- "\n" + indent + "CI system: " + origin}}
                 {% endif %}
             {% endfor %}
         {% else %}
