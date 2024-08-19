@@ -75,7 +75,7 @@ class Prefetcher(Source):
                 )
         # Prefetch, if generated any patterns
         if prefetch_pattern_set:
-            LOGGER.info("Prefetching %r", prefetch_pattern_set)
+            LOGGER.debug("Prefetching %r", prefetch_pattern_set)
             self.source.oo_query(prefetch_pattern_set)
 
         # Return the response for the original request
@@ -213,7 +213,7 @@ class Cache(Source):
         # Log cached patterns
         LOGGER.debug("Cached patterns %r", cached)
         if LOGGER.getEffectiveLevel() <= logging.INFO:
-            LOGGER.info(
+            LOGGER.debug(
                 "Cache has %s",
                 ", ".join(
                     tuple(
