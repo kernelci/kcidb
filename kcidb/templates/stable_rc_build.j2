@@ -1,5 +1,6 @@
 {# Build template macros #}
 {% import "stable_rc.j2" as stable_rc_macros %}
+{% from "stable_rc.j2" import indent %}
 
 {% macro build_stats(container) %}
     {% if container.builds %}
@@ -28,15 +29,15 @@
             {{- "\n    Failures" }}
             {% for origin, builds in invalid_builds|groupby("origin") %}
                 {% for build in builds %}
-                    {{- [('       -') + build.architecture,
+                    {{- [( indent + '-') + build.architecture,
                         none if build.config_name is none else ('(' + build.config_name + ')')] |
                         reject("none") | join(" ") -}}
-                    {{- "\n       Build detail: https://kcidb.kernelci.org/d/build/build?orgId=1&var-id=" + build.id}}
+                    {{- "\n" + indent + "Build detail: https://kcidb.kernelci.org/d/build/build?orgId=1&var-id=" + build.id}}
                     {% if build.log_excerpt %}
-                        {{- "       Build error: " + build.log_error }}
+                        {{- indent + "Build error: " + build.log_error }}
                     {% endif %}
                 {% endfor %}
-                {{- "       CI system: " + origin + "\n\n"-}}
+                {{- indent + "CI system: " + origin + "\n\n"-}}
             {% endfor %}
         {% else %}
             {{- "\n    No build failures found" }}
