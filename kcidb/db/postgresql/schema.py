@@ -89,6 +89,32 @@ class TextColumn(Column):
                          metadata_expr=metadata_expr)
 
 
+class TextArrayColumn(Column):
+    """A text array column schema"""
+
+    def __init__(self, constraint=None,
+                 conflict_func=None, metadata_expr=None):
+        """
+        Initialize the column schema.
+
+        Args:
+            constraint:     The column's constraint.
+                            A member of the Constraint enum, or None,
+                            meaning no constraint.
+            conflict_func:  The (non-empty) string containing the name of the
+                            SQL function to use to resolve insertion conflicts
+                            for this column. None to resolve
+                            non-deterministically.
+            metadata_expr:  A (non-empty) SQL expression string to use as the
+                            value for this (metadata) column, if not supplied
+                            explicitly. None to consider this a normal column.
+        """
+        assert constraint is None or isinstance(constraint, Constraint)
+        super().__init__("TEXT[]", constraint=constraint,
+                         conflict_func=conflict_func,
+                         metadata_expr=metadata_expr)
+
+
 class JSONColumn(Column):
     """A JSON column schema"""
 
