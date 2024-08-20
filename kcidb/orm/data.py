@@ -319,6 +319,8 @@ _ISSUE_CULPRIT = _ISSUE['culprit']['properties']
 _INCIDENT = _DEFS['incident']['properties']
 # Test environment properties from the current I/O schema
 _TEST_ENVIRONMENT = _TEST['environment']['properties']
+# Test numerical test output properties from the current I/O schema
+_TEST_NUMBER = _TEST['number']['properties']
 
 # The schema of the raw object-oriented data
 SCHEMA = Schema(
@@ -395,8 +397,12 @@ SCHEMA = Schema(
                 origin=_TEST['origin'],
                 path=_TEST['path'],
                 environment_comment=_TEST_ENVIRONMENT['comment'],
+                environment_compatible=_TEST_ENVIRONMENT['compatible'],
                 environment_misc=_TEST_ENVIRONMENT['misc'],
                 status=_TEST['status'],
+                number_value=_TEST_NUMBER['value'],
+                number_unit=_TEST_NUMBER['unit'],
+                number_prefix=_TEST_NUMBER['prefix'],
                 waived=_TEST['waived'],
                 start_time=_TEST['start_time'],
                 duration=_TEST['duration'],
