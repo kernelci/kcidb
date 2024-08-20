@@ -343,10 +343,14 @@ class Schema(AbstractSchema):
                       "    origin,\n"
                       "    path,\n"
                       "    \"environment.comment\" AS environment_comment,\n"
+                      "    NULL AS environment_compatible,\n"
                       "    \"environment.misc\" AS environment_misc,\n"
                       "    log_url,\n"
                       "    log_excerpt,\n"
                       "    status,\n"
+                      "    NULL AS number_value,\n"
+                      "    NULL AS number_unit,\n"
+                      "    NULL AS number_prefix,\n"
                       "    waived,\n"
                       "    start_time,\n"
                       "    duration,\n"
@@ -360,10 +364,14 @@ class Schema(AbstractSchema):
                 origin=TextColumn(),
                 path=TextColumn(),
                 environment_comment=TextColumn(),
+                environment_compatible=JSONColumn(),
                 environment_misc=JSONColumn(),
                 log_url=TextColumn(),
                 log_excerpt=TextColumn(),
                 status=TextColumn(),
+                number_value=Column("REAL"),
+                number_unit=TextColumn(),
+                number_prefix=TextColumn(),
                 waived=BoolColumn(),
                 start_time=TimestampColumn(),
                 duration=Column("REAL"),

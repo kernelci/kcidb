@@ -15,7 +15,7 @@ from kcidb.db.schematic import \
     Connection as AbstractConnection
 from kcidb.db.postgresql.schema import \
     Constraint, BoolColumn, FloatColumn, IntegerColumn, TimestampColumn, \
-    VarcharColumn, TextColumn, JSONColumn, Table
+    VarcharColumn, TextColumn, TextArrayColumn, JSONColumn, Table
 
 # Module's logger
 LOGGER = logging.getLogger(__name__)
@@ -381,10 +381,14 @@ class Schema(AbstractSchema):
                       "    origin,\n"
                       "    path,\n"
                       "    environment_comment,\n"
+                      "    NULL AS environment_compatible,\n"
                       "    environment_misc,\n"
                       "    log_url,\n"
                       "    log_excerpt,\n"
                       "    status,\n"
+                      "    NULL AS number_value,\n"
+                      "    NULL AS number_unit,\n"
+                      "    NULL AS number_prefix,\n"
                       "    waived,\n"
                       "    start_time,\n"
                       "    duration,\n"
@@ -398,10 +402,14 @@ class Schema(AbstractSchema):
                 origin=TextColumn(),
                 path=TextColumn(),
                 environment_comment=TextColumn(),
+                environment_compatible=TextArrayColumn(),
                 environment_misc=JSONColumn(),
                 log_url=TextColumn(),
                 log_excerpt=TextColumn(),
                 status=TextColumn(),
+                number_value=FloatColumn(),
+                number_unit=TextColumn(),
+                number_prefix=TextColumn(),
                 waived=BoolColumn(),
                 start_time=TimestampColumn(),
                 duration=FloatColumn(),
