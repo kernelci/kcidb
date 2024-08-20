@@ -1567,6 +1567,7 @@ def test_purge(empty_database):
         assert client.purge(None)
         client.load(io_data_1)
         assert client.dump(with_metadata=False) == io_data_1
+        time.sleep(1)
         after_first_load = client.get_current_time()
         time.sleep(1)
         client.load(io_data_2)
@@ -1583,6 +1584,7 @@ def test_purge(empty_database):
 
         assert client.purge(after_first_load)
         assert client.dump(with_metadata=False) == io_data_2
+        time.sleep(1)
         assert client.purge(client.get_current_time())
         assert client.dump() == kcidb.io.SCHEMA.new()
     else:
