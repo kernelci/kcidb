@@ -19,6 +19,10 @@ def match_revision(revision):
     if revision.builds_valid is None:
         return ()
 
+    # If the revision is not from 'maestro' or 'broonie' origin
+    if not {c.origin for c in revision.checkouts} & {'maestro', 'broonie'}:
+        return ()
+
     # Send notification 3 hours after a revision is created/updated
     return (Message(
         subject='KernelCI report for stable-rc: '
