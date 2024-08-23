@@ -1,0 +1,78 @@
+{# Test macros #}
+{% from "common.j2" import selected_origins, indent %}
+
+{% macro tests_stats(container, root_test_path) %}
+    {% if container.tests %}
+        {% set boot_tests = container.tests_root[root_test_path].waived_status_tests %}
+        {% set failed_tests = boot_tests[false]["FAIL"] | selectattr('origin', 'in', selected_origins) | list %}
+        {% set passed_tests = boot_tests[false]["PASS"] | selectattr('origin', 'in', selected_origins) | list %}
+        {{- passed_tests | length | string + " passed, " +
+            failed_tests | length | string + " failed" }}
+    {% endif %}
+{% endmacro %}
+
+{% macro container_summary(container, max_list_len) %}
+    {{- "\nBOOT TESTS" }}
+    {% if container.tests %}
+        {% set failed_boot_tests = container.tests_root["boot"].waived_status_tests[false]["FAIL"] |
+            selectattr('origin', 'in', selected_origins) | list %}
+        {% if failed_boot_tests %}
+            {{- "\n    Failures" }}
+            {% for origin, boot_tests in failed_boot_tests|groupby("origin") %}
+                {% set boot_tests_info = boot_tests | selectattr('environment_misc.platform', 'defined') |
+                selectattr('build.architecture', 'ne', None) | list %}
+                {% if boot_tests_info %}
+                    {% for architecture, tests in boot_tests_info|groupby("build.architecture") %}
+                        {{- "\n" + indent + architecture }}:({{ tests|map(attribute="build.config_name") | unique | reject("none") | join(",\n" + indent + ' ' * (architecture + ":(") | length ) }})
+                        {{- "\n" + indent + "-" + tests|map(attribute="environment_misc.platform") | unique | join("\n      -") }}
+                        {{- "\n" + indent + "Test details:" }}
+                            {% for test in tests %}
+                                {{- indent + "- https://kcidb.kernelci.org/d/test/test?orgId=1&var-id=" + test.id}}
+                            {% endfor %}
+                        {{- "\n" + indent + "CI system: " + origin}}
+                    {% endfor %}
+                {% else %}
+                    {{- "\n" + indent + "Missing failure information. Sorry, we are working on improving report for this situation." }}
+                    {{- "\n" + indent + "CI system: " + origin}}
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {{- "\n    No boot failures found" }}
+        {% endif %}
+    {% else %}
+        {{- "\n    No tests found" }}
+    {% endif %}
+    {{- "\nRT TESTS" }}
+    {% if container.tests %}
+        {% set failed_rt_tests = container.tests_root["rt-tests"].waived_status_tests[false]["FAIL"] |
+            selectattr('origin', 'in', selected_origins) | list %}
+        {% if failed_rt_tests %}
+            {{- "\n    Failures" }}
+            {% for origin, rt_tests in failed_rt_tests|groupby("origin") %}
+                {% set rt_tests_info = rt_tests | selectattr('environment_misc.platform', 'defined') |
+                selectattr('build.architecture', 'ne', None) | list %}
+                {% if rt_tests_info %}
+                    {% for path, rt_tests_with_path in rt_tests_info|groupby("path") %}
+                        {{- "\n" + indent + path + ":"}}
+                        {% for architecture, tests in rt_tests_with_path|groupby("build.architecture") %}
+                            {{- indent + architecture }}:({{ tests|map(attribute="build.config_name") | unique | reject("none") | join(",\n" + indent + ' ' * (architecture + ":(") | length ) }})
+                            {{- "\n" + indent + "-" + tests|map(attribute="environment_misc.platform") | unique | join("\n      -") }}
+                            {{- "\n" + indent + "Test details:" }}
+                            {% for test in tests %}
+                                {{- indent + "- https://kcidb.kernelci.org/d/test/test?orgId=1&var-id=" + test.id}}
+                            {% endfor %}
+                            {{- "\n" + indent + "CI system: " + origin}}
+                        {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    {{- "\n" + indent + "Missing failure information. Sorry, we are working on improving report for this situation." }}
+                    {{- "\n" + indent + "CI system: " + origin}}
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {{- "\n    No rt-tests failures found" }}
+        {% endif %}
+    {% else %}
+        {{- "\n    No tests found" }}
+    {% endif %}
+{% endmacro %}
