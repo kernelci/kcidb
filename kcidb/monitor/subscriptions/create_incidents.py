@@ -1,5 +1,6 @@
 from kcidb.tools import kcidb_match
 import kcidb
+import json
 
 
 def match_test(test):
@@ -8,8 +9,10 @@ def match_test(test):
                        "checkouts": [test.build.checkout._data]}
     incident_generator = kcidb_match.IncidentGenerator()
     incidents = incident_generator.generate_incidents_from_db(kcidb_io_object)
-    if (incidents["incidents"]):
-        kcidb.Client.submit(incidents)
+    #if (incidents["incidents"]):
+    #    kcidb.Client.submit(incidents)
+    # TODO: tmp solution
+    print(json.dumps(incidents))
 
 
 def match_build(build):
@@ -17,11 +20,13 @@ def match_build(build):
                        "checkouts": [build.checkout._data]}
     incident_generator = kcidb_match.IncidentGenerator()
     incidents = incident_generator.generate_incidents_from_db(kcidb_io_object)
-    if (incidents["incidents"]):
-        kcidb.Client.submit(incidents)
+    #if (incidents["incidents"]):
+    #    kcidb.Client.submit(incidents)
+    # TODO: tmp solution
+    print(json.dumps(incidents))
 
 
-def match_issues(issues):
+def match_issue(issues):
     issue_objects = {"issues": [issues._data]}
     incident_generator = kcidb_match.IncidentGenerator()
     incident_generator.db.update_patterns(issue_objects)
