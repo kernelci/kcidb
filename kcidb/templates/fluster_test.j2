@@ -1,0 +1,53 @@
+{# Test macros #}
+{% from "common.j2" import indent, stats_indent, selected_origins_for_fluster %}
+
+{% macro container_summary(container, max_list_len) %}
+    {{- "\nFLUSTER TESTS" }}
+    {% set test_names_titles = {
+        "gstreamer_av1":           "av1",
+        "gstreamer_av1_chromium":  "av1-chromium-10bit",
+        "gstreamer_h264":          "h264",
+        "gstreamer_h264_frext":    "h264-frext",
+        "gstreamer_h265":          "h265",
+        "gstreamer_vp8":           "vp8",
+        "gstreamer_vp9":           "vp9"
+    } %}
+    {% set boards_titles_statuses_counts = {} %}
+    {% for test in container.tests %}
+        {% set board = test.environment_compatible[0] %}
+        {% set path_items = test.path.split(".") %}
+        {% if test.origin in selected_origins_for_fluster and
+              board is defined and
+              path_items | length > 3 and
+              path_items[0] == "fluster" and
+              path_items[1] == "v4l2" and
+              path_items[2] in test_names_titles and
+              path_items[3] != "validate-fluster-results" %}
+            {% set title = test_names_titles[path_items[2]] %}
+            {% set titles_statuses_counts =
+                   boards_titles_statuses_counts.get(board, {}) %}
+            {% set statuses_counts =
+                   titles_statuses_counts.get(title, {}) %}
+            {% set count = statuses_counts.get(test.status, 0) + 1 %}
+            {% set _ = statuses_counts.update({test.status: count}) %}
+            {% set _ = titles_statuses_counts.update({title: statuses_counts}) %}
+            {% set _ = boards_titles_statuses_counts.update({board: titles_statuses_counts}) %}
+        {% endif %}
+    {% endfor %}
+    {% for board, titles_statuses_counts in boards_titles_statuses_counts | dictsort %}
+        {{- "\n" + indent + board + ":\n" -}}
+        {% for title in test_names_titles.values() | sort %}
+            {% set statuses_counts = titles_statuses_counts.get(
+                                        title, {"PASS": 0, "FAIL": 0}
+                                     ) %}
+            {{- indent + " " + title +
+                ":" + " " * (stats_indent|length - indent|length - title|length) +
+                "✅ " + statuses_counts.get("PASS", 0) | string +
+                "  ❌ " + statuses_counts.get("FAIL", 0) | string+
+                "  Σ " + statuses_counts.values() | sum | string +
+                "\n" -}}
+        {% endfor %}
+    {% else %}
+        {{- "\n    No tests found" }}
+    {% endfor %}
+{% endmacro %}
