@@ -26,7 +26,7 @@ def match_revision(revision):
     # Send notification 3 hours after a revision is created/updated
     return (Message(
         subject='KernelCI report for stable-rc: '
-                '{% include "stable_rc_revision_summary.txt.j2" %}',
+                '{% include "stable_revision_summary.txt.j2" %}',
         to=["Jeny Sadadia <jeny.sadadia@collabora.com>",
             "Gustavo Padovan <gustavo.padovan@collabora.com>",
             "Shreeya Patel <shreeya.patel@collabora.com>"],

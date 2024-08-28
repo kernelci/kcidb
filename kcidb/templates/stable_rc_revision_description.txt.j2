@@ -1,7 +1,7 @@
 {# Revision description template #}
-{% import "stable_rc.j2" as stable_rc_macros %}
+{% from "common.j2" import selected_origins %}
 {% import "stable_rc_test.j2" as test_macros %}
-{% import "stable_rc_build.j2" as build_macros %}
+{% import "stable_build.j2" as build_macros %}
 {% import "misc.j2" as misc_macros %}
 {# Maximum length of a list of things (builds/tests/etc.) #}
 {% set max_list_len = 5 %}
@@ -18,7 +18,7 @@ OVERVIEW
     Boot tests: {{ test_macros.tests_stats(revision) }}
 {% endif %}
     CI systems: {{ revision.checkouts | map(attribute="origin") |
-           unique | sort | select('in', stable_rc_macros.selected_origins) | join(", ") }}
+           unique | sort | select('in', selected_origins) | join(", ") }}
 
 REVISION
 

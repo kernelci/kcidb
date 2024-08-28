@@ -1,12 +1,11 @@
 {# Test macros #}
-{% import "stable_rc.j2" as stable_rc_macros %}
-{% from "stable_rc.j2" import indent %}
+{% from "common.j2" import selected_origins, indent %}
 
 {% macro tests_stats(container) %}
     {% if container.tests %}
         {% set boot_tests = container.tests_root["boot"].waived_status_tests %}
-        {% set failed_tests = boot_tests[false]["FAIL"] | selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
-        {% set passed_tests = boot_tests[false]["PASS"] | selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
+        {% set failed_tests = boot_tests[false]["FAIL"] | selectattr('origin', 'in', selected_origins) | list %}
+        {% set passed_tests = boot_tests[false]["PASS"] | selectattr('origin', 'in', selected_origins) | list %}
         {{- passed_tests | length | string + " passed, " +
             failed_tests | length | string + " failed" }}
     {% endif %}
@@ -16,7 +15,7 @@
     {{- "\nBOOT TESTS" }}
     {% if container.tests %}
         {% set failed_boot_tests = container.tests_root["boot"].waived_status_tests[false]["FAIL"] |
-            selectattr('origin', 'in', stable_rc_macros.selected_origins) | list %}
+            selectattr('origin', 'in', selected_origins) | list %}
         {% if failed_boot_tests %}
             {{- "\n    Failures" }}
             {% for origin, boot_tests in failed_boot_tests|groupby("origin") %}
