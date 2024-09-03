@@ -414,6 +414,86 @@ class Table:
                               drop_null=drop_null)
 
 
+class View:
+    """A view 'schema'"""
+
+    def __init__(self, select, refresh_period=0):
+        """
+        Initialize the view 'schema'.
+
+        Args:
+            select:         The select statement of the view.
+            refresh_period: The materialized view's refresh period, integer
+                            number of 0 < minutes <= 60.
+                            Zero for a regular view.
+        """
+        assert isinstance(select, str)
+        assert isinstance(refresh_period, int)
+        assert 0 <= refresh_period <= 60
+        self.select = select
+        self.refresh_period = refresh_period
+
+    def format_create(self, name):
+        """
+        Format the creation command for the view.
+
+        Args:
+            name:       The name to give the view.
+
+        Returns:
+            The command creating the view.
+        """
+        raise NotImplementedError
+
+    def format_setup(self, name):
+        """
+        Format the view maintenance setup commands.
+
+        Args:
+            name:       The name of the view to be maintained.
+
+        Returns:
+            The tuple of commands setting up the view maintenance.
+        """
+        raise NotImplementedError
+
+    def format_refresh(self, name):
+        """
+        Format the view refresh commands.
+
+        Args:
+            name:       The name of the view to refresh
+
+        Returns:
+            The command refreshing the view.
+        """
+        raise NotImplementedError
+
+    def format_teardown(self, name):
+        """
+        Format the view maintenance teardown commands.
+
+        Args:
+            name:       The name of the view to stop maintenance of.
+
+        Returns:
+            The command tearing down the view maintenance.
+        """
+        raise NotImplementedError
+
+    def format_drop(self, name):
+        """
+        Format the drop command for the view.
+
+        Args:
+            name:       The name of the view being dropped.
+
+        Returns:
+            The command dropping the view.
+        """
+        raise NotImplementedError
+
+
 class Index:
     """An index schema"""
 

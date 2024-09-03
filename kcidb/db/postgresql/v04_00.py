@@ -280,6 +280,9 @@ class Schema(AbstractSchema):
     # A map of index names and schemas
     INDEXES = {}
 
+    # A map of view names and schemas
+    VIEWS = {}
+
     # Queries and their columns for each type of raw object-oriented data.
     # Both should have columns in the same order.
     OO_QUERIES = dict(
@@ -532,6 +535,14 @@ class Schema(AbstractSchema):
                     raise Exception(
                         f"Failed creating table {table_name!r}"
                     ) from exc
+            # Create the views
+            for view_name, view_schema in self.VIEWS.items():
+                try:
+                    cursor.execute(view_schema.format_create(view_name))
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed creating view {view_name!r}"
+                    ) from exc
             # Create the indexes
             for index_name, index_schema in self.INDEXES.items():
                 try:
@@ -540,6 +551,15 @@ class Schema(AbstractSchema):
                     raise Exception(
                         f"Failed creating index {index_name!r}"
                     ) from exc
+            # Setup the views
+            for view_name, view_schema in self.VIEWS.items():
+                try:
+                    for command in view_schema.format_setup(view_name):
+                        cursor.execute(command)
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed setting up view {view_name!r}"
+                    ) from exc
 
     def cleanup(self):
         """
@@ -547,6 +567,10 @@ class Schema(AbstractSchema):
         The database must be initialized.
         """
         with self.conn, self.conn.cursor() as cursor:
+            for name, schema in self.VIEWS.items():
+                for command in schema.format_teardown(name):
+                    cursor.execute(command)
+                cursor.execute(schema.format_drop(name))
             cursor.execute("DROP AGGREGATE IF EXISTS last(anyelement)")
             cursor.execute("DROP AGGREGATE IF EXISTS first(anyelement)")
             cursor.execute(
@@ -918,5 +942,16 @@ class Schema(AbstractSchema):
             True if sync is supported and has succeeded.
             False if sync is not supported/required.
         """
-        # Syncing not needed right now
-        return False
+        synced = False
+        with self.conn, self.conn.cursor() as cursor:
+            # Refresh the views
+            for view_name, view_schema in self.VIEWS.items():
+                try:
+                    for command in view_schema.format_refresh(view_name):
+                        cursor.execute(command)
+                        synced = True
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed refreshing view {view_name!r}"
+                    ) from exc
+        return synced
