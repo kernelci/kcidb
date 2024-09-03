@@ -420,7 +420,7 @@ class Index:
     # The type of table columns used in the index
     TableColumn = TableColumn
 
-    def __init__(self, table, columns, key_sep="_"):
+    def __init__(self, table, columns, key_sep="_", unique=False):
         """
         Initialize the index schema.
 
@@ -431,16 +431,19 @@ class Index:
                         as used for the Table creation parameters.
             key_sep:    String used to replace dots in column names ("key"
                         separator) when adapting them to the tables.
+            unique:     True if the index is unique, False otherwise.
         """
         assert isinstance(table, str)
         assert isinstance(columns, list)
         assert all(isinstance(c, str) for c in columns)
+        assert isinstance(unique, bool)
         self.table = table
         # Dot-separated column names => quoted table column names
         self.columns = {
             name: self.TableColumn.adapt_name(name, key_sep)[0]
             for name in columns
         }
+        self.unique = unique
 
     def format_create(self, name):
         """
@@ -453,7 +456,8 @@ class Index:
             The formatted "CREATE INDEX" command.
         """
         return (
-            f"CREATE INDEX IF NOT EXISTS {name} ON {self.table} (" +
+            f"CREATE {['', 'UNIQUE '][self.unique]}INDEX "
+            f"IF NOT EXISTS {name} ON {self.table} (" +
             ", ".join(self.columns.values()) +
             ")"
         )
