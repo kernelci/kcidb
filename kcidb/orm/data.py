@@ -466,6 +466,7 @@ SCHEMA = Schema(
                 issue_version=_INCIDENT['issue_version'],
                 build_id=_INCIDENT['build_id'],
                 test_id=_INCIDENT['test_id'],
+                present=_INCIDENT['present'],
                 comment=_INCIDENT['comment'],
                 misc=_INCIDENT['misc'],
             ),
