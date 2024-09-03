@@ -1125,6 +1125,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1295,6 +1296,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1483,6 +1485,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1674,6 +1677,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],

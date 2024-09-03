@@ -440,6 +440,7 @@ class Schema(AbstractSchema):
                       "    NULL AS issue_version,\n"
                       "    NULL AS build_id,\n"
                       "    NULL AS test_id,\n"
+                      "    NULL AS present,\n"
                       "    NULL AS comment,\n"
                       "    NULL AS misc\n"
                       "WHERE 0",
@@ -450,6 +451,7 @@ class Schema(AbstractSchema):
                 issue_version=IntegerColumn(),
                 build_id=TextColumn(),
                 test_id=TextColumn(),
+                present=BoolColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),
