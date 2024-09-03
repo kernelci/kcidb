@@ -579,14 +579,15 @@ class Schema(AbstractSchema):
               '    ""    AS misc\n'
               'FROM UNNEST([])',
         incident='SELECT\n'
-                 '    "" AS id,\n'
-                 '    "" AS origin,\n'
-                 '    "" AS issue_id,\n'
-                 '    0  AS issue_version,\n'
-                 '    "" AS build_id,\n'
-                 '    "" AS test_id,\n'
-                 '    "" AS comment,\n'
-                 '    "" AS misc\n'
+                 '    ""    AS id,\n'
+                 '    ""    AS origin,\n'
+                 '    ""    AS issue_id,\n'
+                 '    0     AS issue_version,\n'
+                 '    ""    AS build_id,\n'
+                 '    ""    AS test_id,\n'
+                 '    FALSE AS present,\n'
+                 '    ""    AS comment,\n'
+                 '    ""    AS misc\n'
                  'FROM UNNEST([])',
     )
 
