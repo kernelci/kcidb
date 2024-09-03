@@ -256,7 +256,7 @@ class Table(_SQLTable):
 
 class Index(_SQLIndex):
     """An index schema"""
-    def __init__(self, table, columns, method=None):
+    def __init__(self, table, columns, method=None, unique=False):
         """
         Initialize the index schema.
 
@@ -267,13 +267,15 @@ class Index(_SQLIndex):
                         as used for the Table creation parameters.
             method:     The index method string, if different from default.
                         None, if the default should be used.
+            unique:     True if the index is unique, False otherwise.
         """
         assert isinstance(table, str)
         assert isinstance(columns, list)
         assert all(isinstance(c, str) for c in columns)
         assert method is None or isinstance(method, str) and method
+        assert isinstance(unique, bool)
         # TODO: Switch to hardcoding "_" key_sep in base class
-        super().__init__(table, columns, key_sep="_")
+        super().__init__(table, columns, key_sep="_", unique=unique)
         self.method = method
 
     def format_create(self, name):
@@ -288,7 +290,8 @@ class Index(_SQLIndex):
         """
         method = "" if self.method is None else f" USING {self.method}"
         return (
-            f"CREATE INDEX IF NOT EXISTS {name} ON {self.table}{method} (" +
+            f"CREATE {['', 'UNIQUE '][self.unique]}INDEX "
+            f"IF NOT EXISTS {name} ON {self.table}{method} (" +
             ", ".join(self.columns.values()) +
             ")"
         )
