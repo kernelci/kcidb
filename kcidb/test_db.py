@@ -1697,8 +1697,9 @@ def test_upgrade(clean_database):
             database.upgrade(io_version)
             # Check upgrade went well
             # You're wrong, pylint: disable=unsubscriptable-object
-            assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
-                last_params["oo"]
+            assert database.oo_query(
+                kcidb.orm.query.Pattern.parse(">*#")
+            ) == last_params["oo"]
             upgraded_io = io_version.upgrade(last_params["io"])
             assert database.dump(with_metadata=False) == upgraded_io
             assert database.query(io_version.get_ids(upgraded_io)) == \
