@@ -855,3 +855,16 @@ class Schema(AbstractSchema):
         # Flip priority for the next load to maintain (rough)
         # parity with non-determinism of BigQuery's ANY_VALUE()
         self.conn.load_prio_db = not self.conn.load_prio_db
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        # No syncing needed at the moment
+        return False

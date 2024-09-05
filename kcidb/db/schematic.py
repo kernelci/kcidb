@@ -362,6 +362,19 @@ class Schema(ABC, metaclass=MetaSchema):
         """
         # Relying on the driver to check compatibility/validity
 
+    @abstractmethod
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        # Relying on the driver to check state
+
 
 class MetaDriver(ABCMeta):
     """A schematic metadriver"""
@@ -701,3 +714,16 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         assert LIGHT_ASSERTS or self.schema.io.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
         self.schema.load(data, with_metadata=with_metadata)
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        assert self.is_initialized()
+        return self.schema.sync()

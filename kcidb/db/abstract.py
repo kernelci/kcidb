@@ -264,3 +264,16 @@ class Driver(ABC):
         assert io_schema.is_compatible_directly(data)
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
+
+    @abstractmethod
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        assert self.is_initialized()

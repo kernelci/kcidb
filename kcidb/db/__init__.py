@@ -55,7 +55,7 @@ DRIVER_TYPES = dict(
 class Client(kcidb.orm.Source):
     """Kernel CI report database client"""
 
-    def __init__(self, database):
+    def __init__(self, database, auto_sync=False):
         """
         Initialize the Kernel CI report database client.
 
@@ -64,6 +64,12 @@ class Client(kcidb.orm.Source):
                         as "<DRIVER>:<PARAMS>" or just "<DRIVER>". Where
                         "<DRIVER>" is the driver name, and "<PARAMS>" is the
                         optional driver-specific database parameter string.
+            auto_sync:  True if the client should propagate changes (load,
+                        purge, etc.) through the database before returning
+                        from the corresponding method.
+                        False if the propagation should be left to periodic
+                        processes or explicit propagation using the sync()
+                        method.
 
         Raises:
             UnknownDriver       - an unknown (sub-)driver encountered in the
@@ -74,7 +80,9 @@ class Client(kcidb.orm.Source):
                                   driver
         """
         assert isinstance(database, str)
+        assert isinstance(auto_sync, bool)
         self.database = database
+        self.auto_sync = auto_sync
         self.driver = None
         self.reset()
 
@@ -142,6 +150,8 @@ class Client(kcidb.orm.Source):
         """
         assert self.is_initialized()
         self.driver.empty()
+        if self.auto_sync:
+            self.sync()
 
     def purge(self, before=None):
         """
@@ -164,7 +174,10 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         assert before is None or \
             isinstance(before, datetime.datetime) and before.tzinfo
-        return self.driver.purge(before)
+        purged = self.driver.purge(before)
+        if purged and self.auto_sync:
+            self.sync()
+        return purged
 
     def get_current_time(self):
         """
@@ -433,6 +446,21 @@ class Client(kcidb.orm.Source):
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
         self.driver.load(data, with_metadata=with_metadata)
+        if self.auto_sync:
+            self.sync()
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        assert LIGHT_ASSERTS or self.is_initialized()
+        return self.driver.sync()
 
 
 class DBHelpAction(argparse.Action):
