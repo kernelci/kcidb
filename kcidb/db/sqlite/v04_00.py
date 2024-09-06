@@ -266,10 +266,13 @@ class Schema(AbstractSchema):
             statement="SELECT\n"
                       "    id,\n"
                       "    git_commit_hash,\n"
+                      "    NULL AS git_commit_tags,\n"
+                      "    NULL AS git_commit_message,\n"
                       "    patchset_hash,\n"
                       "    origin,\n"
                       "    git_repository_url,\n"
                       "    git_repository_branch,\n"
+                      "    NULL AS git_repository_branch_tip,\n"
                       "    tree_name,\n"
                       "    message_id,\n"
                       "    start_time,\n"
@@ -282,10 +285,13 @@ class Schema(AbstractSchema):
             schema=Table(dict(
                 id=TextColumn(),
                 git_commit_hash=TextColumn(),
+                git_commit_tags=JSONColumn(),
+                git_commit_message=TextColumn(),
                 patchset_hash=TextColumn(),
                 origin=TextColumn(),
                 git_repository_url=TextColumn(),
                 git_repository_branch=TextColumn(),
+                git_repository_branch_tip=BoolColumn(),
                 tree_name=TextColumn(),
                 message_id=TextColumn(),
                 start_time=TimestampColumn(),
