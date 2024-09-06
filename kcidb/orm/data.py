@@ -344,10 +344,15 @@ SCHEMA = Schema(
             field_json_schemas=dict(
                 id=_CHECKOUT['id'],
                 git_commit_hash=_CHECKOUT['git_commit_hash'],
+                git_commit_tags=_CHECKOUT['git_commit_tags'],
+                git_commit_message=_CHECKOUT['git_commit_message'],
                 patchset_hash=_CHECKOUT['patchset_hash'],
                 origin=_CHECKOUT['origin'],
                 git_repository_url=_CHECKOUT['git_repository_url'],
                 git_repository_branch=_CHECKOUT['git_repository_branch'],
+                git_repository_branch_tip=_CHECKOUT[
+                    'git_repository_branch_tip'
+                ],
                 tree_name=_CHECKOUT['tree_name'],
                 message_id=_CHECKOUT['message_id'],
                 start_time=_CHECKOUT['start_time'],

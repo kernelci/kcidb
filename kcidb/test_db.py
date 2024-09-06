@@ -22,7 +22,8 @@ def test_schemas_main():
                     stdout_re=r"4\.0: 4\.0\n"
                               r"4\.1: 4\.2\n"
                               r"4\.2: 4\.3\n"
-                              r"4\.3: 4\.4\n")
+                              r"4\.3: 4\.4\n"
+                              r"4\.4: 4\.5\n")
 
 
 def test_reset(clean_database):
@@ -246,8 +247,11 @@ COMPREHENSIVE_IO_DATA = {
             git_repository_url="https://git.kernel.org/pub/scm/"
                                "linux/kernel/git/torvalds/linux.git",
             git_commit_hash="ef2b753c38bc9c0d1eea84e29a6bb6f9e776d0e3",
+            git_commit_tags=["v5.8"],
+            git_commit_message="Linux 5.8-rc7",
             git_commit_name="v5.8-rc7-98-g7dc6fd0f3b84",
             git_repository_branch="master",
+            git_repository_branch_tip=False,
             patchset_files=[
                 dict(name="0001.patch",
                      url="https://example.com/0001.patch"),
@@ -755,7 +759,10 @@ def test_upgrade(clean_database):
                     'comment': None,
                     'git_commit_hash':
                         'f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
+                    'git_commit_tags': None,
+                    'git_commit_message': None,
                     'git_repository_branch': 'android-mainline',
+                    'git_repository_branch_tip': None,
                     'git_repository_url':
                         'https://android.googlesource.com/kernel/common.git',
                     'id':
@@ -886,7 +893,10 @@ def test_upgrade(clean_database):
                     "comment": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_tags": None,
+                    "git_commit_message": None,
                     "git_repository_branch": None,
+                    "git_repository_branch_tip": None,
                     "git_repository_url": None,
                     "id":
                         "_:kernelci:"
@@ -1016,7 +1026,10 @@ def test_upgrade(clean_database):
                     "comment": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_tags": None,
+                    "git_commit_message": None,
                     "git_repository_branch": None,
+                    "git_repository_branch_tip": None,
                     "git_repository_url": None,
                     "id":
                         "_:kernelci:"
@@ -1183,7 +1196,10 @@ def test_upgrade(clean_database):
                     "comment": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_tags": None,
+                    "git_commit_message": None,
                     "git_repository_branch": None,
+                    "git_repository_branch_tip": None,
                     "git_repository_url": None,
                     "id":
                         "_:kernelci:"
@@ -1364,7 +1380,201 @@ def test_upgrade(clean_database):
                     "comment": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_tags": None,
+                    "git_commit_message": None,
                     "git_repository_branch": None,
+                    "git_repository_branch_tip": None,
+                    "git_repository_url": None,
+                    "id":
+                        "_:kernelci:"
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "message_id": None,
+                    "misc": None,
+                    "origin": "kernelci",
+                    "patchset_hash": "",
+                    "start_time": None,
+                    "tree_name": None,
+                    "valid": None,
+                }],
+                "build": [{
+                    "architecture": None,
+                    "checkout_id":
+                        "_:google:"
+                        "bd355732283c23a365f7c55206c0385100d1c389",
+                    "command": None,
+                    "comment": None,
+                    "compiler": None,
+                    "config_name": None,
+                    "config_url": None,
+                    "duration": None,
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "input_files": None,
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "start_time": None,
+                    "valid": None,
+                }],
+                "test": [{
+                    "build_id":
+                        "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "comment": None,
+                    "duration": None,
+                    "environment_comment": "Tidy",
+                    "environment_compatible": [
+                        "ti,omap3-beagleboard",
+                        "ti,omap3450",
+                        "ti,omap3"
+                    ],
+                    "environment_misc": {"foo": "bar"},
+                    "id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "log_excerpt": None,
+                    "log_url": None,
+                    "misc": None,
+                    "origin": "google",
+                    "output_files": None,
+                    "path": None,
+                    "start_time": None,
+                    "status": "MISS",
+                    "number_value": 1.6e-7,
+                    "number_unit": "s",
+                    "number_prefix": "metric",
+                    "waived": None,
+                }],
+                "bug": [{
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "url":
+                        "https://bugzilla.redhat.com/show_bug.cgi"
+                        "?id=873123",
+                    "subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                }],
+                "issue": [{
+                    "comment": "Match USB Bidirectional printer dev",
+                    "id": "redhat:878234322",
+                    "misc": None,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi?"
+                        "id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit_code": True,
+                    "culprit_tool": False,
+                    "culprit_harness": False,
+                    "build_valid": None,
+                    "test_status": None,
+                    "version": 3,
+                }],
+                "incident": [{
+                    "build_id": None,
+                    "comment": None,
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "misc": None,
+                    "origin": "redhat",
+                    "test_id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                }],
+            }
+        ),
+        kcidb.io.schema.V4_5: dict(
+            io={
+                "version": {"major": 4, "minor": 5},
+                "checkouts": [{
+                    "id": "_:kernelci:5acb9c2a7bc836e"
+                          "9e5172bbcd2311499c5b4e5f1",
+                    "origin": "kernelci",
+                    "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
+                                       "cd2311499c5b4e5f1",
+                    "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_hash": "",
+                    "git_commit_tags": ["v5.15"],
+                    "git_commit_message": "Linux 5.15",
+                    "git_repository_branch_tip": False,
+                }],
+                "builds": [{
+                    "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
+                    "origin": "google",
+                    "checkout_id": "_:google:bd355732283c23a365f7c"
+                                   "55206c0385100d1c389"
+                }],
+                "tests": [{
+                    "id": "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "build_id": "google:google.org:a1d993c3n4c448b2"
+                                "j0l1hbf1",
+                    "origin": "google",
+                    "status": "MISS",
+                    "number": {
+                        "value": 1.6e-7,
+                        "unit": "s",
+                        "prefix": "metric",
+                    },
+                    "environment": {
+                        "comment": "Tidy",
+                        "misc": {"foo": "bar"},
+                        "compatible": [
+                            "ti,omap3-beagleboard",
+                            "ti,omap3450",
+                            "ti,omap3"
+                        ],
+                    },
+                }],
+                "issues": [{
+                    "id": "redhat:878234322",
+                    "version": 3,
+                    "origin": "redhat",
+                    "report_url":
+                        "https://bugzilla.redhat.com/show_bug.cgi"
+                        "?id=873123",
+                    "report_subject":
+                        "(cups-usb-quirks) - usb printer doesn't print "
+                        "(usblp0: USB Bidirectional printer dev)",
+                    "culprit": {
+                        "code": True,
+                        "tool": False,
+                        "harness": False,
+                    },
+                    "comment": "Match USB Bidirectional printer dev",
+                }],
+                "incidents": [{
+                    "id": "redhat:2340981234098123409382",
+                    "issue_id": "redhat:878234322",
+                    "issue_version": 3,
+                    "origin": "redhat",
+                    "test_id":
+                        "google:google.org:a19di3j5h67f8d9475f26v11",
+                    "present": True,
+                }],
+            },
+            oo={
+                "revision": [{
+                    "contacts": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_name":
+                        "v5.15-4077-g5acb9c2a7bc8",
+                    "patchset_files": None,
+                    "patchset_hash": "",
+                }],
+                "checkout": [{
+                    "comment": None,
+                    "git_commit_hash":
+                        "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
+                    "git_commit_tags": ["v5.15"],
+                    "git_commit_message": "Linux 5.15",
+                    "git_repository_branch": None,
+                    "git_repository_branch_tip": False,
                     "git_repository_url": None,
                     "id":
                         "_:kernelci:"
