@@ -749,8 +749,13 @@ def load_main():
         help='Load metadata fields as well',
         action='store_true'
     )
+    parser.add_argument(
+        '--sync',
+        help='Propagate database changes immediately, if needed',
+        action='store_true'
+    )
     args = parser.parse_args()
-    client = Client(args.database)
+    client = Client(args.database, auto_sync=args.sync)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
     io_schema = client.get_schema()[1]
@@ -885,8 +890,13 @@ def empty_main():
     description = 'kcidb-db-empty - Remove all data from a ' \
         'Kernel CI report database'
     parser = ArgumentParser(description=description)
+    parser.add_argument(
+        '--sync',
+        help='Propagate database changes immediately, if needed',
+        action='store_true'
+    )
     args = parser.parse_args()
-    client = Client(args.database)
+    client = Client(args.database, auto_sync=args.sync)
     if client.is_initialized():
         client.empty()
     else:
@@ -909,8 +919,26 @@ def purge_main():
         "be *preserved* should've arrived. "
         "No data is removed if not specified."
     )
+    parser.add_argument(
+        '--sync',
+        help='Propagate database changes immediately, if needed',
+        action='store_true'
+    )
+    args = parser.parse_args()
+    client = Client(args.database, auto_sync=args.sync)
+    if not client.is_initialized():
+        raise Exception(f"Database {args.database!r} is not initialized")
+    return 0 if client.purge(before=args.before) else 2
+
+
+def sync_main():
+    """Execute the kcidb-db-sync command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = 'kcidb-db-sync - Propagate database changes. ' \
+        'Exit with status 2, if not needed/supported by database.'
+    parser = ArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
-    return 0 if client.purge(before=args.before) else 2
+    return 0 if client.sync() else 2

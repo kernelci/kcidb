@@ -102,6 +102,8 @@ UPDATED_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_PUBLISH", ""))
 _UPDATED_QUEUE_PUBLISHER = None
 # KCIDB cache storage bucket name
 CACHE_BUCKET_NAME = os.environ.get("KCIDB_CACHE_BUCKET_NAME")
+# True if the database changes should be synchronized immediately
+AUTO_SYNC = bool(os.environ.get("KCIDB_AUTO_SYNC", ""))
 
 
 def get_smtp_publisher():
@@ -190,7 +192,7 @@ def get_db_client(database):
         # Get the credentials
         get_db_credentials()
         # Create the client
-        _DB_CLIENTS[database] = kcidb.db.Client(database)
+        _DB_CLIENTS[database] = kcidb.db.Client(database, auto_sync=AUTO_SYNC)
     return _DB_CLIENTS[database]
 
 

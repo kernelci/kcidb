@@ -27,7 +27,7 @@ class Schema(PreviousSchema):
 
     # A map of view names and schemas
     VIEWS = merge_dicts(PreviousSchema.VIEWS, dict(
-        current_bugs=View("""\
+        current_bugs=View(textwrap.dedent("""\
             SELECT
                 MAX(_timestamp) AS _timestamp,
                 report_url AS url,
@@ -47,8 +47,8 @@ class Schema(PreviousSchema):
                 ORDER BY id, version DESC
             ) AS current_issues
             GROUP BY report_url
-        """, refresh_period=5),
-        current_issues=View("""\
+        """), refresh_period=5),
+        current_issues=View(textwrap.dedent("""\
             SELECT DISTINCT ON (id)
                 _timestamp,
                 id,
@@ -65,26 +65,51 @@ class Schema(PreviousSchema):
                 misc
             FROM issues
             ORDER BY id, version DESC
-        """, refresh_period=5),
-        current_incidents=View("""\
-            SELECT DISTINCT ON (incidents.issue_id)
-                incidents._timestamp,
-                incidents.id,
-                incidents.origin,
-                incidents.issue_id,
-                incidents.issue_version,
-                incidents.build_id,
-                incidents.test_id,
-                incidents.present,
-                incidents.comment,
-                incidents.misc
-            FROM incidents
-            INNER JOIN issues ON
-                incidents.issue_id = issues.id AND
-                incidents.issue_version = issues.version
-            WHERE present IS NOT NULL
-            ORDER BY incidents.issue_id, incidents.issue_version DESC
-        """, refresh_period=5),
+        """), refresh_period=5),
+        current_incidents=View(textwrap.dedent("""\
+            SELECT
+                _timestamp,
+                id,
+                origin,
+                issue_id,
+                issue_version,
+                build_id,
+                test_id,
+                present,
+                comment,
+                misc
+            FROM (
+                SELECT
+                    _timestamp,
+                    id,
+                    origin,
+                    issue_id,
+                    issue_version,
+                    build_id,
+                    test_id,
+                    present,
+                    comment,
+                    misc,
+                    RANK() OVER (
+                        PARTITION BY
+                            issue_id,
+                            build_id,
+                            test_id
+                        ORDER BY issue_version DESC
+                    ) AS precedence
+                FROM incidents
+                WHERE
+                    present IS NOT NULL AND
+                    EXISTS (
+                        SELECT TRUE
+                        FROM issues
+                        WHERE
+                            incidents.issue_id = issues.id AND
+                            incidents.issue_version = issues.version
+                    )
+            ) AS prioritized_known_incidents
+            WHERE prioritized_known_incidents.precedence = 1
+        """), refresh_period=5),
     ))
 
     # A map of index names and schemas

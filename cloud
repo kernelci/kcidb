@@ -315,6 +315,7 @@ function execute_command() {
         --database="$database"
         --clean-test-databases="$clean_test_databases"
         --empty-test-databases="$empty_test_databases"
+        --auto-sync="$test"
     )
 
     # Handle "env" command

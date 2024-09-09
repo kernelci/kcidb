@@ -84,7 +84,8 @@ def test_empty_main():
         with patch("kcidb.db.Client", return_value=client) as \
                 Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("bigquery:project.dataset",
+                                       auto_sync=False)
         client.empty.assert_called_once()
         return status
     """)
@@ -207,7 +208,8 @@ def test_load_main():
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("bigquery:project.dataset",
+                                       auto_sync=False)
         client.load.assert_called_once_with({repr(empty)},
                                             with_metadata=False)
         return status
@@ -223,7 +225,8 @@ def test_load_main():
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("bigquery:project.dataset",
+                                       auto_sync=False)
         assert client.load.call_count == 2
         client.load.assert_has_calls([
             call({repr(empty)}, with_metadata=False),
