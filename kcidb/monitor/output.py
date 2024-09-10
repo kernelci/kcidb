@@ -22,7 +22,7 @@ NOTIFICATION_MESSAGE_SUBJECT_RE = \
 # Maximum character length of a notification message subject
 NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN = 256
 # Maximum character length of a notification message body
-NOTIFICATION_MESSAGE_BODY_MAX_LEN = 4096
+NOTIFICATION_MESSAGE_BODY_MAX_LEN = 64 * 1024
 
 # A regex matching permitted subscription name strings
 SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
