@@ -579,14 +579,15 @@ class Schema(AbstractSchema):
               '    ""    AS misc\n'
               'FROM UNNEST([])',
         incident='SELECT\n'
-                 '    "" AS id,\n'
-                 '    "" AS origin,\n'
-                 '    "" AS issue_id,\n'
-                 '    0  AS issue_version,\n'
-                 '    "" AS build_id,\n'
-                 '    "" AS test_id,\n'
-                 '    "" AS comment,\n'
-                 '    "" AS misc\n'
+                 '    ""    AS id,\n'
+                 '    ""    AS origin,\n'
+                 '    ""    AS issue_id,\n'
+                 '    0     AS issue_version,\n'
+                 '    ""    AS build_id,\n'
+                 '    ""    AS test_id,\n'
+                 '    FALSE AS present,\n'
+                 '    ""    AS comment,\n'
+                 '    ""    AS misc\n'
                  'FROM UNNEST([])',
     )
 
@@ -1081,3 +1082,16 @@ class Schema(AbstractSchema):
                     raise Exception("".join([
                         f"ERROR: {error['message']}\n" for error in job.errors
                     ])) from exc
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        # No syncing needed at the moment
+        return False

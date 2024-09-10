@@ -2,6 +2,7 @@
 
 # Over 1000 lines, pylint: disable=too-many-lines
 
+import itertools
 import re
 from jinja2 import Template
 import pytest
@@ -1118,6 +1119,10 @@ def test_run(source):
         url="https://bugzilla/207065",
         subject="Printer doesn't print",
     )
+    bug_z = raw_bug(
+        url="https://maillist/498232",
+        subject="LED doesn't blink",
+    )
     assert \
         query_str(
             source,
@@ -1125,8 +1130,8 @@ def test_run(source):
             'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c"]'
             '>incident<issue<bug#'
         ) in [
-            dict(bug=[bug_x, bug_y]),
-            dict(bug=[bug_y, bug_x]),
+            dict(bug=list(permutation))
+            for permutation in itertools.permutations((bug_x, bug_y, bug_z))
         ]
 
 
@@ -1629,6 +1634,7 @@ def test_bug(source):
             origin="_",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         ) in \
         incidents
     assert \
@@ -1639,6 +1645,7 @@ def test_bug(source):
             origin="redhat",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         ) in \
         incidents
 
@@ -1648,7 +1655,7 @@ def test_bug(source):
     )
     assert ["incident"] == list(data.keys())
     incidents = data["incident"]
-    assert len(incidents) == 2
+    assert len(incidents) == 3
     assert \
         raw_incident(
             id="kernelci:29871398212",
@@ -1657,6 +1664,7 @@ def test_bug(source):
             origin="kernelci",
             test_id="kernelci:kernelci.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            present=True,
         ) in \
         incidents
     assert \
@@ -1666,6 +1674,18 @@ def test_bug(source):
             issue_version=1,
             origin="kernelci",
             test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+            present=True,
+        ) in \
+        incidents
+    assert \
+        raw_incident(
+            id='_:908812340982345',
+            issue_id='kernelci:1209203344',
+            issue_version=1,
+            origin='_',
+            test_id='redhat:redhat.org:'
+            'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c',
+            present=False,
         ) in \
         incidents
 
@@ -1682,6 +1702,7 @@ def test_bug(source):
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+            present=True,
         )])
 
     assert \
@@ -1704,7 +1725,7 @@ def test_bug(source):
     )
     assert ["test"] == list(data.keys())
     tests = data["test"]
-    assert len(tests) == 2
+    assert len(tests) == 3
     assert \
         raw_test(
             build_id="kernelci:kernelci.org:619c64b1712847eccbf2efac",
@@ -1726,6 +1747,15 @@ def test_bug(source):
             start_time="2021-11-23T03:52:13.666000+00:00",
             status="PASS",
             waived=False,
+        ) in \
+        tests
+    assert \
+        raw_test(
+            build_id='redhat:redhat.org:619c65f9709de72e90f2efd0',
+            id='redhat:redhat.org:b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c',
+            origin='redhat',
+            status='DONE',
+            waived=True,
         ) in \
         tests
 
@@ -1834,6 +1864,7 @@ def test_issue(source):
             origin="_",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         )])
 
     data = query_str(
@@ -1842,7 +1873,7 @@ def test_issue(source):
     )
     assert ["incident"] == list(data.keys())
     incidents = data["incident"]
-    assert len(incidents) == 2
+    assert len(incidents) == 3
     assert \
         raw_incident(
             id="kernelci:29871398212",
@@ -1851,6 +1882,7 @@ def test_issue(source):
             origin="kernelci",
             test_id="kernelci:kernelci.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            present=True,
         ) in \
         incidents
     assert \
@@ -1860,6 +1892,18 @@ def test_issue(source):
             issue_version=1,
             origin="kernelci",
             test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+            present=True,
+        ) in \
+        incidents
+    assert \
+        raw_incident(
+            id='_:908812340982345',
+            issue_id='kernelci:1209203344',
+            issue_version=1,
+            origin='_',
+            present=False,
+            test_id='redhat:redhat.org:'
+            'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c',
         ) in \
         incidents
 
@@ -1876,6 +1920,7 @@ def test_issue(source):
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+            present=True,
         )])
 
     assert \
@@ -1928,6 +1973,7 @@ def test_incident(source):
             origin="_",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         )])
 
     assert \
@@ -1940,6 +1986,7 @@ def test_incident(source):
             origin="redhat",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         )])
 
     assert \
@@ -1951,6 +1998,7 @@ def test_incident(source):
             origin="kernelci",
             test_id="kernelci:kernelci.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            present=True,
         )])
 
     assert \
@@ -1961,6 +2009,7 @@ def test_incident(source):
             issue_version=1,
             origin="kernelci",
             test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+            present=True,
         )])
 
     assert \
@@ -1973,6 +2022,7 @@ def test_incident(source):
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+            present=True,
         )])
 
     assert \

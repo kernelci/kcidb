@@ -83,6 +83,8 @@ function psql_instance_deploy() {
             cloudsql.iam_authentication=on
             max_connections=200
             random_page_cost=1.5
+            cloudsql.enable_pg_cron=on
+            cloudsql.allow_passwordless_local_connections=on
         )
         # Get and cache the password in the current shell first
         password_get psql_superuser >/dev/null
@@ -101,6 +103,21 @@ function psql_instance_deploy() {
             --database-version=POSTGRES_14 \
             --database-flags="$(IFS=','; echo "${database_flags[*]}")"
     fi
+
+    # Deploy pg_cron and its maintenance job
+    psql_proxy_session "$project" "$name" \
+        mute psql --dbname postgres -e <<<"
+            \\set ON_ERROR_STOP on
+            CREATE EXTENSION IF NOT EXISTS pg_cron;
+            SELECT cron.schedule(
+                'purge-old-job-run-details',
+                '0 12 * * *',
+                \$\$
+                    DELETE FROM cron.job_run_details
+                    WHERE end_time < now() - interval '7 days'
+                \$\$
+            );
+        "
 
     # Deploy the shared viewer user
     exists=$(psql_user_exists "$project" "$name" "$viewer")

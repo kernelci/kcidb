@@ -32,6 +32,7 @@ declare _FUNCTIONS_SH=
 #       --database=SPEC
 #       --clean-test-databases=SPEC_LIST
 #       --empty-test-databases=SPEC_LIST
+#       --auto-sync=true|false
 function functions_env() {
     declare params
     params="$(getopt_vars format \
@@ -57,6 +58,7 @@ function functions_env() {
                           database \
                           clean_test_databases \
                           empty_test_databases \
+                          auto_sync \
                           -- "$@")"
     eval "$params"
     declare -A env=(
@@ -106,6 +108,9 @@ function functions_env() {
     fi
     if "$updated_publish"; then
         env[KCIDB_UPDATED_PUBLISH]="1"
+    fi
+    if "$auto_sync"; then
+        env[KCIDB_AUTO_SYNC]="1"
     fi
     if [ "$format" == "yaml" ]; then
         # Silly Python and its significant whitespace

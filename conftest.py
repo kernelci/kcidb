@@ -28,19 +28,20 @@ if not EMPTY_DATABASE_SPECS:
     EMPTY_SQLITE_FILE = tempfile.mkstemp(suffix=".sqlite3")[1]
     atexit.register(os.unlink, EMPTY_SQLITE_FILE)
     EMPTY_DATABASE_SPECS = ["sqlite:" + EMPTY_SQLITE_FILE]
-    EMPTY_SQLITE_DATABASE = kcidb.db.Client(EMPTY_DATABASE_SPECS[0])
+    EMPTY_SQLITE_DATABASE = kcidb.db.Client(EMPTY_DATABASE_SPECS[0],
+                                            auto_sync=True)
     EMPTY_SQLITE_DATABASE.init()
     del EMPTY_SQLITE_DATABASE
 
 # "Clean" (uninitialized) databases indexed by their specifications
 CLEAN_DATABASES = {
-    spec: kcidb.db.Client(spec)
+    spec: kcidb.db.Client(spec, auto_sync=True)
     for spec in CLEAN_DATABASE_SPECS
 }
 
 # "Empty" (no-data) databases indexed by their specifications
 EMPTY_DATABASES = {
-    spec: kcidb.db.Client(spec)
+    spec: kcidb.db.Client(spec, auto_sync=True)
     for spec in EMPTY_DATABASE_SPECS
 }
 
@@ -65,7 +66,7 @@ def empty_deployment():
             pull_iter(timeout=30):
         pass
     # Empty the database
-    kcidb.db.Client(os.environ["KCIDB_DATABASE"]).empty()
+    kcidb.db.Client(os.environ["KCIDB_DATABASE"], auto_sync=True).empty()
     # Wipe the spool
     kcidb.monitor.spool.Client(
         os.environ["KCIDB_SPOOL_COLLECTION_PATH"]

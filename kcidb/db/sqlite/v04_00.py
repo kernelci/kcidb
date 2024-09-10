@@ -434,6 +434,7 @@ class Schema(AbstractSchema):
                       "    NULL AS issue_version,\n"
                       "    NULL AS build_id,\n"
                       "    NULL AS test_id,\n"
+                      "    NULL AS present,\n"
                       "    NULL AS comment,\n"
                       "    NULL AS misc\n"
                       "WHERE 0",
@@ -444,6 +445,7 @@ class Schema(AbstractSchema):
                 issue_version=IntegerColumn(),
                 build_id=TextColumn(),
                 test_id=TextColumn(),
+                present=BoolColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),
@@ -853,3 +855,16 @@ class Schema(AbstractSchema):
         # Flip priority for the next load to maintain (rough)
         # parity with non-determinism of BigQuery's ANY_VALUE()
         self.conn.load_prio_db = not self.conn.load_prio_db
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        # No syncing needed at the moment
+        return False

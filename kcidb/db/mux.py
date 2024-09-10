@@ -416,3 +416,20 @@ class Driver(AbstractDriver):
                 if driver_io_schema != io_schema else data,
                 with_metadata=with_metadata
             )
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        databases, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The databases must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        assert self.is_initialized()
+        synced = False
+        # Sync every driver
+        for driver in self.drivers:
+            synced = driver.sync() or synced
+        return synced

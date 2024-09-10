@@ -208,6 +208,7 @@ class Schema(PreviousSchema):
                  "    issue_version,\n"
                  "    build_id,\n"
                  "    test_id,\n"
+                 "    present,\n"
                  "    comment,\n"
                  "    misc\n"
                  "FROM (\n"
@@ -221,14 +222,23 @@ class Schema(PreviousSchema):
                  "        present,\n"
                  "        comment,\n"
                  "        misc,\n"
-                 "        DENSE_RANK() OVER (\n"
+                 "        RANK() OVER (\n"
                  "            PARTITION BY\n"
                  "                issue_id, build_id, test_id\n"
                  "            ORDER BY issue_version DESC\n"
                  "        ) AS precedence\n"
                  "    FROM incidents\n"
+                 "    WHERE\n"
+                 "        present IS NOT NULL AND\n"
+                 "        EXISTS (\n"
+                 "            SELECT TRUE\n"
+                 "            FROM issues\n"
+                 "            WHERE\n"
+                 "                incidents.issue_id = issues.id AND\n"
+                 "                incidents.issue_version = issues.version\n"
+                 "        )\n"
                  ")\n"
-                 "WHERE precedence = 1 AND present",
+                 "WHERE precedence = 1",
     )
 
     @classmethod

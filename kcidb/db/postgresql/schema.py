@@ -3,7 +3,7 @@ Kernel CI PostgreSQL report database - misc schema definitions
 """
 import json
 from kcidb.db.sql.schema import Constraint, Column, \
-    Table as _SQLTable, Index as _SQLIndex
+    Table as _SQLTable, View as _SQLView, Index as _SQLIndex
 
 
 class BoolColumn(Column):
@@ -254,9 +254,132 @@ class Table(_SQLTable):
         super().__init__("%s", columns, primary_key, key_sep="_")
 
 
+class View(_SQLView):
+    """A view 'schema'"""
+
+    def __init__(self, select, refresh_period=0):
+        """
+        Initialize the view 'schema'.
+
+        Args:
+            select:         The select statement of the view.
+            refresh_period: The materialized view's refresh period, integer
+                            number of 0 < minutes <= 60.
+                            Zero for a regular view.
+        """
+        assert isinstance(select, str)
+        assert isinstance(refresh_period, int)
+        assert 0 <= refresh_period <= 60
+        super().__init__(select, refresh_period)
+
+    def format_create(self, name):
+        """
+        Format the creation command for the view.
+
+        Args:
+            name:       The name to give the view.
+
+        Returns:
+            The command creating the view.
+        """
+        if self.refresh_period:
+            return (
+                f"CREATE MATERIALIZED VIEW IF NOT EXISTS {name} AS\n"
+                f"{self.select}\n"
+                f"WITH DATA"
+            )
+        return (
+            f"CREATE OR REPLACE VIEW {name} AS\n"
+            f"{self.select}\n"
+        )
+
+    def format_setup(self, name):
+        """
+        Format the view maintenance setup commands.
+
+        Args:
+            name:       The name of the view to be maintained.
+
+        Returns:
+            The tuple of commands setting up the view maintenance.
+        """
+        if self.refresh_period:
+            schedule = '0 * * * *' if self.refresh_period == 60 \
+                else f'*/{self.refresh_period} * * * *'
+            return (
+                f"SELECT * FROM dblink(\n"
+                f"    'dbname=postgres user=' || current_user,\n"
+                f"    $$\n"
+                f"        SELECT cron.schedule_in_database(\n"
+                f"            '$$ || current_database() || "
+                f"$$_refresh_{name}',\n"
+                f"            '{schedule}',\n"
+                f"            'REFRESH MATERIALIZED VIEW CONCURRENTLY "
+                f"{name}',\n"
+                f"            '$$ || current_database() || $$'\n"
+                f"        ) AS id\n"
+                f"    $$\n"
+                f") AS result(id BIGINT)",
+            )
+        return tuple()
+
+    def format_refresh(self, name):
+        """
+        Format the view refresh commands.
+
+        Args:
+            name:       The name of the view to refresh
+
+        Returns:
+            The command refreshing the view.
+        """
+        if self.refresh_period:
+            return (f"REFRESH MATERIALIZED VIEW CONCURRENTLY {name}",)
+        return tuple()
+
+    def format_teardown(self, name):
+        """
+        Format the view maintenance teardown commands.
+
+        Args:
+            name:       The name of the view to stop maintenance of.
+
+        Returns:
+            The command tearing down the view maintenance.
+        """
+        if self.refresh_period:
+            return (
+                f"SELECT * FROM dblink(\n"
+                f"    'dbname=postgres user=' || current_user,\n"
+                f"    $$\n"
+                f"        SELECT cron.unschedule(\n"
+                f"            '$$ || current_database() || "
+                f"$$_refresh_{name}'\n"
+                f"        ) AS success\n"
+                f"    $$\n"
+                f") AS result(success BOOL)",
+            )
+        return tuple()
+
+    def format_drop(self, name):
+        """
+        Format the drop command for the view.
+
+        Args:
+            name:       The name of the view being dropped.
+
+        Returns:
+            The command dropping the view.
+        """
+        return (
+            f"DROP {['', 'MATERIALIZED '][self.refresh_period > 0]}VIEW "
+            f"{name}"
+        )
+
+
 class Index(_SQLIndex):
     """An index schema"""
-    def __init__(self, table, columns, method=None):
+    def __init__(self, table, columns, method=None, unique=False):
         """
         Initialize the index schema.
 
@@ -267,13 +390,15 @@ class Index(_SQLIndex):
                         as used for the Table creation parameters.
             method:     The index method string, if different from default.
                         None, if the default should be used.
+            unique:     True if the index is unique, False otherwise.
         """
         assert isinstance(table, str)
         assert isinstance(columns, list)
         assert all(isinstance(c, str) for c in columns)
         assert method is None or isinstance(method, str) and method
+        assert isinstance(unique, bool)
         # TODO: Switch to hardcoding "_" key_sep in base class
-        super().__init__(table, columns, key_sep="_")
+        super().__init__(table, columns, key_sep="_", unique=unique)
         self.method = method
 
     def format_create(self, name):
@@ -288,7 +413,8 @@ class Index(_SQLIndex):
         """
         method = "" if self.method is None else f" USING {self.method}"
         return (
-            f"CREATE INDEX IF NOT EXISTS {name} ON {self.table}{method} (" +
+            f"CREATE {['', 'UNIQUE '][self.unique]}INDEX "
+            f"IF NOT EXISTS {name} ON {self.table}{method} (" +
             ", ".join(self.columns.values()) +
             ")"
         )

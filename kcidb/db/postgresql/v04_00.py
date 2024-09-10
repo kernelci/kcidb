@@ -280,6 +280,9 @@ class Schema(AbstractSchema):
     # A map of index names and schemas
     INDEXES = {}
 
+    # A map of view names and schemas
+    VIEWS = {}
+
     # Queries and their columns for each type of raw object-oriented data.
     # Both should have columns in the same order.
     OO_QUERIES = dict(
@@ -472,6 +475,7 @@ class Schema(AbstractSchema):
                       "    NULL AS issue_version,\n"
                       "    NULL AS build_id,\n"
                       "    NULL AS test_id,\n"
+                      "    NULL AS present,\n"
                       "    NULL AS comment,\n"
                       "    NULL AS misc\n"
                       "WHERE FALSE",
@@ -482,6 +486,7 @@ class Schema(AbstractSchema):
                 issue_version=IntegerColumn(),
                 build_id=TextColumn(),
                 test_id=TextColumn(),
+                present=BoolColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),
@@ -530,6 +535,14 @@ class Schema(AbstractSchema):
                     raise Exception(
                         f"Failed creating table {table_name!r}"
                     ) from exc
+            # Create the views
+            for view_name, view_schema in self.VIEWS.items():
+                try:
+                    cursor.execute(view_schema.format_create(view_name))
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed creating view {view_name!r}"
+                    ) from exc
             # Create the indexes
             for index_name, index_schema in self.INDEXES.items():
                 try:
@@ -538,6 +551,15 @@ class Schema(AbstractSchema):
                     raise Exception(
                         f"Failed creating index {index_name!r}"
                     ) from exc
+            # Setup the views
+            for view_name, view_schema in self.VIEWS.items():
+                try:
+                    for command in view_schema.format_setup(view_name):
+                        cursor.execute(command)
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed setting up view {view_name!r}"
+                    ) from exc
 
     def cleanup(self):
         """
@@ -545,6 +567,10 @@ class Schema(AbstractSchema):
         The database must be initialized.
         """
         with self.conn, self.conn.cursor() as cursor:
+            for name, schema in self.VIEWS.items():
+                for command in schema.format_teardown(name):
+                    cursor.execute(command)
+                cursor.execute(schema.format_drop(name))
             cursor.execute("DROP AGGREGATE IF EXISTS last(anyelement)")
             cursor.execute("DROP AGGREGATE IF EXISTS first(anyelement)")
             cursor.execute(
@@ -905,3 +931,27 @@ class Schema(AbstractSchema):
         # Flip priority for the next load to maintain (rough)
         # parity with non-determinism of BigQuery's ANY_VALUE()
         self.conn.load_prio_db = not self.conn.load_prio_db
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        synced = False
+        with self.conn, self.conn.cursor() as cursor:
+            # Refresh the views
+            for view_name, view_schema in self.VIEWS.items():
+                try:
+                    for command in view_schema.format_refresh(view_name):
+                        cursor.execute(command)
+                        synced = True
+                except Exception as exc:
+                    raise Exception(
+                        f"Failed refreshing view {view_name!r}"
+                    ) from exc
+        return synced

@@ -414,13 +414,93 @@ class Table:
                               drop_null=drop_null)
 
 
+class View:
+    """A view 'schema'"""
+
+    def __init__(self, select, refresh_period=0):
+        """
+        Initialize the view 'schema'.
+
+        Args:
+            select:         The select statement of the view.
+            refresh_period: The materialized view's refresh period, integer
+                            number of 0 < minutes <= 60.
+                            Zero for a regular view.
+        """
+        assert isinstance(select, str)
+        assert isinstance(refresh_period, int)
+        assert 0 <= refresh_period <= 60
+        self.select = select
+        self.refresh_period = refresh_period
+
+    def format_create(self, name):
+        """
+        Format the creation command for the view.
+
+        Args:
+            name:       The name to give the view.
+
+        Returns:
+            The command creating the view.
+        """
+        raise NotImplementedError
+
+    def format_setup(self, name):
+        """
+        Format the view maintenance setup commands.
+
+        Args:
+            name:       The name of the view to be maintained.
+
+        Returns:
+            The tuple of commands setting up the view maintenance.
+        """
+        raise NotImplementedError
+
+    def format_refresh(self, name):
+        """
+        Format the view refresh commands.
+
+        Args:
+            name:       The name of the view to refresh
+
+        Returns:
+            The command refreshing the view.
+        """
+        raise NotImplementedError
+
+    def format_teardown(self, name):
+        """
+        Format the view maintenance teardown commands.
+
+        Args:
+            name:       The name of the view to stop maintenance of.
+
+        Returns:
+            The command tearing down the view maintenance.
+        """
+        raise NotImplementedError
+
+    def format_drop(self, name):
+        """
+        Format the drop command for the view.
+
+        Args:
+            name:       The name of the view being dropped.
+
+        Returns:
+            The command dropping the view.
+        """
+        raise NotImplementedError
+
+
 class Index:
     """An index schema"""
 
     # The type of table columns used in the index
     TableColumn = TableColumn
 
-    def __init__(self, table, columns, key_sep="_"):
+    def __init__(self, table, columns, key_sep="_", unique=False):
         """
         Initialize the index schema.
 
@@ -431,16 +511,19 @@ class Index:
                         as used for the Table creation parameters.
             key_sep:    String used to replace dots in column names ("key"
                         separator) when adapting them to the tables.
+            unique:     True if the index is unique, False otherwise.
         """
         assert isinstance(table, str)
         assert isinstance(columns, list)
         assert all(isinstance(c, str) for c in columns)
+        assert isinstance(unique, bool)
         self.table = table
         # Dot-separated column names => quoted table column names
         self.columns = {
             name: self.TableColumn.adapt_name(name, key_sep)[0]
             for name in columns
         }
+        self.unique = unique
 
     def format_create(self, name):
         """
@@ -453,7 +536,8 @@ class Index:
             The formatted "CREATE INDEX" command.
         """
         return (
-            f"CREATE INDEX IF NOT EXISTS {name} ON {self.table} (" +
+            f"CREATE {['', 'UNIQUE '][self.unique]}INDEX "
+            f"IF NOT EXISTS {name} ON {self.table} (" +
             ", ".join(self.columns.values()) +
             ")"
         )

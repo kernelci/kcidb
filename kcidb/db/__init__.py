@@ -55,7 +55,7 @@ DRIVER_TYPES = dict(
 class Client(kcidb.orm.Source):
     """Kernel CI report database client"""
 
-    def __init__(self, database):
+    def __init__(self, database, auto_sync=False):
         """
         Initialize the Kernel CI report database client.
 
@@ -64,6 +64,12 @@ class Client(kcidb.orm.Source):
                         as "<DRIVER>:<PARAMS>" or just "<DRIVER>". Where
                         "<DRIVER>" is the driver name, and "<PARAMS>" is the
                         optional driver-specific database parameter string.
+            auto_sync:  True if the client should propagate changes (load,
+                        purge, etc.) through the database before returning
+                        from the corresponding method.
+                        False if the propagation should be left to periodic
+                        processes or explicit propagation using the sync()
+                        method.
 
         Raises:
             UnknownDriver       - an unknown (sub-)driver encountered in the
@@ -74,7 +80,9 @@ class Client(kcidb.orm.Source):
                                   driver
         """
         assert isinstance(database, str)
+        assert isinstance(auto_sync, bool)
         self.database = database
+        self.auto_sync = auto_sync
         self.driver = None
         self.reset()
 
@@ -142,6 +150,8 @@ class Client(kcidb.orm.Source):
         """
         assert self.is_initialized()
         self.driver.empty()
+        if self.auto_sync:
+            self.sync()
 
     def purge(self, before=None):
         """
@@ -164,7 +174,10 @@ class Client(kcidb.orm.Source):
         assert self.is_initialized()
         assert before is None or \
             isinstance(before, datetime.datetime) and before.tzinfo
-        return self.driver.purge(before)
+        purged = self.driver.purge(before)
+        if purged and self.auto_sync:
+            self.sync()
+        return purged
 
     def get_current_time(self):
         """
@@ -433,6 +446,21 @@ class Client(kcidb.orm.Source):
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
         self.driver.load(data, with_metadata=with_metadata)
+        if self.auto_sync:
+            self.sync()
+
+    def sync(self):
+        """
+        Propagate the recent changes (load, purge, etc.) through the
+        database, immediately, without leaving it to periodic propagation.
+        Such as updating materialized views. The database must be initialized.
+
+        Returns:
+            True if sync is supported and has succeeded.
+            False if sync is not supported/required.
+        """
+        assert LIGHT_ASSERTS or self.is_initialized()
+        return self.driver.sync()
 
 
 class DBHelpAction(argparse.Action):
@@ -721,8 +749,13 @@ def load_main():
         help='Load metadata fields as well',
         action='store_true'
     )
+    parser.add_argument(
+        '--sync',
+        help='Propagate database changes immediately, if needed',
+        action='store_true'
+    )
     args = parser.parse_args()
-    client = Client(args.database)
+    client = Client(args.database, auto_sync=args.sync)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
     io_schema = client.get_schema()[1]
@@ -857,8 +890,13 @@ def empty_main():
     description = 'kcidb-db-empty - Remove all data from a ' \
         'Kernel CI report database'
     parser = ArgumentParser(description=description)
+    parser.add_argument(
+        '--sync',
+        help='Propagate database changes immediately, if needed',
+        action='store_true'
+    )
     args = parser.parse_args()
-    client = Client(args.database)
+    client = Client(args.database, auto_sync=args.sync)
     if client.is_initialized():
         client.empty()
     else:
@@ -881,8 +919,26 @@ def purge_main():
         "be *preserved* should've arrived. "
         "No data is removed if not specified."
     )
+    parser.add_argument(
+        '--sync',
+        help='Propagate database changes immediately, if needed',
+        action='store_true'
+    )
+    args = parser.parse_args()
+    client = Client(args.database, auto_sync=args.sync)
+    if not client.is_initialized():
+        raise Exception(f"Database {args.database!r} is not initialized")
+    return 0 if client.purge(before=args.before) else 2
+
+
+def sync_main():
+    """Execute the kcidb-db-sync command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = 'kcidb-db-sync - Propagate database changes. ' \
+        'Exit with status 2, if not needed/supported by database.'
+    parser = ArgumentParser(description=description)
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
-    return 0 if client.purge(before=args.before) else 2
+    return 0 if client.sync() else 2

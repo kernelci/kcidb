@@ -84,7 +84,8 @@ def test_empty_main():
         with patch("kcidb.db.Client", return_value=client) as \
                 Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("bigquery:project.dataset",
+                                       auto_sync=False)
         client.empty.assert_called_once()
         return status
     """)
@@ -207,7 +208,8 @@ def test_load_main():
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("bigquery:project.dataset",
+                                       auto_sync=False)
         client.load.assert_called_once_with({repr(empty)},
                                             with_metadata=False)
         return status
@@ -223,7 +225,8 @@ def test_load_main():
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("bigquery:project.dataset",
+                                       auto_sync=False)
         assert client.load.call_count == 2
         client.load.assert_has_calls([
             call({repr(empty)}, with_metadata=False),
@@ -1112,6 +1115,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1279,6 +1283,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1464,6 +1469,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1487,8 +1493,9 @@ def test_upgrade(clean_database):
             database.upgrade(io_version)
             # Check upgrade went well
             # You're wrong, pylint: disable=unsubscriptable-object
-            assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
-                last_params["oo"]
+            assert database.oo_query(
+                kcidb.orm.query.Pattern.parse(">*#")
+            ) == last_params["oo"]
             upgraded_io = io_version.upgrade(last_params["io"])
             assert database.dump(with_metadata=False) == upgraded_io
             assert database.query(io_version.get_ids(upgraded_io)) == \
