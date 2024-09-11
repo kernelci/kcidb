@@ -186,7 +186,7 @@ def test_subject_and_body_length():
     notification_message = NotificationMessage(
         ["kernelci-results-staging@groups.io"],
         subject="Test completed for linux.git:123" * 10,
-        body="Below is the summary of results Kernel CI database has recorded " * 70
+        body="Below is the summary of results Kernel CI database has recorded " * 1200
     )
     notification = Notification(revision, "test_subscription_6", notification_message)
     message = notification.render()
