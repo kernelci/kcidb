@@ -27,10 +27,13 @@ def match_revision(revision):
     return (Message(
         subject='KernelCI report for stable-rt: '
                 '{% include "stable_revision_summary.txt.j2" %}',
-        to=["Jeny Sadadia <jeny.sadadia@collabora.com>",
-            "Gustavo Padovan <gustavo.padovan@collabora.com>",
-            "Shreeya Patel <shreeya.patel@collabora.com>"],
+        to=["stable-rt <stable-rt@vger.kernel.org>"],
         body='{% include "stable_rt_revision_description.txt.j2" %}',
-        cc=["KernelCI Results Staging <kernelci-results-staging@groups.io>"],
+        cc=["KernelCI Results Staging <kernelci-results-staging@groups.io>",
+            "Jeny Sadadia <jeny.sadadia@collabora.com>",
+            "Gustavo Padovan <gustavo.padovan@collabora.com>",
+            "Shreeya Patel <shreeya.patel@collabora.com>",
+            "Helen Mae Koike Fornazier <helen.koike@collabora.com>",
+            ],
         due=datetime.now(timezone.utc) + timedelta(hours=3)
     ),)
