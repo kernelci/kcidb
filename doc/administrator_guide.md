@@ -2,7 +2,7 @@
 title: "Administrator guide"
 date: 2021-11-18
 draft: false
-wieght: 40
+wieght: 50
 description: "Deploying, maintaining, and upgrading a KCIDB service installation"
 ---
 
