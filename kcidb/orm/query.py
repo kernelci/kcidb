@@ -421,6 +421,7 @@ class Pattern:
         Returns:
             The set of patterns referenced by the specification.
         """
+        assert isinstance(schema, Schema)
         assert isinstance(base_set, set)
         assert all(isinstance(base, Pattern) for base in base_set)
         assert isinstance(match_set, set)
