@@ -908,12 +908,12 @@ class Schema(AbstractSchema):
         obj_type = pattern.obj_type
         type_query_string = cls.OO_QUERIES[obj_type.name]
         if pattern.obj_id_set:
-            obj_id_fields = obj_type.id_fields
+            obj_id_field_types = obj_type.id_field_types
             query_string = "SELECT obj.* FROM (\n" + \
                 textwrap.indent(type_query_string, " " * 4) + "\n" + \
                 ") AS obj INNER JOIN (\n" + \
                 "    SELECT * FROM UNNEST(?)\n" + \
-                ") AS ids USING(" + ", ".join(obj_id_fields) + ")"
+                ") AS ids USING(" + ", ".join(obj_id_field_types) + ")"
             query_parameters = [
                 bigquery.ArrayQueryParameter(
                     None,
@@ -923,7 +923,7 @@ class Schema(AbstractSchema):
                             None,
                             *(
                                 bigquery.ScalarQueryParameter(c, "STRING", v)
-                                for c, v in zip(obj_id_fields, obj_id)
+                                for c, v in zip(obj_id_field_types, obj_id)
                             )
                         )
                         for obj_id in pattern.obj_id_set
@@ -944,11 +944,11 @@ class Schema(AbstractSchema):
             if pattern.child:
                 column_pairs = zip(
                     base_obj_type.children[obj_type.name].ref_fields,
-                    base_obj_type.id_fields
+                    base_obj_type.id_field_types
                 )
             else:
                 column_pairs = zip(
-                    obj_type.id_fields,
+                    obj_type.id_field_types,
                     obj_type.children[base_obj_type.name].ref_fields
                 )
 
@@ -1000,12 +1000,12 @@ class Schema(AbstractSchema):
                                 " " * 4) + "\n" + \
                 ") AS obj INNER JOIN (\n" + \
                 "    SELECT DISTINCT " + \
-                ", ".join(obj_type.id_fields) + \
+                ", ".join(obj_type.id_field_types) + \
                 " FROM (\n" + \
                 textwrap.indent("\nUNION ALL\n".join(q[0] for q in queries),
                                 " " * 8) + "\n" + \
                 "    )\n" + \
-                ") AS ids USING(" + ", ".join(obj_type.id_fields) + ")"
+                ") AS ids USING(" + ", ".join(obj_type.id_field_types) + ")"
             query_parameters = reduce(lambda x, y: x + y,
                                       (q[1] for q in queries))
             job = self.conn.query_create(query_string, query_parameters)

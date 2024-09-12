@@ -154,20 +154,22 @@ class Pattern:
             obj_id_set:     The set/frozenset of IDs of the objects to limit
                             the pattern to, or None to not limit the objects
                             by IDs. Default is None. Sets will be converted to
-                            frozensets. Each ID is a tuple of strings with the
-                            number of elements corresponding to the number of
-                            ID fields of the object type.
+                            frozensets. Each ID is a tuple of values with the
+                            types and number of elements corresponding to the
+                            ID field types of the object type.
         """
         assert base is None or isinstance(base, Pattern)
         assert isinstance(child, bool)
         assert isinstance(obj_type, Type)
-        obj_id_fields = obj_type.id_fields
+        obj_id_field_types = obj_type.id_field_types
         assert obj_id_set is None or \
                isinstance(obj_id_set, (set, frozenset)) and \
                all(
                     isinstance(obj_id, tuple) and
-                    len(obj_id) == len(obj_id_fields) and
-                    all(isinstance(part, (str, type(None))) for part in obj_id)
+                    len(obj_id) == len(obj_id_field_types) and
+                    all(isinstance(part, (part_type, type(None)))
+                        for part_type, part in
+                        zip(obj_id_field_types.values(), obj_id))
                     for obj_id in obj_id_set
                )
         assert base is not None or child
@@ -213,10 +215,11 @@ class Pattern:
         Returns:
             The formatted (quoted or unquoted) ID field.
         """
+        id_field_str = str(id_field)
         # If we can leave the field unquoted
         if re.fullmatch(_PATTERN_STRING_ID_FIELD_UNQUOTED_PATTERN,
-                        id_field, re.ASCII | re.VERBOSE):
-            return id_field
+                        id_field_str, re.ASCII | re.VERBOSE):
+            return id_field_str
         part_re = re.compile(f"""
             ({_PATTERN_STRING_ID_FIELD_QUOTED_ESC_CHAR_PATTERN}) |
             ({_PATTERN_STRING_ID_FIELD_QUOTED_UNESC_CHAR_PATTERN}*)
@@ -224,17 +227,17 @@ class Pattern:
         parts = []
         pos = 0
         while True:
-            match = part_re.match(id_field, pos)
+            match = part_re.match(id_field_str, pos)
             esc, unesc = match.group(1, 2)
             pos = match.end()
             if unesc:
                 parts.append(unesc)
             elif esc:
                 parts += ["\\", esc]
-            elif pos < len(id_field):
+            elif pos < len(id_field_str):
                 raise Exception(
                     f"ID field cannot be represented in a pattern string: "
-                    f"{id_field}"
+                    f"{id_field!r}"
                 )
             else:
                 break
@@ -275,39 +278,58 @@ class Pattern:
         return string
 
     @staticmethod
-    def _validate_obj_id_set(obj_type, obj_id_set):
+    def _parse_obj_str_id_set(obj_type, obj_str_id_set):
         """
-        Validate a set/frozenset of object IDs against a type.
+        Parse a set/frozenset of string IDs for the specified object type.
 
         Args:
-            obj_type:   The type to validate the ID set/frozenset against.
-            obj_id_set: The ID set/frozenset to validate, or None for no IDs.
+            obj_type:       The type to parse the string ID set/frozenset for.
+            obj_str_id_set: The string ID set/frozenset to parse,
+                            or None for no IDs.
 
         Returns:
-            The validated ID set/frozenset, or None if supplied with None.
+            The parsed ID set/frozenset, or None if supplied with None.
 
         Raises:
-            Exception if the ID set/frozenset is invalid for the type.
+            Exception if the string ID set/frozenset is invalid for the type.
         """
         assert isinstance(obj_type, Type)
-        assert obj_id_set is None or \
-            (isinstance(obj_id_set, (set, frozenset)) and
-             all(isinstance(obj_id, tuple) and
-                 all(isinstance(part, (str, type(None))) for part in obj_id)
-                 for obj_id in obj_id_set))
-        for obj_id in obj_id_set or []:
-            if len(obj_id) != len(obj_type.id_fields):
+        assert obj_str_id_set is None or \
+            (isinstance(obj_str_id_set, (set, frozenset)) and
+             all(isinstance(obj_str_id, tuple) and
+                 all(isinstance(str_part, (str, type(None)))
+                     for str_part in obj_str_id)
+                 for obj_str_id in obj_str_id_set))
+        if obj_str_id_set is None:
+            return None
+        obj_id_set = set()
+        for obj_str_id in obj_str_id_set or []:
+            if len(obj_str_id) != len(obj_type.id_field_types):
                 raise Exception(
                     f"Invalid number of ID fields "
-                    f"({len(obj_id)}) for {obj_type.name!r}. "
-                    f"Expecting {len(obj_type.id_fields)} "
-                    f"fields: {obj_id!r}"
+                    f"({len(obj_str_id)}) for {obj_type.name!r}. "
+                    f"Expecting {len(obj_type.id_field_types)} "
+                    f"fields: {obj_str_id!r}"
                 )
+            obj_id = tuple()
+            for part_name, part_type, str_part in zip(
+                obj_type.id_field_types.keys(),
+                obj_type.id_field_types.values(),
+                obj_str_id
+            ):
+                try:
+                    obj_id += (part_type(str_part), )
+                except ValueError as exc:
+                    raise Exception(
+                        f"Invalid {part_name!r} part {str_part!r} of "
+                        f"string ID fields for {obj_type.name!r}"
+                    ) from exc
+            obj_id_set.add(obj_id)
         return obj_id_set
 
     @staticmethod
     def _expand_relation(schema, base_set,
-                         child, obj_type_expr, obj_id_set):
+                         child, obj_type_expr, obj_str_id_set):
         """
         Expand a single level of parent/child relation into a list of
         patterns, for a parsed pattern specification.
@@ -320,10 +342,10 @@ class Pattern:
             child:          True, if expanding children of the specified
                             bases. False, if parents.
             obj_type_expr:  Object type expression, one of:
-                            "*" - all children types,
-                            or a name of the specific child type.
-            obj_id_set:     The set/frozenset of object IDs to limit the
-                            pattern to, or None to not limit the pattern.
+                            "*" - all child/parent types,
+                            or a name of the specific child/parent type.
+            obj_str_id_set: The set/frozenset of object string IDs to limit
+                            the pattern to, or None to not limit the pattern.
 
         Returns:
             Two values: a set of new patterns expanded from the
@@ -335,11 +357,12 @@ class Pattern:
         assert all(isinstance(base, Pattern) for base in base_set)
         assert isinstance(child, bool)
         assert isinstance(obj_type_expr, str)
-        assert obj_id_set is None or \
-            (isinstance(obj_id_set, (set, frozenset)) and
-             all(isinstance(obj_id, tuple) and
-                 all(isinstance(part, (str, type(None))) for part in obj_id)
-                 for obj_id in obj_id_set))
+        assert obj_str_id_set is None or \
+            (isinstance(obj_str_id_set, (set, frozenset)) and
+             all(isinstance(obj_str_id, tuple) and
+                 all(isinstance(str_part, (str, type(None)))
+                     for str_part in obj_str_id)
+                 for obj_str_id in obj_str_id_set))
 
         new_set = set()
         unused_set = set()
@@ -359,8 +382,8 @@ class Pattern:
                         base_new_set.add(
                             Pattern(
                                 base, child, obj_type,
-                                Pattern._validate_obj_id_set(obj_type,
-                                                             obj_id_set)
+                                Pattern._parse_obj_str_id_set(obj_type,
+                                                              obj_str_id_set)
                             )
                         )
                 # If we have expanded to something
@@ -381,8 +404,8 @@ class Pattern:
                     new_set.add(
                         Pattern(
                             None, child, obj_type,
-                            Pattern._validate_obj_id_set(obj_type,
-                                                         obj_id_set)
+                            Pattern._parse_obj_str_id_set(obj_type,
+                                                          obj_str_id_set)
                         )
                     )
             # If we have expanded to nothing
@@ -395,7 +418,7 @@ class Pattern:
     # It's OK for now, pylint: disable=too-many-positional-arguments
     @staticmethod
     def _expand(schema, base_set, match_set, child, obj_type_expr,
-                obj_id_set, match_spec):
+                obj_str_id_set, match_spec):
         """
         Expand a parsed pattern specification into a list of referenced
         patterns, and a list of matching patterns.
@@ -412,8 +435,8 @@ class Pattern:
             obj_type_expr:  Object type expression, one of:
                             "*" - all children/parents,
                             or a name of the specific type.
-            obj_id_set:     The set/frozenset of object IDs to limit the
-                            pattern to, or None to not limit the pattern.
+            obj_str_id_set: The set/frozenset of object string IDs to limit
+                            the pattern to, or None to not limit the pattern.
             match_spec:     The matching specification string ("#", or "$"),
                             or None, if expanded patterns shouldn't be marked
                             for matching.
@@ -427,17 +450,18 @@ class Pattern:
         assert isinstance(match_set, set)
         assert isinstance(child, bool)
         assert isinstance(obj_type_expr, str)
-        assert obj_id_set is None or \
-            (isinstance(obj_id_set, (set, frozenset)) and
-             all(isinstance(obj_id, tuple) and
-                 all(isinstance(part, (str, type(None))) for part in obj_id)
-                 for obj_id in obj_id_set))
+        assert obj_str_id_set is None or \
+            (isinstance(obj_str_id_set, (set, frozenset)) and
+             all(isinstance(obj_str_id, tuple) and
+                 all(isinstance(str_part, (str, type(None)))
+                     for str_part in obj_str_id)
+                 for obj_str_id in obj_str_id_set))
         assert match_spec in (None, "#", "$")
 
         ref_set = set()
         while True:
             base_set, unused_set = Pattern._expand_relation(
-                schema, base_set, child, obj_type_expr, obj_id_set)
+                schema, base_set, child, obj_type_expr, obj_str_id_set)
             if obj_type_expr == "*":
                 ref_set |= unused_set
                 if match_spec == "$":
@@ -467,8 +491,8 @@ class Pattern:
             pos:    The position to start parsing at.
 
         Returns:
-            A tuple containing parsed ID fields, and the stopping position at
-            the end of whitespace following the ID.
+            A string ID - tuple containing parsed string ID parts, and the
+            stopping position at the end of whitespace following the ID.
         """
         assert LIGHT_ASSERTS or re.match(_PATTERN_STRING_ID_PATTERN,
                                          string[pos:],
@@ -546,27 +570,29 @@ class Pattern:
         return frozenset(id_list)
 
     @staticmethod
-    def _parse_spec(string, obj_id_set_list):
+    def _parse_spec(string, obj_str_id_set_list):
         """
         Parse an optional ID list specification from a pattern string,
-        possibly consuming an element from the supplied object ID list list.
+        possibly consuming an element from the supplied object string ID set
+        list.
 
         Args:
-            string:             The ID list specification string to parse,
-                                or None, meaning the pattern had no ID list
-                                specification.
-            obj_id_set_list:    The list of object ID sets/frozensets to
-                                retrieve IDs for placeholders from, or None,
-                                meaning no list was supplied with the pattern
-                                string. Not modified.
+            string:                 The ID list specification string to parse,
+                                    or None, meaning the pattern had no ID
+                                    list specification.
+            obj_str_id_set_list:    The list of object string ID
+                                    sets/frozensets to retrieve string IDs for
+                                    placeholders from, or None, meaning no
+                                    list was supplied with the pattern string.
+                                    Not modified.
 
         Returns:
             Two items:
-                * the retrieved object ID set/frozenset, or None, if no
-                  specification was provided with the pattern;
-                * the provided list of object ID sets/frozensets, possibly
-                  with the first element removed, if it was consumed by a
-                  placeholder.
+                * the retrieved object string ID set/frozenset, or None,
+                  if no specification was provided with the pattern;
+                * the provided list of object string ID sets/frozensets,
+                  possibly with the first element removed, if it was consumed
+                  by a placeholder.
 
         Raises:
             Exception with a message, if there were no, or not enough ID
@@ -582,20 +608,20 @@ class Pattern:
 
         # NOTE: Not handling failures here, we're expecting a valid string
         if string is None:
-            return None, obj_id_set_list
+            return None, obj_str_id_set_list
         if string == "%":
-            if obj_id_set_list is None:
+            if obj_str_id_set_list is None:
                 raise Exception(
-                    "No ID list list specified to substitute the placeholder"
+                    "No ID set list specified to substitute the placeholder"
                 )
             try:
-                return obj_id_set_list[0], obj_id_set_list[1:]
+                return obj_str_id_set_list[0], obj_str_id_set_list[1:]
             except IndexError:
                 raise Exception("Not enough ID lists specified") from None
         # Parse the ID list inside brackets, if any
         brackets_contents = string[1:-1].strip()
         return (Pattern._parse_id_list(brackets_contents)
-                if brackets_contents else frozenset()), obj_id_set_list
+                if brackets_contents else frozenset()), obj_str_id_set_list
 
     STRING_DOC = textwrap.dedent("""\
         The pattern string is a series of pattern specifications, each
@@ -690,35 +716,38 @@ class Pattern:
     """)
 
     @staticmethod
-    def parse(string, obj_id_set_list=None, schema=None):
+    def parse(string, obj_str_id_set_list=None, schema=None):
         """
-        Parse a pattern string and its parameter IDs into a tree of Pattern
-        objects. See kcidb.orm.query.Pattern.STRING_DOC for documentation on
-        pattern strings.
+        Parse a pattern string and its parameter string IDs into a tree of
+        Pattern objects. See kcidb.orm.query.Pattern.STRING_DOC for
+        documentation on pattern strings.
 
         Args:
-            string:             The pattern string.
-            obj_id_set_list:    A list of ID sets/frozensets to use to filter
-                                the referenced objects with, in the order
-                                specified in the pattern string. Each ID is a
-                                tuple with ID column value strings. If not
-                                specified, or specified as None, ID list
-                                placeholders are not allowed in the pattern
-                                string.
-            schema:             An object type schema to use, or None to use
-                                kcidb.orm.data.SCHEMA.
+            string:                 The pattern string.
+            obj_str_id_set_list:    A list of sets/frozensets of string IDs to
+                                    use to filter the referenced objects with,
+                                    in the order corresponding to the pattern
+                                    string. Each string ID is a tuple with ID
+                                    column value strings. If not specified, or
+                                    specified as None, ID list placeholders
+                                    are not allowed in the pattern string.
+            schema:                 An object type schema to use, or None to
+                                    use kcidb.orm.data.SCHEMA.
 
         Returns:
             A set of leaf Pattern objects selecting the ORM objects matched by
             the pattern string.
         """
         assert isinstance(string, str)
-        assert obj_id_set_list is None or (
-            isinstance(obj_id_set_list, list) and
+        assert obj_str_id_set_list is None or (
+            isinstance(obj_str_id_set_list, list) and
             all(
-                isinstance(obj_id_set, (set, frozenset)) and
-                all(isinstance(obj_id, tuple) for obj_id in obj_id_set)
-                for obj_id_set in obj_id_set_list
+                isinstance(obj_str_id_set, (set, frozenset)) and
+                all(isinstance(obj_str_id, tuple) and
+                    all(isinstance(str_part, (str, type(None)))
+                        for str_part in obj_str_id)
+                    for obj_str_id in obj_str_id_set)
+                for obj_str_id_set in obj_str_id_set_list
             )
         )
         assert schema is None or isinstance(schema, Schema)
@@ -735,13 +764,13 @@ class Pattern:
                                 f"at position {pos}: {string[pos:]!r}")
             relation, obj_type_expr, spec, match_spec = \
                 match.group("relation", "type", "spec", "match")
-            obj_id_set, obj_id_set_list = Pattern._parse_spec(
-                spec, obj_id_set_list
+            obj_str_id_set, obj_str_id_set_list = Pattern._parse_spec(
+                spec, obj_str_id_set_list
             )
             try:
                 base_set = Pattern._expand(
                     schema, base_set, match_set, relation == ">",
-                    obj_type_expr, obj_id_set, match_spec
+                    obj_type_expr, obj_str_id_set, match_spec
                 )
             except Exception as exc:
                 raise Exception(
@@ -749,7 +778,7 @@ class Pattern:
                     f"at position {pos}: {string[pos:]!r}"
                 ) from exc
             pos = match.end()
-        if obj_id_set_list:
+        if obj_str_id_set_list:
             raise Exception(
                 f"Too many ID sets specified for pattern {string!r}"
             )
@@ -793,11 +822,11 @@ class Pattern:
             if not obj_list:
                 continue
             obj_type = schema.types[obj_list_name[:-1]]
-            id_fields = obj_type.id_fields
+            id_field_types = obj_type.id_field_types
             for obj_list_slice in kcidb.misc.isliced(obj_list, max_objs):
                 pattern_set.add(
                     Pattern(None, True, obj_type, {
-                        tuple(o[id_field] for id_field in id_fields)
+                        tuple(o[id_field] for id_field in id_field_types)
                         for o in obj_list_slice
                     })
                 )
