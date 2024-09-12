@@ -4,8 +4,8 @@ import textwrap
 from kcidb.misc import merge_dicts
 import kcidb.io as io
 from kcidb.db.postgresql.schema import \
-    Column, FloatColumn, TextColumn, TextArrayColumn, JSONColumn, \
-    BoolColumn, TimestampColumn, Table, Index
+    Column, FloatColumn, TextColumn, TextArrayColumn, \
+    Table, Index
 from .v04_07 import Schema as PreviousSchema
 
 
@@ -64,7 +64,8 @@ class Schema(PreviousSchema):
     # Both should have columns in the same order.
     OO_QUERIES = merge_dicts(
         PreviousSchema.OO_QUERIES,
-        test=dict(
+        test=merge_dicts(
+            PreviousSchema.OO_QUERIES["test"],
             statement="SELECT\n"
                       "    id,\n"
                       "    build_id,\n"
@@ -86,27 +87,6 @@ class Schema(PreviousSchema):
                       "    comment,\n"
                       "    misc\n"
                       "FROM tests",
-            schema=Table(dict(
-                id=TextColumn(),
-                build_id=TextColumn(),
-                origin=TextColumn(),
-                path=TextColumn(),
-                environment_comment=TextColumn(),
-                environment_compatible=TextArrayColumn(),
-                environment_misc=JSONColumn(),
-                log_url=TextColumn(),
-                log_excerpt=TextColumn(),
-                status=TextColumn(),
-                number_value=FloatColumn(),
-                number_unit=TextColumn(),
-                number_prefix=TextColumn(),
-                waived=BoolColumn(),
-                start_time=TimestampColumn(),
-                duration=FloatColumn(),
-                output_files=JSONColumn(),
-                comment=TextColumn(),
-                misc=JSONColumn(),
-            )),
         ),
     )
 
