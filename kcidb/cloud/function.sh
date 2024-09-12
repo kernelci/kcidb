@@ -17,12 +17,14 @@ function function_deploy() {
     declare -r project="$1"; shift
     declare -r prefix="$1"; shift
     declare -r name="$1"; shift
+    # TODO Upgrade to gen2
     sections_run_explicit "$sections" \
         "functions.$name" deploy \
         mute gcloud functions deploy --quiet --project="$project" \
                                      --region="$FUNCTION_REGION" \
                                      --docker-registry=artifact-registry \
                                      --runtime python39 \
+                                     --no-gen2 \
                                      --source "$source" "${prefix}${name}" \
                                      --entry-point "kcidb_${name}" \
                                      "$@"
