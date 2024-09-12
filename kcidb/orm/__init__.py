@@ -69,8 +69,13 @@ class Prefetcher(Source):
                 # It isn't,
                 # pylint: disable=bad-option-value,unnecessary-dunder-call
                 prefetch_pattern_set |= query.Pattern.parse(
-                    query.Pattern(None, True, obj_type,
-                                  {obj_type.get_id(obj) for obj in objs}).
+                    query.Pattern(
+                        None, True, obj_type,
+                        {
+                            tuple(str(part) for part in obj_type.get_id(obj))
+                            for obj in objs
+                        }
+                    ).
                     __repr__(final=False) + ">*#"
                 )
         # Prefetch, if generated any patterns

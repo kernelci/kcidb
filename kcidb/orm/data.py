@@ -26,7 +26,7 @@ class Relation:
         assert isinstance(child, Type)
         assert isinstance(ref_fields, tuple)
         assert all(isinstance(ref_field, str) for ref_field in ref_fields)
-        assert len(ref_fields) == len(parent.id_fields)
+        assert len(ref_fields) == len(parent.id_field_types)
         self.parent = parent
         self.child = child
         self.ref_fields = ref_fields
@@ -37,7 +37,7 @@ class Type:
 
     # It's OK, pylint: disable=too-many-instance-attributes,too-many-arguments
 
-    def __init__(self, name, json_schema, id_fields):
+    def __init__(self, name, json_schema, id_field_types):
         """
         Initialize an object type.
 
@@ -45,20 +45,22 @@ class Type:
             name:                   The type name.
             json_schema:            The JSON schema describing the raw object
                                     data.
-            id_fields:              A tuple containing the names of object
-                                    fields identifying it globally.
+            id_field_types:         A dictionary containing the names of object
+                                    fields identifying it globally, and their
+                                    Python types.
         """
         assert isinstance(name, str)
         assert isinstance(json_schema, dict)
-        assert isinstance(id_fields, tuple) and \
-               all(isinstance(f, str) for f in id_fields)
+        assert isinstance(id_field_types, dict) and \
+               all(isinstance(f, str) and isinstance(t, type)
+                   for f, t in id_field_types.items())
 
         # The name of this type
         self.name = name
         # The JSON schema for this type's raw data
         self.json_schema = json_schema
-        # List of ID field names
-        self.id_fields = id_fields
+        # Map of names of ID fields to their types
+        self.id_field_types = id_field_types
         # A list of all relations
         self.relations = []
         # A map of parent type names and their relations
@@ -131,7 +133,7 @@ class Type:
             A tuple of values of object fields identifying it globally.
         """
         assert LIGHT_ASSERTS or self.is_valid(data)
-        return tuple(data[field] for field in self.id_fields)
+        return tuple(data[field] for field in self.id_field_types)
 
     def get_parent_id(self, parent_type_name, data):
         """
@@ -171,13 +173,14 @@ class Schema:
                                                  values (when present),
                         * "required_fields" - a set of names of required
                                               fields,
-                        * "id_fields" - a tuple of names of the object fields
-                                        identifying it globally,
+                        * "id_field_types" - a dictionary containing the names
+                                             of object fields identifying it
+                                             globally, and their types,
                         * "children" - the optional dictionary of names of
                                        child types and tuples containing
                                        names of fields with values of parent's
-                                       identifying fields ("id_fields"),
-                                       in the same order.
+                                       identifying fields ("id_field_types"
+                                       keys), in the same order.
         """
         assert isinstance(json_schema_defs, dict)
         assert isinstance(types, dict)
@@ -188,10 +191,12 @@ class Schema:
             isinstance(info["field_json_schemas"], dict) and
             "required_fields" in info and
             isinstance(info["required_fields"], set) and
-            "id_fields" in info and
-            isinstance(info["id_fields"], tuple) and
-            (set(info["id_fields"]) <= set(info["field_json_schemas"])) and
-            all(isinstance(f, str) for f in info["id_fields"]) and
+            "id_field_types" in info and
+            isinstance(info["id_field_types"], dict) and
+            (set(info["id_field_types"]) <=
+             set(info["field_json_schemas"])) and
+            all(isinstance(f, str) and isinstance(t, type)
+                for f, t in info["id_field_types"].items()) and
             ("children" not in info or (
                 isinstance(info["children"], dict) and
                 all(
@@ -231,21 +236,21 @@ class Schema:
                 type="array", items=json_schema.copy()
             )
             json_schema["$defs"] = json_schema_defs
-            self.types[name] = Type(name, json_schema, info["id_fields"])
+            self.types[name] = Type(name, json_schema, info["id_field_types"])
 
         # Create and register relations
         self.relations = []
         for name, info in types.items():
-            type = self.types[name]
+            obj_type = self.types[name]
             for child_name, ref_fields in info.get("children", {}).items():
                 try:
                     child_type = self.types[child_name]
                 except KeyError:
                     raise Exception(f"Couldn't find child {child_name!r} "
                                     f"of type {name!r}") from None
-                relation = Relation(type, child_type, ref_fields)
+                relation = Relation(obj_type, child_type, ref_fields)
                 self.relations.append(relation)
-                type.add_relation(relation)
+                obj_type.add_relation(relation)
                 child_type.add_relation(relation)
 
     def validate(self, data):
@@ -335,7 +340,7 @@ SCHEMA = Schema(
                 contacts=_CHECKOUT['contacts'],
             ),
             required_fields=set(),
-            id_fields=("git_commit_hash", "patchset_hash"),
+            id_field_types=dict(git_commit_hash=str, patchset_hash=str),
             children=dict(
                 checkout=("git_commit_hash", "patchset_hash",)
             ),
@@ -363,7 +368,7 @@ SCHEMA = Schema(
                 misc=_CHECKOUT['misc'],
             ),
             required_fields={'id', 'origin'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 build=("checkout_id",)
             ),
@@ -389,7 +394,7 @@ SCHEMA = Schema(
                 misc=_BUILD['misc'],
             ),
             required_fields={'id', 'origin', 'checkout_id'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 test=("build_id",),
                 incident=("build_id",),
@@ -418,7 +423,7 @@ SCHEMA = Schema(
                 misc=_TEST['misc'],
             ),
             required_fields={'id', 'origin', 'build_id'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 incident=("test_id",),
             ),
@@ -432,7 +437,7 @@ SCHEMA = Schema(
                 culprit_harness=_ISSUE_CULPRIT['harness'],
             ),
             required_fields={'url'},
-            id_fields=("url",),
+            id_field_types=dict(url=str),
             children=dict(
                 issue=("report_url",),
             ),
@@ -453,7 +458,7 @@ SCHEMA = Schema(
                 misc=_ISSUE['misc'],
             ),
             required_fields={'id', 'version', 'origin'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 incident=("issue_id",),
             ),
@@ -471,7 +476,7 @@ SCHEMA = Schema(
                 misc=_INCIDENT['misc'],
             ),
             required_fields={'id', 'origin', 'issue_id', 'issue_version'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
         ),
     )
 )

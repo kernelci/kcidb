@@ -21,7 +21,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 patchset_hash=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("git_commit_hash", "patchset_hash"),
+            id_field_types=dict(git_commit_hash=str, patchset_hash=str),
             children=dict(
                 checkout=("git_commit_hash", "patchset_hash",)
             ),
@@ -31,7 +31,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 build=("checkout_id",)
             ),
@@ -41,7 +41,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 test=("build_id",),
                 build_test_environment=("build_id",),
@@ -53,7 +53,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 test=("environment_id",),
                 build_test_environment=("environment_id",),
@@ -65,7 +65,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 environment_id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("build_id", "environment_id"),
+            id_field_types=dict(build_id=str, environment_id=str),
             children=dict(
                 test=("build_id", "environment_id"),
             ),
@@ -75,7 +75,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 incident=("test_id",),
             ),
@@ -85,7 +85,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 url=dict(type="string"),
             ),
             required_fields={'url'},
-            id_fields=("url",),
+            id_field_types=dict(url=str),
             children=dict(
                 issue=("report_url",),
             ),
@@ -98,7 +98,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 report_url=dict(type="string"),
             ),
             required_fields={'id', 'version', 'origin'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 incident=("issue_id",),
             ),
@@ -113,7 +113,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 test_id=dict(type="string"),
             ),
             required_fields={'id', 'origin', 'issue_id', 'issue_version'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
         ),
     )
 )
@@ -121,8 +121,18 @@ SCHEMA = kcidb.orm.data.Schema(
 
 def parse(string, obj_id_set_list=None):
     """Parse a pattern string using test schema"""
-    return kcidb.orm.query.Pattern.parse(string, obj_id_set_list,
-                                         schema=SCHEMA)
+    return kcidb.orm.query.Pattern.parse(
+        string,
+        None if obj_id_set_list is None else
+        [
+            {
+                tuple(str(part) for part in obj_id)
+                for obj_id in obj_id_set
+            }
+            for obj_id_set in obj_id_set_list
+        ],
+        schema=SCHEMA
+    )
 
 
 def pattern(base, child, obj_type_name, obj_id_set=None):
