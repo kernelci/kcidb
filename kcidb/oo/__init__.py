@@ -81,8 +81,10 @@ class Object:
         id = self.get_id()
         if name in self._type.parents:
             response = self._client.query(
+                # TODO Get rid of formatting and parsing
                 Pattern.parse(
-                    ">" + self._type.name + "%<" + name + "#", [{id}]
+                    ">" + self._type.name + "%<" + name + "#",
+                    [{tuple(str(part) for part in id)}]
                 )
             )
             try:
@@ -93,9 +95,10 @@ class Object:
             child_type_name = name[:-1]
             if child_type_name in self._type.children:
                 return self._client.query(
+                    # TODO Get rid of formatting and parsing
                     Pattern.parse(
                         ">" + self._type.name + "%>" + child_type_name + "#",
-                        [{id}]
+                        [{tuple(str(part) for part in id)}]
                     )
                 )[child_type_name]
         raise AttributeError(f"Attribute {name!r} not found")

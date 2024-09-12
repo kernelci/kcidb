@@ -491,107 +491,144 @@ class Schema(AbstractSchema):
     # aggregation function, if any (the default is "ANY_VALUE").
     AGGS_MAP = dict()
 
-    # Queries for each type of raw object-oriented data
+    # Queries and ID field (BigQuery) types for each type of raw
+    # object-oriented data
     OO_QUERIES = dict(
-        revision="SELECT\n"
-                 "    git_commit_hash,\n"
-                 "    patchset_hash,\n"
-                 "    ANY_VALUE(patchset_files) AS patchset_files,\n"
-                 "    ANY_VALUE(git_commit_name) AS git_commit_name,\n"
-                 "    ANY_VALUE(contacts) AS contacts\n"
-                 "FROM checkouts\n"
-                 "GROUP BY git_commit_hash, patchset_hash",
-        checkout="SELECT\n"
-                 "    id,\n"
-                 "    git_commit_hash,\n"
-                 "    NULL AS git_commit_tags,\n"
-                 "    NULL AS git_commit_message,\n"
-                 "    patchset_hash,\n"
-                 "    origin,\n"
-                 "    git_repository_url,\n"
-                 "    git_repository_branch,\n"
-                 "    NULL AS git_repository_branch_tip,\n"
-                 "    tree_name,\n"
-                 "    message_id,\n"
-                 "    start_time,\n"
-                 "    log_url,\n"
-                 "    log_excerpt,\n"
-                 "    comment,\n"
-                 "    valid,\n"
-                 "    misc\n"
-                 "FROM checkouts",
-        build="SELECT\n"
-              "    id,\n"
-              "    checkout_id,\n"
-              "    origin,\n"
-              "    start_time,\n"
-              "    duration,\n"
-              "    architecture,\n"
-              "    command,\n"
-              "    compiler,\n"
-              "    input_files,\n"
-              "    output_files,\n"
-              "    config_name,\n"
-              "    config_url,\n"
-              "    log_url,\n"
-              "    log_excerpt,\n"
-              "    comment,\n"
-              "    valid,\n"
-              "    misc\n"
-              "FROM builds",
-        test="SELECT\n"
-             "    id,\n"
-             "    build_id,\n"
-             "    origin,\n"
-             "    path,\n"
-             "    environment.comment AS environment_comment,\n"
-             "    NULL AS environment_compatible,\n"
-             "    environment.misc AS environment_misc,\n"
-             "    status,\n"
-             "    NULL AS number_value,\n"
-             "    NULL AS number_unit,\n"
-             "    NULL AS number_prefix,\n"
-             "    waived,\n"
-             "    start_time,\n"
-             "    duration,\n"
-             "    output_files,\n"
-             "    log_url,\n"
-             "    log_excerpt,\n"
-             "    comment,\n"
-             "    misc\n"
-             "FROM tests",
-        bug='SELECT\n'
-            '    ""    AS url,\n'
-            '    ""    AS subject,\n'
-            '    FALSE AS culprit_code,\n'
-            '    FALSE AS culprit_tool,\n'
-            '    FALSE AS culprit_harness\n'
-            'FROM UNNEST([])',
-        issue='SELECT\n'
-              '    ""    AS id,\n'
-              '    0     AS version,\n'
-              '    ""    AS origin,\n'
-              '    ""    AS report_url,\n'
-              '    ""    AS report_subject,\n'
-              '    FALSE AS culprit_code,\n'
-              '    FALSE AS culprit_tool,\n'
-              '    FALSE AS culprit_harness,\n'
-              '    FALSE AS build_valid,\n'
-              '    ""    AS test_status,\n'
-              '    ""    AS comment,\n'
-              '    ""    AS misc\n'
-              'FROM UNNEST([])',
-        incident='SELECT\n'
-                 '    ""    AS id,\n'
-                 '    ""    AS origin,\n'
-                 '    ""    AS issue_id,\n'
-                 '    0     AS issue_version,\n'
-                 '    ""    AS build_id,\n'
-                 '    ""    AS test_id,\n'
-                 '    FALSE AS present,\n'
-                 '    ""    AS comment,\n'
-                 '    ""    AS misc\n'
-                 'FROM UNNEST([])',
+        revision=dict(
+            statement="SELECT\n"
+                      "    git_commit_hash,\n"
+                      "    patchset_hash,\n"
+                      "    ANY_VALUE(patchset_files) AS patchset_files,\n"
+                      "    ANY_VALUE(git_commit_name) AS git_commit_name,\n"
+                      "    ANY_VALUE(contacts) AS contacts\n"
+                      "FROM checkouts\n"
+                      "GROUP BY git_commit_hash, patchset_hash",
+            id_field_types=dict(
+                git_commit_hash="STRING",
+                patchset_hash="STRING",
+            ),
+        ),
+        checkout=dict(
+            statement="SELECT\n"
+                      "    id,\n"
+                      "    git_commit_hash,\n"
+                      "    NULL AS git_commit_tags,\n"
+                      "    NULL AS git_commit_message,\n"
+                      "    patchset_hash,\n"
+                      "    origin,\n"
+                      "    git_repository_url,\n"
+                      "    git_repository_branch,\n"
+                      "    NULL AS git_repository_branch_tip,\n"
+                      "    tree_name,\n"
+                      "    message_id,\n"
+                      "    start_time,\n"
+                      "    log_url,\n"
+                      "    log_excerpt,\n"
+                      "    comment,\n"
+                      "    valid,\n"
+                      "    misc\n"
+                      "FROM checkouts",
+            id_field_types=dict(
+                id="STRING",
+            ),
+        ),
+        build=dict(
+            statement="SELECT\n"
+                      "    id,\n"
+                      "    checkout_id,\n"
+                      "    origin,\n"
+                      "    start_time,\n"
+                      "    duration,\n"
+                      "    architecture,\n"
+                      "    command,\n"
+                      "    compiler,\n"
+                      "    input_files,\n"
+                      "    output_files,\n"
+                      "    config_name,\n"
+                      "    config_url,\n"
+                      "    log_url,\n"
+                      "    log_excerpt,\n"
+                      "    comment,\n"
+                      "    valid,\n"
+                      "    misc\n"
+                      "FROM builds",
+            id_field_types=dict(
+                id="STRING",
+            ),
+        ),
+        test=dict(
+            statement="SELECT\n"
+                      "    id,\n"
+                      "    build_id,\n"
+                      "    origin,\n"
+                      "    path,\n"
+                      "    environment.comment AS environment_comment,\n"
+                      "    NULL AS environment_compatible,\n"
+                      "    environment.misc AS environment_misc,\n"
+                      "    status,\n"
+                      "    NULL AS number_value,\n"
+                      "    NULL AS number_unit,\n"
+                      "    NULL AS number_prefix,\n"
+                      "    waived,\n"
+                      "    start_time,\n"
+                      "    duration,\n"
+                      "    output_files,\n"
+                      "    log_url,\n"
+                      "    log_excerpt,\n"
+                      "    comment,\n"
+                      "    misc\n"
+                      "FROM tests",
+            id_field_types=dict(
+                id="STRING",
+            ),
+        ),
+        bug=dict(
+            statement='SELECT\n'
+                      '    ""    AS url,\n'
+                      '    ""    AS subject,\n'
+                      '    FALSE AS culprit_code,\n'
+                      '    FALSE AS culprit_tool,\n'
+                      '    FALSE AS culprit_harness\n'
+                      'FROM UNNEST([])',
+            id_field_types=dict(
+                url="STRING",
+            ),
+        ),
+        issue=dict(
+            statement='SELECT\n'
+                      '    ""    AS id,\n'
+                      '    0     AS version,\n'
+                      '    ""    AS origin,\n'
+                      '    ""    AS report_url,\n'
+                      '    ""    AS report_subject,\n'
+                      '    FALSE AS culprit_code,\n'
+                      '    FALSE AS culprit_tool,\n'
+                      '    FALSE AS culprit_harness,\n'
+                      '    FALSE AS build_valid,\n'
+                      '    ""    AS test_status,\n'
+                      '    ""    AS comment,\n'
+                      '    ""    AS misc\n'
+                      'FROM UNNEST([])',
+            id_field_types=dict(
+                id="STRING",
+            ),
+        ),
+        incident=dict(
+            statement='SELECT\n'
+                      '    ""    AS id,\n'
+                      '    ""    AS origin,\n'
+                      '    ""    AS issue_id,\n'
+                      '    0     AS issue_version,\n'
+                      '    ""    AS build_id,\n'
+                      '    ""    AS test_id,\n'
+                      '    FALSE AS present,\n'
+                      '    ""    AS comment,\n'
+                      '    ""    AS misc\n'
+                      'FROM UNNEST([])',
+            id_field_types=dict(
+                id="STRING",
+            ),
+        ),
     )
 
     @classmethod
@@ -906,14 +943,17 @@ class Schema(AbstractSchema):
         """
         assert isinstance(pattern, orm.query.Pattern)
         obj_type = pattern.obj_type
-        type_query_string = cls.OO_QUERIES[obj_type.name]
+        obj_type_query = cls.OO_QUERIES[obj_type.name]
+        obj_type_statement = obj_type_query["statement"]
         if pattern.obj_id_set:
-            obj_id_fields = obj_type.id_fields
-            query_string = "SELECT obj.* FROM (\n" + \
-                textwrap.indent(type_query_string, " " * 4) + "\n" + \
-                ") AS obj INNER JOIN (\n" + \
-                "    SELECT * FROM UNNEST(?)\n" + \
-                ") AS ids USING(" + ", ".join(obj_id_fields) + ")"
+            obj_id_field_types = obj_type_query["id_field_types"]
+            query_string = (
+                "SELECT obj.* FROM (\n" +
+                textwrap.indent(obj_type_statement, " " * 4) + "\n" +
+                ") AS obj INNER JOIN (\n" +
+                "    SELECT * FROM UNNEST(?)\n" +
+                ") AS ids USING(" + ", ".join(obj_id_field_types) + ")"
+            )
             query_parameters = [
                 bigquery.ArrayQueryParameter(
                     None,
@@ -922,8 +962,11 @@ class Schema(AbstractSchema):
                         bigquery.StructQueryParameter(
                             None,
                             *(
-                                bigquery.ScalarQueryParameter(c, "STRING", v)
-                                for c, v in zip(obj_id_fields, obj_id)
+                                bigquery.ScalarQueryParameter(n, t, v)
+                                for (n, t), v in zip(
+                                    obj_id_field_types.items(),
+                                    obj_id
+                                )
                             )
                         )
                         for obj_id in pattern.obj_id_set
@@ -931,7 +974,7 @@ class Schema(AbstractSchema):
                 )
             ]
         else:
-            query_string = type_query_string
+            query_string = obj_type_statement
             if pattern.obj_id_set is not None:
                 # Workaround empty array parameters not having element type
                 query_string += " LIMIT 0"
@@ -944,11 +987,11 @@ class Schema(AbstractSchema):
             if pattern.child:
                 column_pairs = zip(
                     base_obj_type.children[obj_type.name].ref_fields,
-                    base_obj_type.id_fields
+                    base_obj_type.id_field_types
                 )
             else:
                 column_pairs = zip(
-                    obj_type.id_fields,
+                    obj_type.id_field_types,
                     obj_type.children[base_obj_type.name].ref_fields
                 )
 
@@ -996,16 +1039,16 @@ class Schema(AbstractSchema):
             # Workaround lack of equality operation for array columns
             # required for "UNION DISTINCT"
             query_string = "SELECT obj.* FROM (\n" + \
-                textwrap.indent(self.OO_QUERIES[obj_type.name],
+                textwrap.indent(self.OO_QUERIES[obj_type.name]["statement"],
                                 " " * 4) + "\n" + \
                 ") AS obj INNER JOIN (\n" + \
                 "    SELECT DISTINCT " + \
-                ", ".join(obj_type.id_fields) + \
+                ", ".join(obj_type.id_field_types) + \
                 " FROM (\n" + \
                 textwrap.indent("\nUNION ALL\n".join(q[0] for q in queries),
                                 " " * 8) + "\n" + \
                 "    )\n" + \
-                ") AS ids USING(" + ", ".join(obj_type.id_fields) + ")"
+                ") AS ids USING(" + ", ".join(obj_type.id_field_types) + ")"
             query_parameters = reduce(lambda x, y: x + y,
                                       (q[1] for q in queries))
             job = self.conn.query_create(query_string, query_parameters)

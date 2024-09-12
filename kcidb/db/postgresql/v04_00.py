@@ -775,7 +775,7 @@ class Schema(AbstractSchema):
         obj_type = pattern.obj_type
         type_query_string = cls.OO_QUERIES[obj_type.name]["statement"]
         if pattern.obj_id_set:
-            obj_id_fields = obj_type.id_fields
+            obj_id_field_types = obj_type.id_field_types
             query_string = \
                 f"/* {obj_type.name.capitalize()}s with pattern IDs */\n" + \
                 "SELECT obj.* FROM (\n" + \
@@ -783,18 +783,18 @@ class Schema(AbstractSchema):
                 ") AS obj INNER JOIN (\n" + \
                 f"    /* {obj_type.name.capitalize()} pattern IDs */\n" + \
                 "    WITH ids(" + \
-                ", ".join(obj_id_fields) + \
+                ", ".join(obj_id_field_types) + \
                 ") AS (VALUES\n" + \
                 ",\n".join(
                     [
                         "        (" +
-                        ", ".join(["%s", ] * len(obj_id_fields)) +
+                        ", ".join(["%s", ] * len(obj_id_field_types)) +
                         ")"
                     ] *
                     len(pattern.obj_id_set)
                 ) + \
                 "\n    ) SELECT * FROM ids\n" + \
-                ") AS ids USING(" + ", ".join(obj_id_fields) + ")"
+                ") AS ids USING(" + ", ".join(obj_id_field_types) + ")"
             query_parameters = [
                 obj_id_field
                 for obj_id in pattern.obj_id_set
@@ -815,12 +815,12 @@ class Schema(AbstractSchema):
                 base_relation = "parent"
                 column_pairs = list(zip(
                     base_obj_type.children[obj_type.name].ref_fields,
-                    base_obj_type.id_fields
+                    base_obj_type.id_field_types
                 ))
             else:
                 base_relation = "child"
                 column_pairs = list(zip(
-                    obj_type.id_fields,
+                    obj_type.id_field_types,
                     obj_type.children[base_obj_type.name].ref_fields
                 ))
                 base_query_string = \
