@@ -2,7 +2,7 @@
 title: "Developer guide"
 date: 2021-11-18
 draft: false
-weight: 30
+weight: 40
 description: "Setting up for KCIDB development"
 ---
 Hacking
