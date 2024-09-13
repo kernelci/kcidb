@@ -235,13 +235,23 @@ def test_purge_db(empty_deployment):
     # Make empty_deployment appear used to silence pylint warning
     assert empty_deployment is None
 
+    # Each type of database, purging expectation, and client
+    clients = dict(
+        op=(True, kcidb.db.Client(os.environ["KCIDB_OPERATIONAL_DATABASE"])),
+        sm=(True, kcidb.db.Client(os.environ["KCIDB_SAMPLE_DATABASE"])),
+        ar=(False, kcidb.db.Client(os.environ["KCIDB_ARCHIVE_DATABASE"])),
+    )
+
+    # Determine the minimum supported I/O version
+    min_io_version = min(c.get_schema()[1] for _, c in clients.values())
+
     # Use the current time to avoid deployment purge trigger
     timestamp_before = datetime.now(timezone.utc)
     str_before = timestamp_before.isoformat(timespec="microseconds")
 
     data_before = dict(
         version=dict(
-            major=kcidb.io.SCHEMA.major, minor=kcidb.io.SCHEMA.minor
+            major=min_io_version.major, minor=min_io_version.minor
         ),
         checkouts=[dict(
             id="origin:1", origin="origin",
@@ -271,7 +281,7 @@ def test_purge_db(empty_deployment):
 
     data_after = dict(
         version=dict(
-            major=kcidb.io.SCHEMA.major, minor=kcidb.io.SCHEMA.minor
+            major=min_io_version.major, minor=min_io_version.minor
         ),
         checkouts=[dict(
             id="origin:2", origin="origin",
@@ -302,20 +312,15 @@ def test_purge_db(empty_deployment):
             key: [
                 deepcopy(obj) for obj in value
                 if obj.get("_timestamp") in (str_before, str_after)
-            ] if key and key in kcidb.io.SCHEMA.graph
+            ] if key and key in min_io_version.graph
             else deepcopy(value)
             for key, value in data.items()
         }
 
     # Merge the before and after data
-    data = kcidb.io.SCHEMA.merge(data_before, [data_after])
+    data = min_io_version.merge(data_before, [data_after])
 
     # For each type of database, purging expectation, and client
-    clients = dict(
-        op=(True, kcidb.db.Client(os.environ["KCIDB_OPERATIONAL_DATABASE"])),
-        sm=(True, kcidb.db.Client(os.environ["KCIDB_SAMPLE_DATABASE"])),
-        ar=(False, kcidb.db.Client(os.environ["KCIDB_ARCHIVE_DATABASE"])),
-    )
     publisher = kcidb.mq.JSONPublisher(
         os.environ["GCP_PROJECT"],
         os.environ["KCIDB_PURGE_DB_TRIGGER_TOPIC"]
@@ -323,7 +328,7 @@ def test_purge_db(empty_deployment):
     for database, (purging, client) in clients.items():
         client.load(data, with_metadata=True)
         dump = filter_test_data(client.dump())
-        for obj_list_name in kcidb.io.SCHEMA.graph:
+        for obj_list_name in min_io_version.graph:
             if obj_list_name:
                 assert len(dump.get(obj_list_name, [])) == 2, \
                     f"Invalid number of {obj_list_name}"
@@ -342,8 +347,10 @@ def test_purge_db(empty_deployment):
             # NOTE: For some reason we're hitting incomplete purges sometimes
             if all(
                 len(dump.get(n, [])) == 1
-                for n in kcidb.io.SCHEMA.graph
+                for n in min_io_version.graph
                 if n
             ):
                 break
-        assert dump == (data_after if purging else data)
+        assert dump == client.get_schema()[1].upgrade(
+            data_after if purging else data
+        )
