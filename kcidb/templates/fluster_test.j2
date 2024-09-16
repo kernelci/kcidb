@@ -34,18 +34,31 @@
             {% set _ = boards_titles_statuses_counts.update({board: titles_statuses_counts}) %}
         {% endif %}
     {% endfor %}
+    {% set ns = namespace(max_test_count=0) %}
+    {% for  _, titles_statuses_counts in boards_titles_statuses_counts.items() %}
+        {% for _, statuses_counts in titles_statuses_counts.items() %}
+            {% set ns.max_test_count = [statuses_counts.values() | sum, ns.max_test_count] | max %}
+        {% endfor %}
+    {% endfor %}
+    {% set field_width = ( ns.max_test_count + 1 ) | string %}
     {% for board, titles_statuses_counts in boards_titles_statuses_counts | dictsort %}
         {{- "\n" + indent + board + ":\n" -}}
         {% for title in test_names_titles.values() | sort %}
             {% set statuses_counts = titles_statuses_counts.get(
                                         title, {"PASS": 0, "FAIL": 0}
                                      ) %}
-            {{- indent + " " + title +
+            {{ indent + " " + title +
                 ":" + " " * (stats_indent|length - indent|length - title|length) +
-                "✅ " + statuses_counts.get("PASS", 0) | string +
-                "  ❌ " + statuses_counts.get("FAIL", 0) | string+
-                "  Σ " + statuses_counts.values() | sum | string +
-                "\n" -}}
+                (
+                    "✅{0: >" + field_width + "}" +
+                    " ❌{1: >" + field_width + "}" +
+                    " Σ{2: >" + field_width + "}"
+                ).format(
+                    statuses_counts.get("PASS", 0),
+                    statuses_counts.get("FAIL", 0),
+                    statuses_counts.values() | sum
+                )
+            }}
         {% endfor %}
     {% else %}
         {{- "\n    No tests found" }}
