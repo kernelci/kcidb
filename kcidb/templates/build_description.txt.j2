@@ -13,8 +13,7 @@ OVERVIEW
 
          Build: {{ misc_macros.valid_badge(build.valid) }}
 {% if build.tests %}
-         Tests: {{ test_macros.waived_status_badge(build.tests_root.waived,
-                                                   build.tests_root.status) }}
+         Tests: {{ test_macros.test_status(build.tests_root.waived_status_nodes) }}
 {% endif %}
 
 BUILD
