@@ -248,6 +248,8 @@ def test_purge_db(empty_deployment):
     # Use the current time to avoid deployment purge trigger
     timestamp_before = datetime.now(timezone.utc)
     str_before = timestamp_before.isoformat(timespec="microseconds")
+    timestamp_cutoff = timestamp_before + timedelta(seconds=1)
+    str_cutoff = timestamp_cutoff.isoformat(timespec="microseconds")
 
     data_before = dict(
         version=dict(
@@ -276,7 +278,7 @@ def test_purge_db(empty_deployment):
         )],
     )
 
-    timestamp_after = timestamp_before + timedelta(microseconds=1)
+    timestamp_after = timestamp_cutoff + timedelta(seconds=1)
     str_after = timestamp_after.isoformat(timespec="microseconds")
 
     data_after = dict(
@@ -335,7 +337,7 @@ def test_purge_db(empty_deployment):
 
         # Trigger the purge at the boundary
         publisher.publish(
-            dict(database=database, timedelta=dict(stamp=str_after))
+            dict(database=database, timedelta=dict(stamp=str_cutoff))
         )
 
         # Wait and check for the purge
