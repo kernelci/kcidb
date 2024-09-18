@@ -40,7 +40,7 @@
             {% set ns.max_test_count = [statuses_counts.values() | sum, ns.max_test_count] | max %}
         {% endfor %}
     {% endfor %}
-    {% set field_width = ( ns.max_test_count + 1 ) | string %}
+    {% set field_width = ( ns.max_test_count + 1 ) | string | length | string %}
     {% for board, titles_statuses_counts in boards_titles_statuses_counts | dictsort %}
         {{- "\n" + indent + board + ":\n" -}}
         {% for title in test_names_titles.values() | sort %}
