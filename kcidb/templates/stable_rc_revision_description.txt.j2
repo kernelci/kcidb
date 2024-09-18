@@ -29,15 +29,12 @@ REVISION
         {% if revision.git_commit_hash %}
             {{- "        hash: " + revision.git_commit_hash }}
         {% endif %}
-    {# The stable-rc repo's URL #}
-    {% set stable_rc_repo = 'https://git.kernel.org/pub/scm/linux/' +
-                            'kernel/git/stable/linux-stable-rc.git' %}
     {# List of other repo's URLs #}
     {% set other_repos = revision.repo_branch_checkouts.keys() |
-                         reject('==', stable_rc_repo) | reject("none") | list %}
+                         reject('==', main_repo_url) | reject("none") | list %}
     Checked out from
         {{- "\n        " +
-            (([stable_rc_repo] + (revision.repo_branch_checkouts[stable_rc_repo] | list)) |
+            (([main_repo_url] + (revision.repo_branch_checkouts[main_repo_url] | list)) |
             reject("none") | join(" ")) }}
     {% if other_repos %}
     Also checked out from

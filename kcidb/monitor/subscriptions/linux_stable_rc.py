@@ -32,5 +32,6 @@ def match_revision(revision):
             "Shreeya Patel <shreeya.patel@collabora.com>"],
         body='{% include "stable_rc_revision_description.txt.j2" %}',
         cc=["KernelCI Results Staging <kernelci-results-staging@groups.io>"],
-        due=datetime.now(timezone.utc) + timedelta(hours=3)
+        due=datetime.now(timezone.utc) + timedelta(hours=3),
+        context={'main_repo_url': repo_url}
     ),)
