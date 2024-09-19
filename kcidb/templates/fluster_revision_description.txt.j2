@@ -13,21 +13,31 @@ REVISION
         {% if revision.git_commit_hash %}
             {{- "        hash: " + revision.git_commit_hash }}
         {% endif %}
-     Checked out from
+    Checked out from
         {% for repo, branch_checkouts
            in revision.repo_branch_checkouts.items() %}
             {{- "        " +
                 (([repo] + (branch_checkouts | list)) |
                  reject("none") | join(" ")) }}
         {% endfor %}
-
+    {% set ns = namespace(branch=none, tree=none) %}
+    {% for checkout in revision.checkouts %}
+        {% if checkout.tree_name is not none and checkout.git_repository_branch is not none and
+              ns.branch is none %}
+            {% set ns.branch = checkout.git_repository_branch %}
+            {% set ns.tree = checkout.tree_name %}
+        {% endif %}
+    {% endfor %}
 {# #}
 {{- test_macros.container_summary(revision, max_list_len) -}}
 {# #}
 
 See complete and up-to-date report at:
-
-    https://fresh2-kcidb-grafana-m6io3uhhiq-uc.a.run.app/d/bdviluqy6gv7kc/codecs?orgId=1&var-platform=All&var-datasource=default&var-git_commit_hash={{revision.git_commit_hash | urlencode }}
+    {% if ns.tree is not none %}
+        https://fresh2-kcidb-grafana-m6io3uhhiq-uc.a.run.app/d/bdviluqy6gv7kc/codecs?orgId=1&var-platform=All&var-datasource=default&var-git_commit_hash={{revision.git_commit_hash | urlencode }}&var-tree={{ns.tree}}&var-branch={{ns.branch}}
+    {% else %}
+        https://fresh2-kcidb-grafana-m6io3uhhiq-uc.a.run.app/d/bdviluqy6gv7kc/codecs?orgId=1&var-platform=All&var-datasource=default&var-git_commit_hash={{revision.git_commit_hash | urlencode }}
+    {% endif %}
 
 
 Tested-by: kernelci.org bot <bot@kernelci.org>
