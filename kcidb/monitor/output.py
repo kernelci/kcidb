@@ -31,12 +31,13 @@ SUBSCRIPTION_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9_]*)?")
 LOGGER = logging.getLogger(__name__)
 
 
-class NotificationMessage:
+class NotificationMessage:  # pylint: disable=too-many-instance-attributes
     """
     Message for a notification about a report object state.
     """
     # It's OK pylint: disable=too-many-arguments
-    def __init__(self, to, subject, body, cc=None, bcc=None, id="", due=None):
+    def __init__(self, to, subject, body, cc=None, bcc=None, id="", due=None,
+                 context=None):
         """
         Initialize a notification message.
 
@@ -100,6 +101,7 @@ class NotificationMessage:
         self.bcc = bcc
         self.id = id
         self.due = due
+        self.context = context
 
 
 class Notification:
@@ -180,6 +182,8 @@ class Notification:
         ctx = {
             self.obj.get_type().name: self.obj,
         }
+        if self.message.context:
+            ctx.update(self.message.context)
         subject = TEMPLATE_ENV.from_string(self.message.subject).render(ctx)
         subject_extra_characters = \
             len(subject) - NOTIFICATION_MESSAGE_SUBJECT_MAX_LEN
