@@ -101,6 +101,6 @@ setuptools.setup(
         ]
     ),
     package_data={
-        "": ["*.j2"],
+        "": ["**/*.j2"]
     },
 )
