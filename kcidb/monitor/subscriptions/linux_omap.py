@@ -1,16 +1,16 @@
-"""Linux stable-rc subscription"""
+"""Linux omap subscription"""
 from datetime import (timezone, datetime, timedelta)
 
 from kcidb.monitor.output import NotificationMessage as Message
 
 
 def match_revision(revision):
-    """Match revisions of stable-rc tree"""
+    """Match revisions of omap tree"""
     # Repo we're interested in
-    repo_url = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/" \
-        "linux-stable-rc.git"
+    repo_url = "https://git.kernel.org/pub/scm/linux/kernel/git/tmlind/" \
+        "linux-omap.git"
 
-    # If the revision is not from stable-rc repo,
+    # If the revision is not from omap repo,
     # or there are no finished builds
 
     if repo_url not in revision.repo_branch_checkouts:
@@ -25,13 +25,14 @@ def match_revision(revision):
 
     # Send notification 3 hours after a revision is created/updated
     return (Message(
-        subject='KernelCI report for stable-rc: '
+        subject='KernelCI report for omap: '
                 '{% include "stable_revision_summary.txt.j2" %}',
-        to=["Jeny Sadadia <jeny.sadadia@collabora.com>",
+        to=["Kevin Hilman <khilman@baylibre.com>"],
+        cc=["KernelCI Results Staging <kernelci-results-staging@groups.io>",
+            "Jeny Sadadia <jeny.sadadia@collabora.com>",
             "Gustavo Padovan <gustavo.padovan@collabora.com>",
-            "Shreeya Patel <shreeya.patel@collabora.com>"],
+            "Helen Mae Koike Fornazier <helen.koike@collabora.com>"],
         body='{% include "stable_rc_revision_description.txt.j2" %}',
-        cc=["KernelCI Results Staging <kernelci-results-staging@groups.io>"],
         due=datetime.now(timezone.utc) + timedelta(hours=3),
         context={'repo_url': repo_url}
     ),)
