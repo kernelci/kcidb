@@ -133,7 +133,10 @@ jobs:
             400,
             500,
             600,
-            [700, "./cloud shutdown kernelci-production \"\" -v"]
+            700,
+            800,
+            900,
+            [1000, "./cloud shutdown kernelci-production \"\" -v"]
           ]'
           declare -a args=(
             kernelci-production ""
