@@ -128,6 +128,7 @@ class Client:
         return self.mq_publisher.publish_iter(data_iter, done_cb=done_cb)
 
     # We can live with this for now, pylint: disable=too-many-arguments
+    # Or if you prefer, pylint: disable=too-many-positional-arguments
     def query_iter(self, ids=None,
                    children=False, parents=False,
                    objects_per_report=0, with_metadata=False):

@@ -392,6 +392,7 @@ class Pattern:
                 )
         return new_set, unused_set
 
+    # It's OK for now, pylint: disable=too-many-positional-arguments
     @staticmethod
     def _expand(schema, base_set, match_set, child, obj_type_expr,
                 obj_id_set, match_spec):
