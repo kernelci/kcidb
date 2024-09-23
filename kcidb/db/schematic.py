@@ -296,6 +296,7 @@ class Schema(ABC, metaclass=MetaSchema):
         assert isinstance(with_metadata, bool)
 
     # We can live with this for now, pylint: disable=too-many-arguments
+    # Or if you prefer, pylint: disable=too-many-positional-arguments
     @abstractmethod
     def query_iter(self, ids, children, parents, objects_per_report,
                    with_metadata):
@@ -628,6 +629,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         return self.schema.dump_iter(objects_per_report, with_metadata)
 
     # We can live with this for now, pylint: disable=too-many-arguments
+    # Or if you prefer, pylint: disable=too-many-positional-arguments
     def query_iter(self, ids, children, parents, objects_per_report,
                    with_metadata):
         """

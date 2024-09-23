@@ -36,6 +36,7 @@ class NotificationMessage:
     Message for a notification about a report object state.
     """
     # It's OK pylint: disable=too-many-arguments
+    # Or if you'd prefer, pylint: disable=too-many-positional-arguments
     def __init__(self, to, subject, body, cc=None, bcc=None, id="", due=None):
         """
         Initialize a notification message.

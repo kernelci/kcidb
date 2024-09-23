@@ -148,6 +148,7 @@ class Driver(AbstractDriver):
         yield io.SCHEMA.new()
 
     # We can live with this for now, pylint: disable=too-many-arguments
+    # Or if you prefer, pylint: disable=too-many-positional-arguments
     def query_iter(self, ids, children, parents, objects_per_report,
                    with_metadata):
         """
