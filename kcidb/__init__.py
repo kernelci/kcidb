@@ -138,7 +138,13 @@ class Client:
         Args:
             ids:                A dictionary of object list names, and lists
                                 of IDs of objects to match. None means empty
-                                dictionary.
+                                dictionary. Each ID is either a tuple of
+                                values or a single value (equivalent to a
+                                single-value tuple). The values should match
+                                the types, the order, and the number of the
+                                object's ID fields as described by the
+                                database's I/O schema (the "id_fields"
+                                attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -157,19 +163,13 @@ class Client:
             `NotImplementedError`, if not supplied with a dataset name at
             initialization time;
         """
-        assert ids is None or isinstance(ids, dict)
-        if ids is None:
-            ids = {}
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
+        if not self.db_client:
+            raise NotImplementedError
 
+        assert self.db_client.query_ids_are_valid(ids)
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
-
-        if not self.db_client:
-            raise NotImplementedError
 
         return self.db_client.query_iter(ids=ids,
                                          children=children, parents=parents,
@@ -184,7 +184,12 @@ class Client:
         Args:
             ids:            A dictionary of object list names, and lists of
                             IDs of objects to match. None means empty
-                            dictionary.
+                            dictionary. Each ID is either a tuple of values or
+                            a single value (equivalent to a single-value
+                            tuple). The values should match the types, the
+                            order, and the number of the object's ID fields as
+                            described by the database's I/O schema (the
+                            "id_fields" attribute).
             children:       True if children of matched objects should be
                             matched as well.
             parents:        True if parents of matched objects should be
@@ -200,16 +205,11 @@ class Client:
             `NotImplementedError`, if not supplied with a dataset name at
             initialization time;
         """
-        assert ids is None or isinstance(ids, dict)
-        if ids is None:
-            ids = {}
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
-        assert isinstance(with_metadata, bool)
-
         if not self.db_client:
             raise NotImplementedError
+        assert self.db_client.query_ids_are_valid(ids)
+        assert isinstance(with_metadata, bool)
+
         return self.db_client.query(ids=ids,
                                     children=children, parents=parents,
                                     with_metadata=with_metadata)
