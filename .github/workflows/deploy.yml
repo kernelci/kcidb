@@ -145,5 +145,6 @@ jobs:
             --grafana-anonymous
             --extra-cc=kernelci-results-staging@groups.io
             --cost-thresholds="$cost_thresholds_json"
+            --mute-updates
           )
           ./cloud deploy "${args[@]}" -v
