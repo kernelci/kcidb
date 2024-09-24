@@ -773,7 +773,11 @@ class Schema(AbstractSchema):
 
         Args:
             ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match.
+                                of IDs of objects to match. Each ID is a tuple
+                                of values. The values should match the types,
+                                the order, and the number of the object's ID
+                                fields as described by the database's I/O
+                                schema (the "id_fields" attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -790,10 +794,6 @@ class Schema(AbstractSchema):
         """
         # Calm down, we'll get to it,
         # pylint: disable=too-many-locals,too-many-statements
-        assert isinstance(ids, dict)
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
