@@ -578,11 +578,7 @@ def test_metadata_generation_and_fetching(empty_database):
     """
     client = empty_database
     io_data = COMPREHENSIVE_IO_DATA
-    ids = {
-        obj_list_name: [obj["id"] for obj in io_data[obj_list_name]]
-        for obj_list_name in kcidb.io.SCHEMA.graph
-        if obj_list_name
-    }
+    ids = kcidb.io.SCHEMA.get_ids(io_data)
 
     # Check metadata is generated
     before_load = client.get_current_time()
