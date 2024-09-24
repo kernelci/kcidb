@@ -318,6 +318,80 @@ class Client(kcidb.orm.Source):
         except StopIteration:
             return self.get_schema()[1].new()
 
+    # No, it's not, pylint: disable=too-many-return-statements
+    def query_ids_are_valid(self, ids):
+        """
+        Verify the IDs to be queried are valid according to the I/O version
+        supported by the database. The database must be initialized.
+
+        Args:
+            ids:    A dictionary of object list names, and lists of IDs of
+                    objects to match. None means empty dictionary. Each ID is
+                    either a tuple of values or a single value (equivalent to
+                    a single-value tuple). The values should match the types,
+                    the order, and the number of the object's ID fields as
+                    described by the database's I/O schema (the "id_fields"
+                    attribute).
+
+        Returns:
+            True if the IDs are valid, false otherwise.
+        """
+        assert LIGHT_ASSERTS or self.is_initialized()
+        id_fields = self.get_schema()[1].id_fields
+
+        if ids is None:
+            return True
+        if not isinstance(ids, dict):
+            return False
+        for obj_list_name, values_list in ids.items():
+            if obj_list_name not in id_fields:
+                return False
+            obj_id_fields = id_fields[obj_list_name]
+            if not isinstance(values_list, list):
+                return False
+            for values in values_list:
+                if not isinstance(values, tuple):
+                    values = (values,)
+                if len(values) != len(obj_id_fields):
+                    return False
+                for value, type in zip(values, obj_id_fields.values()):
+                    if not isinstance(value, type):
+                        return False
+        return True
+
+    def query_ids_normalize(self, ids):
+        """
+        Normalize the IDs to be queried to always be a dictionary of object
+        list names and lists of IDs, where each ID is a tuple with ID field
+        values for the corresponding object type.
+
+        Args:
+            ids:    A dictionary of object list names, and lists of IDs of
+                    objects to match. None means empty dictionary. Each ID is
+                    either a tuple of values or a single value (equivalent to
+                    a single-value tuple). The values should match the types,
+                    the order, and the number of the object's ID fields as
+                    described by the database's I/O schema (the "id_fields"
+                    attribute).
+
+        Returns:
+            The normalized IDs: a dictionary of object list names, and lists
+            of IDs of objects to match. Each ID is a tuple of values. The
+            values should match the types, the order, and the number of the
+            object's ID fields as described by the database's I/O schema (the
+            "id_fields" attribute).
+        """
+        assert self.query_ids_are_valid(ids)
+        new_ids = {
+            obj_list_name: [
+                values if isinstance(values, tuple) else (values,)
+                for values in values_list
+            ]
+            for obj_list_name, values_list in (ids or {}).items()
+        }
+        assert self.query_ids_are_valid(new_ids)
+        return new_ids
+
     # We can live with this for now, pylint: disable=too-many-arguments
     # Or if you prefer, pylint: disable=too-many-positional-arguments
     def query_iter(self, ids=None,
@@ -330,7 +404,13 @@ class Client(kcidb.orm.Source):
         Args:
             ids:                A dictionary of object list names, and lists
                                 of IDs of objects to match. None means empty
-                                dictionary.
+                                dictionary. Each ID is either a tuple of
+                                values or a single value (equivalent to a
+                                single-value tuple). The values should match
+                                the types, the order, and the number of the
+                                object's ID fields as described by the
+                                database's I/O schema (the "id_fields"
+                                attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -346,17 +426,12 @@ class Client(kcidb.orm.Source):
             objects.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
-        if ids is None:
-            ids = {}
-        assert isinstance(ids, dict)
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
+        assert self.query_ids_are_valid(ids)
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
         yield from self.driver.query_iter(
-            ids=ids,
+            ids=self.query_ids_normalize(ids),
             children=children, parents=parents,
             objects_per_report=objects_per_report,
             with_metadata=with_metadata
@@ -368,12 +443,18 @@ class Client(kcidb.orm.Source):
         Match and fetch objects from the database.
 
         Args:
-            ids:        A dictionary of object list names, and lists of IDs of
-                        objects to match. None means empty dictionary.
-            children:   True if children of matched objects should be matched
-                        as well.
-            parents:    True if parents of matched objects should be matched
-                        as well.
+            ids:            A dictionary of object list names, and lists of
+                            IDs of objects to match. None means empty
+                            dictionary. Each ID is either a tuple of values or
+                            a single value (equivalent to a single-value
+                            tuple). The values should match the types, the
+                            order, and the number of the object's ID fields as
+                            described by the database's I/O schema (the
+                            "id_fields" attribute).
+            children:       True if children of matched objects should be
+                            matched as well.
+            parents:        True if parents of matched objects should be
+                            matched as well.
             with_metadata:  True, if metadata fields should be fetched as
                             well. False, if not.
 
@@ -382,12 +463,7 @@ class Client(kcidb.orm.Source):
             version.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
-        assert ids is None or (
-            isinstance(ids, dict) and
-            all(isinstance(k, str) and isinstance(v, list) and
-                all(isinstance(e, str) for e in v)
-                for k, v in ids.items())
-        )
+        assert self.query_ids_are_valid(ids)
         assert isinstance(with_metadata, bool)
         try:
             return next(self.query_iter(ids=ids,
