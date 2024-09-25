@@ -122,6 +122,7 @@ jobs:
             kernelci-production "playground"
             --smtp-mocked
             --optimize=2
+            --mute-updates
           )
           ./cloud deploy "${args[@]}" -v
       - name: Deploy Production
