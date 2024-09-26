@@ -29,6 +29,11 @@ REVISION
         {% if revision.git_commit_hash %}
             {{- "        hash: " + revision.git_commit_hash }}
         {% endif %}
+        {% set tags = revision.checkouts | map(attribute="git_commit_tags") |
+           reject("none") | sum(start=[]) | unique | join(', ') %}
+        {% if tags %}
+            {{- "        tags: " + tags }}
+        {% endif %}
     {# List of other repo's URLs #}
     {% set other_repos = revision.repo_branch_checkouts.keys() |
                          reject('==', main_repo_url) | reject("none") | list %}
