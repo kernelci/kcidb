@@ -31,6 +31,8 @@ topic_name = config.get("database", "topic_name")
 origin = config.get("submission", "origin")
 
 client = kcidb.Client(project_id=project_id, topic_name=topic_name)
+print("project name:", os.environ.get("project"))
+print("topic name:", os.environ.get("topic"))
 
 
 @app.route('/')
