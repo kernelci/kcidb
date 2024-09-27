@@ -126,6 +126,7 @@ function execute_command() {
     declare -r cache_bucket_name="${project}_${prefix}cache"
     declare -r pick_notifications_trigger_topic="${prefix}pick_notifications_trigger"
     declare -r purge_db_trigger_topic="${prefix}purge_db_trigger"
+    declare -r topic="playground_kcidb_new"
     declare -r cache_redirect_function_name="cache_redirect"
     declare cache_redirector_url="https://${FUNCTION_REGION}"
     declare cache_redirector_url+="-${project}.cloudfunctions.net/"
@@ -380,7 +381,8 @@ function execute_command() {
             --cost-mon-image="$cost_mon_image" \
             --cost-upd-service-account="$cost_upd_service_account" \
             --iss-ed-service="$iss_ed_service" \
-            --iss-ed-image="$iss_ed_image"
+            --iss-ed-image="$iss_ed_image" \
+            --topic="$topic"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
@@ -414,7 +416,8 @@ function execute_command() {
             --updated-topic="$updated_topic" \
             --cache-redirect-function-name="$cache_redirect_function_name" \
             --spool-collection-path="$spool_collection_path" \
-            --env-yaml="${env_yaml}"
+            --env-yaml="${env_yaml}" \
+            --topic="$topic"
         sections_run "$sections" scheduler_deploy \
             --project="$project" \
             --prefix="$prefix" \
