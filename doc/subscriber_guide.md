@@ -10,9 +10,8 @@ Email notifications
 
 It is possible to generate email notifications with the KCIDB data submissions.
 It needs to have a [subscription module][subscriptions], a script that will
-create a custom report using [templates](https://github.com/kernelci/kcidb/
-tree/main/kcidb/templates). A list of subscribers would receive the report
-via an email notification.
+create a custom report using [templates]. A list of subscribers would receive
+the report via an email notification.
 
 Currently, multiple subscriptions are active for receiving email reports
 including `stable-rc` and `stable-rt` reports. The reports list useful data
@@ -85,4 +84,4 @@ failures with each new revision and can use these data for further required
 actions.
 
 [subscriptions]: https://github.com/kernelci/kcidb/tree/main/kcidb/monitor/subscriptions
-[test_subscription]: https://github.com/kernelci/kcidb/blob/main/kcidb/monitor/subscriptions/test.py
+[templates]: https://github.com/kernelci/kcidb/tree/main/kcidb/templates
