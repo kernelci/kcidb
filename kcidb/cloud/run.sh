@@ -88,6 +88,7 @@ function run_service_withdraw() {
 #       --cost-upd-service-account=EMAIL
 #       --iss-ed-service=NAME
 #       --iss-ed-image=URL
+#       --new-topic=STRING
 function run_deploy() {
     declare params
     params="$(getopt_vars project \
@@ -104,6 +105,7 @@ function run_deploy() {
                           cost_upd_service_account \
                           iss_ed_service \
                           iss_ed_image \
+                          new_topic \
                           -- "$@")"
     eval "$params"
     declare iam_command
@@ -263,6 +265,11 @@ YAML_END
                     limits:
                       cpu: "0.25"
                       memory: "256M"
+                  env:
+                    - name: KCIDB_PROJECT
+                      value: $project
+                    - name: KCIDB_NEW_TOPIC
+                      value: $new_topic
 YAML_END
 }
 
