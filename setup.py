@@ -102,5 +102,6 @@ setuptools.setup(
     ),
     package_data={
         "": ["*.j2"],
+        "kcidb": ["issue_editor/*", "issue_editor/templates/*"],
     },
 )
