@@ -380,7 +380,8 @@ function execute_command() {
             --cost-mon-image="$cost_mon_image" \
             --cost-upd-service-account="$cost_upd_service_account" \
             --iss-ed-service="$iss_ed_service" \
-            --iss-ed-image="$iss_ed_image"
+            --iss-ed-image="$iss_ed_image" \
+            --new-topic="$new_topic"
         sections_run "$sections" pubsub_deploy \
             --project="$project" \
             --load-queue-trigger-topic="$load_queue_trigger_topic" \
