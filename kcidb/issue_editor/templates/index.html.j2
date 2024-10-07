@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>KCIDB Triage Tool</title>
+    <script>
+        const fieldsByCategory = {
+            "checkout": [
+                "origin",
+                "tree_name",
+                "git_repository_url",
+                "git_commit_hash",
+                "git_commit_name",
+                "git_repository_branch",
+                "patchset_files", "patchset_hash",
+                "message_id", "comment",
+                "start_time",
+                "contacts",
+                "log_url",
+                "log_excerpt",
+                "valid",
+                "misc"
+            ],
+            "build": [
+                "log_content",
+                "checkout_id",
+                "origin",
+                "comment",
+                "start_time",
+                "duration",
+                "architecture",
+                "command",
+                "compiler",
+                "input_files",
+                "output_files",
+                "config_name",
+                "config_url",
+                "log_url",
+                "log_excerpt",
+                "valid",
+                "misc"
+            ],
+            "test": [
+                "log_content",
+                "build_id",
+                "origin",
+                "environment",
+                "path",
+                "comment",
+                "log_url",
+                "log_excerpt",
+                "status",
+                "waived",
+                "start_time",
+                "duration",
+                "output_files",
+                "misc"
+            ]
+        };
+
+        function addAutomatchingField() {
+            const container = document.getElementById('automatching_container');
+            const div = document.createElement('div');
+            div.className = 'automatching-field';
+            div.innerHTML = `
+                <label for="category">Category:</label>
+                <select name="category[]" required onchange="updateFieldOptions(this)">
+                    <option value="checkout">Checkout</option>
+                    <option value="test">Test</option>
+                    <option value="build">Build</option>
+                </select>
+
+                <label for="field">Field:</label>
+                <select name="field[]" required>
+                    ${fieldsByCategory["checkout"].map(field => `<option value="${field}">${field}</option>`).join('')}
+                </select>
+
+                <label for="value">Regex:</label>
+                <input type="text" name="value[]" required>
+
+                <button type="button" onclick="removeAutomatchingField(this)">-</button>
+                <br><br>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeAutomatchingField(button) {
+            button.parentElement.remove();
+        }
+
+        function updateFieldOptions(categorySelect) {
+            const selectedCategory = categorySelect.value;
+            const fieldSelect = categorySelect.nextElementSibling.nextElementSibling;
+            const fields = fieldsByCategory[selectedCategory];
+
+            fieldSelect.innerHTML = fields.map(field => `<option value="${field}">${field}</option>`).join('');
+        }
+    </script>
+</head>
+<body>
+    <h1>KCIDB Triage Tool</h1>
+    <h2>Submit Issue</h2>
+    <form action="/submit_issue" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br><br>
+        
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="report_subject">Report Subject:</label>
+        <input type="text" id="report_subject" name="report_subject" required><br><br>
+
+        <label for="culprit_type">Culprit Type:</label>
+        <select id="culprit_type" name="culprit_type" required>
+            <option value="code">Code</option>
+            <option value="tool">Tool</option>
+            <option value="harness">Harness</option>
+        </select><br><br>
+
+        <label for="report_url">Report URL:</label>
+        <input type="url" id="report_url" name="report_url"><br><br>
+
+        <label for="comment">Comment:</label>
+        <textarea id="comment" name="comment"></textarea><br><br>
+
+        <label for="misc">Misc:</label>
+        <textarea id="misc" name="misc"></textarea><br><br>
+
+        <h3>Automatching</h3>
+        <div id="automatching_container"></div>
+        <button type="button" onclick="addAutomatchingField()">+</button><br><br>
+
+        <label for="dry_run">Dry Run:</label>
+        <input type="checkbox" id="dry_run" name="dry_run" value="true"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+
+    <h2>Submit Incidents</h2>
+    <form action="/submit_incidents" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="issue_id">Issue ID:</label>
+        <input type="text" id="issue_id" name="issue_id" required><br><br>
+
+        <label for="issue_version">Issue Version:</label>
+        <input type="number" id="issue_version" name="issue_version" required><br><br>
+
+        <label for="incident_type">Incident Type:</label>
+        <select id="incident_type" name="incident_type" required>
+            <option value="build">Build</option>
+            <option value="test">Test</option>
+        </select><br><br>
+
+        <label for="ids_list">IDs List:</label>
+        <textarea id="ids_list" name="ids_list" required></textarea><br><br>
+
+        <label for="comment">Comment:</label>
+        <textarea id="comment" name="comment"></textarea><br><br>
+
+        <label for="misc">Misc:</label>
+        <textarea id="misc" name="misc"></textarea><br><br>
+
+        <label for="dry_run">Dry Run:</label>
+        <input type="checkbox" id="dry_run" name="dry_run" value="true"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
