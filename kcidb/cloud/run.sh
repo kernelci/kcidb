@@ -123,16 +123,18 @@ function run_deploy() {
           template:
             metadata:
               annotations:
-                autoscaling.knative.dev/minScale: "0"
+                autoscaling.knative.dev/minScale: "1"
                 autoscaling.knative.dev/maxScale: "4"
                 run.googleapis.com/container-dependencies:
                   '{"grafana": ["cloud-sql-proxy"]}'
+                run.googleapis.com/startup-cpu-boost: "true"
+                run.googleapis.com/cpu-throttling: "false"
             spec:
               serviceAccountName:
                 $(yaml_quote "$grafana_service@$project.iam.gserviceaccount.com")
               containerConcurrency: 512
               containers:
-                - image: docker.io/grafana/grafana:6.6.0
+                - image: docker.io/grafana/grafana:11.2.2
                   name: grafana
                   ports:
                     - containerPort: 3000
@@ -150,15 +152,6 @@ function run_deploy() {
                         secretKeyRef:
                           name: $(yaml_quote "$(password_secret_get_name psql_grafana)")
                           key: latest
-                    - name: GF_INSTALL_PLUGINS
-                      value: "\\
-                        doitintl-bigquery-datasource,\\
-                        https://github.com/kernelci/\\
-                          grafana-singlevalue-panel/\\
-                          releases/download/2.0.0/\\
-                          grafana-singlevalue-panel-2.0.0.zip;\\
-                          grafana-singlevalue-panel\\
-                      "
                     - name: GF_SERVER_ROOT_URL
                       value: $(yaml_quote "$grafana_url")
                     - name: GF_AUTH_ANONYMOUS_ORG_NAME
