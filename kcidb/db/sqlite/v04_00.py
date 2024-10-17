@@ -440,6 +440,7 @@ class Schema(AbstractSchema):
                       "    NULL AS issue_version,\n"
                       "    NULL AS build_id,\n"
                       "    NULL AS test_id,\n"
+                      "    NULL AS present,\n"
                       "    NULL AS comment,\n"
                       "    NULL AS misc\n"
                       "WHERE 0",
@@ -450,6 +451,7 @@ class Schema(AbstractSchema):
                 issue_version=IntegerColumn(),
                 build_id=TextColumn(),
                 test_id=TextColumn(),
+                present=BoolColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),
@@ -562,8 +564,11 @@ class Schema(AbstractSchema):
 
         Args:
             ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match. None means empty
-                                dictionary.
+                                of IDs of objects to match. Each ID is a tuple
+                                of values. The values should match the types,
+                                the order, and the number of the object's ID
+                                fields as described by the database's I/O
+                                schema (the "id_fields" attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -582,10 +587,6 @@ class Schema(AbstractSchema):
         # pylint: disable=too-many-locals
         # pylint: disable=too-many-statements
         # pylint: disable=too-many-branches
-        assert isinstance(ids, dict)
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
@@ -714,19 +715,23 @@ class Schema(AbstractSchema):
         obj_type = pattern.obj_type
         type_query_string = cls.OO_QUERIES[obj_type.name]["statement"]
         if pattern.obj_id_set:
-            obj_id_fields = obj_type.id_fields
+            obj_id_field_types = obj_type.id_field_types
             query_string = "SELECT obj.* FROM (\n" + \
                 textwrap.indent(type_query_string, " " * 4) + "\n" + \
                 ") AS obj INNER JOIN (\n" + \
                 "    WITH ids(" + \
-                ", ".join(obj_id_fields) + \
+                ", ".join(obj_id_field_types) + \
                 ") AS (VALUES " + \
                 ",\n".join(
-                    ["    (" + ", ".join("?" * len(obj_id_fields)) + ")"] *
+                    [
+                        "    (" +
+                        ", ".join("?" * len(obj_id_field_types)) +
+                        ")"
+                    ] *
                     len(pattern.obj_id_set)
                 ) + \
                 ") SELECT * FROM ids\n" + \
-                ") AS ids USING(" + ", ".join(obj_id_fields) + ")"
+                ") AS ids USING(" + ", ".join(obj_id_field_types) + ")"
             query_parameters = [
                 obj_id_field
                 for obj_id in pattern.obj_id_set
@@ -746,11 +751,11 @@ class Schema(AbstractSchema):
             if pattern.child:
                 column_pairs = zip(
                     base_obj_type.children[obj_type.name].ref_fields,
-                    base_obj_type.id_fields
+                    base_obj_type.id_field_types
                 )
             else:
                 column_pairs = zip(
-                    obj_type.id_fields,
+                    obj_type.id_field_types,
                     obj_type.children[base_obj_type.name].ref_fields
                 )
 
@@ -804,14 +809,16 @@ class Schema(AbstractSchema):
                         ) + "\n" + \
                         ") AS obj INNER JOIN (\n" + \
                         "    SELECT DISTINCT " + \
-                        ", ".join(obj_type.id_fields) + \
+                        ", ".join(obj_type.id_field_types) + \
                         " FROM (\n" + \
                         textwrap.indent(
                             "\nUNION ALL\n".join(q[0] for q in queries),
                             " " * 8
                         ) + "\n" + \
                         "    )\n" + \
-                        ") AS ids USING(" + ", ".join(obj_type.id_fields) + ")"
+                        ") AS ids USING(" + \
+                        ", ".join(obj_type.id_field_types) + \
+                        ")"
                     query_parameters = reduce(lambda x, y: x + y,
                                               (q[1] for q in queries))
                     objs[obj_type.name] = list(

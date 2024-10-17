@@ -578,11 +578,7 @@ def test_metadata_generation_and_fetching(empty_database):
     """
     client = empty_database
     io_data = COMPREHENSIVE_IO_DATA
-    ids = {
-        obj_list_name: [obj["id"] for obj in io_data[obj_list_name]]
-        for obj_list_name in kcidb.io.SCHEMA.graph
-        if obj_list_name
-    }
+    ids = kcidb.io.SCHEMA.get_ids(io_data)
 
     # Check metadata is generated
     before_load = client.get_current_time()
@@ -1125,6 +1121,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1295,6 +1292,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1483,6 +1481,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1674,6 +1673,7 @@ def test_upgrade(clean_database):
                     "issue_version": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1697,8 +1697,9 @@ def test_upgrade(clean_database):
             database.upgrade(io_version)
             # Check upgrade went well
             # You're wrong, pylint: disable=unsubscriptable-object
-            assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
-                last_params["oo"]
+            assert database.oo_query(
+                kcidb.orm.query.Pattern.parse(">*#")
+            ) == last_params["oo"]
             upgraded_io = io_version.upgrade(last_params["io"])
             assert database.dump(with_metadata=False) == upgraded_io
             assert database.query(io_version.get_ids(upgraded_io)) == \
