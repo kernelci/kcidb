@@ -306,7 +306,11 @@ class Schema(ABC, metaclass=MetaSchema):
 
         Args:
             ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match.
+                                of IDs of objects to match. Each ID is a tuple
+                                of values. The values should match the types,
+                                the order, and the number of the object's ID
+                                fields as described by the database's I/O
+                                schema (the "id_fields" attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -321,10 +325,7 @@ class Schema(ABC, metaclass=MetaSchema):
             database schema's I/O schema version, each containing at most the
             specified number of objects.
         """
-        assert isinstance(ids, dict)
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
+        del ids
         del children
         del parents
         assert isinstance(objects_per_report, int)
@@ -638,7 +639,11 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
         Args:
             ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match.
+                                of IDs of objects to match. Each ID is a tuple
+                                of values. The values should match the types,
+                                the order, and the number of the object's ID
+                                fields as described by the database's I/O
+                                schema (the "id_fields" attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -653,13 +658,10 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
             I/O schema version, each containing at most the specified number
             of objects.
         """
-        assert isinstance(ids, dict)
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
+        assert self.is_initialized()
+        assert self.query_ids_are_valid(ids)
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
-        assert self.is_initialized()
         assert isinstance(with_metadata, bool)
         return self.schema.query_iter(
             ids, children, parents, objects_per_report,

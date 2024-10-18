@@ -208,6 +208,7 @@ class Schema(PreviousSchema):
                  "    issue_version,\n"
                  "    build_id,\n"
                  "    test_id,\n"
+                 "    present,\n"
                  "    comment,\n"
                  "    misc\n"
                  "FROM (\n"
@@ -228,7 +229,7 @@ class Schema(PreviousSchema):
                  "        ) AS precedence\n"
                  "    FROM incidents\n"
                  ")\n"
-                 "WHERE precedence = 1 AND present",
+                 "WHERE precedence = 1",
     )
 
     @classmethod
