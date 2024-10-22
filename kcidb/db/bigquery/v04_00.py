@@ -583,22 +583,19 @@ class Schema(AbstractSchema):
                 id="STRING",
             ),
         ),
-        bug=dict(
-            statement='SELECT\n'
-                      '    ""    AS url,\n'
-                      '    ""    AS subject,\n'
-                      '    FALSE AS culprit_code,\n'
-                      '    FALSE AS culprit_tool,\n'
-                      '    FALSE AS culprit_harness\n'
-                      'FROM UNNEST([])',
-            id_field_types=dict(
-                url="STRING",
-            ),
-        ),
         issue=dict(
             statement='SELECT\n'
                       '    ""    AS id,\n'
-                      '    0     AS version,\n'
+                      '    ""    AS origin\n'
+                      'FROM UNNEST([])',
+            id_field_types=dict(
+                id="STRING",
+            ),
+        ),
+        issue_version=dict(
+            statement='SELECT\n'
+                      '    ""    AS id,\n'
+                      '    0     AS version_num,\n'
                       '    ""    AS origin,\n'
                       '    ""    AS report_url,\n'
                       '    ""    AS report_subject,\n'
@@ -612,6 +609,7 @@ class Schema(AbstractSchema):
                       'FROM UNNEST([])',
             id_field_types=dict(
                 id="STRING",
+                version_num="INTEGER",
             ),
         ),
         incident=dict(
@@ -619,7 +617,7 @@ class Schema(AbstractSchema):
                       '    ""    AS id,\n'
                       '    ""    AS origin,\n'
                       '    ""    AS issue_id,\n'
-                      '    0     AS issue_version,\n'
+                      '    0     AS issue_version_num,\n'
                       '    ""    AS build_id,\n'
                       '    ""    AS test_id,\n'
                       '    FALSE AS present,\n'

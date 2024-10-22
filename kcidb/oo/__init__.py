@@ -215,26 +215,36 @@ class BuildTestContainer(BuildContainer, TestContainer):
                       [])
 
 
-class BugContainer(ABC):
-    """Abstract bug container"""
+class IncidentContainer(ABC):
+    """Abstract incident container"""
     @abstractmethod
-    def bugs(self):
-        """A list of reports for the issues incident to this container"""
+    def incidents(self):
+        """A list of incidents of this container"""
+
+
+class IssueVersionContainer(ABC):
+    """Abstract issue version container"""
+    @abstractmethod
+    def issue_versions(self):
+        """A list of issue versions incident to this container"""
 
     @property
-    def code_bugs(self):
-        """A list of reports for code issues incident to this container"""
-        return [bug for bug in self.bugs if bug.culprit_code]
+    def code_issue_versions(self):
+        """A list of code issue versions incident to this container"""
+        return [issue_version for issue_version in self.issue_versions
+                if issue_version.culprit_code]
 
     @property
-    def tool_bugs(self):
-        """A list of reports for tool issues incident to this container"""
-        return [bug for bug in self.bugs if bug.culprit_tool]
+    def tool_issue_versions(self):
+        """A list of tool issue versions incident to this container"""
+        return [issue_version for issue_version in self.issue_versions
+                if issue_version.culprit_tool]
 
     @property
-    def harness_bugs(self):
-        """A list of reports for harness issues incident to this container"""
-        return [bug for bug in self.bugs if bug.culprit_harness]
+    def harness_issue_versions(self):
+        """A list of harness issue versions incident to this container"""
+        return [issue_version for issue_version in self.issue_versions
+                if issue_version.culprit_harness]
 
 
 class IssueContainer(ABC):
@@ -259,16 +269,11 @@ class IssueContainer(ABC):
         return [issue for issue in self.issues if issue.culprit_harness]
 
 
-class IncidentContainer(ABC):
-    """Abstract incident container"""
-    @abstractmethod
-    def incidents(self):
-        """A list of incidents of this container"""
-
-
-class IncidentIssueBugContainer(IncidentContainer, IssueContainer,
-                                BugContainer):
-    """Abstract incident container, exposing linked issues and bugs"""
+class IncidentIssueVersionContainer(IncidentContainer, IssueContainer,
+                                    IssueVersionContainer):
+    """
+    Abstract incident container, exposing linked issues and their versions
+    """
 
     @cached_property
     def issues(self):
@@ -278,14 +283,15 @@ class IncidentIssueBugContainer(IncidentContainer, IssueContainer,
         })
 
     @cached_property
-    def bugs(self):
-        """A list of reports for the issues incident to this container"""
+    def issue_versions(self):
+        """A list of issue versions incident to this container"""
         return list({
-            issue.bug for issue in self.issues if issue.bug
+            incident.issue_version for incident in self.incidents
+            if incident.issue_version
         })
 
 
-class Node(IncidentIssueBugContainer):
+class Node(IncidentIssueVersionContainer):
     """A test node"""
 
     def __init__(self, parent, name):
@@ -436,7 +442,7 @@ class Node(IncidentIssueBugContainer):
 
 
 # We'll fix it, pylint: disable=too-many-ancestors
-class Revision(Object, BuildTestContainer, IncidentIssueBugContainer):
+class Revision(Object, BuildTestContainer, IncidentIssueVersionContainer):
     """An OO-representation of a revision"""
 
     @cached_property
@@ -505,7 +511,7 @@ class Revision(Object, BuildTestContainer, IncidentIssueBugContainer):
 
 
 # We'll fix it, pylint: disable=too-many-ancestors
-class Checkout(Object, BuildTestContainer, IncidentIssueBugContainer):
+class Checkout(Object, BuildTestContainer, IncidentIssueVersionContainer):
     """An OO-representation of a checkout"""
 
     # Force ABC to recognize abstract method definition
@@ -530,7 +536,7 @@ class Checkout(Object, BuildTestContainer, IncidentIssueBugContainer):
 
 # We'll fix it, pylint: disable=too-many-ancestors
 class Build(Object, TestContainer,
-            IncidentContainer, IssueContainer, BugContainer):
+            IncidentContainer, IssueContainer):
     """An OO-representation of a build"""
 
     # Force ABC to recognize abstract method definition
@@ -551,13 +557,6 @@ class Build(Object, TestContainer,
         return list(set(self.build_issues) | set(self.test_issues))
 
     @cached_property
-    def bugs(self):
-        """
-        A list of reports for the issues incident to this build and its tests.
-        """
-        return list(set(self.build_bugs) | set(self.test_bugs))
-
-    @cached_property
     def build_incidents(self):
         """A list of build incidents of this build"""
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
@@ -567,11 +566,6 @@ class Build(Object, TestContainer,
     def build_issues(self):
         """A list of issues incident to this build"""
         return list({i.issue for i in self.build_incidents if i.issue})
-
-    @cached_property
-    def build_bugs(self):
-        """A list of reports for the issues incident to this build"""
-        return list({i.bug for i in self.build_issues if i.bug})
 
     @cached_property
     def test_incidents(self):
@@ -585,11 +579,6 @@ class Build(Object, TestContainer,
     def test_issues(self):
         """A list of issues incident to build's tests"""
         return list({i.issue for i in self.test_incidents if i.issue})
-
-    @cached_property
-    def test_bugs(self):
-        """A list of reports for the issues incident to build's tests"""
-        return list({i.bug for i in self.test_issues if i.bug})
 
     @cached_property
     def valid(self):
@@ -632,7 +621,7 @@ class Build(Object, TestContainer,
         return None
 
 
-class Test(Object, IncidentIssueBugContainer):
+class Test(Object, IncidentIssueVersionContainer):
     """An OO-representation of a test"""
 
     # prevent class from being collected by unittest.
@@ -656,54 +645,64 @@ class Test(Object, IncidentIssueBugContainer):
         return self.__getattr__("status") if status is None else status
 
 
-class Bug(Object, IssueContainer, IncidentContainer):
-    """An OO-representation of an issue report"""
+class Issue(Object, IncidentContainer, BuildContainer, TestContainer):
+    """An OO-representation of an issue"""
 
     # Force ABC to recognize abstract method definition
     @cached_property
-    def issues(self):
-        """A list of issues incident to this container"""
-        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
-        return self.__getattr__("issues")
-
-    @cached_property
     def incidents(self):
-        """A list of incidents of this container"""
-        return reduce(lambda x, y: x + y,
-                      (issue.incidents for issue in self.issues),
-                      [])
+        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
+        return self.__getattr__("incidents")
 
     @cached_property
     def builds(self):
-        """A list of builds with this bug"""
-        return list(reduce(lambda x, y: x | y,
-                    (set(issue.builds) for issue in self.issues),
-                    set()))
+        """A list of builds with this issue"""
+        return list({
+            incident.build for incident in self.incidents if incident.build
+        })
+
+    @cached_property
+    def latest_version(self):
+        """The latest version of this issue"""
+        return max(
+            self.issue_versions,
+            key=lambda iv: iv.version_num
+        )
+
+    def __getattr__(self, name):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.latest_version, name)
 
     @cached_property
     def tests(self):
-        """A list of test runs with this bug"""
-        return list(reduce(lambda x, y: x | y,
-                    (set(issue.tests) for issue in self.issues),
-                    set()))
+        """A list of test runs with this issue"""
+        return list({
+            incident.test for incident in self.incidents if incident.test
+        })
 
     @cached_property
     def checkouts(self):
-        """A list of checkouts with this bug"""
-        return list(reduce(lambda x, y: x | y,
-                    (set(issue.checkouts) for issue in self.issues),
-                    set()))
+        """A list of checkouts with this issue"""
+        return list(
+            {build.checkout for build in self.builds
+             if build.checkout} |
+            {test.build.checkout for test in self.tests
+             if test.build and test.build.checkout}
+        )
 
     @cached_property
     def revisions(self):
-        """A list of revisions with this bug"""
-        return list(reduce(lambda x, y: x | y,
-                    (set(issue.revisions) for issue in self.issues),
-                    set()))
+        """A list of revisions with this issue"""
+        return list({
+            checkout.revision for checkout in self.checkouts
+            if checkout.revision
+        })
 
 
-class Issue(Object, IncidentContainer, BuildContainer, TestContainer):
-    """An OO-representation of an issue"""
+class IssueVersion(Object, IncidentContainer, BuildContainer, TestContainer):
+    """An OO-representation of an issue version"""
 
     # Force ABC to recognize abstract method definition
     @cached_property
@@ -747,6 +746,11 @@ class Issue(Object, IncidentContainer, BuildContainer, TestContainer):
 class Incident(Object):
     """An OO-representation of an incident"""
 
+    @cached_property
+    def issue(self):
+        """The (latest version of) issue the incident refers to"""
+        return self.issue_version.issue
+
 
 # A map of object type names and Object-derived classes handling their data
 CLASSES = dict(
@@ -754,8 +758,8 @@ CLASSES = dict(
     checkout=Checkout,
     build=Build,
     test=Test,
-    bug=Bug,
     issue=Issue,
+    issue_version=IssueVersion,
     incident=Incident,
 )
 

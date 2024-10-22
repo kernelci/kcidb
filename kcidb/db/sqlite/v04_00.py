@@ -388,26 +388,20 @@ class Schema(AbstractSchema):
                 misc=JSONColumn(),
             )),
         ),
-        bug=dict(
-            statement="SELECT\n"
-                      "    NULL AS url,\n"
-                      "    NULL AS subject,\n"
-                      "    NULL AS culprit_code,\n"
-                      "    NULL AS culprit_tool,\n"
-                      "    NULL AS culprit_harness\n"
-                      "WHERE 0",
-            schema=Table(dict(
-                url=TextColumn(),
-                subject=TextColumn(),
-                culprit_code=BoolColumn(),
-                culprit_tool=BoolColumn(),
-                culprit_harness=BoolColumn(),
-            )),
-        ),
         issue=dict(
             statement="SELECT\n"
                       "    NULL AS id,\n"
-                      "    NULL AS version,\n"
+                      "    NULL AS origin\n"
+                      "WHERE 0",
+            schema=Table(dict(
+                id=TextColumn(),
+                origin=TextColumn()
+            )),
+        ),
+        issue_version=dict(
+            statement="SELECT\n"
+                      "    NULL AS id,\n"
+                      "    NULL AS version_num,\n"
                       "    NULL AS origin,\n"
                       "    NULL AS report_url,\n"
                       "    NULL AS report_subject,\n"
@@ -421,7 +415,7 @@ class Schema(AbstractSchema):
                       "WHERE 0",
             schema=Table(dict(
                 id=TextColumn(),
-                version=IntegerColumn(),
+                version_num=IntegerColumn(),
                 origin=TextColumn(),
                 report_url=TextColumn(),
                 report_subject=TextColumn(),
@@ -439,7 +433,7 @@ class Schema(AbstractSchema):
                       "    NULL AS id,\n"
                       "    NULL AS origin,\n"
                       "    NULL AS issue_id,\n"
-                      "    NULL AS issue_version,\n"
+                      "    NULL AS issue_version_num,\n"
                       "    NULL AS build_id,\n"
                       "    NULL AS test_id,\n"
                       "    NULL AS present,\n"
@@ -450,7 +444,7 @@ class Schema(AbstractSchema):
                 id=TextColumn(),
                 origin=TextColumn(),
                 issue_id=TextColumn(),
-                issue_version=IntegerColumn(),
+                issue_version_num=IntegerColumn(),
                 build_id=TextColumn(),
                 test_id=TextColumn(),
                 present=BoolColumn(),

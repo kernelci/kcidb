@@ -149,34 +149,19 @@ class Schema(PreviousSchema):
     # Queries for each type of raw object-oriented data
     OO_QUERIES = merge_dicts(
         PreviousSchema.OO_QUERIES,
-        bug=merge_dicts(
-            PreviousSchema.OO_QUERIES["bug"],
-            statement="SELECT\n"
-                      "    report_url AS url,\n"
-                      "    ANY_VALUE(report_subject) AS subject,\n"
-                      "    MAX(culprit.code) AS culprit_code,\n"
-                      "    MAX(culprit.tool) AS culprit_tool,\n"
-                      "    MAX(culprit.harness) AS culprit_harness\n"
-                      "FROM (\n"
-                      "    SELECT\n"
-                      "        report_url,\n"
-                      "        report_subject,\n"
-                      "        culprit,\n"
-                      "        comment,\n"
-                      "        ROW_NUMBER() OVER (\n"
-                      "            PARTITION BY id\n"
-                      "            ORDER BY version DESC\n"
-                      "        ) AS precedence\n"
-                      "    FROM issues\n"
-                      ")\n"
-                      "WHERE precedence = 1\n"
-                      "GROUP BY report_url",
-        ),
         issue=merge_dicts(
             PreviousSchema.OO_QUERIES["issue"],
             statement="SELECT\n"
                       "    id,\n"
-                      "    version,\n"
+                      "    ANY_VALUE(origin) AS origin\n"
+                      "FROM issues\n"
+                      "GROUP BY id",
+        ),
+        issue_version=merge_dicts(
+            PreviousSchema.OO_QUERIES["issue_version"],
+            statement="SELECT\n"
+                      "    id,\n"
+                      "    version AS version_num,\n"
                       "    origin,\n"
                       "    report_url,\n"
                       "    report_subject,\n"
@@ -187,25 +172,7 @@ class Schema(PreviousSchema):
                       "    test_status,\n"
                       "    comment,\n"
                       "    misc\n"
-                      "FROM (\n"
-                      "    SELECT\n"
-                      "        id,\n"
-                      "        version,\n"
-                      "        origin,\n"
-                      "        report_url,\n"
-                      "        report_subject,\n"
-                      "        culprit,\n"
-                      "        build_valid,\n"
-                      "        test_status,\n"
-                      "        comment,\n"
-                      "        misc,\n"
-                      "        ROW_NUMBER() OVER (\n"
-                      "            PARTITION BY id\n"
-                      "            ORDER BY version DESC\n"
-                      "        ) AS precedence\n"
-                      "    FROM issues\n"
-                      ")\n"
-                      "WHERE precedence = 1",
+                      "FROM issues",
         ),
         incident=merge_dicts(
             PreviousSchema.OO_QUERIES["incident"],
@@ -213,31 +180,13 @@ class Schema(PreviousSchema):
                       "    id,\n"
                       "    origin,\n"
                       "    issue_id,\n"
-                      "    issue_version,\n"
+                      "    issue_version AS issue_version_num,\n"
                       "    build_id,\n"
                       "    test_id,\n"
                       "    present,\n"
                       "    comment,\n"
                       "    misc\n"
-                      "FROM (\n"
-                      "    SELECT\n"
-                      "        id,\n"
-                      "        origin,\n"
-                      "        issue_id,\n"
-                      "        issue_version,\n"
-                      "        build_id,\n"
-                      "        test_id,\n"
-                      "        present,\n"
-                      "        comment,\n"
-                      "        misc,\n"
-                      "        DENSE_RANK() OVER (\n"
-                      "            PARTITION BY\n"
-                      "                issue_id, build_id, test_id\n"
-                      "            ORDER BY issue_version DESC\n"
-                      "        ) AS precedence\n"
-                      "    FROM incidents\n"
-                      ")\n"
-                      "WHERE precedence = 1",
+                      "FROM incidents",
         ),
     )
 

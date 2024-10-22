@@ -1,7 +1,11 @@
 {# Issue template macros #}
 
 {% macro summary(issue) %}
-    {{- issue.report_url -}}
+    {{- issue.comment |
+        default(
+            issue.report_subject | default(issue.report_url, true),
+            true
+        ) -}}
 {% endmacro %}
 
 {% macro stats(issue, max_list_len) %}
