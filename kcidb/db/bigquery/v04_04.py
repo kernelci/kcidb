@@ -55,25 +55,28 @@ class Schema(PreviousSchema):
     # Queries for each type of raw object-oriented data
     OO_QUERIES = merge_dicts(
         PreviousSchema.OO_QUERIES,
-        checkout="SELECT\n"
-                 "    id,\n"
-                 "    git_commit_hash,\n"
-                 "    git_commit_tags,\n"
-                 "    git_commit_message,\n"
-                 "    patchset_hash,\n"
-                 "    origin,\n"
-                 "    git_repository_url,\n"
-                 "    git_repository_branch,\n"
-                 "    git_repository_branch_tip,\n"
-                 "    tree_name,\n"
-                 "    message_id,\n"
-                 "    start_time,\n"
-                 "    log_url,\n"
-                 "    log_excerpt,\n"
-                 "    comment,\n"
-                 "    valid,\n"
-                 "    misc\n"
-                 "FROM checkouts",
+        checkout=merge_dicts(
+            PreviousSchema.OO_QUERIES["checkout"],
+            statement="SELECT\n"
+                      "    id,\n"
+                      "    git_commit_hash,\n"
+                      "    git_commit_tags,\n"
+                      "    git_commit_message,\n"
+                      "    patchset_hash,\n"
+                      "    origin,\n"
+                      "    git_repository_url,\n"
+                      "    git_repository_branch,\n"
+                      "    git_repository_branch_tip,\n"
+                      "    tree_name,\n"
+                      "    message_id,\n"
+                      "    start_time,\n"
+                      "    log_url,\n"
+                      "    log_excerpt,\n"
+                      "    comment,\n"
+                      "    valid,\n"
+                      "    misc\n"
+                      "FROM checkouts",
+        ),
     )
 
     @classmethod
