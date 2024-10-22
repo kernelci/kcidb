@@ -845,8 +845,8 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     'waived': False
                 }],
-                'bug': [],
                 'issue': [],
+                'issue_version': [],
                 'incident': [],
             }
         ),
@@ -951,8 +951,8 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     "waived": None,
                 }],
-                "bug": [],
                 "issue": [],
+                "issue_version": [],
                 "incident": [],
             }
         ),
@@ -1084,18 +1084,11 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1111,14 +1104,14 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
                     "present": True,
@@ -1255,18 +1248,11 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1282,14 +1268,14 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
                     "present": True,
@@ -1444,18 +1430,11 @@ def test_upgrade(clean_database):
                     "number_prefix": "metric",
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1471,14 +1450,14 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
                     "present": True,
@@ -1636,18 +1615,11 @@ def test_upgrade(clean_database):
                     "number_prefix": "metric",
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1663,14 +1635,14 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
                     "present": True,

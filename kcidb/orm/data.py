@@ -428,24 +428,21 @@ SCHEMA = Schema(
                 incident=("test_id",),
             ),
         ),
-        bug=dict(
-            field_json_schemas=dict(
-                url=_ISSUE['report_url'],
-                subject=_ISSUE['report_subject'],
-                culprit_code=_ISSUE_CULPRIT['code'],
-                culprit_tool=_ISSUE_CULPRIT['tool'],
-                culprit_harness=_ISSUE_CULPRIT['harness'],
-            ),
-            required_fields={'url'},
-            id_field_types=dict(url=str),
-            children=dict(
-                issue=("report_url",),
-            ),
-        ),
         issue=dict(
             field_json_schemas=dict(
                 id=_ISSUE['id'],
-                version=_ISSUE['version'],
+                origin=_ISSUE['origin'],
+            ),
+            required_fields={'id', 'origin'},
+            id_field_types=dict(id=str),
+            children=dict(
+                issue_version=("id",),
+            ),
+        ),
+        issue_version=dict(
+            field_json_schemas=dict(
+                id=_ISSUE['id'],
+                version_num=_ISSUE['version'],
                 origin=_ISSUE['origin'],
                 report_url=_ISSUE['report_url'],
                 report_subject=_ISSUE['report_subject'],
@@ -457,10 +454,10 @@ SCHEMA = Schema(
                 comment=_ISSUE['comment'],
                 misc=_ISSUE['misc'],
             ),
-            required_fields={'id', 'version', 'origin'},
-            id_field_types=dict(id=str),
+            required_fields={'id', 'version_num', 'origin'},
+            id_field_types=dict(id=str, version_num=int),
             children=dict(
-                incident=("issue_id",),
+                incident=("issue_id", "issue_version_num"),
             ),
         ),
         incident=dict(
@@ -468,14 +465,14 @@ SCHEMA = Schema(
                 id=_INCIDENT['id'],
                 origin=_INCIDENT['origin'],
                 issue_id=_INCIDENT['issue_id'],
-                issue_version=_INCIDENT['issue_version'],
+                issue_version_num=_INCIDENT['issue_version'],
                 build_id=_INCIDENT['build_id'],
                 test_id=_INCIDENT['test_id'],
                 present=_INCIDENT['present'],
                 comment=_INCIDENT['comment'],
                 misc=_INCIDENT['misc'],
             ),
-            required_fields={'id', 'origin', 'issue_id', 'issue_version'},
+            required_fields={'id', 'origin', 'issue_id', 'issue_version_num'},
             id_field_types=dict(id=str),
         ),
     )
