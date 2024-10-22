@@ -493,8 +493,8 @@ def test_ingest_main():
                               "Subject: Test checkout: .*\x00"
                               "Subject: Test build: .*\x00"
                               "Subject: Test test: .*\x00"
-                              "Subject: Test bug: .*\x00"
                               "Subject: Test issue: .*\x00"
+                              "Subject: Test issue_version: .*\x00"
                               "Subject: Test incident: .*\x00")
 
     two_of_everything = json.dumps(dict(
@@ -569,9 +569,9 @@ def test_ingest_main():
                               "Subject: Test checkout: .*\x00"
                               "Subject: Test build: .*\x00"
                               "Subject: Test build: .*\x00"
-                              "Subject: Test bug: .*\x00"
-                              "Subject: Test bug: .*\x00"
                               "Subject: Test issue: .*\x00"
                               "Subject: Test issue: .*\x00"
+                              "Subject: Test issue_version: .*\x00"
+                              "Subject: Test issue_version: .*\x00"
                               "Subject: Test incident: .*\x00"
                               "Subject: Test incident: .*\x00")

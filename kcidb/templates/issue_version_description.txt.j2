@@ -1,0 +1,17 @@
+{# Issue description template #}
+{%- import "issue.j2" as issue_macros -%}
+{# Maximum length of a list of things (builds/tests/etc.) #}
+{% set max_list_len = 5 %}
+Below is the summary of results Kernel CI database has recorded
+for this issue so far. See complete and up-to-date report at:
+
+    https://kcidb.kernelci.org/d/issue/issue?orgId=1&var-id={{issue_version.id | urlencode }}&var-version={{issue_version.version_num | urlencode}}
+
+OVERVIEW
+
+{{ issue_macros.overview(issue_version, max_list_len) }}
+
+See complete and up-to-date report at:
+
+    https://kcidb.kernelci.org/d/issue/issue?orgId=1&var-id={{issue_version.id | urlencode }}&var-version={{issue_version.version_num | urlencode}}
+{# Force git commit hook to ignore trailing newline #}
