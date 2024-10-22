@@ -561,16 +561,13 @@ class Schema(AbstractSchema):
              "    comment,\n"
              "    misc\n"
              "FROM tests",
-        bug='SELECT\n'
-            '    ""    AS url,\n'
-            '    ""    AS subject,\n'
-            '    FALSE AS culprit_code,\n'
-            '    FALSE AS culprit_tool,\n'
-            '    FALSE AS culprit_harness\n'
-            'FROM UNNEST([])',
         issue='SELECT\n'
               '    ""    AS id,\n'
-              '    0     AS version,\n'
+              '    ""    AS origin\n'
+              'FROM UNNEST([])',
+        issue_version='SELECT\n'
+              '    ""    AS id,\n'
+              '    0     AS version_num,\n'
               '    ""    AS origin,\n'
               '    ""    AS report_url,\n'
               '    ""    AS report_subject,\n'
@@ -586,7 +583,7 @@ class Schema(AbstractSchema):
                  '    ""    AS id,\n'
                  '    ""    AS origin,\n'
                  '    ""    AS issue_id,\n'
-                 '    0     AS issue_version,\n'
+                 '    0     AS issue_version_num,\n'
                  '    ""    AS build_id,\n'
                  '    ""    AS test_id,\n'
                  '    FALSE AS present,\n'
