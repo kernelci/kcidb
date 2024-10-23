@@ -157,8 +157,11 @@ class Driver(AbstractDriver):
 
         Args:
             ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match. None means empty
-                                dictionary.
+                                of IDs of objects to match. Each ID is a tuple
+                                of values. The values should match the types,
+                                the order, and the number of the object's ID
+                                fields as described by the database's I/O
+                                schema (the "id_fields" attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
