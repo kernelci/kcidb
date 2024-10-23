@@ -144,7 +144,7 @@ def test_query_main():
         "-t", "test:test:1",
         "--parents", "--children", "--objects-per-report", "10",
         "--indent=0",
-        "-i", "test:issue:1",
+        "-i", "test:issue:1", "--iv", "10",
         "-n", "test:incident:1",
     ]
     empty = kcidb.io.SCHEMA.new()
@@ -161,7 +161,7 @@ def test_query_main():
             ids=dict(checkouts=["test:checkout:1"],
                      builds=["test:build:1"],
                      tests=["test:test:1"],
-                     issues=["test:issue:1"],
+                     issues=[("test:issue:1", 10)],
                      incidents=["test:incident:1"]),
             parents=True,
             children=True,
@@ -578,11 +578,7 @@ def test_metadata_generation_and_fetching(empty_database):
     """
     client = empty_database
     io_data = COMPREHENSIVE_IO_DATA
-    ids = {
-        obj_list_name: [obj["id"] for obj in io_data[obj_list_name]]
-        for obj_list_name in kcidb.io.SCHEMA.graph
-        if obj_list_name
-    }
+    ids = kcidb.io.SCHEMA.get_ids(io_data)
 
     # Check metadata is generated
     before_load = client.get_current_time()
@@ -849,8 +845,8 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     'waived': False
                 }],
-                'bug': [],
                 'issue': [],
+                'issue_version': [],
                 'incident': [],
             }
         ),
@@ -955,8 +951,8 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     "waived": None,
                 }],
-                "bug": [],
                 "issue": [],
+                "issue_version": [],
                 "incident": [],
             }
         ),
@@ -1088,18 +1084,11 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1115,16 +1104,17 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1258,18 +1248,11 @@ def test_upgrade(clean_database):
                     'number_prefix': None,
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1285,16 +1268,17 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1446,18 +1430,11 @@ def test_upgrade(clean_database):
                     "number_prefix": "metric",
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1473,16 +1450,17 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1637,18 +1615,11 @@ def test_upgrade(clean_database):
                     "number_prefix": "metric",
                     "waived": None,
                 }],
-                "bug": [{
-                    "culprit_code": True,
-                    "culprit_tool": False,
-                    "culprit_harness": False,
-                    "url":
-                        "https://bugzilla.redhat.com/show_bug.cgi"
-                        "?id=873123",
-                    "subject":
-                        "(cups-usb-quirks) - usb printer doesn't print "
-                        "(usblp0: USB Bidirectional printer dev)",
-                }],
                 "issue": [{
+                    "id": "redhat:878234322",
+                    "origin": "redhat",
+                }],
+                "issue_version": [{
                     "comment": "Match USB Bidirectional printer dev",
                     "id": "redhat:878234322",
                     "misc": None,
@@ -1664,16 +1635,17 @@ def test_upgrade(clean_database):
                     "culprit_harness": False,
                     "build_valid": None,
                     "test_status": None,
-                    "version": 3,
+                    "version_num": 3,
                 }],
                 "incident": [{
                     "build_id": None,
                     "comment": None,
                     "id": "redhat:2340981234098123409382",
                     "issue_id": "redhat:878234322",
-                    "issue_version": 3,
+                    "issue_version_num": 3,
                     "misc": None,
                     "origin": "redhat",
+                    "present": True,
                     "test_id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
                 }],
@@ -1697,8 +1669,9 @@ def test_upgrade(clean_database):
             database.upgrade(io_version)
             # Check upgrade went well
             # You're wrong, pylint: disable=unsubscriptable-object
-            assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
-                last_params["oo"]
+            assert database.oo_query(
+                kcidb.orm.query.Pattern.parse(">*#")
+            ) == last_params["oo"]
             upgraded_io = io_version.upgrade(last_params["io"])
             assert database.dump(with_metadata=False) == upgraded_io
             assert database.query(io_version.get_ids(upgraded_io)) == \
