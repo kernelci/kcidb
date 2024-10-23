@@ -20,7 +20,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 patchset_hash=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("git_commit_hash", "patchset_hash"),
+            id_field_types=dict(git_commit_hash=str, patchset_hash=str),
             children=dict(
                 checkout=("git_commit_hash", "patchset_hash",)
             ),
@@ -30,7 +30,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 build=("checkout_id",)
             ),
@@ -40,7 +40,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 test=("build_id",),
                 build_test_environment=("build_id",),
@@ -52,7 +52,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 test=("environment_id",),
                 build_test_environment=("environment_id",),
@@ -64,7 +64,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 environment_id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("build_id", "environment_id"),
+            id_field_types=dict(build_id=str, environment_id=str),
             children=dict(
                 test=("build_id", "environment_id"),
             ),
@@ -74,7 +74,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 id=dict(type="string"),
             ),
             required_fields=set(),
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 incident=("test_id",),
             ),
@@ -84,7 +84,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 url=dict(type="string"),
             ),
             required_fields={'url'},
-            id_fields=("url",),
+            id_field_types=dict(url=str),
             children=dict(
                 issue=("report_url",),
             ),
@@ -97,7 +97,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 report_url=dict(type="string"),
             ),
             required_fields={'id', 'version', 'origin'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
             children=dict(
                 incident=("issue_id",),
             ),
@@ -112,7 +112,7 @@ SCHEMA = kcidb.orm.data.Schema(
                 test_id=dict(type="string"),
             ),
             required_fields={'id', 'origin', 'issue_id', 'issue_version'},
-            id_fields=("id",),
+            id_field_types=dict(id=str),
         ),
     )
 )
@@ -120,8 +120,18 @@ SCHEMA = kcidb.orm.data.Schema(
 
 def parse(string, obj_id_set_list=None):
     """Parse a pattern string using test schema"""
-    return kcidb.orm.query.Pattern.parse(string, obj_id_set_list,
-                                         schema=SCHEMA)
+    return kcidb.orm.query.Pattern.parse(
+        string,
+        None if obj_id_set_list is None else
+        [
+            {
+                tuple(str(part) for part in obj_id)
+                for obj_id in obj_id_set
+            }
+            for obj_id_set in obj_id_set_list
+        ],
+        schema=SCHEMA
+    )
 
 
 def pattern(base, child, obj_type_name, obj_id_set=None):
@@ -679,6 +689,11 @@ def raw_issue(**kwargs):
     return raw_data("issue", **kwargs)
 
 
+def raw_issue_version(**kwargs):
+    """Generate raw data for an issue version from values for some fields."""
+    return raw_data("issue_version", **kwargs)
+
+
 def raw_incident(**kwargs):
     """Generate raw data for an incident from values for some fields."""
     return raw_data("incident", **kwargs)
@@ -1110,25 +1125,6 @@ def test_run(source):
         ]
     }
 
-    bug_x = raw_bug(
-        url="https://bugzilla/1201011",
-        subject="Compiler compiles wrong",
-    )
-    bug_y = raw_bug(
-        url="https://bugzilla/207065",
-        subject="Printer doesn't print",
-    )
-    assert \
-        query_str(
-            source,
-            '>test["redhat:redhat.org:'
-            'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c"]'
-            '>incident<issue<bug#'
-        ) in [
-            dict(bug=[bug_x, bug_y]),
-            dict(bug=[bug_y, bug_x]),
-        ]
-
 
 def test_build(source):
     """Check data returned from query that starts with '>build' """
@@ -1212,17 +1208,6 @@ def test_build(source):
                 origin="kernelci")
         ]
     }
-
-    assert \
-        query_str(
-            source,
-            '>build["redhat:redhat.org:619c65f9709de72e90f2efd0"]'
-            '>incident<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            url="https://bugzilla/1201011",
-            subject="Compiler compiles wrong",
-        )])
 
 
 def test_checkout(source):
@@ -1490,290 +1475,6 @@ def test_revision(source):
         '>checkout>build>test#'
     )["test"] == test_of_revision_dollar_sign
 
-    assert \
-        query_str(
-            source,
-            '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
-            '>checkout>build>test>incident<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            url="https://maillist/498232",
-            subject="LED doesn't blink",
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>revision["82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896", ""]'
-            '>checkout>build>test>incident<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            url="https://maillist/498232",
-            subject="LED doesn't blink",
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>revision["82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896", ""; '
-            '"5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
-            '>checkout>build>test>incident<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            url="https://maillist/498232",
-            subject="LED doesn't blink",
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>revision["82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896", ""; '
-            '"5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
-            '>checkout>build>incident<issue<bug#'
-        ) == \
-        dict(bug=[])
-
-
-def test_bug(source):
-    """Check data returned from query that starts with '>bug'"""
-
-    assert \
-        query_str(source, '>bug["noone:non-existent"]#') == \
-        {"bug": []}
-
-    assert \
-        query_str(source, '>bug["https://bugzilla/207065"]#') == \
-        {
-            "bug": [
-                raw_bug(
-                    url="https://bugzilla/207065",
-                    subject="Printer doesn't print",
-                )
-            ]
-        }
-
-    assert \
-        query_str(source, '>bug["https://maillist/498232"]#') == \
-        {
-            "bug": [
-                raw_bug(
-                    url="https://maillist/498232",
-                    subject="LED doesn't blink",
-                )
-            ]
-        }
-
-    assert \
-        query_str(source, '>bug["https://maillist/498232"]>issue#') == \
-        {
-            "issue": [
-                raw_issue(
-                    id="kernelci:1209203344",
-                    origin="kernelci",
-                    report_url="https://maillist/498232",
-                    report_subject="LED doesn't blink",
-                    version=1,
-                )
-            ]
-        }
-
-    data = query_str(source, '>bug["https://bugzilla/207065"]>issue#')
-    assert ["issue"] == list(data.keys())
-    issues = data["issue"]
-    assert len(issues) == 2
-    assert \
-        raw_issue(
-            id="kernelci:1987934987",
-            origin="kernelci",
-            report_url="https://bugzilla/207065",
-            report_subject="Printer doesn't print",
-            version=1,
-        ) in \
-        issues
-    assert \
-        raw_issue(
-            id="redhat:987987da98798f987c",
-            origin="redhat",
-            report_url="https://bugzilla/207065",
-            report_subject="Printer doesn't print",
-            version=100,
-        ) in \
-        issues
-
-    assert \
-        query_str(source, '>bug["https://bugzilla/1201011"]>issue#') == \
-        {
-            "issue": [
-                raw_issue(
-                    id="redhat:987987da98798aa233",
-                    origin="redhat",
-                    report_url="https://bugzilla/1201011",
-                    report_subject="Compiler compiles wrong",
-                    version=10,
-                )
-            ]
-        }
-
-    data = query_str(
-        source,
-        '>bug["https://bugzilla/207065"]>issue>incident#'
-    )
-    assert ["incident"] == list(data.keys())
-    incidents = data["incident"]
-    assert len(incidents) == 2
-    assert \
-        raw_incident(
-            id="_:2987d298712",
-            issue_id="kernelci:1987934987",
-            issue_version=1,
-            origin="_",
-            test_id="redhat:redhat.org:"
-            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
-        ) in \
-        incidents
-    assert \
-        raw_incident(
-            id="redhat:987987da98798f987c-29874",
-            issue_id="redhat:987987da98798f987c",
-            issue_version=100,
-            origin="redhat",
-            test_id="redhat:redhat.org:"
-            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
-        ) in \
-        incidents
-
-    data = query_str(
-        source,
-        '>bug["https://maillist/498232"]>issue>incident#'
-    )
-    assert ["incident"] == list(data.keys())
-    incidents = data["incident"]
-    assert len(incidents) == 2
-    assert \
-        raw_incident(
-            id="kernelci:29871398212",
-            issue_id="kernelci:1209203344",
-            issue_version=1,
-            origin="kernelci",
-            test_id="kernelci:kernelci.org:"
-            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
-        ) in \
-        incidents
-    assert \
-        raw_incident(
-            id="kernelci:29871398232",
-            issue_id="kernelci:1209203344",
-            issue_version=1,
-            origin="kernelci",
-            test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
-        ) in \
-        incidents
-
-    assert \
-        query_str(
-            source,
-            '>bug["https://bugzilla/1201011"]>issue>incident#'
-        ) == \
-        dict(incident=[raw_incident(
-            id="redhat:987987da98798aa233-12",
-            issue_id="redhat:987987da98798aa233",
-            issue_version=10,
-            origin="redhat",
-            test_id="redhat:redhat.org:"
-            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
-            build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>bug["https://bugzilla/207065"]>issue>incident<test#'
-        ) == \
-        dict(test=[raw_test(
-            build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
-            id="redhat:redhat.org:"
-            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
-            origin="redhat",
-            status="DONE",
-            waived=True,
-        )])
-
-    data = query_str(
-        source,
-        '>bug["https://maillist/498232"]>issue>incident<test#'
-    )
-    assert ["test"] == list(data.keys())
-    tests = data["test"]
-    assert len(tests) == 2
-    assert \
-        raw_test(
-            build_id="kernelci:kernelci.org:619c64b1712847eccbf2efac",
-            id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
-            origin="kernelci",
-            path="baseline.dmesg.emerg",
-            start_time="2021-11-23T03:52:13.671000+00:00",
-            status="PASS",
-            waived=False,
-        ) in \
-        tests
-    assert \
-        raw_test(
-            build_id="kernelci:kernelci.org:619c65d3c1b0a764f3f2efa0",
-            id="kernelci:kernelci.org:"
-            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
-            origin="kernelci",
-            path="baseline.dmesg.crit",
-            start_time="2021-11-23T03:52:13.666000+00:00",
-            status="PASS",
-            waived=False,
-        ) in \
-        tests
-
-    assert \
-        query_str(
-            source,
-            '>bug["https://bugzilla/1201011"]>issue>incident<test#'
-        ) == \
-        dict(test=[raw_test(
-            build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
-            id="redhat:redhat.org:"
-            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
-            origin="redhat",
-            status="DONE",
-            waived=True,
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>bug["https://bugzilla/1201011"]>issue>incident<build#'
-        ) == \
-        dict(build=[raw_build(
-            checkout_id="_:redhat:"
-            "5acb9c2a7bc836e9619c65f9709de72e90f2efd0",
-            id="redhat:redhat.org:619c65f9709de72e90f2efd0",
-            origin="redhat",
-        )])
-
-    revision_x = raw_revision(
-        git_commit_hash="5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-        git_commit_name="v5.15-4077-g5acb9c2a7bc8",
-        patchset_hash="",
-    )
-    revision_y = raw_revision(
-        git_commit_hash="82bcf49e5e6ad570ff61ffcd210cf85c5ec8d896",
-        patchset_hash="",
-    )
-    assert \
-        query_str(
-            source,
-            '>bug["https://maillist/498232"]>issue>incident'
-            '<test<build<checkout<revision#'
-        ) in [
-            dict(revision=[revision_x, revision_y]),
-            dict(revision=[revision_y, revision_x]),
-        ]
-
 
 def test_issue(source):
     """Check data returned from query that starts with '>issue'"""
@@ -1787,19 +1488,63 @@ def test_issue(source):
         dict(issue=[raw_issue(
             id="kernelci:1209203344",
             origin="kernelci",
+        )])
+
+    assert \
+        query_str(source, '>issue_version["kernelci:1209203344", 1]#') == \
+        dict(issue_version=[raw_issue_version(
+            id="kernelci:1209203344",
+            origin="kernelci",
             report_url="https://maillist/498232",
             report_subject="LED doesn't blink",
-            version=1,
+            version_num=1,
         )])
+
+    data = query_str(source, '>issue["kernelci:1209203344"]>issue_version#')
+    assert len(data) == 1
+    assert "issue_version" in data
+    assert set(frozenset(iv.items()) for iv in data["issue_version"]) == {
+        frozenset(raw_issue_version(
+            id="kernelci:1209203344",
+            origin="kernelci",
+            report_url="https://maillist/498232",
+            report_subject="LED doesn't blink",
+            version_num=1,
+        ).items()),
+        frozenset(raw_issue_version(
+            id="kernelci:1209203344",
+            origin="kernelci",
+            report_url="https://maillist/498232",
+            report_subject="LED boesn't link",
+            version_num=0,
+        ).items()),
+    }
 
     assert \
         query_str(source, '>issue["kernelci:1987934987"]#') == \
         dict(issue=[raw_issue(
             id="kernelci:1987934987",
             origin="kernelci",
+        )])
+
+    assert \
+        query_str(source, '>issue_version["kernelci:1987934987", 1]#') == \
+        dict(issue_version=[raw_issue_version(
+            id="kernelci:1987934987",
+            origin="kernelci",
             report_url="https://bugzilla/207065",
             report_subject="Printer doesn't print",
-            version=1,
+            version_num=1,
+        )])
+
+    assert \
+        query_str(source, '>issue["kernelci:1987934987"]>issue_version#') == \
+        dict(issue_version=[raw_issue_version(
+            id="kernelci:1987934987",
+            origin="kernelci",
+            report_url="https://bugzilla/207065",
+            report_subject="Printer doesn't print",
+            version_num=1,
         )])
 
     assert \
@@ -1807,101 +1552,153 @@ def test_issue(source):
         dict(issue=[raw_issue(
             id="redhat:987987da98798f987c",
             origin="redhat",
+        )])
+
+    assert \
+        query_str(source,
+                  '>issue_version["redhat:987987da98798f987c", 100]#') == \
+        dict(issue_version=[raw_issue_version(
+            id="redhat:987987da98798f987c",
+            origin="redhat",
             report_url="https://bugzilla/207065",
             report_subject="Printer doesn't print",
-            version=100,
+            version_num=100,
         )])
+
+    data = query_str(source,
+                     '>issue["redhat:987987da98798f987c"]>issue_version#')
+    assert len(data) == 1
+    assert "issue_version" in data
+    assert set(frozenset(iv.items()) for iv in data["issue_version"]) == {
+        frozenset(raw_issue_version(
+            id="redhat:987987da98798f987c",
+            origin="redhat",
+            report_url="https://bugzilla/207065",
+            report_subject="Printer doesn't print",
+            version_num=100,
+        ).items()),
+        frozenset(raw_issue_version(
+            id='redhat:987987da98798f987c',
+            origin='redhat',
+            report_subject="Plintel doesn't plint",
+            report_url='https://bugzilla/207065',
+            version_num=80,
+        ).items()),
+    }
 
     assert \
         query_str(source, '>issue["redhat:987987da98798aa233"]#') == \
         dict(issue=[raw_issue(
             id="redhat:987987da98798aa233",
             origin="redhat",
+        )])
+
+    assert \
+        query_str(source,
+                  '>issue_version["redhat:987987da98798aa233", 10]#') == \
+        dict(issue_version=[raw_issue_version(
+            id="redhat:987987da98798aa233",
+            origin="redhat",
             report_url="https://bugzilla/1201011",
             report_subject="Compiler compiles wrong",
-            version=10,
+            version_num=10,
+        )])
+
+    assert \
+        query_str(source,
+                  '>issue["redhat:987987da98798aa233"]>issue_version#') == \
+        dict(issue_version=[raw_issue_version(
+            id="redhat:987987da98798aa233",
+            origin="redhat",
+            report_url="https://bugzilla/1201011",
+            report_subject="Compiler compiles wrong",
+            version_num=10,
         )])
 
     assert \
         query_str(
             source,
-            '>issue["kernelci:1987934987"]>incident#'
+            '>issue["kernelci:1987934987"]>issue_version>incident#'
         ) == \
         dict(incident=[raw_incident(
             id="_:2987d298712",
             issue_id="kernelci:1987934987",
-            issue_version=1,
+            issue_version_num=1,
             origin="_",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         )])
 
     data = query_str(
         source,
-        '>issue["kernelci:1209203344"]>incident#'
+        '>issue["kernelci:1209203344"]>issue_version>incident#'
     )
-    assert ["incident"] == list(data.keys())
-    incidents = data["incident"]
-    assert len(incidents) == 2
-    assert \
-        raw_incident(
+    assert {"incident"} == set(data)
+    assert set(frozenset(i.items()) for i in data["incident"]) == {
+        frozenset(raw_incident(
             id="kernelci:29871398212",
             issue_id="kernelci:1209203344",
-            issue_version=1,
+            issue_version_num=1,
             origin="kernelci",
             test_id="kernelci:kernelci.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
-        ) in \
-        incidents
-    assert \
-        raw_incident(
+            present=True,
+        ).items()),
+        frozenset(raw_incident(
             id="kernelci:29871398232",
-            issue_id="kernelci:1209203344",
-            issue_version=1,
             origin="kernelci",
+            issue_id="kernelci:1209203344",
+            issue_version_num=1,
             test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
-        ) in \
-        incidents
+            present=True,
+        ).items()),
+        frozenset(raw_incident(
+            id="_:908812340982340",
+            origin="_",
+            issue_id="kernelci:1209203344",
+            issue_version_num=0,
+            test_id="redhat:redhat.org:b9d8be63bc2abca63165"
+            "de5fd74f0f6d2f0b0d1c",
+            present=True,
+        ).items()),
+        frozenset(raw_incident(
+            id='_:908812340982345',
+            issue_id='kernelci:1209203344',
+            issue_version_num=1,
+            origin='_',
+            present=False,
+            test_id='redhat:redhat.org:'
+            'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c',
+        ).items()),
+        frozenset(raw_incident(
+            id="kernelci:29871398212",
+            issue_id="kernelci:1209203344",
+            issue_version_num=1,
+            origin="kernelci",
+            test_id="kernelci:kernelci.org:"
+            "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            present=True,
+        ).items()),
+    }
 
-    assert \
-        query_str(
-            source,
-            '>issue["redhat:987987da98798aa233"]>incident#'
-        ) == \
-        dict(incident=[raw_incident(
+    data = query_str(
+        source,
+        '>issue["redhat:987987da98798aa233"]>issue_version>incident#'
+    )
+    assert {"incident"} == set(data)
+    assert set(frozenset(i.items()) for i in data["incident"]) == {
+        frozenset(raw_incident(
             id="redhat:987987da98798aa233-12",
             issue_id="redhat:987987da98798aa233",
-            issue_version=10,
+            issue_version_num=10,
             origin="redhat",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
-        )])
-
-    assert \
-        query_str(source, '>issue["kernelci:1209203344"]<bug#') == \
-        dict(bug=[raw_bug(
-            url="https://maillist/498232",
-            subject="LED doesn't blink",
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>issue["kernelci:1987934987"; "redhat:987987da98798f987c"]'
-            '<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            url="https://bugzilla/207065",
-            subject="Printer doesn't print",
-        )])
-
-    assert \
-        query_str(source, '>issue["redhat:987987da98798aa233"]<bug#') == \
-        dict(bug=[raw_bug(
-            url="https://bugzilla/1201011",
-            subject="Compiler compiles wrong",
-        )])
+            present=True,
+        ).items()),
+    }
 
 
 def test_incident(source):
@@ -1911,23 +1708,32 @@ def test_incident(source):
         query_str(source, '>incident["noone:non-existent"]#') == \
         {"incident": []}
 
-    # Old incidents shouldn't be returned
+    # Old incidents would still be returned
     assert \
         query_str(
             source,
             '>incident["_:908812340982340"; "_:908812340982340"]#'
         ) == \
-        dict(incident=[])
+        dict(incident=[raw_incident(
+            id='_:908812340982340',
+            issue_id='kernelci:1209203344',
+            issue_version_num=0,
+            origin='_',
+            present=True,
+            test_id='redhat:redhat.org:'
+            'b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c',
+        )])
 
     assert \
         query_str(source, '>incident["_:2987d298712"]#') == \
         dict(incident=[raw_incident(
             id="_:2987d298712",
             issue_id="kernelci:1987934987",
-            issue_version=1,
+            issue_version_num=1,
             origin="_",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         )])
 
     assert \
@@ -1936,10 +1742,11 @@ def test_incident(source):
         dict(incident=[raw_incident(
             id="redhat:987987da98798f987c-29874",
             issue_id="redhat:987987da98798f987c",
-            issue_version=100,
+            issue_version_num=100,
             origin="redhat",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
+            present=True,
         )])
 
     assert \
@@ -1947,10 +1754,11 @@ def test_incident(source):
         dict(incident=[raw_incident(
             id="kernelci:29871398212",
             issue_id="kernelci:1209203344",
-            issue_version=1,
+            issue_version_num=1,
             origin="kernelci",
             test_id="kernelci:kernelci.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
+            present=True,
         )])
 
     assert \
@@ -1958,9 +1766,10 @@ def test_incident(source):
         dict(incident=[raw_incident(
             id="kernelci:29871398232",
             issue_id="kernelci:1209203344",
-            issue_version=1,
+            issue_version_num=1,
             origin="kernelci",
             test_id="kernelci:kernelci.org:619c656de1fb4af479f2efae",
+            present=True,
         )])
 
     assert \
@@ -1968,11 +1777,12 @@ def test_incident(source):
         dict(incident=[raw_incident(
             id="redhat:987987da98798aa233-12",
             issue_id="redhat:987987da98798aa233",
-            issue_version=10,
+            issue_version_num=10,
             origin="redhat",
             test_id="redhat:redhat.org:"
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             build_id="redhat:redhat.org:619c65f9709de72e90f2efd0",
+            present=True,
         )])
 
     assert \
@@ -2063,132 +1873,73 @@ def test_incident(source):
         )])
 
     assert \
-        query_str(source,
-                  '>incident["redhat:987987da98798aa233-12"]<issue#') == \
-        dict(issue=[raw_issue(
+        query_str(
+            source,
+            '>incident["redhat:987987da98798aa233-12"]<issue_version#'
+        ) == \
+        dict(issue_version=[raw_issue_version(
             id="redhat:987987da98798aa233",
             origin="redhat",
             report_url="https://bugzilla/1201011",
             report_subject="Compiler compiles wrong",
-            version=10,
+            version_num=10,
         )])
 
     assert \
-        query_str(source, '>incident["kernelci:29871398232"]<issue#') == \
-        dict(issue=[raw_issue(
+        query_str(source,
+                  '>incident["kernelci:29871398232"]<issue_version#') == \
+        dict(issue_version=[raw_issue_version(
             id="kernelci:1209203344",
             origin="kernelci",
             report_url="https://maillist/498232",
             report_subject="LED doesn't blink",
-            version=1,
+            version_num=1,
         )])
 
     assert \
-        query_str(source, '>incident["kernelci:29871398212"]<issue#') == \
-        dict(issue=[raw_issue(
+        query_str(source,
+                  '>incident["kernelci:29871398212"]<issue_version#') == \
+        dict(issue_version=[raw_issue_version(
             id="kernelci:1209203344",
             origin="kernelci",
             report_url="https://maillist/498232",
             report_subject="LED doesn't blink",
-            version=1,
+            version_num=1,
         )])
 
     assert \
         query_str(
             source,
             '>incident["kernelci:29871398212"; '
-            '"kernelci:29871398232"]<issue#'
+            '"kernelci:29871398232"]<issue_version#'
         ) == \
-        dict(issue=[raw_issue(
+        dict(issue_version=[raw_issue_version(
             id="kernelci:1209203344",
             origin="kernelci",
             report_url="https://maillist/498232",
             report_subject="LED doesn't blink",
-            version=1,
+            version_num=1,
         )])
 
     assert \
-        query_str(source, '>incident["_:2987d298712"]<issue#') == \
-        dict(issue=[raw_issue(
+        query_str(source, '>incident["_:2987d298712"]<issue_version#') == \
+        dict(issue_version=[raw_issue_version(
             id="kernelci:1987934987",
             origin="kernelci",
             report_url="https://bugzilla/207065",
             report_subject="Printer doesn't print",
-            version=1,
+            version_num=1,
         )])
 
     assert \
         query_str(
             source,
-            '>incident["redhat:987987da98798f987c-29874"]<issue#'
+            '>incident["redhat:987987da98798f987c-29874"]<issue_version#'
         ) == \
-        dict(issue=[raw_issue(
+        dict(issue_version=[raw_issue_version(
             id="redhat:987987da98798f987c",
             origin="redhat",
             report_url="https://bugzilla/207065",
             report_subject="Printer doesn't print",
-            version=100,
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>incident["redhat:987987da98798aa233-12"]<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            subject="Compiler compiles wrong",
-            url="https://bugzilla/1201011",
-        )])
-
-    assert \
-        query_str(source, '>incident["kernelci:29871398232"]<issue<bug#') == \
-        dict(bug=[raw_bug(
-            subject="LED doesn't blink",
-            url="https://maillist/498232"
-        )])
-
-    assert \
-        query_str(source, '>incident["kernelci:29871398212"]<issue<bug#') == \
-        dict(bug=[raw_bug(
-            subject="LED doesn't blink",
-            url="https://maillist/498232"
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>incident["kernelci:29871398232"; '
-            '"kernelci:29871398212"]<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            subject="LED doesn't blink",
-            url="https://maillist/498232"
-        )])
-
-    assert \
-        query_str(source, '>incident["_:2987d298712"]<issue<bug#') == \
-        dict(bug=[raw_bug(
-            subject="Printer doesn't print",
-            url="https://bugzilla/207065"
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>incident["redhat:987987da98798f987c-29874"]<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            subject="Printer doesn't print",
-            url="https://bugzilla/207065"
-        )])
-
-    assert \
-        query_str(
-            source,
-            '>incident["_:2987d298712"; '
-            '"redhat:987987da98798f987c-29874"]<issue<bug#'
-        ) == \
-        dict(bug=[raw_bug(
-            subject="Printer doesn't print",
-            url="https://bugzilla/207065"
+            version_num=100,
         )])
