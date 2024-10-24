@@ -45,18 +45,17 @@ def match_test(test):
     return ()
 
 
-def match_bug(bug):
-    """Match bugs"""
-    for issue in bug.issues:
-        if issue.origin == "test":
-            return (generate_message(bug),)
-    return ()
-
-
 def match_issue(issue):
     """Match issues"""
     if issue.origin == "test":
         return (generate_message(issue),)
+    return ()
+
+
+def match_issue_version(issue_version):
+    """Match issues"""
+    if issue_version.origin == "test":
+        return (generate_message(issue_version),)
     return ()
 
 

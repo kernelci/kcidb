@@ -74,27 +74,30 @@ class Schema(PreviousSchema):
     # Queries for each type of raw object-oriented data
     OO_QUERIES = merge_dicts(
         PreviousSchema.OO_QUERIES,
-        test="SELECT\n"
-             "    id,\n"
-             "    build_id,\n"
-             "    origin,\n"
-             "    path,\n"
-             "    environment.comment AS environment_comment,\n"
-             "    environment.compatible AS environment_compatible,\n"
-             "    environment.misc AS environment_misc,\n"
-             "    status,\n"
-             "    number.value AS number_value,\n"
-             "    number.unit AS number_unit,\n"
-             "    number.prefix AS number_prefix,\n"
-             "    waived,\n"
-             "    start_time,\n"
-             "    duration,\n"
-             "    output_files,\n"
-             "    log_url,\n"
-             "    log_excerpt,\n"
-             "    comment,\n"
-             "    misc\n"
-             "FROM tests",
+        test=merge_dicts(
+            PreviousSchema.OO_QUERIES["test"],
+            statement="SELECT\n"
+                      "    id,\n"
+                      "    build_id,\n"
+                      "    origin,\n"
+                      "    path,\n"
+                      "    environment.comment AS environment_comment,\n"
+                      "    environment.compatible AS environment_compatible,\n"
+                      "    environment.misc AS environment_misc,\n"
+                      "    status,\n"
+                      "    number.value AS number_value,\n"
+                      "    number.unit AS number_unit,\n"
+                      "    number.prefix AS number_prefix,\n"
+                      "    waived,\n"
+                      "    start_time,\n"
+                      "    duration,\n"
+                      "    output_files,\n"
+                      "    log_url,\n"
+                      "    log_excerpt,\n"
+                      "    comment,\n"
+                      "    misc\n"
+                      "FROM tests",
+        ),
     )
 
     @classmethod

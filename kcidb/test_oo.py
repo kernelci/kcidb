@@ -4,7 +4,7 @@ import sys
 import json
 import pytest
 import kcidb
-from kcidb.oo import Checkout, Build, Test, Node, Bug, Issue, Incident
+from kcidb.oo import Checkout, Build, Test, Node, Issue, Incident
 
 # We gotta have our fixtures, pylint: disable=redefined-outer-name
 
@@ -526,12 +526,6 @@ def test_traversing_revision_links(traversing_client):
 
     assert isinstance(revision.tests_root, Node)
 
-    assert_contains(revision.bugs, (Bug, 2))
-    assert {revision.bugs[0].url, revision.bugs[1].url} == \
-        {"https://bugzilla.redhat.com/1", "https://kernelci.org/issue/1"}
-    assert {revision.bugs[0].subject, revision.bugs[1].subject} == \
-        {"Bad issue", "Worse issue"}
-
     assert_contains(revision.issues, (Issue, 2))
     assert {revision.issues[0].id, revision.issues[1].id} == \
         {"redhat:1", "kernelci:1"}
@@ -557,11 +551,6 @@ def test_traversing_valid_checkout_links(traversing_client):
     assert_contains(checkouts[0].builds, (Build, 3))
     assert_contains(checkouts[0].tests, (Test, 6))
     assert isinstance(checkouts[0].tests_root, Node)
-
-    assert_contains(checkouts[0].bugs, (Bug, 1))
-    assert_contains(checkouts[1].bugs, (Bug, 1))
-    assert {checkouts[0].bugs[0].url, checkouts[1].bugs[0].url} == \
-        {"https://kernelci.org/issue/1", "https://bugzilla.redhat.com/1"}
 
     assert_contains(checkouts[0].issues, (Issue, 1))
     assert_contains(checkouts[1].issues, (Issue, 1))

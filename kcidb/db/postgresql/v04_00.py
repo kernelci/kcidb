@@ -4,6 +4,8 @@ import random
 import logging
 import textwrap
 import datetime
+from collections import namedtuple
+from itertools import chain
 import psycopg2
 import psycopg2.extras
 import psycopg2.errors
@@ -424,26 +426,20 @@ class Schema(AbstractSchema):
                 misc=JSONColumn(),
             )),
         ),
-        bug=dict(
-            statement="SELECT\n"
-                      "    NULL AS url,\n"
-                      "    NULL AS subject,\n"
-                      "    NULL AS culprit_code,\n"
-                      "    NULL AS culprit_tool,\n"
-                      "    NULL AS culprit_harness\n"
-                      "WHERE FALSE",
-            schema=Table(dict(
-                url=TextColumn(),
-                subject=TextColumn(),
-                culprit_code=BoolColumn(),
-                culprit_tool=BoolColumn(),
-                culprit_harness=BoolColumn(),
-            )),
-        ),
         issue=dict(
             statement="SELECT\n"
                       "    NULL AS id,\n"
-                      "    NULL AS version,\n"
+                      "    NULL AS origin\n"
+                      "WHERE FALSE",
+            schema=Table(dict(
+                id=TextColumn(),
+                origin=TextColumn(),
+            )),
+        ),
+        issue_version=dict(
+            statement="SELECT\n"
+                      "    NULL AS id,\n"
+                      "    NULL AS version_num,\n"
                       "    NULL AS origin,\n"
                       "    NULL AS report_url,\n"
                       "    NULL AS report_subject,\n"
@@ -457,7 +453,7 @@ class Schema(AbstractSchema):
                       "WHERE FALSE",
             schema=Table(dict(
                 id=TextColumn(),
-                version=IntegerColumn(),
+                version_num=IntegerColumn(),
                 origin=TextColumn(),
                 report_url=TextColumn(),
                 report_subject=TextColumn(),
@@ -475,9 +471,10 @@ class Schema(AbstractSchema):
                       "    NULL AS id,\n"
                       "    NULL AS origin,\n"
                       "    NULL AS issue_id,\n"
-                      "    NULL AS issue_version,\n"
+                      "    NULL AS issue_version_num,\n"
                       "    NULL AS build_id,\n"
                       "    NULL AS test_id,\n"
+                      "    NULL AS present,\n"
                       "    NULL AS comment,\n"
                       "    NULL AS misc\n"
                       "WHERE FALSE",
@@ -485,9 +482,10 @@ class Schema(AbstractSchema):
                 id=TextColumn(),
                 origin=TextColumn(),
                 issue_id=TextColumn(),
-                issue_version=IntegerColumn(),
+                issue_version_num=IntegerColumn(),
                 build_id=TextColumn(),
                 test_id=TextColumn(),
+                present=BoolColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),
@@ -627,8 +625,11 @@ class Schema(AbstractSchema):
 
         Args:
             ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match. None means empty
-                                dictionary.
+                                of IDs of objects to match. Each ID is a tuple
+                                of values. The values should match the types,
+                                the order, and the number of the object's ID
+                                fields as described by the database's I/O
+                                schema (the "id_fields" attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -647,76 +648,93 @@ class Schema(AbstractSchema):
         # pylint: disable=too-many-locals
         # pylint: disable=too-many-statements
         # pylint: disable=too-many-branches
-        assert isinstance(ids, dict)
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
 
-        # Build a dictionary of object list (table) names and tuples
-        # containing a SELECT statement and the list of its parameters,
-        # returning IDs of the objects to fetch.
-        obj_list_queries = {}
-        for obj_list_name in self.io.graph:
-            if not obj_list_name:
-                continue
-            table_ids = ids.get(obj_list_name, [])
-            if table_ids:
-                obj_list_queries[obj_list_name] = [
-                    "WITH ids(id) AS (VALUES " +
-                    ", ".join(["(%s)"] * len(table_ids)) +
-                    ") SELECT * FROM ids\n",
-                    [*table_ids]
-                ]
-            else:
-                obj_list_queries[obj_list_name] = [
-                    "SELECT NULL as id WHERE FALSE\n",
-                    []
-                ]
+        # A dictionary of object list (table) names, and "queries" returning
+        # IDs of the objects to fetch. Each "query" is a tuple containing a
+        # list of SELECT statement strings (to be joined with "UNION"), the
+        # combined list of their parameters, and a tuple of ID field names.
+        Query = namedtuple('Query', 'selects params fields')
+        obj_list_queries = {
+            obj_list_name: Query([], [], tuple(id_fields))
+            for obj_list_name, id_fields in self.io.id_fields.items()
+        }
 
-        # Add referenced parents if requested
+        # For each name of object list and its query
+        for obj_list_name, query in obj_list_queries.items():
+            obj_list_ids = ids.get(obj_list_name, [])
+            # If there are IDs specified for this object list
+            if obj_list_ids:
+                # Generate a SELECT returning the specified IDs
+                query.selects.append(
+                    "SELECT * FROM (VALUES\n" +
+                    ",\n".join(
+                        ["    (%s" + ", %s" * (len(query.fields) - 1) + ")"] *
+                        len(obj_list_ids)
+                    ) +
+                    "\n) AS ids(" + ", ".join(query.fields) + ")\n"
+                )
+                query.params.extend(chain.from_iterable(obj_list_ids))
+
+        def add_parents(obj_list_name):
+            """Add parent IDs to query results"""
+            obj_name = obj_list_name[:-1]
+            query = obj_list_queries[obj_list_name]
+            for child_list_name in self.io.graph[obj_list_name]:
+                add_parents(child_list_name)
+                child_query = obj_list_queries[child_list_name]
+                if child_query.selects:
+                    query.selects.append(
+                        "SELECT " +
+                        ", ".join(
+                            f"{child_list_name}.{obj_name}_{f} AS {f}"
+                            for f in query.fields
+                        ) +
+                        f" FROM {child_list_name} " +
+                        "INNER JOIN (\n" +
+                        textwrap.indent(
+                            "UNION\n".join(child_query.selects),
+                            " " * 4
+                        ) +
+                        ") AS ids USING(" +
+                        ", ".join(child_query.fields) +
+                        ")\n"
+                    )
+                    query.params.extend(child_query.params)
+        # Add referenced parents if requested, starting from the graph source
         if parents:
-            def add_parents(obj_list_name):
-                """Add parent IDs to query results"""
-                obj_name = obj_list_name[:-1]
-                query = obj_list_queries[obj_list_name]
-                for child_list_name in self.io.graph[obj_list_name]:
-                    add_parents(child_list_name)
-                    child_query = obj_list_queries[child_list_name]
-                    query[0] += \
-                        f"UNION\n" \
-                        f"SELECT {child_list_name}.{obj_name}_id AS id " \
-                        f"FROM {child_list_name} " + \
-                        "INNER JOIN (\n" + \
-                        textwrap.indent(child_query[0], " " * 4) + \
-                        ") AS ids USING(id)\n"
-                    query[1] += child_query[1]
-
             for obj_list_name in self.io.graph[""]:
                 add_parents(obj_list_name)
 
-        # Add referenced children if requested
-        if children:
-            def add_children(obj_list_name):
-                """Add child IDs to query results"""
-                obj_name = obj_list_name[:-1]
-                query = obj_list_queries[obj_list_name]
-                for child_list_name in self.io.graph[obj_list_name]:
+        def add_children(obj_list_name):
+            """Add child IDs to query results"""
+            obj_name = obj_list_name[:-1]
+            query = obj_list_queries[obj_list_name]
+            for child_list_name in self.io.graph[obj_list_name]:
+                if query.selects:
                     child_query = obj_list_queries[child_list_name]
-                    child_query[0] += \
-                        f"UNION\n" \
-                        f"SELECT {child_list_name}.id AS id " \
-                        f"FROM {child_list_name} " + \
-                        "INNER JOIN (\n" + \
-                        textwrap.indent(query[0], " " * 4) + \
-                        f") AS {obj_list_name} ON " \
-                        f"{child_list_name}.{obj_name}_id = " \
-                        f"{obj_list_name}.id\n"
-                    child_query[1] += query[1]
-                    add_children(child_list_name)
-
+                    child_query.selects.append(
+                        "SELECT " + ", ".join(
+                            f"{child_list_name}.{f} AS {f}"
+                            for f in child_query.fields
+                        ) + f" FROM {child_list_name} " +
+                        "INNER JOIN (\n" +
+                        textwrap.indent(
+                            "UNION\n".join(query.selects),
+                            " " * 4
+                        ) +
+                        f") AS {obj_list_name} ON " + " AND ".join(
+                            f"{child_list_name}.{obj_name}_{f} = "
+                            f"{obj_list_name}.{f}"
+                            for f in query.fields
+                        ) + "\n"
+                    )
+                    child_query.params.extend(query.params)
+                add_children(child_list_name)
+        # Add referenced children if requested, starting from the graph source
+        if children:
             for obj_list_name in self.io.graph[""]:
                 add_children(obj_list_name)
 
@@ -725,6 +743,8 @@ class Schema(AbstractSchema):
         data = self.io.new()
         with self.conn, self.conn.cursor() as cursor:
             for obj_list_name, query in obj_list_queries.items():
+                if not query.selects:
+                    continue
                 table_schema = self.TABLES[obj_list_name]
                 cursor.execute(
                     "SELECT " + ", ".join(
@@ -732,9 +752,12 @@ class Schema(AbstractSchema):
                         if with_metadata or not c.schema.metadata_expr
                     ) + "\n" +
                     f"FROM {obj_list_name} INNER JOIN (\n" +
-                    textwrap.indent(query[0], " " * 4) +
-                    ") AS ids USING(id)\n",
-                    query[1]
+                    textwrap.indent(
+                        "UNION\n".join(query.selects),
+                        " " * 4
+                    ) +
+                    ") AS ids USING(" + ", ".join(query.fields) + ")\n",
+                    query.params
                 )
                 obj_list = None
                 for obj in table_schema.unpack_iter(cursor, with_metadata):
@@ -773,7 +796,7 @@ class Schema(AbstractSchema):
         obj_type = pattern.obj_type
         type_query_string = cls.OO_QUERIES[obj_type.name]["statement"]
         if pattern.obj_id_set:
-            obj_id_fields = obj_type.id_fields
+            obj_id_field_types = obj_type.id_field_types
             query_string = \
                 f"/* {obj_type.name.capitalize()}s with pattern IDs */\n" + \
                 "SELECT obj.* FROM (\n" + \
@@ -781,18 +804,18 @@ class Schema(AbstractSchema):
                 ") AS obj INNER JOIN (\n" + \
                 f"    /* {obj_type.name.capitalize()} pattern IDs */\n" + \
                 "    WITH ids(" + \
-                ", ".join(obj_id_fields) + \
+                ", ".join(obj_id_field_types) + \
                 ") AS (VALUES\n" + \
                 ",\n".join(
                     [
                         "        (" +
-                        ", ".join(["%s", ] * len(obj_id_fields)) +
+                        ", ".join(["%s", ] * len(obj_id_field_types)) +
                         ")"
                     ] *
                     len(pattern.obj_id_set)
                 ) + \
                 "\n    ) SELECT * FROM ids\n" + \
-                ") AS ids USING(" + ", ".join(obj_id_fields) + ")"
+                ") AS ids USING(" + ", ".join(obj_id_field_types) + ")"
             query_parameters = [
                 obj_id_field
                 for obj_id in pattern.obj_id_set
@@ -813,12 +836,12 @@ class Schema(AbstractSchema):
                 base_relation = "parent"
                 column_pairs = list(zip(
                     base_obj_type.children[obj_type.name].ref_fields,
-                    base_obj_type.id_fields
+                    base_obj_type.id_field_types
                 ))
             else:
                 base_relation = "child"
                 column_pairs = list(zip(
-                    obj_type.id_fields,
+                    obj_type.id_field_types,
                     obj_type.children[base_obj_type.name].ref_fields
                 ))
                 base_query_string = \

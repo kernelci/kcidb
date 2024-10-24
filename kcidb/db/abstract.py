@@ -192,6 +192,41 @@ class Driver(ABC):
         assert isinstance(with_metadata, bool)
         assert self.is_initialized()
 
+    # No, it's not, pylint: disable=too-many-return-statements
+    def query_ids_are_valid(self, ids):
+        """
+        Verify the IDs to be queried are valid according to the I/O version
+        supported by the database. The database must be initialized.
+
+        Args:
+            ids:    A dictionary of object list names, and lists of IDs of
+                    objects to match. Each ID is a tuple of values. The values
+                    should match the types, the order, and the number of the
+                    object's ID fields as described by the database's I/O
+                    schema (the "id_fields" attribute).
+
+        Returns:
+            True if the IDs are valid, false otherwise.
+        """
+        assert LIGHT_ASSERTS or self.is_initialized()
+        id_fields = self.get_schema()[1].id_fields
+        if not isinstance(ids, dict):
+            return False
+        for obj_list_name, values_list in ids.items():
+            if obj_list_name not in id_fields:
+                return False
+            obj_id_fields = id_fields[obj_list_name]
+            if not isinstance(values_list, list):
+                return False
+            for values in values_list:
+                if not isinstance(values, tuple) or \
+                   len(values) != len(obj_id_fields):
+                    return False
+                for value, type in zip(values, obj_id_fields.values()):
+                    if not isinstance(value, type):
+                        return False
+        return True
+
     # We can live with this for now, pylint: disable=too-many-arguments
     # Or if you prefer, pylint: disable=too-many-positional-arguments
     @abstractmethod
@@ -203,7 +238,11 @@ class Driver(ABC):
 
         Args:
             ids:                A dictionary of object list names, and lists
-                                of IDs of objects to match.
+                                of IDs of objects to match. Each ID is a tuple
+                                of values. The values should match the types,
+                                the order, and the number of the object's ID
+                                fields as described by the database's I/O
+                                schema (the "id_fields" attribute).
             children:           True if children of matched objects should be
                                 matched as well.
             parents:            True if parents of matched objects should be
@@ -218,14 +257,11 @@ class Driver(ABC):
             database schema's I/O schema version, each containing at most the
             specified number of objects.
         """
-        assert isinstance(ids, dict)
-        assert all(isinstance(k, str) and isinstance(v, list) and
-                   all(isinstance(e, str) for e in v)
-                   for k, v in ids.items())
+        assert self.is_initialized()
+        assert self.query_ids_are_valid(ids)
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
-        assert self.is_initialized()
 
     @abstractmethod
     def oo_query(self, pattern_set):

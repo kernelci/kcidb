@@ -796,7 +796,7 @@ def test_email_generated(empty_deployment):
             },
         ],
     }
-    obj_types_v4_1 = obj_types_v4_0 | {"bug", "issue", "incident"}
+    obj_types_v4_1 = obj_types_v4_0 | {"issue", "issue_version", "incident"}
 
     io_version_data_and_obj_types = {
         io.schema.V3_0: (io_data_v3_0, obj_types_v3_0),
