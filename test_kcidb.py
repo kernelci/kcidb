@@ -114,7 +114,7 @@ def test_query_main():
         "-c", "test:checkout:1", "-b", "test:build:1",
         "-t", "test:test:1",
         "--parents", "--children", "--objects-per-report", "10",
-        "--indent=0", "-i", "test:issue:1",
+        "--indent=0", "-i", "test:issue:1", "--iv", "10",
         "-n", "test:incident:1",
     ]
     empty = kcidb.io.SCHEMA.new()
@@ -133,7 +133,7 @@ def test_query_main():
             ids=dict(checkouts=["test:checkout:1"],
                      builds=["test:build:1"],
                      tests=["test:test:1"],
-                     issues=["test:issue:1"],
+                     issues=[("test:issue:1", 10)],
                      incidents=["test:incident:1"]),
             parents=True,
             children=True,
@@ -493,8 +493,8 @@ def test_ingest_main():
                               "Subject: Test checkout: .*\x00"
                               "Subject: Test build: .*\x00"
                               "Subject: Test test: .*\x00"
-                              "Subject: Test bug: .*\x00"
                               "Subject: Test issue: .*\x00"
+                              "Subject: Test issue_version: .*\x00"
                               "Subject: Test incident: .*\x00")
 
     two_of_everything = json.dumps(dict(
@@ -569,9 +569,9 @@ def test_ingest_main():
                               "Subject: Test checkout: .*\x00"
                               "Subject: Test build: .*\x00"
                               "Subject: Test build: .*\x00"
-                              "Subject: Test bug: .*\x00"
-                              "Subject: Test bug: .*\x00"
                               "Subject: Test issue: .*\x00"
                               "Subject: Test issue: .*\x00"
+                              "Subject: Test issue_version: .*\x00"
+                              "Subject: Test issue_version: .*\x00"
                               "Subject: Test incident: .*\x00"
                               "Subject: Test incident: .*\x00")

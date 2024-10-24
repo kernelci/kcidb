@@ -715,6 +715,15 @@ class QueryArgumentParser(SplitOutputArgumentParser):
             action='append',
         )
         self.add_argument(
+            '--issue-version', '--iv',
+            metavar="VERSION",
+            type=int,
+            default=[],
+            help='Version of an issue to match',
+            dest="issue_versions",
+            action='append',
+        )
+        self.add_argument(
             '-n', '--incident-id',
             metavar="ID",
             default=[],
@@ -737,6 +746,24 @@ class QueryArgumentParser(SplitOutputArgumentParser):
             help='Fetch metadata fields as well',
             action='store_true'
         )
+
+    def parse_args(self, args=None, namespace=None):
+        """
+        Parse (and validate) command-line arguments.
+
+        Args:
+            args:       List of argument strings to parse.
+                        The sys.argv is used, if None.
+            namespace:  The object to take the parsed attributes. A new empty
+                        argparse.Namespace object is used, if None.
+        Returns:
+            The populated namespace.
+        """
+        namespace = super().parse_args(args, namespace)
+        if len(namespace.issue_ids) != len(namespace.issue_versions):
+            self.error("Mismatching number of issue IDs vs. issue versions "
+                       "(--issue-id vs. --issue-version options)")
+        return namespace
 
 
 def dump_main():
@@ -775,7 +802,7 @@ def query_main():
         ids=dict(checkouts=args.checkout_ids,
                  builds=args.build_ids,
                  tests=args.test_ids,
-                 issues=args.issue_ids,
+                 issues=list(zip(args.issue_ids, args.issue_versions)),
                  incidents=args.incident_ids),
         parents=args.parents,
         children=args.children,

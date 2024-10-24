@@ -258,7 +258,7 @@ def query_main():
         ids=dict(checkouts=args.checkout_ids,
                  builds=args.build_ids,
                  tests=args.test_ids,
-                 issues=args.issue_ids,
+                 issues=list(zip(args.issue_ids, args.issue_versions)),
                  incidents=args.incident_ids),
         parents=args.parents,
         children=args.children,
