@@ -26,7 +26,6 @@ def match_revision(revision):
         body='{% include "fluster_revision_description.txt.j2" %}',
         cc=["KernelCI Results Staging <kernelci-results-staging@groups.io>",
             "Helen Mae Koike Fornazier <helen.koike@collabora.com>",
-            "Gustavo Padovan <gustavo.padovan@collabora.com>",
             "Jeny Sadadia <jeny.sadadia@collabora.com>"],
         due=datetime.now(timezone.utc) + timedelta(hours=3)
     ),)
