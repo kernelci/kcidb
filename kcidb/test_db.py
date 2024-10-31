@@ -1994,3 +1994,92 @@ def test_purge(empty_database):
         assert client.dump() == kcidb.io.SCHEMA.new()
     else:
         assert not client.purge(None)
+
+
+def test_dump_limits(empty_database):
+    """Test the dump() method observes time limits"""
+    # It's OK, pylint: disable=too-many-locals
+    client = empty_database
+
+    # Check we can do a basic dump
+    io_schema = client.get_schema()[1]
+    assert client.dump(with_metadata=False) == io_schema.new()
+
+    drivers = [*client.driver.drivers] \
+        if isinstance(client.driver, kcidb.db.mux.Driver) \
+        else [client.driver]
+
+    # If this is a database and schema which *should* support purging
+    if all(
+        isinstance(driver,
+                   (kcidb.db.bigquery.Driver,
+                    kcidb.db.postgresql.Driver,
+                    kcidb.db.sqlite.Driver)) and
+        driver.get_schema()[0] >= (4, 2)
+        for driver in drivers
+    ):
+        io_data_1 = deepcopy(COMPREHENSIVE_IO_DATA)
+        io_data_2 = deepcopy(COMPREHENSIVE_IO_DATA)
+        for obj_list_name in kcidb.io.SCHEMA.graph:
+            if obj_list_name:
+                for obj in io_data_2[obj_list_name]:
+                    obj["id"] = "origin:2"
+
+        client.load(io_data_1)
+        assert client.dump(with_metadata=False) == io_data_1
+        time.sleep(1)
+        dump = client.dump(with_metadata=True)
+        first_load_timestamps = [
+            dateutil.parser.isoparse(obj["_timestamp"])
+            for obj_list_name in io_schema.id_fields
+            for obj in dump[obj_list_name]
+        ]
+        before_first_load = min(first_load_timestamps) - \
+            datetime.timedelta(microseconds=1)
+        latest_first_load = max(first_load_timestamps)
+        time.sleep(1)
+        client.load(io_data_2)
+        dump = client.dump(with_metadata=True)
+        second_load_timestamps = [
+            dateutil.parser.isoparse(obj["_timestamp"])
+            for obj_list_name in io_schema.id_fields
+            for obj in dump[obj_list_name]
+        ]
+        latest_second_load = max(second_load_timestamps)
+
+        # Check both datasets are in the database
+        # regardless of the object order
+        for dump in [
+            client.dump(with_metadata=False),
+            client.dump(with_metadata=False,
+                        after=None,
+                        until=None),
+            client.dump(with_metadata=False,
+                        after=before_first_load,
+                        until=latest_second_load),
+        ]:
+            for io_data in (io_data_1, io_data_2):
+                for obj_list_name in io_schema.id_fields:
+                    assert obj_list_name in dump
+                    for obj in io_data[obj_list_name]:
+                        assert obj in dump[obj_list_name]
+
+        assert client.dump(with_metadata=False,
+                           until=latest_first_load) == io_data_1
+        assert client.dump(with_metadata=False,
+                           after=latest_first_load) == io_data_2
+        assert client.dump(with_metadata=False,
+                           until=before_first_load) == io_schema.new()
+        assert client.dump(with_metadata=False,
+                           after=latest_second_load) == io_schema.new()
+        time.sleep(1)
+        assert client.purge(client.get_current_time())
+        assert client.dump() == io_schema.new()
+    else:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        with pytest.raises(AssertionError):
+            client.dump(after=now)
+        with pytest.raises(AssertionError):
+            client.dump(until=now)
+        with pytest.raises(AssertionError):
+            client.dump(after=now, until=now)

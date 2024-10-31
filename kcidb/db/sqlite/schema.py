@@ -174,7 +174,7 @@ class TimestampColumn(TextColumn):
 
 class Table(_SQLTable):
     """A table schema"""
-    def __init__(self, columns, primary_key=None):
+    def __init__(self, columns, primary_key=None, timestamp=None):
         """
         Initialize the table schema.
 
@@ -186,9 +186,12 @@ class Table(_SQLTable):
             primary_key:    A list of names of columns constituting the
                             primary key. None or an empty list to use the
                             column with the PRIMARY_KEY constraint instead.
+            timestamp       The name of the column containing last row change
+                            timestamp. Must exist in "columns".
         """
         # TODO: Switch to using "_" key_sep, and hardcoding it in base class
-        super().__init__("?", columns, primary_key, key_sep=".")
+        super().__init__("?", columns, primary_key, key_sep=".",
+                         timestamp=timestamp)
 
     def format_create(self, name):
         """

@@ -31,7 +31,8 @@ class Schema(PreviousSchema):
     TABLES_ARGS = {
         name: merge_dicts(
             args,
-            columns=dict(_timestamp=TIMESTAMP_COLUMN, **args["columns"])
+            columns=dict(_timestamp=TIMESTAMP_COLUMN, **args["columns"]),
+            timestamp="_timestamp",
         )
         for name, args in PreviousSchema.TABLES_ARGS.items()
     }

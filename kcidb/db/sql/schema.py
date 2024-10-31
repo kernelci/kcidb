@@ -2,8 +2,10 @@
 Kernel CI report database - generic SQL schema definitions
 """
 
+import datetime
 import re
 from enum import Enum
+from kcidb.db.misc import NoTimestamps
 
 
 class Constraint(Enum):
@@ -149,7 +151,10 @@ class TableColumn:
 class Table:
     """A table schema"""
 
-    def __init__(self, placeholder, columns, primary_key=None, key_sep="_"):
+    # It's OK, pylint: disable=too-many-arguments
+    # Or, if you wish, pylint: disable=too-many-positional-arguments
+    def __init__(self, placeholder, columns, primary_key=None, key_sep="_",
+                 timestamp=None):
         """
         Initialize the table schema.
 
@@ -164,7 +169,10 @@ class Table:
                             primary key. None or an empty list to use the
                             column with the PRIMARY_KEY constraint instead.
             key_sep:        String used to replace dots in column names ("key"
-                            separator)
+                            separator).
+            timestamp       The name of the column containing last row change
+                            timestamp. Must exist in "columns". None, if the
+                            table has no such column.
         """
         assert isinstance(placeholder, str) and str
         assert isinstance(columns, dict)
@@ -173,6 +181,8 @@ class Table:
             isinstance(column, Column)
             for name, column in columns.items()
         )
+        assert timestamp is None or timestamp in columns
+
         # The number of columns with PRIMARY_KEY constraint set
         primary_key_constraints = sum(
             c.constraint == Constraint.PRIMARY_KEY for c in columns.values()
@@ -199,6 +209,8 @@ class Table:
         }
         # A list of columns in the explicitly-specified primary key
         self.primary_key = [self.columns[name] for name in primary_key]
+        # The timestamp table column
+        self.timestamp = timestamp and self.columns[timestamp]
 
     def format_create(self, name):
         """
@@ -273,7 +285,7 @@ class Table:
                 c not in self.primary_key
             )
 
-    def format_dump(self, name, with_metadata):
+    def format_dump(self, name, with_metadata, after, until):
         """
         Format the "SELECT" command for dumping the table contents, returning
         data suitable for unpacking with unpack*() methods.
@@ -282,18 +294,54 @@ class Table:
             name:           The name of the target table of the command.
             with_metadata:  True, if metadata fields should be dumped too.
                             False, if not.
+            after:          An "aware" datetime.datetime object specifying
+                            the latest (database server) time the data to be
+                            excluded from the dump should've arrived. The data
+                            after this time will be dumped. Can be None to
+                            have no limit on older data.
+            until:          An "aware" datetime.datetime object specifying
+                            the latest (database server) time the data to be
+                            dumped should've arrived. The data after this time
+                            will not be dumped. Can be None to have no limit
+                            on newer data.
 
         Returns:
-            The formatted "SELECT" command.
+            The formatted "SELECT" command, and its parameter container.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
         assert isinstance(name, str)
         assert isinstance(with_metadata, bool)
-        return "SELECT " + \
+        assert after is None or \
+            isinstance(after, datetime.datetime) and after.tzinfo
+        assert until is None or \
+            isinstance(until, datetime.datetime) and until.tzinfo
+
+        if (after or until) and not self.timestamp:
+            raise NoTimestamps("Table has no timestamp column")
+
+        return (
+            "SELECT " +
             ", ".join(
                 c.name for c in self.columns.values()
                 if with_metadata or not c.schema.metadata_expr
-            ) + \
-            f" FROM {name}"
+            ) +
+            f" FROM {name}" +
+            ((
+                " WHERE " + " AND ".join(
+                    f"{self.timestamp.name} {op} {self.placeholder}"
+                    for op, v in ((">", after), ("<=", until)) if v
+                )
+            ) if (after or until) else ""),
+            [
+                self.timestamp.schema.pack(
+                    v.isoformat(timespec='microseconds')
+                )
+                for v in (after, until) if v
+            ]
+        )
 
     def format_delete(self, name):
         """

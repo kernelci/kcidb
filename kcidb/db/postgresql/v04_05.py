@@ -52,11 +52,12 @@ class Schema(PreviousSchema):
     # For use by descendants
     TABLES_ARGS = merge_dicts(
         PreviousSchema.TABLES_ARGS,
-        tests=dict(
+        tests=merge_dicts(
+            PreviousSchema.TABLES_ARGS["tests"],
             columns=merge_dicts(
                 PreviousSchema.TABLES_ARGS["tests"]["columns"],
                 status=Column("STATUS"),
-            )
+            ),
         ),
     )
 

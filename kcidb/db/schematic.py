@@ -274,7 +274,7 @@ class Schema(ABC, metaclass=MetaSchema):
         return False
 
     @abstractmethod
-    def dump_iter(self, objects_per_report, with_metadata):
+    def dump_iter(self, objects_per_report, with_metadata, after, until):
         """
         Dump all data from the database in object number-limited chunks.
         The database must be initialized.
@@ -284,15 +284,33 @@ class Schema(ABC, metaclass=MetaSchema):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
+            after:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be excluded from the dump should've arrived.
+                                The data after this time will be dumped.
+                                Can be None to have no limit on older data.
+            until:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be dumped should've arrived.
+                                The data after this time will not be dumped.
+                                Can be None to have no limit on newer data.
 
         Returns:
             An iterator returning report JSON data adhering to the current
             database schema's I/O schema version, each containing at most the
             specified number of objects.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
+        assert after is None or \
+            isinstance(after, datetime.datetime) and after.tzinfo
+        assert until is None or \
+            isinstance(until, datetime.datetime) and until.tzinfo
 
     # We can live with this for now, pylint: disable=too-many-arguments
     # Or if you prefer, pylint: disable=too-many-positional-arguments
@@ -605,7 +623,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
             self.conn.set_schema_version(schema.version)
             self.schema = schema(self.conn)
 
-    def dump_iter(self, objects_per_report, with_metadata):
+    def dump_iter(self, objects_per_report, with_metadata, after, until):
         """
         Dump all data from the database in object number-limited chunks.
         The database must be initialized.
@@ -615,17 +633,36 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
+            after:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be excluded from the dump should've arrived.
+                                The data after this time will be dumped.
+                                Can be None to have no limit on older data.
+            until:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be dumped should've arrived.
+                                The data after this time will not be dumped.
+                                Can be None to have no limit on newer data.
 
         Returns:
             An iterator returning report JSON data adhering to the schema's
             I/O schema version, each containing at most the specified number
             of objects.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
+        assert after is None or \
+            isinstance(after, datetime.datetime) and after.tzinfo
+        assert until is None or \
+            isinstance(until, datetime.datetime) and until.tzinfo
         assert self.is_initialized()
-        return self.schema.dump_iter(objects_per_report, with_metadata)
+        return self.schema.dump_iter(objects_per_report, with_metadata,
+                                     after, until)
 
     # We can live with this for now, pylint: disable=too-many-arguments
     # Or if you prefer, pylint: disable=too-many-positional-arguments

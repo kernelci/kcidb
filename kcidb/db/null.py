@@ -129,7 +129,7 @@ class Driver(AbstractDriver):
         """
         return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
 
-    def dump_iter(self, objects_per_report, with_metadata):
+    def dump_iter(self, objects_per_report, with_metadata, after, until):
         """
         Dump all data from the database in object number-limited chunks.
 
@@ -138,13 +138,30 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
+            after:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be excluded from the dump should've arrived.
+                                The data after this time will be dumped.
+                                Can be None to have no limit on older data.
+            until:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be dumped should've arrived.
+                                The data after this time will not be dumped.
+                                Can be None to have no limit on newer data.
 
         Returns:
             An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
         del objects_per_report
+        del with_metadata
+        del after
+        del until
         yield io.SCHEMA.new()
 
     # We can live with this for now, pylint: disable=too-many-arguments
