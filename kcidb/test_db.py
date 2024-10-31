@@ -1949,11 +1949,19 @@ def test_purge(empty_database):
     """Test the purge() method behaves as documented"""
     client = empty_database
 
+    drivers = [*client.driver.drivers] \
+        if isinstance(client.driver, kcidb.db.mux.Driver) \
+        else [client.driver]
+
     # If this is a database and schema which *should* support purging
-    if isinstance(client.driver, (kcidb.db.bigquery.Driver,
-                                  kcidb.db.postgresql.Driver,
-                                  kcidb.db.sqlite.Driver)) and \
-            client.driver.get_schema()[0] >= (4, 2):
+    if all(
+        isinstance(driver,
+                   (kcidb.db.bigquery.Driver,
+                    kcidb.db.postgresql.Driver,
+                    kcidb.db.sqlite.Driver)) and
+        driver.get_schema()[0] >= (4, 2)
+        for driver in drivers
+    ):
         io_data_1 = deepcopy(COMPREHENSIVE_IO_DATA)
         io_data_2 = deepcopy(COMPREHENSIVE_IO_DATA)
         for obj_list_name in kcidb.io.SCHEMA.graph:
