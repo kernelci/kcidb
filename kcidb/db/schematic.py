@@ -260,9 +260,8 @@ class Schema(ABC, metaclass=MetaSchema):
 
         Args:
             before: An "aware" datetime.datetime object specifying the
-                    the earliest (database server) time the data to be
-                    *preserved* should've arrived. Any other data will be
-                    purged.
+                    earliest (database server) time the data to be *preserved*
+                    should've arrived. Any other data will be purged.
                     Can be None to have nothing removed. The latter can be
                     used to test if the database supports purging.
 
@@ -503,9 +502,8 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
         Args:
             before: An "aware" datetime.datetime object specifying the
-                    the earliest (database server) time the data to be
-                    *preserved* should've arrived. Any other data will be
-                    purged.
+                    earliest (database server) time the data to be *preserved*
+                    should've arrived. Any other data will be purged.
                     Can be None to have nothing removed. The latter can be
                     used to test if the database supports purging.
 
