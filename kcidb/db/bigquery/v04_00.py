@@ -17,7 +17,7 @@ from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db.schematic import \
     Schema as AbstractSchema, \
     Connection as AbstractConnection
-from kcidb.db.misc import NotFound
+from kcidb.db.misc import NotFound, NoTimestamps
 from kcidb.db.bigquery.schema import validate_json_obj_list
 
 # We'll manage for now, pylint: disable=too-many-lines
@@ -749,7 +749,7 @@ class Schema(AbstractSchema):
                     node[key] = cls._unpack_node(value)
         return node
 
-    def dump_iter(self, objects_per_report, with_metadata):
+    def dump_iter(self, objects_per_report, with_metadata, after, until):
         """
         Dump all data from the database in object number-limited chunks.
 
@@ -758,11 +758,25 @@ class Schema(AbstractSchema):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
+            after:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be excluded from the dump should've arrived.
+                                The data after this time will be dumped.
+                                Can be None to have no limit on older data.
+            until:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be dumped should've arrived.
+                                The data after this time will not be dumped.
+                                Can be None to have no limit on newer data.
 
         Returns:
             An iterator returning report JSON data adhering to the I/O version
             of the database schema, each containing at most the specified
             number of objects.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
@@ -771,14 +785,34 @@ class Schema(AbstractSchema):
         obj_num = 0
         data = self.io.new()
         for obj_list_name, table_schema in self.TABLE_MAP.items():
-            query_string = \
-                "SELECT " + \
+            ts_field = next(
+                (f for f in table_schema if f.name == "_timestamp"),
+                None
+            )
+            if (after or until) and not ts_field:
+                raise NoTimestamps(
+                    f"Table {obj_list_name!r} has no {ts_field.name!r} column"
+                )
+
+            query_string = (
+                "SELECT " +
                 ", ".join(
                     f"`{f.name}`" for f in table_schema
                     if with_metadata or f.name[0] != '_'
-                ) + \
-                f" FROM `{obj_list_name}`"
-            query_job = self.conn.query_create(query_string)
+                ) +
+                f" FROM `{obj_list_name}`" +
+                ((
+                    " WHERE " + " AND ".join(
+                        f"{ts_field.name} {op} ?"
+                        for op, v in ((">", after), ("<=", until)) if v
+                    )
+                ) if (after or until) else "")
+            )
+            query_parameters = [
+                bigquery.ScalarQueryParameter(None, ts_field.field_type, v)
+                for v in (after, until) if v
+            ]
+            query_job = self.conn.query_create(query_string, query_parameters)
             obj_list = None
             for row in query_job:
                 if obj_list is None:

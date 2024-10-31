@@ -33,6 +33,10 @@ class UnsupportedSchema(Error):
     """Database schema version is not supported"""
 
 
+class NoTimestamps(Error):
+    """Row timestamps required for the operation don't exist"""
+
+
 def format_spec_list(specs):
     """
     Format a database specification list string out of a list of specification

@@ -497,7 +497,7 @@ class Schema(AbstractSchema):
             finally:
                 cursor.close()
 
-    def dump_iter(self, objects_per_report, with_metadata):
+    def dump_iter(self, objects_per_report, with_metadata, after, until):
         """
         Dump all data from the database in object number-limited chunks.
 
@@ -506,11 +506,25 @@ class Schema(AbstractSchema):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
+            after:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be excluded from the dump should've arrived.
+                                The data after this time will be dumped.
+                                Can be None to have no limit on older data.
+            until:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be dumped should've arrived.
+                                The data after this time will not be dumped.
+                                Can be None to have no limit on newer data.
 
         Returns:
             An iterator returning report JSON data adhering to the I/O version
             of the database schema, each containing at most the specified
             number of objects.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
@@ -523,7 +537,8 @@ class Schema(AbstractSchema):
             try:
                 for table_name, table_schema in self.TABLES.items():
                     result = cursor.execute(
-                        table_schema.format_dump(table_name, with_metadata)
+                        *table_schema.format_dump(table_name, with_metadata,
+                                                  after, until)
                     )
                     obj_list = None
                     for obj in table_schema.unpack_iter(result,

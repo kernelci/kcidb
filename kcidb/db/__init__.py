@@ -11,6 +11,8 @@ from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db import abstract, schematic, mux, \
     bigquery, postgresql, sqlite, json, null, misc  # noqa: F401
 
+# It's OK for now, pylint: disable=too-many-lines
+
 # Module's logger
 LOGGER = logging.getLogger(__name__)
 
@@ -274,7 +276,8 @@ class Client(kcidb.orm.Source):
             "Target schema is older than the current schema"
         self.driver.upgrade(target_version)
 
-    def dump_iter(self, objects_per_report=0, with_metadata=True):
+    def dump_iter(self, objects_per_report=0, with_metadata=True,
+                  after=None, until=None):
         """
         Dump all data from the database in object number-limited chunks.
 
@@ -283,37 +286,76 @@ class Client(kcidb.orm.Source):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
+            after:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be excluded from the dump should've arrived.
+                                The data after this time will be dumped.
+                                Can be None to have no limit on older data.
+            until:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be dumped should've arrived.
+                                The data after this time will not be dumped.
+                                Can be None to have no limit on newer data.
 
         Returns:
             An iterator returning report JSON data adhering to the current I/O
             schema version, each containing at most the specified number of
             objects.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
-        assert self.is_initialized()
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
+        assert after is None or \
+            isinstance(after, datetime.datetime) and after.tzinfo
+        assert until is None or \
+            isinstance(until, datetime.datetime) and until.tzinfo
+        assert self.is_initialized()
         yield from self.driver.dump_iter(
             objects_per_report=objects_per_report,
-            with_metadata=with_metadata
+            with_metadata=with_metadata,
+            after=after, until=until
         )
 
-    def dump(self, with_metadata=True):
+    def dump(self, with_metadata=True, after=None, until=None):
         """
         Dump all data from the database.
 
         Args:
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
+            after:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be excluded from the dump should've arrived.
+                                The data after this time will be dumped.
+                                Can be None to have no limit on older data.
+            until:              An "aware" datetime.datetime object specifying
+                                the latest (database server) time the data to
+                                be dumped should've arrived.
+                                The data after this time will not be dumped.
+                                Can be None to have no limit on newer data.
 
         Returns:
             The JSON data from the database adhering to the current I/O schema
             version.
+
+        Raises:
+            NoTimestamps    - Either "after" or "until" are not None, and
+                              the database doesn't have row timestamps.
         """
+        assert isinstance(with_metadata, bool)
+        assert after is None or \
+            isinstance(after, datetime.datetime) and after.tzinfo
+        assert until is None or \
+            isinstance(until, datetime.datetime) and until.tzinfo
         assert self.is_initialized()
         try:
             return next(self.dump_iter(objects_per_report=0,
-                                       with_metadata=with_metadata))
+                                       with_metadata=with_metadata,
+                                       after=after, until=until))
         except StopIteration:
             return self.get_schema()[1].new()
 
@@ -776,13 +818,28 @@ def dump_main():
         help='Do not dump metadata fields',
         action='store_true'
     )
+    parser.add_argument(
+        '--after',
+        metavar='AFTER',
+        type=kcidb.misc.iso_timestamp,
+        help="An ISO-8601 timestamp specifying the latest time the data to "
+        "be *excluded* from the dump should've arrived."
+    )
+    parser.add_argument(
+        '--until',
+        metavar='UNTIL',
+        type=kcidb.misc.iso_timestamp,
+        help="An ISO-8601 timestamp specifying the latest time the data to "
+        "be *included* into the dump should've arrived."
+    )
     args = parser.parse_args()
     client = Client(args.database)
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
     kcidb.misc.json_dump_stream(
         client.dump_iter(objects_per_report=args.objects_per_report,
-                         with_metadata=not args.without_metadata),
+                         with_metadata=not args.without_metadata,
+                         after=args.after, until=args.until),
         sys.stdout, indent=args.indent, seq=args.seq_out
     )
 
