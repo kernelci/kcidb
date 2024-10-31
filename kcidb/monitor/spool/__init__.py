@@ -252,7 +252,7 @@ class Client:
         Args:
             timestamp:  An "aware" datetime.datetime object specifying the
                         intended pickup time, or None to use
-                            datetime.datetime.now(datetime.timezone.utc).
+                        datetime.datetime.now(datetime.timezone.utc).
 
         Yields:
             The ID of the next notification free for picking.
