@@ -417,6 +417,44 @@ def kcidb_pick_notifications(data, context):
         spool_client.ack(notification_id)
 
 
+def kcidb_archive(event, context):
+    """
+    Transfer data from the operational database into the archive database,
+    that is out of the editing window (to be enforced), and hasn't been
+    transferred yet.
+    """
+    ar_client = get_db_client(ARCHIVE_DATABASE)
+    op_client = get_db_client(OPERATIONAL_DATABASE)
+
+    ar_last_modified = ar_client.get_last_modified()
+
+    after = ar_last_modified
+    until = min(
+        # Add a timespan we can fit in memory and time limits
+        ar_last_modified + datetime.timedelta(days=7),
+        # Subtract editing window (to be enforced)
+        op_client.get_current_time() - datetime.timedelta(days=14)
+    )
+    # TODO: Transfer data in multiple smaller pieces
+
+    # Fetch the data from operational database
+    # Preserve timestamps!
+    LOGGER.info("FETCHING operational database dump for (%s, %s] range",
+                after.isoformat(timespec='microseconds'),
+                until.isoformat(timespec='microseconds'))
+    dump = op_client.dump(with_metadata=True, after=after, until=until)
+
+    # Load data into archive database
+    LOGGER.info("LOADING dump of %u objects into archive database",
+                kcidb.io.SCHEMA.count(dump))
+    ar_client.load(dump)
+
+    LOGGER.info("ARCHIVED %u objects in (%s, %s] range",
+                kcidb.io.SCHEMA.count(dump),
+                after.isoformat(timespec='microseconds'),
+                until.isoformat(timespec='microseconds'))
+
+
 def kcidb_purge_db(event, context):
     """
     Purge data from the operational database, older than the optional delta
