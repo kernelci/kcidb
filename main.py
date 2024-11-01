@@ -52,11 +52,6 @@ SAMPLE_DATABASE = os.environ["KCIDB_SAMPLE_DATABASE"]
 # The specification for the database submissions should be loaded into
 DATABASE = os.environ["KCIDB_DATABASE"]
 
-# Minimum time between loading submissions into the database
-DATABASE_LOAD_PERIOD = datetime.timedelta(
-    seconds=int(os.environ["KCIDB_DATABASE_LOAD_PERIOD_SEC"])
-)
-
 # A whitespace-separated list of subscription names to limit notifying to
 SELECTED_SUBSCRIPTIONS = \
     os.environ.get("KCIDB_SELECTED_SUBSCRIPTIONS", "").split()
@@ -287,21 +282,13 @@ def extract_fields(spec, data):
 # As we don't use/need Cloud Function args
 def kcidb_load_queue(event, context):
     """
-    Load multiple KCIDB data messages from the load queue into the database,
-    if it stayed unmodified for at least DATABASE_LOAD_PERIOD.
+    Load multiple KCIDB data messages from the load queue into the database
     """
     # pylint: disable=too-many-locals
     subscriber = get_load_queue_subscriber(DATABASE)
     db_client = get_db_client(DATABASE)
     io_schema = db_client.get_schema()[1]
     publisher = get_updated_queue_publisher()
-    # Do nothing, if updated recently
-    now = datetime.datetime.now(datetime.timezone.utc)
-    last_modified = db_client.get_last_modified()
-    LOGGER.debug("Now: %s, Last modified: %s", now, last_modified)
-    if last_modified and now - last_modified < DATABASE_LOAD_PERIOD:
-        LOGGER.info("Database too fresh, exiting")
-        return
 
     # Pull messages
     msgs = subscriber.pull(
