@@ -2077,9 +2077,9 @@ def test_dump_limits(empty_database):
         assert client.dump() == io_schema.new()
     else:
         now = datetime.datetime.now(datetime.timezone.utc)
-        with pytest.raises(AssertionError):
+        with pytest.raises(kcidb.db.misc.NoTimestamps):
             client.dump(after=now)
-        with pytest.raises(AssertionError):
+        with pytest.raises(kcidb.db.misc.NoTimestamps):
             client.dump(until=now)
-        with pytest.raises(AssertionError):
+        with pytest.raises(kcidb.db.misc.NoTimestamps):
             client.dump(after=now, until=now)
