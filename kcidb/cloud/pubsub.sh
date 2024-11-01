@@ -143,6 +143,7 @@ function pubsub_subscription_withdraw() {
 #       --cost-upd-service-account=NAME
 #       --cost-mon-service=NAME
 #       --iss-ed-service=NAME
+#       --archive-trigger-topic=NAME
 function pubsub_deploy() {
     declare params
     params="$(getopt_vars project \
@@ -160,6 +161,7 @@ function pubsub_deploy() {
                           cost_upd_service_account \
                           cost_mon_service \
                           iss_ed_service \
+                          archive_trigger_topic \
                           -- "$@")"
     eval "$params"
     declare project_number
@@ -198,6 +200,7 @@ function pubsub_deploy() {
                                --message-retention-duration=12h
     pubsub_topic_deploy "$project" "${pick_notifications_trigger_topic}"
     pubsub_topic_deploy "$project" "${purge_db_trigger_topic}"
+    pubsub_topic_deploy "$project" "${archive_trigger_topic}"
     pubsub_topic_deploy "$project" "${updated_urls_topic}"
     if [ -n "$smtp_topic" ]; then
         pubsub_topic_deploy "$project" "$smtp_topic"
@@ -242,6 +245,7 @@ function pubsub_deploy() {
 #       --smtp-subscription=NAME
 #       --cost-topic=NAME
 #       --cost-upd-service-account=NAME
+#       --archive-trigger-topic=NAME
 function pubsub_withdraw() {
     declare params
     params="$(getopt_vars project \
@@ -257,6 +261,7 @@ function pubsub_withdraw() {
                           smtp_topic smtp_subscription \
                           cost_topic \
                           cost_upd_service_account \
+                          archive_trigger_topic \
                           -- "$@")"
     eval "$params"
     declare project_number
@@ -275,6 +280,7 @@ function pubsub_withdraw() {
     pubsub_subscription_withdraw "$project" "$new_debug_subscription"
     pubsub_subscription_withdraw "$project" "$new_load_subscription"
     pubsub_topic_withdraw "$project" "$new_topic"
+    pubsub_topic_withdraw "$project" "$archive_trigger_topic"
     pubsub_topic_withdraw "$project" "$load_queue_trigger_topic"
     pubsub_topic_withdraw "$project" "$pick_notifications_trigger_topic"
     pubsub_topic_withdraw "$project" "$updated_urls_topic"
