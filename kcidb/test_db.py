@@ -408,15 +408,56 @@ def test_get_current_time(clean_database):
     assert client.get_current_time() > timestamp
 
 
-def test_get_last_modified(empty_database):
+def test_get_last_modified(clean_database):
     """
     Check get_last_modified() works correctly
     """
-    client = empty_database
+    client = clean_database
+    # Check a pre-timestamp schema version
+    client.init(kcidb.io.schema.V4_2)
+    with pytest.raises(kcidb.db.misc.NoTimestamps):
+        client.get_last_modified()
+    client.load({
+        **kcidb.io.schema.V4_2.new(),
+        "checkouts": [
+            dict(id="origin:1", origin="origin",),
+        ],
+        "builds": [
+            dict(checkout_id="origin:1", id="origin:1", origin="origin",),
+        ],
+        "tests": [
+            dict(build_id="origin:1", id="origin:1", origin="origin",),
+        ],
+        "issues": [
+            dict(id="origin:1", version=1, origin="origin",),
+        ],
+        "incidents": [
+            dict(
+                id="origin:1",
+                origin="origin",
+                issue_id="origin:1",
+                issue_version=1,
+            )
+        ]
+    })
+    with pytest.raises(kcidb.db.misc.NoTimestamps):
+        client.get_last_modified()
+    client.cleanup()
+
+    # Check a post-timestamp schema version
+    time.sleep(1)
+    client.init()
+    timestamp = client.get_last_modified()
+    assert timestamp == \
+        datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+    before_load = client.get_current_time()
+    client.load(COMPREHENSIVE_IO_DATA)
     timestamp = client.get_last_modified()
     assert timestamp is not None
     assert isinstance(timestamp, datetime.datetime)
     assert timestamp.tzinfo is not None
+    assert timestamp >= before_load
+    client.cleanup()
 
 
 def test_all_fields(empty_database):

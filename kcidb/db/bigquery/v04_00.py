@@ -161,23 +161,6 @@ class Connection(AbstractConnection):
             self.query_create("SELECT CURRENT_TIMESTAMP").result()
         ))[0]
 
-    def get_last_modified(self):
-        """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized or its data loading interface is not limited in the amount
-        of load() method calls.
-
-        Returns:
-            A timezone-aware datetime object representing the last
-            modification time.
-        """
-        return next(iter(self.query_create(
-            "SELECT TIMESTAMP_MILLIS(MAX(last_modified_time)) "
-            "FROM __TABLES__"
-        ).result()))[0] or \
-            datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
-
 
 class Schema(AbstractSchema):
     """BigQuery database schema v4.0"""
@@ -1215,3 +1198,33 @@ class Schema(AbstractSchema):
                     raise Exception("".join([
                         f"ERROR: {error['message']}\n" for error in job.errors
                     ])) from exc
+
+    def get_last_modified(self):
+        """
+        Get the time data has arrived last into the driven database. Can
+        return the minimum timestamp constant, if the database is empty.
+        The database must be initialized.
+
+        Returns:
+            A timezone-aware datetime object representing the last
+            data arrival time.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine the last data arrival time.
+        """
+        if not all(
+            next((f for f in table_schema if f.name == "_timestamp"), None)
+            for table_schema in self.TABLE_MAP.values()
+        ):
+            raise NoTimestamps("Database is missing timestamps in its schema")
+
+        return next(iter(self.conn.query_create(
+            "SELECT MAX(last_modified) AS last_modified FROM(\n" +
+            "UNION ALL\n".join(
+                f"SELECT MAX(_timestamp) AS last_modified FROM {table_name}\n"
+                for table_name in self.TABLE_MAP
+            ) +
+            ")\n"
+        ).result()))[0] or \
+            datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
