@@ -18,6 +18,7 @@ declare _FUNCTIONS_SH=
 #       --updated-topic=NAME
 #       --load-queue-trigger-topic=NAME
 #       --purge-db-trigger-topic=NAME
+#       --archive-trigger-topic=NAME
 #       --updated-urls-topic=NAME
 #       --cache-bucket-name=NAME
 #       --cache-redirector-url=URL
@@ -43,6 +44,7 @@ function functions_env() {
                           updated_publish updated_topic \
                           load_queue_trigger_topic \
                           purge_db_trigger_topic \
+                          archive_trigger_topic \
                           updated_urls_topic \
                           spool_collection_path \
                           extra_cc \
@@ -78,6 +80,7 @@ function functions_env() {
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
         [KCIDB_LOAD_QUEUE_TRIGGER_TOPIC]="$load_queue_trigger_topic"
         [KCIDB_PURGE_DB_TRIGGER_TOPIC]="$purge_db_trigger_topic"
+        [KCIDB_ARCHIVE_TRIGGER_TOPIC]="$archive_trigger_topic"
         [KCIDB_UPDATED_URLS_TOPIC]="$updated_urls_topic"
         [KCIDB_SELECTED_SUBSCRIPTIONS]=""
         [KCIDB_SPOOL_COLLECTION_PATH]="$spool_collection_path"
@@ -137,6 +140,7 @@ function functions_env() {
 #       --spool-collection-path=PATH
 #       --cache-redirect-function-name=NAME
 #       --env-yaml=YAML
+#       --archive-trigger-topic=NAME
 function functions_deploy() {
     declare params
     params="$(getopt_vars sections project prefix source \
@@ -148,6 +152,7 @@ function functions_deploy() {
                           spool_collection_path \
                           cache_redirect_function_name \
                           env_yaml \
+                          archive_trigger_topic \
                           -- "$@")"
     eval "$params"
 
@@ -171,6 +176,15 @@ function functions_deploy() {
     trigger_event+="document.create"
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
+
+    function_deploy "$sections" "$source" "$project" "$prefix" \
+                    archive true \
+                    --env-vars-file "$env_yaml_file" \
+                    --trigger-topic "${archive_trigger_topic}" \
+                    --memory 2048MB \
+                    --max-instances=1 \
+                    --timeout 540
+
     function_deploy "$sections" "$source" "$project" "$prefix" \
                     purge_db true \
                     --env-vars-file "$env_yaml_file" \
@@ -243,6 +257,8 @@ function _functions_withdraw_or_shutdown() {
                           cache_redirect_function_name \
                           -- "$@")"
     eval "$params"
+    "function_$action" "$sections" "$project" "$prefix" \
+                       archive
     "function_$action" "$sections" "$project" "$prefix" \
                        purge_db
     "function_$action" "$sections" "$project" "$prefix" \
