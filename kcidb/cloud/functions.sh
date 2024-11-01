@@ -73,7 +73,6 @@ function functions_env() {
         [KCIDB_ARCHIVE_DATABASE]="$ar_database"
         [KCIDB_SAMPLE_DATABASE]="$sm_database"
         [KCIDB_DATABASE]="$database"
-        [KCIDB_DATABASE_LOAD_PERIOD_SEC]="180"
         [KCIDB_CLEAN_TEST_DATABASES]="$clean_test_databases"
         [KCIDB_EMPTY_TEST_DATABASES]="$empty_test_databases"
         [KCIDB_UPDATED_QUEUE_TOPIC]="$updated_topic"
