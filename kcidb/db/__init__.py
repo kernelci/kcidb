@@ -182,15 +182,19 @@ class Client(kcidb.orm.Source):
 
     def get_last_modified(self):
         """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized or its data loading interface is not limited in the amount
-        of load() method calls.
+        Get the time data has arrived last into the driven database. Can
+        return the minimum timestamp constant, if the database is empty.
+        The database must be initialized.
 
         Returns:
             A timezone-aware datetime object representing the last
-            modification time.
+            data arrival time.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine the last data arrival time.
         """
+        assert self.is_initialized()
         last_modified = self.driver.get_last_modified()
         assert isinstance(last_modified, datetime.datetime)
         assert last_modified.tzinfo

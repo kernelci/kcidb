@@ -184,19 +184,6 @@ class Connection(AbstractConnection):
             cursor.execute("SELECT CURRENT_TIMESTAMP")
             return cursor.fetchone()[0]
 
-    def get_last_modified(self):
-        """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized or its data loading interface is not limited in the amount
-        of load() method calls.
-
-        Returns:
-            A timezone-aware datetime object representing the last
-            modification time.
-        """
-        return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
-
 
 class Schema(AbstractSchema):
     """PostgreSQL database schema v4.0"""
@@ -950,3 +937,33 @@ class Schema(AbstractSchema):
         # Flip priority for the next load to maintain (rough)
         # parity with non-determinism of BigQuery's ANY_VALUE()
         self.conn.load_prio_db = not self.conn.load_prio_db
+
+    def get_last_modified(self):
+        """
+        Get the time data has arrived last into the driven database. Can
+        return the minimum timestamp constant, if the database is empty.
+        The database must be initialized.
+
+        Returns:
+            A timezone-aware datetime object representing the last
+            data arrival time.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine the last data arrival time.
+        """
+        statement = (
+            "SELECT MAX(last_modified) AS last_modified\n" +
+            "FROM (\n" +
+            textwrap.indent(
+                "\nUNION ALL\n".join(
+                    table_schema.format_get_last_modified(table_name)
+                    for table_name, table_schema in self.TABLES.items()
+                ),
+                " " * 4
+            ) + "\n) AS tables\n"
+        )
+        with self.conn, self.conn.cursor() as cursor:
+            cursor.execute(statement)
+            return cursor.fetchone()[0] or \
+                datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)

@@ -89,19 +89,6 @@ class Connection(ABC, metaclass=MetaConnection):
             time on the database server.
         """
 
-    @abstractmethod
-    def get_last_modified(self):
-        """
-        Get the time the data in the connected database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized, or its data loading interface is not limited in the
-        amount of load() method calls.
-
-        Returns:
-            A timezone-aware datetime object representing the last
-            modification time.
-        """
-
     def is_initialized(self):
         """
         Check if the connected database is initialized.
@@ -381,6 +368,22 @@ class Schema(ABC, metaclass=MetaSchema):
         """
         # Relying on the driver to check compatibility/validity
 
+    @abstractmethod
+    def get_last_modified(self):
+        """
+        Get the time data has arrived last into the database. Can return the
+        minimum timestamp constant, if the database is empty.
+        The database must be initialized.
+
+        Returns:
+            A timezone-aware datetime object representing the last
+            data arrival time.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine the last data arrival time.
+        """
+
 
 class MetaDriver(ABCMeta):
     """A schematic metadriver"""
@@ -546,16 +549,20 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
 
     def get_last_modified(self):
         """
-        Get the time the data in the driven database was last modified.
-        Can return the minimum timestamp constant, if the database is not
-        initialized, or its data loading interface is not limited in the
-        amount of load() method calls.
+        Get the time data has arrived last into the driven database. Can
+        return the minimum timestamp constant, if the database is empty.
+        The database must be initialized.
 
         Returns:
             A timezone-aware datetime object representing the last
-            modification time.
+            data arrival time.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine the last data arrival time.
         """
-        return self.conn.get_last_modified()
+        assert self.is_initialized()
+        return self.schema.get_last_modified()
 
     def get_schemas(self):
         """
