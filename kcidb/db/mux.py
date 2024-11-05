@@ -303,7 +303,12 @@ class Driver(AbstractDriver):
             NoTimestamps    - The database doesn't have row timestamps, and
                               cannot determine the last data arrival time.
         """
-        return max(driver.get_last_modified() for driver in self.drivers)
+        assert self.is_initialized()
+        min_ts = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+        return max(
+            (driver.get_last_modified() for driver in self.drivers),
+            key=lambda ts: ts or min_ts
+        )
 
     def get_schemas(self):
         """

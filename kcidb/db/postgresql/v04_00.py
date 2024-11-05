@@ -3,7 +3,6 @@
 import random
 import logging
 import textwrap
-import datetime
 from collections import namedtuple
 from itertools import chain
 import psycopg2
@@ -940,13 +939,12 @@ class Schema(AbstractSchema):
 
     def get_last_modified(self):
         """
-        Get the time data has arrived last into the driven database. Can
-        return the minimum timestamp constant, if the database is empty.
+        Get the time data has arrived last into the driven database.
         The database must be initialized.
 
         Returns:
             A timezone-aware datetime object representing the last
-            data arrival time.
+            data arrival time, or None if the database is empty.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
@@ -965,5 +963,4 @@ class Schema(AbstractSchema):
         )
         with self.conn, self.conn.cursor() as cursor:
             cursor.execute(statement)
-            return cursor.fetchone()[0] or \
-                datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+            return cursor.fetchone()[0]
