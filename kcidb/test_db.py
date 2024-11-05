@@ -448,8 +448,7 @@ def test_get_last_modified(clean_database):
     time.sleep(1)
     client.init()
     timestamp = client.get_last_modified()
-    assert timestamp == \
-        datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+    assert timestamp is None
     before_load = client.get_current_time()
     client.load(COMPREHENSIVE_IO_DATA)
     timestamp = client.get_last_modified()

@@ -113,13 +113,12 @@ class Driver(ABC):
     @abstractmethod
     def get_last_modified(self):
         """
-        Get the time data has arrived last into the driven database. Can
-        return the minimum timestamp constant, if the database is empty.
+        Get the time data has arrived last into the driven database.
         The database must be initialized.
 
         Returns:
             A timezone-aware datetime object representing the last
-            data arrival time.
+            data arrival time, or None if the database is empty.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
