@@ -172,7 +172,7 @@ function functions_deploy() {
     declare trigger_resource="projects/$project/databases/(default)/documents/"
     trigger_resource+="${spool_collection_path}/{notification_id}"
     function_deploy "$sections" "$source" "$project" "$prefix" \
-                    purge_db \
+                    purge_db true \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${purge_db_trigger_topic}" \
                     --memory 256MB \
@@ -180,7 +180,7 @@ function functions_deploy() {
                     --timeout 540
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
-                    pick_notifications \
+                    pick_notifications true \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${pick_notifications_trigger_topic}" \
                     --memory 256MB \
@@ -188,7 +188,7 @@ function functions_deploy() {
                     --timeout 540
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
-                    send_notification \
+                    send_notification true \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-event "${trigger_event}" \
                     --trigger-resource "${trigger_resource}" \
@@ -198,7 +198,7 @@ function functions_deploy() {
                     --timeout 540
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
-                    spool_notifications \
+                    spool_notifications true \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${updated_topic}" \
                     --memory 4096MB \
@@ -206,16 +206,15 @@ function functions_deploy() {
                     --timeout 540
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
-                    "$cache_redirect_function_name" \
+                    "$cache_redirect_function_name" false \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-http \
-                    --allow-unauthenticated \
                     --memory 256MB \
                     --max-instances=16 \
                     --timeout 30
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
-                    cache_urls \
+                    cache_urls true \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${updated_urls_topic}" \
                     --memory 512MB \
@@ -223,7 +222,7 @@ function functions_deploy() {
                     --timeout 540
 
     function_deploy "$sections" "$source" "$project" "$prefix" \
-                    load_queue \
+                    load_queue true \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${load_queue_trigger_topic}" \
                     --memory 1024MB \
