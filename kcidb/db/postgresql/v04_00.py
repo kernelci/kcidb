@@ -3,7 +3,6 @@
 import random
 import logging
 import textwrap
-import datetime
 from collections import namedtuple
 from itertools import chain
 import psycopg2
@@ -938,19 +937,46 @@ class Schema(AbstractSchema):
         # parity with non-determinism of BigQuery's ANY_VALUE()
         self.conn.load_prio_db = not self.conn.load_prio_db
 
+    def get_first_modified(self):
+        """
+        Get the time data has arrived first into the driven database.
+        The database must be initialized.
+
+        Returns:
+            A timezone-aware datetime object representing the first
+            data arrival time, or None if the database is empty.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine data arrival time.
+        """
+        statement = (
+            "SELECT MIN(first_modified) AS first_modified\n" +
+            "FROM (\n" +
+            textwrap.indent(
+                "\nUNION ALL\n".join(
+                    table_schema.format_get_first_modified(table_name)
+                    for table_name, table_schema in self.TABLES.items()
+                ),
+                " " * 4
+            ) + "\n) AS tables\n"
+        )
+        with self.conn, self.conn.cursor() as cursor:
+            cursor.execute(statement)
+            return cursor.fetchone()[0]
+
     def get_last_modified(self):
         """
-        Get the time data has arrived last into the driven database. Can
-        return the minimum timestamp constant, if the database is empty.
+        Get the time data has arrived last into the driven database.
         The database must be initialized.
 
         Returns:
             A timezone-aware datetime object representing the last
-            data arrival time.
+            data arrival time, or None if the database is empty.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
-                              cannot determine the last data arrival time.
+                              cannot determine data arrival time.
         """
         statement = (
             "SELECT MAX(last_modified) AS last_modified\n" +
@@ -965,5 +991,4 @@ class Schema(AbstractSchema):
         )
         with self.conn, self.conn.cursor() as cursor:
             cursor.execute(statement)
-            return cursor.fetchone()[0] or \
-                datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+            return cursor.fetchone()[0]

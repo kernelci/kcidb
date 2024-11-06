@@ -356,3 +356,89 @@ def test_purge_db(empty_deployment):
         assert dump == client.get_schema()[1].upgrade(
             data_after if purging else data
         )
+
+
+def test_archive(empty_deployment):
+    """Check kcidb_archive() works correctly"""
+    # Make empty_deployment appear used to silence pylint warning
+    assert empty_deployment is None
+
+    op_client = kcidb.db.Client(os.environ["KCIDB_OPERATIONAL_DATABASE"])
+    op_schema = op_client.get_schema()[1]
+    ar_client = kcidb.db.Client(os.environ["KCIDB_ARCHIVE_DATABASE"])
+    ar_schema = ar_client.get_schema()[1]
+    publisher = kcidb.mq.JSONPublisher(
+        os.environ["GCP_PROJECT"],
+        os.environ["KCIDB_ARCHIVE_TRIGGER_TOPIC"]
+    )
+
+    # Empty the archive
+    ar_client.empty()
+
+    # Generate timestamps
+    ts_now = op_client.get_current_time()
+    ts_3w = ts_now - timedelta(days=7 * 3)
+    ts_4w = ts_now - timedelta(days=7 * 4)
+
+    def gen_data(id, ts):
+        """
+        Generate a dataset with one object per type, all using the specified
+        timestamp, ID, and origin extracted from the ID.
+        """
+        assert isinstance(id, str)
+        assert isinstance(ts, datetime) and ts.tzinfo
+        origin = id.split(":")[0]
+        assert origin
+        assert origin != id
+        base = dict(id=id, origin=origin,
+                    _timestamp=ts.isoformat(timespec='microseconds'))
+        return dict(
+            checkouts=[base | dict()],
+            builds=[base | dict(checkout_id=id)],
+            tests=[base | dict(build_id=id)],
+            issues=[base | dict(version=1)],
+            incidents=[base | dict(issue_id=id, issue_version=1)],
+            **op_schema.new(),
+        )
+
+    # Generate datasets
+    data_now = gen_data("archive:now", ts_now)
+    data_3w = gen_data("archive:3w", ts_3w)
+    data_4w = gen_data("archive:4w", ts_4w)
+
+    # Load data_now into the operational DB
+    op_client.load(data_now, with_metadata=True)
+    # Trigger and wait for archival (ignore possibility of actual trigger)
+    publisher.publish({})
+    time.sleep(30)
+    # Check data_now doesn't end up in the archive DB
+    assert ar_schema.count(ar_client.dump()) == 0
+
+    # Load data_3w and data_4w
+    op_client.load(op_schema.merge(data_3w, [data_4w]), with_metadata=True)
+    # Trigger and wait for archival (ignore possibility of actual trigger)
+    publisher.publish({})
+    time.sleep(30)
+    # Check data_4w is in the archive database
+    dump = ar_client.dump()
+    assert all(
+        any(obj["id"] == "archive:4w"
+            for obj in dump.get(obj_list_name, []))
+        for obj_list_name in op_schema.id_fields
+    ), "No complete four-week old data in the archive"
+    # Check data_3w is not in the archive database
+    assert not any(
+        any(obj["id"] == "archive:3w"
+            for obj in dump.get(obj_list_name, []))
+        for obj_list_name in op_schema.id_fields
+    ), "Some three-week old data in the archive"
+    # Trigger and wait for another archival (ignore chance of actual trigger)
+    publisher.publish({})
+    time.sleep(30)
+    # Check data_3w is now in the archive database
+    dump = ar_client.dump()
+    assert all(
+        any(obj["id"] == "archive:3w"
+            for obj in dump.get(obj_list_name, []))
+        for obj_list_name in op_schema.id_fields
+    ), "No complete three-week old data in the archive"

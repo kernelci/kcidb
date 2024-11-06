@@ -408,13 +408,15 @@ def test_get_current_time(clean_database):
     assert client.get_current_time() > timestamp
 
 
-def test_get_last_modified(clean_database):
+def test_get_modified(clean_database):
     """
-    Check get_last_modified() works correctly
+    Check get_first_modified() and get_last_modified() work correctly
     """
     client = clean_database
     # Check a pre-timestamp schema version
     client.init(kcidb.io.schema.V4_2)
+    with pytest.raises(kcidb.db.misc.NoTimestamps):
+        client.get_first_modified()
     with pytest.raises(kcidb.db.misc.NoTimestamps):
         client.get_last_modified()
     client.load({
@@ -441,22 +443,35 @@ def test_get_last_modified(clean_database):
         ]
     })
     with pytest.raises(kcidb.db.misc.NoTimestamps):
+        client.get_first_modified()
+    with pytest.raises(kcidb.db.misc.NoTimestamps):
         client.get_last_modified()
     client.cleanup()
 
     # Check a post-timestamp schema version
     time.sleep(1)
     client.init()
+    timestamp = client.get_first_modified()
+    assert timestamp is None
     timestamp = client.get_last_modified()
-    assert timestamp == \
-        datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+    assert timestamp is None
     before_load = client.get_current_time()
     client.load(COMPREHENSIVE_IO_DATA)
-    timestamp = client.get_last_modified()
-    assert timestamp is not None
-    assert isinstance(timestamp, datetime.datetime)
-    assert timestamp.tzinfo is not None
-    assert timestamp >= before_load
+
+    first_modified = client.get_first_modified()
+    last_modified = client.get_last_modified()
+
+    assert first_modified is not None
+    assert isinstance(first_modified, datetime.datetime)
+    assert first_modified.tzinfo is not None
+    assert first_modified >= before_load
+
+    assert last_modified is not None
+    assert isinstance(last_modified, datetime.datetime)
+    assert last_modified.tzinfo is not None
+    assert last_modified >= before_load
+
+    assert last_modified >= first_modified
     client.cleanup()
 
 

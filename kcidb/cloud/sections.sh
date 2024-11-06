@@ -16,6 +16,7 @@ declare -A -r SECTIONS=(
     ["firestore"]="Firestore database"
     ["storage"]="Google cloud storage"
     ["functions.purge_db"]="Cloud Functions: kcidb_purge_db()"
+    ["functions.archive"]="Cloud Functions: kcidb_archive()"
     ["functions.pick_notifications"]="Cloud Functions: kcidb_pick_notifications()"
     ["functions.send_notification"]="Cloud Functions: kcidb_send_notification()"
     ["functions.spool_notifications"]="Cloud Functions: kcidb_spool_notifications()"

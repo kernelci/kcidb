@@ -67,6 +67,7 @@ function scheduler_job_withdraw() {
 #       --load-queue-trigger-topic=NAME
 #       --pick-notifications-trigger-topic=NAME
 #       --purge-db-trigger-topic=NAME
+#       --archive-trigger-topic=NAME
 function scheduler_deploy() {
     declare params
     params="$(getopt_vars project \
@@ -74,6 +75,7 @@ function scheduler_deploy() {
                           load_queue_trigger_topic \
                           pick_notifications_trigger_topic \
                           purge_db_trigger_topic \
+                          archive_trigger_topic \
                           -- "$@")"
     eval "$params"
     # Deploy the jobs
@@ -90,6 +92,10 @@ function scheduler_deploy() {
         "$project" "${prefix}purge_sm_db_trigger" \
         "$purge_db_trigger_topic" '0 7 * * *' \
         '{"database": "sm", "timedelta": {"delta": {"days": 30}}}'
+    scheduler_job_pubsub_deploy \
+        "$project" "${prefix}archive_trigger" \
+        "$archive_trigger_topic" '0 12 * * *' \
+        '{}'
 }
 
 # Withdraw from the scheduler
@@ -101,6 +107,7 @@ function scheduler_withdraw() {
     scheduler_job_withdraw "$project" "${prefix}pick_notifications_trigger"
     scheduler_job_withdraw "$project" "${prefix}purge_op_db_trigger"
     scheduler_job_withdraw "$project" "${prefix}purge_sm_db_trigger"
+    scheduler_job_withdraw "$project" "${prefix}archive_trigger"
 }
 
 fi # _SCHEDULER_SH

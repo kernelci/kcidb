@@ -1199,19 +1199,46 @@ class Schema(AbstractSchema):
                         f"ERROR: {error['message']}\n" for error in job.errors
                     ])) from exc
 
+    def get_first_modified(self):
+        """
+        Get the time data has arrived first into the driven database.
+        The database must be initialized.
+
+        Returns:
+            A timezone-aware datetime object representing the first
+            data arrival time, or None if the database is empty.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine data arrival time.
+        """
+        if not all(
+            next((f for f in table_schema if f.name == "_timestamp"), None)
+            for table_schema in self.TABLE_MAP.values()
+        ):
+            raise NoTimestamps("Database is missing timestamps in its schema")
+
+        return next(iter(self.conn.query_create(
+            "SELECT MIN(first_modified) AS first_modified FROM(\n" +
+            "UNION ALL\n".join(
+                f"SELECT MIN(_timestamp) AS first_modified FROM {table_name}\n"
+                for table_name in self.TABLE_MAP
+            ) +
+            ")\n"
+        ).result()))[0]
+
     def get_last_modified(self):
         """
-        Get the time data has arrived last into the driven database. Can
-        return the minimum timestamp constant, if the database is empty.
+        Get the time data has arrived last into the driven database.
         The database must be initialized.
 
         Returns:
             A timezone-aware datetime object representing the last
-            data arrival time.
+            data arrival time, or None if the database is empty.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
-                              cannot determine the last data arrival time.
+                              cannot determine data arrival time.
         """
         if not all(
             next((f for f in table_schema if f.name == "_timestamp"), None)
@@ -1226,5 +1253,4 @@ class Schema(AbstractSchema):
                 for table_name in self.TABLE_MAP
             ) +
             ")\n"
-        ).result()))[0] or \
-            datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+        ).result()))[0]
