@@ -343,6 +343,28 @@ class Table:
             ]
         )
 
+    def format_get_first_modified(self, name):
+        """
+        Format the "SELECT" command returning the timestamp of first data
+        written to the table, or NULL, if the table is empty.
+
+        Args:
+            name:           The name of the target table of the command.
+
+        Returns:
+            The formatted "SELECT" command, returning the timestamp in
+            "first_modified" column.
+
+        Raises:
+            NoTimestamps    - The table doesn't have row timestamps.
+        """
+        assert isinstance(name, str)
+        if not self.timestamp:
+            raise NoTimestamps("Table has no timestamp column")
+        return (
+            f"SELECT MIN({self.timestamp.name}) AS first_modified FROM {name}"
+        )
+
     def format_get_last_modified(self, name):
         """
         Format the "SELECT" command returning the timestamp of last data
