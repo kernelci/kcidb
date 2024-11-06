@@ -64,8 +64,10 @@ def empty_deployment():
     for _ in kcidb.mq.IOSubscriber(project, topic, subscription). \
             pull_iter(timeout=30):
         pass
-    # Empty the database
-    kcidb.db.Client(os.environ["KCIDB_DATABASE"]).empty()
+    # Empty all the databases
+    kcidb.db.Client(os.environ["KCIDB_OPERATIONAL_DATABASE"]).empty()
+    kcidb.db.Client(os.environ["KCIDB_SAMPLE_DATABASE"]).empty()
+    kcidb.db.Client(os.environ["KCIDB_ARCHIVE_DATABASE"]).empty()
     # Wipe the spool
     kcidb.monitor.spool.Client(
         os.environ["KCIDB_SPOOL_COLLECTION_PATH"]
