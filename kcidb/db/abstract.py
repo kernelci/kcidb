@@ -111,6 +111,21 @@ class Driver(ABC):
         """
 
     @abstractmethod
+    def get_first_modified(self):
+        """
+        Get the time data has arrived first into the driven database.
+        The database must be initialized.
+
+        Returns:
+            A timezone-aware datetime object representing the first
+            data arrival time, or None if the database is empty.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine data arrival time.
+        """
+
+    @abstractmethod
     def get_last_modified(self):
         """
         Get the time data has arrived last into the driven database.
@@ -122,7 +137,7 @@ class Driver(ABC):
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
-                              cannot determine the last data arrival time.
+                              cannot determine data arrival time.
         """
 
     @abstractmethod

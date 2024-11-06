@@ -289,6 +289,27 @@ class Driver(AbstractDriver):
         """
         return max(driver.get_current_time() for driver in self.drivers)
 
+    def get_first_modified(self):
+        """
+        Get the time data has arrived first into the driven database. Can
+        return the minimum timestamp constant, if the database is empty.
+        The database must be initialized.
+
+        Returns:
+            A timezone-aware datetime object representing the first
+            data arrival time.
+
+        Raises:
+            NoTimestamps    - The database doesn't have row timestamps, and
+                              cannot determine data arrival time.
+        """
+        assert self.is_initialized()
+        max_ts = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
+        return min(
+            (driver.get_first_modified() for driver in self.drivers),
+            key=lambda ts: ts or max_ts
+        )
+
     def get_last_modified(self):
         """
         Get the time data has arrived last into the driven database. Can
@@ -301,7 +322,7 @@ class Driver(AbstractDriver):
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
-                              cannot determine the last data arrival time.
+                              cannot determine data arrival time.
         """
         assert self.is_initialized()
         min_ts = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
