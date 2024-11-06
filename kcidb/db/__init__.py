@@ -1070,3 +1070,32 @@ def purge_main():
     if not client.is_initialized():
         raise Exception(f"Database {args.database!r} is not initialized")
     return 0 if client.purge(before=args.before) else 2
+
+
+def time_main():
+    """Execute the kcidb-db-time command-line tool"""
+    sys.excepthook = kcidb.misc.log_and_print_excepthook
+    description = 'kcidb-db-time - Fetch various timestamps from a KCIDB DB'
+    parser = ArgumentParser(description=description)
+    parser.add_argument(
+        'type',
+        choices=['first_modified', 'last_modified', 'current'],
+        help="The type of timestamp to retrieve."
+    )
+    args = parser.parse_args()
+    client = Client(args.database)
+    if not client.is_initialized():
+        raise Exception(f"Database {args.database!r} is not initialized")
+    ts = None
+    if args.type == 'first_modified':
+        ts = client.get_first_modified()
+    elif args.type == 'last_modified':
+        ts = client.get_last_modified()
+    elif args.type == 'current':
+        ts = client.get_current_time()
+    if ts is None:
+        print("The database is empty, cannot retrieve modification time",
+              file=sys.stderr)
+        return 1
+    print(ts.isoformat(timespec='microseconds'))
+    return 0
