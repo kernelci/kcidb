@@ -18,6 +18,15 @@ def match_revision(revision):
     if not revision.tests_root["fluster"].nodes:
         return ()
 
+    # If only "validate-fluster-results" found or environment compatible
+    # is not defined for any tests
+    if all(
+        t.path.endswith('.validate-fluster-results') or
+        not t.environment_compatible
+        for t in revision.tests_root["fluster"].tests
+    ):
+        return ()
+
     # Send notification 3 hours after a revision is created/updated
     return (Message(
         subject='KernelCI report for fluster tests: '
