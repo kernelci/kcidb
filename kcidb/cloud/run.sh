@@ -134,7 +134,7 @@ function run_deploy() {
                 $(yaml_quote "$grafana_service@$project.iam.gserviceaccount.com")
               containerConcurrency: 512
               containers:
-                - image: docker.io/grafana/grafana:11.2.2
+                - image: docker.io/grafana/grafana:11.3.0
                   name: grafana
                   ports:
                     - containerPort: 3000
