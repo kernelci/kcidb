@@ -436,34 +436,32 @@ def kcidb_archive(event, context):
     after = ar_last_modified or \
         (op_first_modified - datetime.timedelta(seconds=1))
     until = min(
-        # Add a timespan we can fit in memory and exec time limits
+        # Add a timespan we can fit in time limits
         after + datetime.timedelta(days=7),
         # Subtract editing window (to be enforced)
         op_now - datetime.timedelta(days=14)
     )
-    if until <= after:
+    if after >= until:
         LOGGER.info("No data old enough to archive")
         return
 
+    # Transfer data in one-day pieces, which can hopefully fit in memory
     after_str = after.isoformat(timespec='microseconds')
-    until_str = until.isoformat(timespec='microseconds')
-
-    # TODO: Transfer data in multiple smaller pieces
-
-    # Fetch the data from operational database
-    # Preserve timestamps!
-    LOGGER.info("FETCHING operational database dump for (%s, %s] range",
-                after_str, until_str)
-    dump = op_client.dump(with_metadata=True, after=after, until=until)
-
-    # Load data into archive database
-    # Preserve timestamps!
-    LOGGER.info("LOADING a dump of %u objects into archive database",
-                kcidb.io.SCHEMA.count(dump))
-    ar_client.load(dump, with_metadata=True)
-
-    LOGGER.info("ARCHIVED %u objects in (%s, %s] range",
-                kcidb.io.SCHEMA.count(dump), after_str, until_str)
+    while after < until:
+        next_after = min(after + datetime.timedelta(days=1), until)
+        next_after_str = next_after.isoformat(timespec='microseconds')
+        # Transfer the data, preserving the timestamps
+        LOGGER.info("FETCHING operational database dump for (%s, %s] range",
+                    after_str, next_after_str)
+        dump = op_client.dump(with_metadata=True,
+                              after=after, until=next_after)
+        LOGGER.info("LOADING a dump of %u objects into archive database",
+                    kcidb.io.SCHEMA.count(dump))
+        ar_client.load(dump, with_metadata=True)
+        LOGGER.info("ARCHIVED %u objects in (%s, %s] range",
+                    kcidb.io.SCHEMA.count(dump), after_str, next_after_str)
+        after = next_after
+        after_str = next_after_str
 
 
 def kcidb_purge_db(event, context):
