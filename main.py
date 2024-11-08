@@ -445,10 +445,10 @@ def kcidb_archive(event, context):
         LOGGER.info("No data old enough to archive")
         return
 
-    # Transfer data in one-day pieces, which can hopefully fit in memory
+    # Transfer data in pieces which can hopefully fit in memory
     after_str = after.isoformat(timespec='microseconds')
     while after < until:
-        next_after = min(after + datetime.timedelta(days=1), until)
+        next_after = min(after + datetime.timedelta(hours=12), until)
         next_after_str = next_after.isoformat(timespec='microseconds')
         # Transfer the data, preserving the timestamps
         LOGGER.info("FETCHING operational database dump for (%s, %s] range",
