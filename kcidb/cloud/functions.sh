@@ -181,7 +181,7 @@ function functions_deploy() {
                     archive true \
                     --env-vars-file "$env_yaml_file" \
                     --trigger-topic "${archive_trigger_topic}" \
-                    --memory 2048MB \
+                    --memory 4096MB \
                     --max-instances=1 \
                     --timeout 540
 
