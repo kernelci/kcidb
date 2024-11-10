@@ -451,27 +451,37 @@ def test_get_modified(clean_database):
     # Check a post-timestamp schema version
     time.sleep(1)
     client.init()
-    timestamp = client.get_first_modified()
-    assert timestamp is None
-    timestamp = client.get_last_modified()
-    assert timestamp is None
+    io_schema = client.get_schema()[1]
+    timestamps = client.get_first_modified()
+    assert timestamps == {}
+    timestamps = client.get_last_modified()
+    assert timestamps == {}
     before_load = client.get_current_time()
     client.load(COMPREHENSIVE_IO_DATA)
 
     first_modified = client.get_first_modified()
     last_modified = client.get_last_modified()
 
-    assert first_modified is not None
-    assert isinstance(first_modified, datetime.datetime)
-    assert first_modified.tzinfo is not None
-    assert first_modified >= before_load
+    assert isinstance(first_modified, dict)
+    assert set(io_schema.id_fields) == set(first_modified)
+    assert all(
+        isinstance(t, datetime.datetime) and
+        t.tzinfo is not None and
+        t >= before_load
+        for t in first_modified.values()
+    )
 
-    assert last_modified is not None
-    assert isinstance(last_modified, datetime.datetime)
-    assert last_modified.tzinfo is not None
-    assert last_modified >= before_load
+    assert isinstance(last_modified, dict)
+    assert set(io_schema.id_fields) == set(last_modified)
+    assert all(
+        isinstance(t, datetime.datetime) and
+        t.tzinfo is not None and
+        t >= before_load
+        for t in first_modified.values()
+    )
 
-    assert last_modified >= first_modified
+    assert all(t >= first_modified[n] for n, t in last_modified.items())
+
     client.cleanup()
 
 
