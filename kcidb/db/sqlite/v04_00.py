@@ -492,24 +492,30 @@ class Schema(AbstractSchema):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
-            after:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be excluded from the dump should've arrived.
-                                The data after this time will be dumped.
-                                Can be None to have no limit on older data.
-            until:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be dumped should've arrived.
-                                The data after this time will not be dumped.
-                                Can be None to have no limit on newer data.
+            after:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *excluded* from the dump. Any objects which
+                                arrived later will be *eligible* for dumping.
+                                Object types missing from this dictionary will
+                                not be limited.
+            until:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *included* into the dump. Any objects which
+                                arrived later will be *ineligible* for
+                                dumping. Object types missing from this
+                                dictionary will not be limited.
 
         Returns:
-            An iterator returning report JSON data adhering to the I/O version
-            of the database schema, each containing at most the specified
-            number of objects.
+            An iterator returning report JSON data adhering to the I/O
+            version of the database schema, each containing at most the
+            specified number of objects.
 
         Raises:
-            NoTimestamps    - Either "after" or "until" are not None, and
+            NoTimestamps    - Either "after" or "until" are not empty, and
                               the database doesn't have row timestamps.
         """
         assert isinstance(objects_per_report, int)
@@ -522,10 +528,10 @@ class Schema(AbstractSchema):
             cursor = self.conn.cursor()
             try:
                 for table_name, table_schema in self.TABLES.items():
-                    result = cursor.execute(
-                        *table_schema.format_dump(table_name, with_metadata,
-                                                  after, until)
-                    )
+                    result = cursor.execute(*table_schema.format_dump(
+                        table_name, with_metadata,
+                        after.get(table_name), until.get(table_name)
+                    ))
                     obj_list = None
                     for obj in table_schema.unpack_iter(result,
                                                         with_metadata):
@@ -898,32 +904,32 @@ class Schema(AbstractSchema):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the first
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the first one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
                               cannot determine data arrival time.
         """
-        statement = (
-            "SELECT MIN(first_modified) AS first_modified\n" +
-            "FROM (\n" +
-            textwrap.indent(
-                "\nUNION ALL\n".join(
-                    table_schema.format_get_first_modified(table_name)
-                    for table_name, table_schema in self.TABLES.items()
-                ),
-                " " * 4
-            ) + "\n) AS tables\n"
+        query = reduce(
+            lambda a, b: (a[0] + "\nUNION ALL\n" + b[0], a[1] + b[1]),
+            (
+                table_schema.format_get_first_modified(table_name)
+                for table_name, table_schema in self.TABLES.items()
+            )
         )
         with self.conn:
             cursor = self.conn.cursor()
             try:
-                cursor.execute(statement)
-                ts_str = cursor.fetchone()[0]
+                return {
+                    table_name: dateutil.parser.isoparse(first_modified)
+                    for (table_name, first_modified)
+                    in cursor.execute(*query)
+                    if first_modified
+                }
             finally:
                 cursor.close()
-        return ts_str and dateutil.parser.isoparse(ts_str)
 
     def get_last_modified(self):
         """
@@ -931,29 +937,29 @@ class Schema(AbstractSchema):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the last
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the last one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
                               cannot determine data arrival time.
         """
-        statement = (
-            "SELECT MAX(last_modified) AS last_modified\n" +
-            "FROM (\n" +
-            textwrap.indent(
-                "\nUNION ALL\n".join(
-                    table_schema.format_get_last_modified(table_name)
-                    for table_name, table_schema in self.TABLES.items()
-                ),
-                " " * 4
-            ) + "\n) AS tables\n"
+        query = reduce(
+            lambda a, b: (a[0] + "\nUNION ALL\n" + b[0], a[1] + b[1]),
+            (
+                table_schema.format_get_last_modified(table_name)
+                for table_name, table_schema in self.TABLES.items()
+            )
         )
         with self.conn:
             cursor = self.conn.cursor()
             try:
-                cursor.execute(statement)
-                ts_str = cursor.fetchone()[0]
+                return {
+                    table_name: dateutil.parser.isoparse(last_modified)
+                    for (table_name, last_modified)
+                    in cursor.execute(*query)
+                    if last_modified
+                }
             finally:
                 cursor.close()
-        return ts_str and dateutil.parser.isoparse(ts_str)

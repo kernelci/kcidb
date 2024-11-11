@@ -291,13 +291,13 @@ class Driver(AbstractDriver):
 
     def get_first_modified(self):
         """
-        Get the time data has arrived first into the driven database. Can
-        return the minimum timestamp constant, if the database is empty.
+        Get the time data has arrived first into the driven database.
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the first
-            data arrival time.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the first one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
@@ -305,20 +305,25 @@ class Driver(AbstractDriver):
         """
         assert self.is_initialized()
         max_ts = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
-        return min(
-            (driver.get_first_modified() for driver in self.drivers),
-            key=lambda ts: ts or max_ts
-        )
+        merged_first_modified = {}
+        for driver in self.drivers:
+            first_modified = driver.get_first_modified()
+            for obj_list_name, timestamp in first_modified.items():
+                merged_first_modified[obj_list_name] = min(
+                    merged_first_modified.get(obj_list_name, max_ts),
+                    timestamp
+                )
+        return merged_first_modified
 
     def get_last_modified(self):
         """
-        Get the time data has arrived last into the driven database. Can
-        return the minimum timestamp constant, if the database is empty.
+        Get the time data has arrived last into the driven database.
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the last
-            data arrival time.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the last one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
@@ -326,10 +331,15 @@ class Driver(AbstractDriver):
         """
         assert self.is_initialized()
         min_ts = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
-        return max(
-            (driver.get_last_modified() for driver in self.drivers),
-            key=lambda ts: ts or min_ts
-        )
+        merged_last_modified = {}
+        for driver in self.drivers:
+            last_modified = driver.get_last_modified()
+            for obj_list_name, timestamp in last_modified.items():
+                merged_last_modified[obj_list_name] = max(
+                    merged_last_modified.get(obj_list_name, min_ts),
+                    timestamp
+                )
+        return merged_last_modified
 
     def get_schemas(self):
         """
@@ -393,24 +403,30 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
-            after:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be excluded from the dump should've arrived.
-                                The data after this time will be dumped.
-                                Can be None to have no limit on older data.
-            until:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be dumped should've arrived.
-                                The data after this time will not be dumped.
-                                Can be None to have no limit on newer data.
+            after:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *excluded* from the dump. Any objects which
+                                arrived later will be *eligible* for dumping.
+                                Object types missing from this dictionary will
+                                not be limited.
+            until:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *included* into the dump. Any objects which
+                                arrived later will be *ineligible* for
+                                dumping. Object types missing from this
+                                dictionary will not be limited.
 
         Returns:
-            An iterator returning report JSON data adhering to the current I/O
-            schema version, each containing at most the specified number of
-            objects.
+            An iterator returning report JSON data adhering to the I/O
+            version of the database schema, each containing at most the
+            specified number of objects.
 
         Raises:
-            NoTimestamps    - Either "after" or "until" are not None, and
+            NoTimestamps    - Either "after" or "until" are not empty, and
                               the database doesn't have row timestamps.
         """
         yield from self.drivers[0].dump_iter(objects_per_report,
