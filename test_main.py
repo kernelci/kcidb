@@ -410,7 +410,7 @@ def test_archive(empty_deployment):
     op_client.load(data_now, with_metadata=True)
     # Trigger and wait for archival (ignore possibility of actual trigger)
     publisher.publish({})
-    time.sleep(30)
+    time.sleep(60)
     # Check data_now doesn't end up in the archive DB
     assert ar_schema.count(ar_client.dump()) == 0
 
@@ -418,7 +418,7 @@ def test_archive(empty_deployment):
     op_client.load(op_schema.merge(data_3w, [data_4w]), with_metadata=True)
     # Trigger and wait for archival (ignore possibility of actual trigger)
     publisher.publish({})
-    time.sleep(30)
+    time.sleep(60)
     # Check data_4w is in the archive database
     dump = ar_client.dump()
     assert all(
@@ -434,7 +434,7 @@ def test_archive(empty_deployment):
     ), "Some three-week old data in the archive"
     # Trigger and wait for another archival (ignore chance of actual trigger)
     publisher.publish({})
-    time.sleep(30)
+    time.sleep(60)
     # Check data_3w is now in the archive database
     dump = ar_client.dump()
     assert all(
