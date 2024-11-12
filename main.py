@@ -1,5 +1,6 @@
 """Google Cloud Functions for Kernel CI reporting"""
 
+import gc
 import os
 import time
 import atexit
@@ -423,45 +424,84 @@ def kcidb_archive(event, context):
     that is out of the editing window (to be enforced), and hasn't been
     transferred yet.
     """
+    # It's OK, pylint: disable=too-many-locals
+    #
+    # Editing window
+    edit_window = datetime.timedelta(days=14)
+    # Maximum duration of the dump transferred in a single execution
+    max_duration = datetime.timedelta(days=7)
+    # Duration of each dump piece
+    piece_duration = datetime.timedelta(hours=6)
+
     op_client = get_db_client(OPERATIONAL_DATABASE)
+    op_io_schema = op_client.get_schema()[1]
+    op_obj_list_names = set(op_io_schema.id_fields)
     op_now = op_client.get_current_time()
     op_first_modified = op_client.get_first_modified()
     if not op_first_modified:
         LOGGER.info("Operational database is empty, nothing to archive")
         return
 
+    # Maximum timestamp of data to archive
+    max_until = op_now - edit_window
+
     ar_client = get_db_client(ARCHIVE_DATABASE)
     ar_last_modified = ar_client.get_last_modified()
 
-    after = ar_last_modified or \
-        (op_first_modified - datetime.timedelta(seconds=1))
-    until = min(
-        # Add a timespan we can fit in time limits
-        after + datetime.timedelta(days=7),
-        # Subtract editing window (to be enforced)
-        op_now - datetime.timedelta(days=14)
-    )
-    if after >= until:
+    # Find the timestamps right before the data we need to fetch
+    after = {
+        n: (
+            ar_last_modified.get(n) or
+            op_first_modified.get(n) and
+            op_first_modified[n] - datetime.timedelta(seconds=1)
+        ) for n in op_obj_list_names
+    }
+    min_after = min(after.values())
+    if min_after >= max_until:
         LOGGER.info("No data old enough to archive")
         return
 
+    # Find the maximum timestamp of the data we need to fetch
+    # We try to align all tables on a single time boundary
+    until = min(min_after + max_duration, max_until)
+
     # Transfer data in pieces which can hopefully fit in memory
-    after_str = after.isoformat(timespec='microseconds')
-    while after < until:
-        next_after = min(after + datetime.timedelta(hours=12), until)
-        next_after_str = next_after.isoformat(timespec='microseconds')
+    # Split by time, down to microseconds, as it's our transfer atom
+    min_after_str = min_after.isoformat(timespec='microseconds')
+    while all(t < until for t in after.values()):
+        next_after = {
+            n: min(max(t, min_after + piece_duration), until)
+            for n, t in after.items()
+        }
+        next_min_after = min(next_after.values())
+        next_min_after_str = next_min_after.isoformat(timespec='microseconds')
         # Transfer the data, preserving the timestamps
         LOGGER.info("FETCHING operational database dump for (%s, %s] range",
-                    after_str, next_after_str)
+                    min_after_str, next_min_after_str)
+        for obj_list_name in after:
+            LOGGER.debug(
+                "FETCHING %s for (%s, %s] range",
+                obj_list_name,
+                after[obj_list_name].isoformat(timespec='microseconds'),
+                next_after[obj_list_name].isoformat(timespec='microseconds')
+            )
         dump = op_client.dump(with_metadata=True,
                               after=after, until=next_after)
         LOGGER.info("LOADING a dump of %u objects into archive database",
                     kcidb.io.SCHEMA.count(dump))
         ar_client.load(dump, with_metadata=True)
         LOGGER.info("ARCHIVED %u objects in (%s, %s] range",
-                    kcidb.io.SCHEMA.count(dump), after_str, next_after_str)
+                    kcidb.io.SCHEMA.count(dump),
+                    min_after_str, next_min_after_str)
+        for obj_list_name in after:
+            LOGGER.debug("ARCHIVED %u %s",
+                         len(dump.get(obj_list_name, [])), obj_list_name)
         after = next_after
-        after_str = next_after_str
+        min_after = next_min_after
+        min_after_str = next_min_after_str
+        # Make sure we have enough memory for the next piece
+        dump = None
+        gc.collect()
 
 
 def kcidb_purge_db(event, context):
