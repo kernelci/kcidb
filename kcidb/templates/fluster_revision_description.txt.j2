@@ -34,9 +34,9 @@ REVISION
 
 See complete and up-to-date report at:
     {% if ns.tree is not none %}
-        https://grafana.kernelci.org/d/codecs/codecs?orgId=1&var-platform=All&var-datasource=default&var-git_commit_hash={{revision.git_commit_hash | urlencode }}&var-tree={{ns.tree}}&var-branch={{ns.branch}}
+        https://grafana.kernelci.org/d/codecs/codecs?orgId=1&var-platform=All&var-datasource=production&var-git_commit_hash={{revision.git_commit_hash | urlencode }}&var-tree={{ns.tree}}&var-branch={{ns.branch}}
     {% else %}
-        https://grafana.kernelci.org/d/codecs/codecs?orgId=1&var-platform=All&var-datasource=default&var-git_commit_hash={{revision.git_commit_hash | urlencode }}
+        https://grafana.kernelci.org/d/codecs/codecs?orgId=1&var-platform=All&var-datasource=production&var-git_commit_hash={{revision.git_commit_hash | urlencode }}
     {% endif %}
 
 
