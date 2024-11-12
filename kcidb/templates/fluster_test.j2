@@ -1,9 +1,7 @@
 {# Test macros #}
 {% from "common.j2" import indent, stats_indent, selected_origins_for_fluster %}
 
-{% macro container_summary(container, max_list_len) %}
-    {{- "\nFLUSTER TESTS" }}
-    {% set test_names_titles = {
+{% set test_names_titles = {
         "gstreamer_av1":           "av1",
         "gstreamer_av1_chromium":  "av1-chromium-10bit",
         "gstreamer_h264":          "h264",
@@ -12,18 +10,21 @@
         "gstreamer_vp8":           "vp8",
         "gstreamer_vp9":           "vp9"
     } %}
+
+{% macro get_tests_summary(container, file_system) %}
     {% set boards_titles_statuses_counts = {} %}
     {% for test in container.tests %}
         {% set board = test.environment_compatible[0] %}
         {% set path_items = test.path.split(".") %}
         {% if test.origin in selected_origins_for_fluster and
               board is defined and
-              path_items | length > 3 and
+              path_items | length > 4 and
               path_items[0] == "fluster" and
-              path_items[1] == "v4l2" and
-              path_items[2] in test_names_titles and
-              path_items[3] != "validate-fluster-results" %}
-            {% set title = test_names_titles[path_items[2]] %}
+              path_items[1] == file_system and
+              path_items[2] == "v4l2" and
+              path_items[3] in test_names_titles and
+              path_items[4] != "validate-fluster-results" %}
+            {% set title = test_names_titles[path_items[3]] %}
             {% set titles_statuses_counts =
                    boards_titles_statuses_counts.get(board, {}) %}
             {% set statuses_counts =
@@ -32,8 +33,12 @@
             {% set _ = statuses_counts.update({test.status: count}) %}
             {% set _ = titles_statuses_counts.update({title: statuses_counts}) %}
             {% set _ = boards_titles_statuses_counts.update({board: titles_statuses_counts}) %}
+            {{ display_test_summary(boards_titles_statuses_counts, file_system) }}
         {% endif %}
     {% endfor %}
+{% endmacro %}
+
+{% macro display_test_summary(boards_titles_statuses_counts, file_system) %}
     {% set ns = namespace(max_test_count=0) %}
     {% for  _, titles_statuses_counts in boards_titles_statuses_counts.items() %}
         {% for _, statuses_counts in titles_statuses_counts.items() %}
@@ -41,6 +46,7 @@
         {% endfor %}
     {% endfor %}
     {% set field_width = ( ns.max_test_count + 1 ) | string | length | string %}
+    {{- "\n" + file_system + ":" -}}
     {% for board, titles_statuses_counts in boards_titles_statuses_counts | dictsort %}
         {{- "\n" + indent + board + ":\n" -}}
         {% for title in test_names_titles.values() | sort %}
@@ -60,7 +66,13 @@
                 )
             }}
         {% endfor %}
-    {% else %}
-        {{- "\n    No tests found" }}
+    {% endfor %}
+{% endmacro %}
+
+{% macro container_summary(container, max_list_len) %}
+    {{- "\nFLUSTER TESTS" }}
+    {% set fluster_tests_fs = ['debian', 'chromeos'] %}
+    {% for fs in fluster_tests_fs %}
+        {{ get_tests_summary(container, fs) }}
     {% endfor %}
 {% endmacro %}
