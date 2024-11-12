@@ -122,14 +122,15 @@ class Driver(AbstractDriver):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the first
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the first one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
                               cannot determine data arrival time.
         """
-        return None
+        return {}
 
     def get_last_modified(self):
         """
@@ -137,14 +138,15 @@ class Driver(AbstractDriver):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the last
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the last one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
                               cannot determine data arrival time.
         """
-        return None
+        return {}
 
     def dump_iter(self, objects_per_report, with_metadata, after, until):
         """
@@ -155,24 +157,30 @@ class Driver(AbstractDriver):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
-            after:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be excluded from the dump should've arrived.
-                                The data after this time will be dumped.
-                                Can be None to have no limit on older data.
-            until:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be dumped should've arrived.
-                                The data after this time will not be dumped.
-                                Can be None to have no limit on newer data.
+            after:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *excluded* from the dump. Any objects which
+                                arrived later will be *eligible* for dumping.
+                                Object types missing from this dictionary will
+                                not be limited.
+            until:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *included* into the dump. Any objects which
+                                arrived later will be *ineligible* for
+                                dumping. Object types missing from this
+                                dictionary will not be limited.
 
         Returns:
-            An iterator returning report JSON data adhering to the current I/O
-            schema version, each containing at most the specified number of
-            objects.
+            An iterator returning report JSON data adhering to the I/O
+            version of the database schema, each containing at most the
+            specified number of objects.
 
         Raises:
-            NoTimestamps    - Either "after" or "until" are not None, and
+            NoTimestamps    - Either "after" or "until" are not empty, and
                               the database doesn't have row timestamps.
         """
         del objects_per_report

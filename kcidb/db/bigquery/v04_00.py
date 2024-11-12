@@ -741,26 +741,33 @@ class Schema(AbstractSchema):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
-            after:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be excluded from the dump should've arrived.
-                                The data after this time will be dumped.
-                                Can be None to have no limit on older data.
-            until:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be dumped should've arrived.
-                                The data after this time will not be dumped.
-                                Can be None to have no limit on newer data.
+            after:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *excluded* from the dump. Any objects which
+                                arrived later will be *eligible* for dumping.
+                                Object types missing from this dictionary will
+                                not be limited.
+            until:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *included* into the dump. Any objects which
+                                arrived later will be *ineligible* for
+                                dumping. Object types missing from this
+                                dictionary will not be limited.
 
         Returns:
-            An iterator returning report JSON data adhering to the I/O version
-            of the database schema, each containing at most the specified
-            number of objects.
+            An iterator returning report JSON data adhering to the I/O
+            version of the database schema, each containing at most the
+            specified number of objects.
 
         Raises:
-            NoTimestamps    - Either "after" or "until" are not None, and
+            NoTimestamps    - Either "after" or "until" are not empty, and
                               the database doesn't have row timestamps.
         """
+        # We'll try to manage, pylint: disable=too-many-locals
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
@@ -772,7 +779,9 @@ class Schema(AbstractSchema):
                 (f for f in table_schema if f.name == "_timestamp"),
                 None
             )
-            if (after or until) and not ts_field:
+            table_after = after.get(obj_list_name)
+            table_until = until.get(obj_list_name)
+            if (table_after or table_until) and not ts_field:
                 raise NoTimestamps(
                     f"Table {obj_list_name!r} has no {ts_field.name!r} column"
                 )
@@ -787,13 +796,15 @@ class Schema(AbstractSchema):
                 ((
                     " WHERE " + " AND ".join(
                         f"{ts_field.name} {op} ?"
-                        for op, v in ((">", after), ("<=", until)) if v
+                        for op, v in (
+                            (">", table_after), ("<=", table_until)
+                        ) if v
                     )
-                ) if (after or until) else "")
+                ) if (table_after or table_until) else "")
             )
             query_parameters = [
                 bigquery.ScalarQueryParameter(None, ts_field.field_type, v)
-                for v in (after, until) if v
+                for v in (table_after, table_until) if v
             ]
             query_job = self.conn.query_create(query_string, query_parameters)
             obj_list = None
@@ -1205,8 +1216,9 @@ class Schema(AbstractSchema):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the first
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the first one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
@@ -1218,14 +1230,22 @@ class Schema(AbstractSchema):
         ):
             raise NoTimestamps("Database is missing timestamps in its schema")
 
-        return next(iter(self.conn.query_create(
-            "SELECT MIN(first_modified) AS first_modified FROM(\n" +
-            "UNION ALL\n".join(
-                f"SELECT MIN(_timestamp) AS first_modified FROM {table_name}\n"
-                for table_name in self.TABLE_MAP
-            ) +
-            ")\n"
-        ).result()))[0]
+        return {
+            table_name: first_modified
+            for table_name, first_modified in self.conn.query_create(
+                "\nUNION ALL\n".join(
+                    f"SELECT ? AS table_name, "
+                    f"MIN(_timestamp) AS first_modified "
+                    f"FROM _{table_name}"
+                    for table_name in self.TABLE_MAP
+                ),
+                [
+                    bigquery.ScalarQueryParameter(None, "STRING", table_name)
+                    for table_name in self.TABLE_MAP
+                ]
+            ).result()
+            if first_modified
+        }
 
     def get_last_modified(self):
         """
@@ -1233,8 +1253,9 @@ class Schema(AbstractSchema):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the last
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the last one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
@@ -1246,11 +1267,19 @@ class Schema(AbstractSchema):
         ):
             raise NoTimestamps("Database is missing timestamps in its schema")
 
-        return next(iter(self.conn.query_create(
-            "SELECT MAX(last_modified) AS last_modified FROM(\n" +
-            "UNION ALL\n".join(
-                f"SELECT MAX(_timestamp) AS last_modified FROM {table_name}\n"
-                for table_name in self.TABLE_MAP
-            ) +
-            ")\n"
-        ).result()))[0]
+        return {
+            table_name: last_modified
+            for table_name, last_modified in self.conn.query_create(
+                "\nUNION ALL\n".join(
+                    f"SELECT ? AS table_name, "
+                    f"MAX(_timestamp) AS last_modified "
+                    f"FROM _{table_name}"
+                    for table_name in self.TABLE_MAP
+                ),
+                [
+                    bigquery.ScalarQueryParameter(None, "STRING", table_name)
+                    for table_name in self.TABLE_MAP
+                ]
+            ).result()
+            if last_modified
+        }

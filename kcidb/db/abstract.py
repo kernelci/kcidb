@@ -117,8 +117,9 @@ class Driver(ABC):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the first
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the first one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
@@ -132,8 +133,9 @@ class Driver(ABC):
         The database must be initialized.
 
         Returns:
-            A timezone-aware datetime object representing the last
-            data arrival time, or None if the database is empty.
+            A dictionary of names of I/O object types (list names), which have
+            objects in the database, and timezone-aware datetime objects
+            representing the time the last one has arrived into the database.
 
         Raises:
             NoTimestamps    - The database doesn't have row timestamps, and
@@ -197,16 +199,22 @@ class Driver(ABC):
                                 report data, or zero for no limit.
             with_metadata:      True, if metadata fields should be dumped as
                                 well. False, if not.
-            after:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be excluded from the dump should've arrived.
-                                The data after this time will be dumped.
-                                Can be None to have no limit on older data.
-            until:              An "aware" datetime.datetime object specifying
-                                the latest (database server) time the data to
-                                be dumped should've arrived.
-                                The data after this time will not be dumped.
-                                Can be None to have no limit on newer data.
+            after:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *excluded* from the dump. Any objects which
+                                arrived later will be *eligible* for dumping.
+                                Object types missing from this dictionary will
+                                not be limited.
+            until:              A dictionary of names of I/O object types
+                                (list names) and timezone-aware datetime
+                                objects specifying the latest time the
+                                corresponding objects should've arrived to be
+                                *included* into the dump. Any objects which
+                                arrived later will be *ineligible* for
+                                dumping. Object types missing from this
+                                dictionary will not be limited.
 
         Returns:
             An iterator returning report JSON data adhering to the current
@@ -217,14 +225,21 @@ class Driver(ABC):
             NoTimestamps    - Either "after" or "until" are not None, and
                               the database doesn't have row timestamps.
         """
+        assert self.is_initialized()
+        io_schema = self.get_schema()[1]
         assert isinstance(objects_per_report, int)
         assert objects_per_report >= 0
         assert isinstance(with_metadata, bool)
-        assert after is None or \
-            isinstance(after, datetime.datetime) and after.tzinfo
-        assert until is None or \
-            isinstance(until, datetime.datetime) and until.tzinfo
-        assert self.is_initialized()
+        assert isinstance(after, dict) and all(
+            obj_list_name in io_schema.id_fields and
+            isinstance(ts, datetime.datetime) and ts.tzinfo
+            for obj_list_name, ts in after.items()
+        )
+        assert isinstance(until, dict) and all(
+            obj_list_name in io_schema.id_fields and
+            isinstance(ts, datetime.datetime) and ts.tzinfo
+            for obj_list_name, ts in until.items()
+        )
 
     # No, it's not, pylint: disable=too-many-return-statements
     def query_ids_are_valid(self, ids):
