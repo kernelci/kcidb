@@ -352,8 +352,9 @@ class Table:
             name:           The name of the target table of the command.
 
         Returns:
-            The formatted "SELECT" command, returning the timestamp in
-            "first_modified" column.
+            The formatted "SELECT" command and its parameters container.
+            The "SELECT" command returns the table name in "table_name",
+            and the timestamp in "first_modified" columns.
 
         Raises:
             NoTimestamps    - The table doesn't have row timestamps.
@@ -362,7 +363,10 @@ class Table:
         if not self.timestamp:
             raise NoTimestamps("Table has no timestamp column")
         return (
-            f"SELECT MIN({self.timestamp.name}) AS first_modified FROM {name}"
+            f"SELECT {self.placeholder} AS table_name, "
+            f"MIN({self.timestamp.name}) AS first_modified "
+            f"FROM {name}",
+            (name,)
         )
 
     def format_get_last_modified(self, name):
@@ -374,8 +378,9 @@ class Table:
             name:           The name of the target table of the command.
 
         Returns:
-            The formatted "SELECT" command, returning the timestamp in
-            "last_modified" column.
+            The formatted "SELECT" command and its parameters container.
+            The "SELECT" command returns the table name in "table_name",
+            and the timestamp in "last_modified" columns.
 
         Raises:
             NoTimestamps    - The table doesn't have row timestamps.
@@ -384,7 +389,10 @@ class Table:
         if not self.timestamp:
             raise NoTimestamps("Table has no timestamp column")
         return (
-            f"SELECT MAX({self.timestamp.name}) AS last_modified FROM {name}"
+            f"SELECT {self.placeholder} AS table_name, "
+            f"MAX({self.timestamp.name}) AS last_modified "
+            f"FROM {name}",
+            (name,)
         )
 
     def format_delete(self, name):
