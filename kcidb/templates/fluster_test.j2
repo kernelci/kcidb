@@ -33,9 +33,11 @@
             {% set _ = statuses_counts.update({test.status: count}) %}
             {% set _ = titles_statuses_counts.update({title: statuses_counts}) %}
             {% set _ = boards_titles_statuses_counts.update({board: titles_statuses_counts}) %}
-            {{ display_test_summary(boards_titles_statuses_counts, file_system) }}
         {% endif %}
     {% endfor %}
+    {% if boards_titles_statuses_counts %}
+        {{ display_test_summary(boards_titles_statuses_counts, file_system) }}
+    {% endif %}
 {% endmacro %}
 
 {% macro display_test_summary(boards_titles_statuses_counts, file_system) %}
