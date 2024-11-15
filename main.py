@@ -429,9 +429,9 @@ def kcidb_archive(event, context):
     # Editing window
     edit_window = datetime.timedelta(days=14)
     # Maximum duration of the dump transferred in a single execution
-    max_duration = datetime.timedelta(days=7)
+    max_duration = datetime.timedelta(days=3)
     # Duration of each dump piece
-    piece_duration = datetime.timedelta(hours=6)
+    piece_duration = datetime.timedelta(hours=12)
 
     op_client = get_db_client(OPERATIONAL_DATABASE)
     op_io_schema = op_client.get_schema()[1]

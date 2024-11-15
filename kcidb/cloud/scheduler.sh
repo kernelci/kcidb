@@ -94,7 +94,7 @@ function scheduler_deploy() {
         '{"database": "sm", "timedelta": {"delta": {"days": 30}}}'
     scheduler_job_pubsub_deploy \
         "$project" "${prefix}archive_trigger" \
-        "$archive_trigger_topic" '0 12 * * *' \
+        "$archive_trigger_topic" '0 */6 * * *' \
         '{}'
 }
 
