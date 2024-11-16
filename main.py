@@ -442,7 +442,8 @@ def kcidb_archive(event, context):
     op_now = op_client.get_current_time()
     op_first_modified = op_client.get_first_modified()
     if not op_first_modified:
-        LOGGER.info("Operational database is empty, nothing to archive")
+        LOGGER.info("Operational database is empty, nothing to archive, "
+                    "aborting")
         return
 
     # Maximum timestamp of data to archive
@@ -461,7 +462,7 @@ def kcidb_archive(event, context):
     }
     min_after = min(after.values())
     if min_after >= max_until:
-        LOGGER.info("No data old enough to archive")
+        LOGGER.info("No data old enough to archive, aborting")
         return
 
     # Find the maximum timestamp of the data we need to fetch
@@ -471,6 +472,8 @@ def kcidb_archive(event, context):
     # Transfer data in pieces which can hopefully fit in memory
     # Split by time, down to microseconds, as it's our transfer atom
     min_after_str = min_after.isoformat(timespec='microseconds')
+    first_min_after_str = min_after_str
+    total_count = 0
     while all(t < until for t in after.values()):
         if time.monotonic() >= deadline_monotonic:
             LOGGER.info("Ran out of time, stopping")
@@ -493,21 +496,27 @@ def kcidb_archive(event, context):
             )
         dump = op_client.dump(with_metadata=True,
                               after=after, until=next_after)
+        count = kcidb.io.SCHEMA.count(dump)
         LOGGER.info("LOADING a dump of %u objects into archive database",
-                    kcidb.io.SCHEMA.count(dump))
+                    count)
         ar_client.load(dump, with_metadata=True)
         LOGGER.info("ARCHIVED %u objects in (%s, %s] range",
-                    kcidb.io.SCHEMA.count(dump),
-                    min_after_str, next_min_after_str)
+                    count, min_after_str, next_min_after_str)
         for obj_list_name in after:
             LOGGER.debug("ARCHIVED %u %s",
                          len(dump.get(obj_list_name, [])), obj_list_name)
+        total_count += count
         after = next_after
         min_after = next_min_after
         min_after_str = next_min_after_str
         # Make sure we have enough memory for the next piece
         dump = None
         gc.collect()
+    else:
+        LOGGER.info("Completed, stopping")
+
+    LOGGER.info("ARCHIVED %u objects TOTAL in (%s, %s] range",
+                total_count, first_min_after_str, min_after_str)
 
 
 def kcidb_purge_db(event, context):
