@@ -433,6 +433,8 @@ def kcidb_archive(event, context):
     max_duration = datetime.timedelta(days=7)
     # Duration of each dump piece
     piece_duration = datetime.timedelta(hours=12)
+    # Execution (monotonic) deadline
+    deadline_monotonic = time.monotonic() + 7 * 60
 
     op_client = get_db_client(OPERATIONAL_DATABASE)
     op_io_schema = op_client.get_schema()[1]
@@ -470,6 +472,9 @@ def kcidb_archive(event, context):
     # Split by time, down to microseconds, as it's our transfer atom
     min_after_str = min_after.isoformat(timespec='microseconds')
     while all(t < until for t in after.values()):
+        if time.monotonic() >= deadline_monotonic:
+            LOGGER.info("Ran out of time, stopping")
+            break
         next_after = {
             n: min(max(t, min_after + piece_duration), until)
             for n, t in after.items()
