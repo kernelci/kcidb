@@ -429,7 +429,8 @@ def kcidb_archive(event, context):
     # Editing window
     edit_window = datetime.timedelta(days=14)
     # Maximum duration of the dump transferred in a single execution
-    max_duration = datetime.timedelta(days=3)
+    # Operational database cannot have gaps of this or greater duration
+    max_duration = datetime.timedelta(days=7)
     # Duration of each dump piece
     piece_duration = datetime.timedelta(hours=12)
 
