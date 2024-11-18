@@ -426,15 +426,62 @@ def kcidb_archive(event, context):
     """
     # It's OK, pylint: disable=too-many-locals
     #
-    # Editing window
-    edit_window = datetime.timedelta(days=14)
-    # Maximum duration of the dump transferred in a single execution
+    # Describe the expected event data
+    params_schema = dict(
+        type="object",
+        properties=dict(
+            data_min_age=dict(
+                type="integer", minimum=0,
+                description="Minimum age of data, seconds"
+            ),
+            data_max_duration=dict(
+                type="integer", minimum=0,
+                description="Maximum data duration, seconds. "
+                            "No limit, if missing."
+            ),
+            data_chunk_duration=dict(
+                type="integer", minimum=0,
+                description="Data chunk duration, seconds"
+            ),
+            run_max_duration=dict(
+                type="integer", minimum=0,
+                description="Maximum runtime, seconds"
+            ),
+        ),
+        required=[
+           "data_min_age",
+           "data_chunk_duration",
+           "run_max_duration",
+        ],
+        additionalProperties=False,
+    )
+
+    # Parse the input JSON
+    params_string = base64.b64decode(event["data"]).decode()
+    params = json.loads(params_string)
+    jsonschema.validate(
+        instance=params, schema=params_schema,
+        format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER
+    )
+
+    # Minimum data age (editing window, to be enforced)
+    data_min_age = datetime.timedelta(
+        seconds=int(params["data_min_age"])
+    )
+    # Maximum duration of the data transferred in a single execution
     # Operational database cannot have gaps of this or greater duration
-    max_duration = datetime.timedelta(days=7)
-    # Duration of each dump piece
-    piece_duration = datetime.timedelta(hours=12)
+    data_max_duration = (
+        datetime.timedelta(seconds=int(params["data_max_duration"]))
+        if "data_max_duration" in params else
+        None
+    )
+    # Duration of each data chunk
+    data_chunk_duration = datetime.timedelta(
+        seconds=int(params["data_chunk_duration"])
+    )
+
     # Execution (monotonic) deadline
-    deadline_monotonic = time.monotonic() + 7 * 60
+    deadline_monotonic = time.monotonic() + int(params["run_max_duration"])
 
     op_client = get_db_client(OPERATIONAL_DATABASE)
     op_io_schema = op_client.get_schema()[1]
@@ -445,9 +492,6 @@ def kcidb_archive(event, context):
         LOGGER.info("Operational database is empty, nothing to archive, "
                     "aborting")
         return
-
-    # Maximum timestamp of data to archive
-    max_until = op_now - edit_window
 
     ar_client = get_db_client(ARCHIVE_DATABASE)
     ar_last_modified = ar_client.get_last_modified()
@@ -461,13 +505,18 @@ def kcidb_archive(event, context):
         ) for n in op_obj_list_names
     }
     min_after = min(after.values())
-    if min_after >= max_until:
-        LOGGER.info("No data old enough to archive, aborting")
-        return
 
     # Find the maximum timestamp of the data we need to fetch
     # We try to align all tables on a single time boundary
-    until = min(min_after + max_duration, max_until)
+    until = min(
+        datetime.datetime.max if data_max_duration is None
+        else min_after + data_max_duration,
+        op_now - data_min_age
+    )
+
+    if min_after >= until:
+        LOGGER.info("No data old enough to archive, aborting")
+        return
 
     # Transfer data in pieces which can hopefully fit in memory
     # Split by time, down to microseconds, as it's our transfer atom
@@ -479,13 +528,13 @@ def kcidb_archive(event, context):
             LOGGER.info("Ran out of time, stopping")
             break
         next_after = {
-            n: min(max(t, min_after + piece_duration), until)
+            n: min(max(t, min_after + data_chunk_duration), until)
             for n, t in after.items()
         }
         next_min_after = min(next_after.values())
         next_min_after_str = next_min_after.isoformat(timespec='microseconds')
         # Transfer the data, preserving the timestamps
-        LOGGER.info("FETCHING operational database dump for (%s, %s] range",
+        LOGGER.info("FETCHING operational database data for (%s, %s] range",
                     min_after_str, next_min_after_str)
         for obj_list_name in after:
             LOGGER.debug(
@@ -494,23 +543,22 @@ def kcidb_archive(event, context):
                 after[obj_list_name].isoformat(timespec='microseconds'),
                 next_after[obj_list_name].isoformat(timespec='microseconds')
             )
-        dump = op_client.dump(with_metadata=True,
+        data = op_client.dump(with_metadata=True,
                               after=after, until=next_after)
-        count = kcidb.io.SCHEMA.count(dump)
-        LOGGER.info("LOADING a dump of %u objects into archive database",
-                    count)
-        ar_client.load(dump, with_metadata=True)
+        count = kcidb.io.SCHEMA.count(data)
+        LOGGER.info("LOADING %u objects into archive database", count)
+        ar_client.load(data, with_metadata=True)
         LOGGER.info("ARCHIVED %u objects in (%s, %s] range",
                     count, min_after_str, next_min_after_str)
         for obj_list_name in after:
             LOGGER.debug("ARCHIVED %u %s",
-                         len(dump.get(obj_list_name, [])), obj_list_name)
+                         len(data.get(obj_list_name, [])), obj_list_name)
         total_count += count
         after = next_after
         min_after = next_min_after
         min_after_str = next_min_after_str
         # Make sure we have enough memory for the next piece
-        dump = None
+        data = None
         gc.collect()
     else:
         LOGGER.info("Completed, stopping")

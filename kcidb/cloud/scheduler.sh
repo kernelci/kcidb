@@ -95,7 +95,11 @@ function scheduler_deploy() {
     scheduler_job_pubsub_deploy \
         "$project" "${prefix}archive_trigger" \
         "$archive_trigger_topic" '0 */6 * * *' \
-        '{}'
+        "{
+            \"data_min_age\": $((14*24*60*60)),
+            \"data_chunk_duration\": $((12*60*60)),
+            \"run_max_duration\": $((7*60))
+        }"
 }
 
 # Withdraw from the scheduler
