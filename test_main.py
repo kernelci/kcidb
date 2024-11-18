@@ -406,10 +406,22 @@ def test_archive(empty_deployment):
     data_3w = gen_data("archive:3w", ts_3w)
     data_4w = gen_data("archive:4w", ts_4w)
 
+    # Archival parameters
+    params = dict(
+        # Edit window: two weeks
+        data_min_age=2 * 7 * 24 * 60 * 60,
+        # Transfer at most one week
+        data_max_duration=7 * 24 * 60 * 60,
+        # Transfer one week at a time (everything in one go)
+        data_chunk_duration=7 * 24 * 60 * 60,
+        # We gotta be at least faster than the time we wait (60s)
+        run_max_duration=45,
+    )
+
     # Load data_now into the operational DB
     op_client.load(data_now, with_metadata=True)
     # Trigger and wait for archival (ignore possibility of actual trigger)
-    publisher.publish({})
+    publisher.publish(params)
     time.sleep(60)
     # Check data_now doesn't end up in the archive DB
     assert ar_schema.count(ar_client.dump()) == 0
@@ -417,7 +429,7 @@ def test_archive(empty_deployment):
     # Load data_3w and data_4w
     op_client.load(op_schema.merge(data_3w, [data_4w]), with_metadata=True)
     # Trigger and wait for archival (ignore possibility of actual trigger)
-    publisher.publish({})
+    publisher.publish(params)
     time.sleep(60)
     # Check data_4w is in the archive database
     dump = ar_client.dump()
@@ -433,7 +445,7 @@ def test_archive(empty_deployment):
         for obj_list_name in op_schema.id_fields
     ), "Some three-week old data in the archive"
     # Trigger and wait for another archival (ignore chance of actual trigger)
-    publisher.publish({})
+    publisher.publish(params)
     time.sleep(60)
     # Check data_3w is now in the archive database
     dump = ar_client.dump()
