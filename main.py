@@ -510,8 +510,9 @@ def kcidb_archive(event, context):
     # Find the maximum timestamp of the data we need to fetch
     # We try to align all tables on a single time boundary
     until = min(
-        datetime.datetime.max if data_max_duration is None
-        else min_after + data_max_duration,
+        datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
+        if data_max_duration is None else
+        min_after + data_max_duration,
         op_now - data_min_age
     )
 
