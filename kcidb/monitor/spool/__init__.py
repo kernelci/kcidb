@@ -126,7 +126,9 @@ class Client:
                 transaction.create(doc, dict(
                     created_at=timestamp,
                     # Set to a definitely timed-out time, free for picking
-                    picked_until=datetime.datetime.min,
+                    picked_until=datetime.datetime.min.replace(
+                        tzinfo=datetime.timezone.utc
+                    ),
                     message=notification.render().
                     as_string(policy=email.policy.SMTPUTF8),
                     due=due
@@ -213,7 +215,9 @@ class Client:
             timestamp = datetime.datetime.now(datetime.timezone.utc)
         self._get_doc(id).update(dict(
             acked_at=timestamp,
-            picked_until=datetime.datetime.max,
+            picked_until=datetime.datetime.max.replace(
+                tzinfo=datetime.timezone.utc
+            ),
         ))
 
     def delete(self, id):
