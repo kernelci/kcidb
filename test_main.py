@@ -454,3 +454,19 @@ def test_archive(empty_deployment):
             for obj in dump.get(obj_list_name, []))
         for obj_list_name in op_schema.id_fields
     ), "No complete three-week old data in the archive"
+
+    # Empty the archive
+    ar_client.empty()
+    # Trigger a run of full archiving at once, and wait
+    del params["data_max_duration"]
+    publisher.publish(params)
+    time.sleep(60)
+    # Check both data_4w and data_3w are in the archive database
+    dump = ar_client.dump()
+    assert all(
+        any(obj["id"] == "archive:4w"
+            for obj in dump.get(obj_list_name, [])) and
+        any(obj["id"] == "archive:3w"
+            for obj in dump.get(obj_list_name, []))
+        for obj_list_name in op_schema.id_fields
+    ), "No complete four- and three-week old data in the archive"
