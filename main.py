@@ -463,6 +463,7 @@ def kcidb_archive(event, context):
         instance=params, schema=params_schema,
         format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER
     )
+    LOGGER.info("Archiving parameters: %s", json.dumps(params))
 
     # Minimum data age (editing window, to be enforced)
     data_min_age = datetime.timedelta(
