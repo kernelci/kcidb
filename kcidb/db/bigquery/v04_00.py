@@ -79,7 +79,8 @@ class Connection(AbstractConnection):
         except GoogleNotFound as exc:
             raise NotFound(params) from exc
 
-    def query_create(self, query_string, query_parameters=None):
+    def query_create(self, query_string, query_parameters=None,
+                     use_query_cache=True):
         """
         Creates a Query job configured for a given query string and
         optional parameters. BigQuery can run the job to query the database.
@@ -89,6 +90,8 @@ class Connection(AbstractConnection):
             query_parameters:   A list containing the optional query parameters
                                 (google.cloud.bigquery.ArrayQueryParameter).
                                 The default is an empty list.
+            use_query_cache:    True if BigQuery query cache should be used,
+                                False otherwise.
 
         Returns:
             The Query job (google.cloud.bigquery.job.QueryJob)
@@ -97,7 +100,10 @@ class Connection(AbstractConnection):
             query_parameters = []
         LOGGER.debug("Query string: %s", query_string)
         LOGGER.debug("Query params: %s", query_parameters)
+        if not use_query_cache:
+            LOGGER.debug("Query cache: DISABLED")
         job_config = bigquery.job.QueryJobConfig(
+                use_query_cache=use_query_cache,
                 query_parameters=query_parameters,
                 default_dataset=self.dataset_ref)
         return self.client.query(query_string, job_config=job_config)
@@ -806,7 +812,8 @@ class Schema(AbstractSchema):
                 bigquery.ScalarQueryParameter(None, ts_field.field_type, v)
                 for v in (table_after, table_until) if v
             ]
-            query_job = self.conn.query_create(query_string, query_parameters)
+            query_job = self.conn.query_create(query_string, query_parameters,
+                                               use_query_cache=False)
             obj_list = None
             for row in query_job:
                 if obj_list is None:
