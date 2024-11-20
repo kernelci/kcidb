@@ -1249,7 +1249,8 @@ class Schema(AbstractSchema):
                 [
                     bigquery.ScalarQueryParameter(None, "STRING", table_name)
                     for table_name in self.TABLE_MAP
-                ]
+                ],
+                use_query_cache=False
             ).result()
             if first_modified
         }
@@ -1286,7 +1287,8 @@ class Schema(AbstractSchema):
                 [
                     bigquery.ScalarQueryParameter(None, "STRING", table_name)
                     for table_name in self.TABLE_MAP
-                ]
+                ],
+                use_query_cache=False
             ).result()
             if last_modified
         }
