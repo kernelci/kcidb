@@ -333,7 +333,8 @@ def test_purge_db(empty_deployment):
         for obj_list_name in min_io_version.graph:
             if obj_list_name:
                 assert len(dump.get(obj_list_name, [])) == 2, \
-                    f"Invalid number of {obj_list_name}"
+                    f"Invalid number of {obj_list_name} in " \
+                    f"{database} database"
 
         # Trigger the purge at the boundary
         publisher.publish(
@@ -355,7 +356,7 @@ def test_purge_db(empty_deployment):
                 break
         assert dump == client.get_schema()[1].upgrade(
             data_after if purging else data
-        )
+        ), "Unexpected data in {database} database"
 
 
 def test_archive(empty_deployment):
