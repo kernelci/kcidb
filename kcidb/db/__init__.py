@@ -983,7 +983,7 @@ def load_main():
     for data in kcidb.misc.json_load_stream_fd(sys.stdin.fileno(),
                                                seq=args.seq_in):
         data = io_schema.upgrade(io_schema.validate(data), copy=False)
-        client.load(data, with_metadata=args.with_metadata)
+        client.load(data, with_metadata=args.with_metadata, copy=False)
 
 
 def schemas_main():
