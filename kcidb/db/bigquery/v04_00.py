@@ -1148,7 +1148,7 @@ class Schema(AbstractSchema):
         return objs
 
     @classmethod
-    def _pack_node(cls, node, with_metadata):
+    def _pack_node(cls, node, with_metadata, copy):
         """
         Pack a loaded data node (and all its children) to
         the BigQuery storage-compatible representation.
@@ -1157,16 +1157,20 @@ class Schema(AbstractSchema):
             node:           The node to pack.
             with_metadata:  True, if meta fields (with leading underscore "_")
                             should be preserved. False, if omitted.
+            copy:           True, if the data should be copied before packing.
+                            False, if the data should be packed in-place.
 
         Returns:
             The packed node.
         """
         if isinstance(node, list):
-            node = node.copy()
+            if copy:
+                node = node.copy()
             for index, value in enumerate(node):
-                node[index] = cls._pack_node(value, with_metadata)
+                node[index] = cls._pack_node(value, with_metadata, copy)
         elif isinstance(node, dict):
-            node = node.copy()
+            if copy:
+                node = node.copy()
             for key, value in list(node.items()):
                 # Flatten the "misc" fields
                 if key == "misc":
@@ -1176,29 +1180,35 @@ class Schema(AbstractSchema):
                     del node[key]
                 # Pack everything else
                 else:
-                    node[key] = cls._pack_node(value, with_metadata)
+                    node[key] = cls._pack_node(value, with_metadata, copy)
         return node
 
-    def load(self, data, with_metadata):
+    def load(self, data, with_metadata, copy):
         """
         Load data into the database.
 
         Args:
             data:           The JSON data to load into the database. Must
                             adhere to the I/O version of the database schema.
+                            Will be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
         """
         assert self.io.is_compatible_directly(data)
         assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
+        assert isinstance(copy, bool)
 
         # Load the data
         for obj_list_name, table_schema in self.TABLE_MAP.items():
             if obj_list_name in data:
-                obj_list = self._pack_node(data[obj_list_name], with_metadata)
+                obj_list = self._pack_node(data[obj_list_name],
+                                           with_metadata, copy)
                 if not LIGHT_ASSERTS:
                     validate_json_obj_list(table_schema, obj_list)
                 job_config = bigquery.job.LoadJobConfig(

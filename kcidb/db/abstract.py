@@ -331,22 +331,26 @@ class Driver(ABC):
         assert self.is_initialized()
 
     @abstractmethod
-    def load(self, data, with_metadata):
+    def load(self, data, with_metadata, copy):
         """
         Load data into the database.
         The database must be initialized.
 
         Args:
-            data:           The JSON data to load into the database.
-                            Must adhere to the current database schema's
-                            version of the I/O schema.
+            data:           The JSON data to load into the database. Must
+                            adhere to the I/O version of the database schema.
+                            Will be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
         """
         assert self.is_initialized()
         io_schema = self.get_schema()[1]
         assert io_schema.is_compatible_directly(data)
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
+        assert isinstance(copy, bool)

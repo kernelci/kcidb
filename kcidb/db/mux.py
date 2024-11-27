@@ -481,7 +481,7 @@ class Driver(AbstractDriver):
         """
         return self.drivers[0].oo_query(pattern_set)
 
-    def load(self, data, with_metadata):
+    def load(self, data, with_metadata, copy):
         """
         Load data into the databases.
         The databases must be initialized.
@@ -490,15 +490,20 @@ class Driver(AbstractDriver):
             data:           The JSON data to load into the databases.
                             Must adhere to the current database schema's
                             version of the I/O schema.
+                            Will be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the databases. False if it
                             should be discarded and the databases should
                             generate their metadata themselves.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
         """
         # The mux driver I/O schema is the oldest across member drivers
         io_schema = self.get_schema()[1]
         assert io_schema.is_compatible_directly(data)
         assert isinstance(with_metadata, bool)
+        assert isinstance(copy, bool)
         # Load data into every driver
         for driver in self.drivers:
             # Only copy if we need to upgrade
@@ -506,5 +511,8 @@ class Driver(AbstractDriver):
             driver.load(
                 driver_io_schema.upgrade(data)
                 if driver_io_schema != io_schema else data,
-                with_metadata=with_metadata
+                with_metadata=with_metadata,
+                copy=copy
             )
+            # We don't want to pack packed data again
+            copy = True
