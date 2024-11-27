@@ -622,7 +622,7 @@ class Client(kcidb.orm.Source):
         LOGGER.debug("OO Query: %r", pattern_set)
         return self.driver.oo_query(pattern_set)
 
-    def load(self, data, with_metadata=False):
+    def load(self, data, with_metadata=False, copy=True):
         """
         Load data into the database.
 
@@ -630,17 +630,21 @@ class Client(kcidb.orm.Source):
             data:           The JSON data to load into the database.
                             Must adhere to the database's supported I/O schema
                             version, or an earlier one.
+                            Will be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
         """
         assert LIGHT_ASSERTS or self.is_initialized()
         io_schema = self.get_schema()[1]
         assert io_schema.is_compatible_directly(data)
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
-        self.driver.load(data, with_metadata=with_metadata)
+        self.driver.load(data, with_metadata=with_metadata, copy=copy)
 
 
 class DBHelpAction(argparse.Action):

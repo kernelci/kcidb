@@ -353,17 +353,21 @@ class Schema(ABC, metaclass=MetaSchema):
                    for r in pattern_set)
 
     @abstractmethod
-    def load(self, data, with_metadata):
+    def load(self, data, with_metadata, copy):
         """
         Load data into the database.
 
         Args:
             data:           The JSON data to load into the database. Must
                             adhere to the schema's version of the I/O schema.
+                            Will be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
         """
         # Relying on the driver to check compatibility/validity
 
@@ -773,7 +777,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         assert self.is_initialized()
         return self.schema.oo_query(pattern_set)
 
-    def load(self, data, with_metadata):
+    def load(self, data, with_metadata, copy):
         """
         Load data into the database.
         The database must be initialized.
@@ -782,13 +786,18 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
             data:           The JSON data to load into the database.
                             Must adhere to the current database schema's
                             version of the I/O schema.
+                            Will be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
         """
         assert self.is_initialized()
         assert self.schema.io.is_compatible_directly(data)
         assert LIGHT_ASSERTS or self.schema.io.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
-        self.schema.load(data, with_metadata=with_metadata)
+        assert isinstance(copy, bool)
+        self.schema.load(data, with_metadata=with_metadata, copy=copy)
