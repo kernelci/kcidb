@@ -549,7 +549,7 @@ def kcidb_archive(event, context):
                               after=after, until=next_after)
         count = kcidb.io.SCHEMA.count(data)
         LOGGER.info("LOADING %u objects into archive database", count)
-        ar_client.load(data, with_metadata=True)
+        ar_client.load(data, with_metadata=True, copy=False)
         LOGGER.info("ARCHIVED %u objects in (%s, %s] range",
                     count, min_after_str, next_min_after_str)
         for obj_list_name in after:

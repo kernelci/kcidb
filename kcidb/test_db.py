@@ -210,7 +210,8 @@ def test_load_main():
             status = function()
         Client.assert_called_once_with("bigquery:project.dataset")
         client.load.assert_called_once_with({repr(empty)},
-                                            with_metadata=False)
+                                            with_metadata=False,
+                                            copy=False)
         return status
     """)
     assert_executes(json.dumps(empty), *argv,
@@ -227,8 +228,8 @@ def test_load_main():
         Client.assert_called_once_with("bigquery:project.dataset")
         assert client.load.call_count == 2
         client.load.assert_has_calls([
-            call({repr(empty)}, with_metadata=False),
-            call({repr(empty)}, with_metadata=False)
+            call({repr(empty)}, with_metadata=False, copy=False),
+            call({repr(empty)}, with_metadata=False, copy=False)
         ])
         return status
     """)

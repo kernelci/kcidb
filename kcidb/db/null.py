@@ -235,16 +235,19 @@ class Driver(AbstractDriver):
         del pattern_set
         return {}
 
-    def load(self, data, with_metadata):
+    def load(self, data, with_metadata, copy):
         """
         Load data into the database.
 
         Args:
-            data:           The JSON data to load into the database.
-                            Must adhere to the current database schema's
-                            version of the I/O schema.
+            data:           The JSON data to load into the database. Must
+                            adhere to the I/O version of the database schema.
+                            Will be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
         """
