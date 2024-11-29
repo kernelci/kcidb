@@ -97,7 +97,7 @@ function scheduler_deploy() {
         "$archive_trigger_topic" '0 */6 * * *' \
         "{
             \"data_min_age\": $((14*24*60*60)),
-            \"data_chunk_duration\": $((6*60*60)),
+            \"data_chunk_duration\": $((1*60*60)),
             \"run_max_duration\": $((7*60))
         }"
 }
