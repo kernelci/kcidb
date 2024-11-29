@@ -27,6 +27,19 @@ def match_revision(revision):
     ):
         return ()
 
+    # Don't generate summary report if revision has fluster job nodes
+    # and doesn't have any specific test nodes as codec summary
+    # report is intended to provide stats of number of passed, failed, and
+    # total tests of fluster jobs
+    # Below is the maestro convention for fluster tests:
+    # Job node path: "fluster.chromeos.v4l2.gstreamer_vp9"
+    # Test node path: "fluster.chromeos.v4l2.gstreamer_vp9.<test-name>"
+    if all(
+        len(t.path.split('.')) <= 4
+        for t in revision.tests_root["fluster"].tests
+    ):
+        return ()
+
     # Send notification 3 hours after a revision is created/updated
     return (Message(
         subject='KernelCI report for fluster tests: '
