@@ -16,11 +16,12 @@ def match_revision(revision):
     if repo_url not in revision.repo_branch_checkouts:
         return ()
 
-    if revision.builds_valid is None:
-        return ()
+    selected_origins = {'maestro', 'broonie'}
 
-    # If the revision is not from 'maestro' or 'broonie' origin
-    if not {c.origin for c in revision.checkouts} & {'maestro', 'broonie'}:
+    # If no builds found from 'maestro' or 'broonie' origin
+    # or status is unknown for all the builds
+    if all(b.origin not in selected_origins or b.valid is None
+           for b in revision.builds):
         return ()
 
     # Send notification 3 hours after a revision is created/updated
