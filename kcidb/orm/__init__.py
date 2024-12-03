@@ -135,7 +135,7 @@ class Cache(Source):
         get_parent_id = data.SCHEMA.types[type_name].get_parent_id
         id_objs = self.type_id_objs[type_name]
         base_pattern = pattern.base
-        base_type = None if base_pattern is None else base_pattern.obj_type
+        base_type = base_pattern and base_pattern.obj_type
         cached = set()
         # For each object in the response
         for obj in objs:
