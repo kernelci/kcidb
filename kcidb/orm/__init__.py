@@ -153,9 +153,11 @@ class Cache(Source):
                pattern.child and pattern.obj_id_set is None:
                 # Put the fact in the cache
                 parent_child_pattern = query.Pattern(
-                    query.Pattern(None, True, base_type,
-                                  {get_parent_id(base_type.name, obj)}),
-                    True, pattern.obj_type
+                    base=query.Pattern(
+                        base=None, child=True, obj_type=base_type,
+                        obj_id_set={get_parent_id(base_type.name, obj)}
+                    ),
+                    child=True, obj_type=pattern.obj_type
                 )
                 if parent_child_pattern in cached:
                     r = self.pattern_responses[parent_child_pattern]
@@ -178,9 +180,11 @@ class Cache(Source):
             for parent_obj in parent_response[base_type.name]:
                 # Create pattern for its children
                 parent_child_pattern = query.Pattern(
-                    query.Pattern(None, True, base_type,
-                                  {parent_get_id(parent_obj)}),
-                    True, pattern.obj_type
+                    base=query.Pattern(
+                        base=None, child=True, obj_type=base_type,
+                        obj_id_set={parent_get_id(parent_obj)}
+                    ),
+                    child=True, obj_type=pattern.obj_type
                 )
                 # If we don't have its children cached
                 if parent_child_pattern not in self.pattern_responses:
@@ -193,16 +197,20 @@ class Cache(Source):
         # For every parent-child relation of this pattern's type
         for child_relation in pattern.obj_type.children.values():
             # If we had a query for all this-type children of our pattern
-            sub_pattern = query.Pattern(pattern, True, child_relation.child)
+            sub_pattern = query.Pattern(
+                base=pattern, child=True, obj_type=child_relation.child
+            )
             if sub_pattern in self.pattern_responses:
                 # For each object in our response
                 for obj in objs:
                     # Create pattern for its children of this type
                     parent_child_pattern = query.Pattern(
-                        query.Pattern(None, True, pattern.obj_type,
-                                      {get_id(obj)}),
-                        True,
-                        child_relation.child,
+                        base=query.Pattern(
+                            base=None, child=True, obj_type=pattern.obj_type,
+                            obj_id_set={get_id(obj)}
+                        ),
+                        child=True,
+                        obj_type=child_relation.child,
                     )
                     # If we don't have its children cached
                     if parent_child_pattern not in self.pattern_responses:
