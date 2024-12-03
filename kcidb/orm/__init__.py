@@ -259,16 +259,16 @@ class Cache(Source):
         # For each pattern
         for pattern in pattern_set:
             # Try to get the response from the cache
-            try:
-                pattern_response = self.pattern_responses[pattern]
-                LOGGER.debug("Fetched from the cache: %r", pattern)
+            pattern_response = self.pattern_responses.get(pattern)
             # If not found
-            except KeyError:
+            if pattern_response is None:
                 # Query the source and merge the response into the cache
                 pattern_response = self._merge_pattern_response(
                     pattern, self.source.oo_query({pattern})
                 )
                 LOGGER.debug("Merged into the cache: %r", pattern)
+            else:
+                LOGGER.debug("Fetched from the cache: %r", pattern)
             # Merge into the overall response
             for type_name, objs in pattern_response.items():
                 get_id = data.SCHEMA.types[type_name].get_id
