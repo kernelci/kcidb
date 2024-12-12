@@ -29,6 +29,7 @@ def match_revision(revision):
         subject='KernelCI report for stable-rc: '
                 '{% include "stable_revision_summary.txt.j2" %}',
         to=["Jeny Sadadia <jeny.sadadia@collabora.com>",
+            "Gustavo Padovan <gustavo.padovan@collabora.com>",
             "Shreeya Patel <shreeya.patel@collabora.com>"],
         body='{% include "stable_rc_revision_description.txt.j2" %}',
         cc=["KernelCI Results Staging <kernelci-results-staging@groups.io>"],
