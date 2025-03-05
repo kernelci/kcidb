@@ -730,7 +730,6 @@ def test_upgrade(clean_database):
     Test database schema upgrade affects accepted I/O schema, and doesn't
     affect ORM results.
     """
-    # NOTE: Having only one element per data type/list to ensure comparison
     io_version_params = {
         kcidb.io.schema.V3_0: dict(
             io={
@@ -1740,9 +1739,14 @@ def test_upgrade(clean_database):
                 kcidb.orm.query.Pattern.parse(">*#")
             ) == last_params["oo"]
             upgraded_io = io_version.upgrade(last_params["io"])
-            assert database.dump(with_metadata=False) == upgraded_io
-            assert database.query(io_version.get_ids(upgraded_io)) == \
+            assert io_version.cmp_directly_compatible(
+                database.dump(with_metadata=False),
                 upgraded_io
+            ) == 0
+            assert io_version.cmp_directly_compatible(
+                database.query(io_version.get_ids(upgraded_io)),
+                upgraded_io
+            ) == 0
 
         # For each data's I/O version and parameters
         for load_io_version, load_params in io_version_params.items():
@@ -1771,9 +1775,14 @@ def test_upgrade(clean_database):
 
             # Check we can query it in various ways
             upgraded_io = io_version.upgrade(load_params["io"])
-            assert database.dump(with_metadata=False) == upgraded_io
-            assert database.query(io_version.get_ids(upgraded_io)) == \
+            assert io_version.cmp_directly_compatible(
+                database.dump(with_metadata=False),
                 upgraded_io
+            ) == 0
+            assert io_version.cmp_directly_compatible(
+                database.query(io_version.get_ids(upgraded_io)),
+                upgraded_io
+            ) == 0
             assert \
                 database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
                 load_params["oo"]
