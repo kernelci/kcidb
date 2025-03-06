@@ -1731,63 +1731,82 @@ def test_upgrade(clean_database):
 
         # If it's not the database's first I/O version
         if last_io_version and last_params:
+            print(f"Upgrading the database from I/O {last_io_version} to "
+                  f"{io_version}")
             # Upgrade the database to this I/O version
             database.upgrade(io_version)
             # Check upgrade went well
             # You're wrong, pylint: disable=unsubscriptable-object
-            assert database.oo_query(
-                kcidb.orm.query.Pattern.parse(">*#")
-            ) == last_params["oo"]
+            assert io_version.major > last_io_version.major or \
+                database.oo_query(
+                    kcidb.orm.query.Pattern.parse(">*#")
+                ) == last_params["oo"], \
+                f"OO data mismatch after minor version upgrade " \
+                f"from {last_io_version} to {io_version}"
             upgraded_io = io_version.upgrade(last_params["io"])
             assert io_version.cmp_directly_compatible(
-                database.dump(with_metadata=False),
-                upgraded_io
-            ) == 0
+                    database.dump(with_metadata=False),
+                    upgraded_io
+                ) == 0, \
+                f"Dump doesn't match upgraded I/O data after upgrade " \
+                f"from {last_io_version} to {io_version}"
             assert io_version.cmp_directly_compatible(
-                database.query(io_version.get_ids(upgraded_io)),
-                upgraded_io
-            ) == 0
+                    database.query(io_version.get_ids(upgraded_io)),
+                    upgraded_io
+                ) == 0, \
+                f"Query result doesn't match upgraded I/O data after " \
+                f"upgrade from {last_io_version} to {io_version}"
+        # Else, this is the database's first I/O version
+        else:
+            print(f"Initializing the database to I/O {io_version}")
+            # Initialize the database to the first version
+            database.init(io_version)
+
+        # Check that directly-compatible data versions can be loaded correctly
+        # into the database, and others cannot
 
         # For each data's I/O version and parameters
         for load_io_version, load_params in io_version_params.items():
-            # If data's I/O version is newer than database's
-            if load_io_version > io_version:
+            # If version of I/O data to load is not directly-compatible with
+            # the database's version
+            if load_io_version > io_version or \
+               load_io_version.major < io_version.major:
+                print(f"Checking {load_io_version} data fails to load into "
+                      f"{io_version} I/O database")
                 # Make sure load fails
                 with pytest.raises(AssertionError):
                     database.load(load_params["io"])
                 continue
-            # Make sure the database is initialized and empty
-            if database.is_initialized():
-                database.empty()
-            else:
-                database.init(io_version)
 
-            # Find oldest directly-compatible version to upgrade to
-            for upgrade_io_version in io_version.history:
-                if upgrade_io_version >= load_io_version and \
-                        upgrade_io_version.major == io_version.major:
-                    break
-            else:
-                upgrade_io_version = io_version
+            # Make sure the database is empty
+            print(f"Emptying the {io_version} I/O database")
+            database.empty()
 
-            # Load (possibly-upgraded) data
-            database.load(upgrade_io_version.upgrade(load_params["io"]))
+            # Load the data
+            print(f"Loading {load_io_version} data into "
+                  f"{io_version} I/O database")
+            database.load(load_params["io"])
 
             # Check we can query it in various ways
             upgraded_io = io_version.upgrade(load_params["io"])
             assert io_version.cmp_directly_compatible(
-                database.dump(with_metadata=False),
-                upgraded_io
-            ) == 0
+                    database.dump(with_metadata=False),
+                    upgraded_io
+                ) == 0, \
+                f"Data with schema {load_io_version} loaded into " \
+                f"{io_version} DB and dumped doesn't match directly-upgraded"
             assert io_version.cmp_directly_compatible(
-                database.query(io_version.get_ids(upgraded_io)),
-                upgraded_io
-            ) == 0
-            assert \
-                database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
-                load_params["oo"]
+                    database.query(io_version.get_ids(upgraded_io)),
+                    upgraded_io
+                ) == 0, \
+                f"Data with schema {load_io_version} loaded into " \
+                f"{io_version} DB and queried doesn't match directly-upgraded"
+            assert database.oo_query(kcidb.orm.query.Pattern.parse(">*#")) == \
+                load_params["oo"], \
+                f"Data with schema {load_io_version} loaded into " \
+                f"{io_version} DB and ORM-queried doesn't match expectations"
 
-        # Remeber this I/O version and its parameters for the next round
+        # Remember this I/O version and its parameters for the next round
         last_io_version = io_version
         last_params = params
 
