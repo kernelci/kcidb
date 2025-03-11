@@ -371,13 +371,12 @@ def test_notify_main():
             dict(id="test:build:1",
                  origin="test",
                  checkout_id="test:checkout:1",
-                 valid=False)
+                 status="FAIL")
         ],
         tests=[
             dict(id="test:test:1",
                  origin="test",
                  build_id="test:build:1",
-                 waived=False,
                  status="PASS")
         ]
     ))
@@ -404,22 +403,20 @@ def test_notify_main():
             dict(id="test:build:1",
                  origin="test",
                  checkout_id="test:checkout:1",
-                 valid=False),
+                 status="FAIL"),
             dict(id="test:build:2",
                  origin="test",
                  checkout_id="test:checkout:2",
-                 valid=False),
+                 status="FAIL"),
         ],
         tests=[
             dict(id="test:test:1",
                  origin="test",
                  build_id="test:build:1",
-                 waived=False,
                  status="PASS"),
             dict(id="test:test:2",
                  origin="test",
                  build_id="test:build:2",
-                 waived=False,
                  status="FAIL"),
         ]
     ))
@@ -462,13 +459,12 @@ def test_ingest_main():
             dict(id="test:build:1",
                  origin="test",
                  checkout_id="test:checkout:1",
-                 valid=False)
+                 status="FAIL")
         ],
         tests=[
             dict(id="test:test:1",
                  origin="test",
                  build_id="test:build:1",
-                 waived=False,
                  status="PASS")
         ],
         issues=[
@@ -513,22 +509,20 @@ def test_ingest_main():
             dict(id="test:build:1",
                  origin="test",
                  checkout_id="test:checkout:1",
-                 valid=False),
+                 status="FAIL"),
             dict(id="test:build:2",
                  origin="test",
                  checkout_id="test:checkout:2",
-                 valid=False),
+                 status="FAIL"),
         ],
         tests=[
             dict(id="test:test:1",
                  origin="test",
                  build_id="test:build:1",
-                 waived=False,
                  status="PASS"),
             dict(id="test:test:2",
                  origin="test",
                  build_id="test:build:2",
-                 waived=False,
                  status="FAIL"),
         ],
         issues=[

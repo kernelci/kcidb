@@ -24,14 +24,11 @@ def test_min():
         "version": VERSION,
         "checkouts": [
             {
-                "contacts": [
-                    "rdma-dev-team@redhat.com"
-                ],
                 "start_time": "2020-03-02T15:16:15.790000+00:00",
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                 "patchset_hash": "",
-                "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                 "misc": {
                     "pipeline_id": 467715
                 },
@@ -88,9 +85,6 @@ def test_subject_and_body_length():
         "version": VERSION,
         "checkouts": [
             {
-                "contacts": [
-                    "rdma-dev-team@redhat.com"
-                ],
                 "start_time": "2020-03-02T15:16:15.790000+00:00",
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
@@ -115,7 +109,7 @@ def test_subject_and_body_length():
                 "duration": 486.695294857,
                 "architecture": "x86_64",
                 "config_name": "x86_64_defconfig+x86-chromebook+kselftest",
-                "valid": True
+                "status": "PASS",
             },
         ]
     })
@@ -206,9 +200,6 @@ def test_subject_invalid_character():
         "version": VERSION,
         "checkouts": [
             {
-                "contacts": [
-                    "rdma-dev-team@redhat.com"
-                ],
                 "start_time": "2020-03-02T15:16:15.790000+00:00",
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
@@ -233,7 +224,7 @@ def test_subject_invalid_character():
                 "duration": 486.695294857,
                 "architecture": "x86_64",
                 "config_name": "x86_64_defconfig+x86-chromebook+kselftest",
-                "valid": True
+                "status": "PASS"
             },
         ]
     })
