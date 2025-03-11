@@ -540,6 +540,11 @@ class Schema(AbstractSchema):
                       "    log_excerpt,\n"
                       "    comment,\n"
                       "    valid,\n"
+                      "    CASE valid\n"
+                      "        WHEN TRUE THEN 'PASS'\n"
+                      "        WHEN FALSE THEN 'FAIL'\n"
+                      "        ELSE NULL\n"
+                      "    END AS status,\n"
                       "    misc\n"
                       "FROM builds",
             id_field_types=dict(

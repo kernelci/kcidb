@@ -16,8 +16,8 @@ def client(empty_database):
     database.load(
         {
             "version": {
-                "major": 4,
-                "minor": 1
+                "major": 5,
+                "minor": 0
             },
             "checkouts": [
                 {
@@ -84,7 +84,6 @@ def client(empty_database):
                     "origin": "google",
                 },
                 {
-                    "waived": False,
                     "start_time": "2021-11-23T03:52:13.660000+00:00",
                     "path": "baseline.login",
                     "status": "PASS",
@@ -99,7 +98,6 @@ def client(empty_database):
                     "id": "redhat:redhat.org:b9d8be63bc2abca63165"
                           "de5fd74f0f6d2f0b0d1c",
                     "origin": "redhat",
-                    "waived": True,
                     "status": "DONE"
                 },
             ]
@@ -114,7 +112,7 @@ def traversing_client(empty_database):
     database = empty_database
     database.load(
         {
-            "version": {"major": 4, "minor": 1},
+            "version": {"major": 5, "minor": 0},
             "checkouts": [
                 {
                     "id": "_:valid1",
@@ -154,41 +152,41 @@ def traversing_client(empty_database):
                     "origin": "kernelci",
                     "checkout_id": "_:valid1",
                     "architecture": "valid1",
-                    "valid": True,
+                    "status": "PASS",
                 },
                 {
                     "id": "kernelci:valid2",
                     "origin": "kernelci",
                     "checkout_id": "_:valid1",
                     "architecture": "valid2",
-                    "valid": True,
+                    "status": "PASS",
                 },
                 {
                     "id": "kernelci:invalid",
                     "origin": "kernelci",
                     "checkout_id": "_:valid1",
                     "architecture": "invalid",
-                    "valid": False,
+                    "status": "FAIL",
                 },
                 {
                     "id": "redhat:valid1",
                     "checkout_id": "_:valid2",
                     "origin": "redhat",
-                    "valid": True,
+                    "status": "PASS",
                     "architecture": "valid1",
                 },
                 {
                     "id": "redhat:valid2",
                     "checkout_id": "_:valid2",
                     "origin": "redhat",
-                    "valid": True,
+                    "status": "PASS",
                     "architecture": "valid2",
                 },
                 {
                     "id": "redhat:invalid",
                     "checkout_id": "_:valid2",
                     "origin": "redhat",
-                    "valid": False,
+                    "status": "FAIL",
                     "architecture": "invalid",
                 },
             ],
@@ -629,7 +627,7 @@ def status_client(empty_database):
     database = empty_database
     # It's about consistency, pylint: disable=use-dict-literal
     data = {
-        "version": {"major": 4, "minor": 1},
+        "version": {"major": 5, "minor": 0},
         "checkouts": [
             {
                 "id": "_:1",
@@ -644,110 +642,78 @@ def status_client(empty_database):
         ],
         "builds": [
             {
-                "id": f"_:valid_{valid}_incident_{incident}",
+                "id": f"_:status_{status}_incident_{incident}",
                 "origin": "_",
                 "checkout_id": "_:1",
                 "architecture": "x86_64",
                 **fields
             }
-            for valid, fields in (("none", dict()),
-                                  ("false", dict(valid=False)),
-                                  ("true", dict(valid=True)))
-            for incident in ("none", "broken", "null", "false", "true")
+            for status, fields in (("none", dict()),
+                                   ("fail", dict(status="FAIL")),
+                                   ("pass", dict(status="PASS")),
+                                   ("error", dict(status="ERROR")))
+            for incident in (
+                "none", "present_true", "present_false", "present_missing"
+            )
         ],
         "tests": [
             {
                 "id":
-                f"_:status_{test_status}_waived_{test_waived}"
-                f"_incident_{incident_test_status}",
-                "build_id": "_:valid_true_incident_none",
+                f"_:status_{status}_incident_{incident}",
+                "build_id": "_:status_pass_incident_none",
                 "origin": "_",
                 "path": "test",
-                **test_status_fields,
-                **test_waived_fields,
+                **fields,
             }
-            for test_status, test_status_fields in (
+            for status, fields in (
                 ("none", dict()),
                 ("pass", dict(status="PASS")),
                 ("fail", dict(status="FAIL")),
                 ("error", dict(status="ERROR")),
             )
-            for test_waived, test_waived_fields in (
-                ("none", dict()),
-                ("false", dict(waived=False)),
-                ("true", dict(waived=True)),
+            for incident in (
+                "none", "present_true", "present_false", "present_missing"
             )
-            for incident_test_status in
-            ("none", "broken", "null", "pass", "fail", "error")
         ],
         "issues": [
             {
-                "id": f"_:build_{build_valid}_test_{test_status}",
+                "id": "_:issue",
                 "origin": "_",
                 "version": 1,
                 "report_url": "https://kernelci.org/bug",
-                **build_fields,
-                **test_fields,
             }
-            for build_valid, build_fields in (
-                ("none", dict()),
-                ("false", dict(build_valid=False)),
-                ("true", dict(build_valid=True))
-            )
-            for test_status, test_fields in (
-                ("none", dict()),
-                ("pass", dict(test_status="PASS")),
-                ("fail", dict(test_status="FAIL")),
-                ("error", dict(test_status="ERROR")),
-            )
         ],
         "incidents": [
             {
                 "id":
-                f"_:build_valid_{build_valid}_"
-                f"incident_{incident_build_valid}",
+                f"_:build_status_{build_status}_{present}",
                 "origin": "_",
-                "issue_id":
-                "_:missing" if issue_build_valid is None else
-                f"_:build_{issue_build_valid}_test_none",
+                "issue_id": "_:issue",
                 "issue_version": 1,
-                "build_id":
-                f"_:valid_{build_valid}_"
-                f"incident_{incident_build_valid}",
-                "present": True,
+                "build_id": f"_:status_{build_status}_incident_{present}",
+                **fields,
             }
-            for build_valid in ("none", "false", "true")
-            for issue_build_valid, incident_build_valid in (
-                (None, "broken"),
-                ("none", "null"),
-                ("false", "false"),
-                ("true", "true")
+            for build_status in ("none", "fail", "pass", "error")
+            for present, fields in (
+                ("present_none", dict()),
+                ("present_false", dict(present=False)),
+                ("present_true", dict(present=True))
             )
         ] + [
             {
                 "id":
-                f"_:test_status_{test_status}_"
-                f"waived_{test_waived}_"
-                f"incident_{incident_test_status}",
+                f"_:test_status_{test_status}_{present}",
                 "origin": "_",
-                "issue_id":
-                "_:missing" if issue_test_status is None else
-                f"_:build_none_test_{issue_test_status}",
+                "issue_id": "_:issue",
                 "issue_version": 1,
-                "test_id":
-                f"_:status_{test_status}_"
-                f"waived_{test_waived}_"
-                f"incident_{incident_test_status}",
-                "present": True,
+                "test_id": f"_:status_{test_status}_incident_{present}",
+                **fields,
             }
             for test_status in ("none", "pass", "fail", "error")
-            for test_waived in ("none", "false", "true")
-            for issue_test_status, incident_test_status in (
-                (None, "broken"),
-                ("none", "null"),
-                ("pass", "pass"),
-                ("fail", "fail"),
-                ("error", "error"),
+            for present, fields in (
+                ("present_none", dict()),
+                ("present_false", dict(present=False)),
+                ("present_true", dict(present=True))
             )
         ],
     }
@@ -760,20 +726,16 @@ def status_client(empty_database):
 
 def test_status_builds(status_client):
     """Check build status effects"""
-    for build_valid_name, build_valid_value in (
+    for status_name, valid in (
         ("none", None),
-        ("false", False),
-        ("true", True),
+        ("error", False),
+        ("fail", False),
+        ("pass", True),
     ):
-        for incident_valid_name, result_valid_value in (
-            ("none", build_valid_value),
-            ("broken", build_valid_value),
-            ("null", build_valid_value),
-            ("false", False),
-            ("true", True),
+        for present_name in (
+            "none", "present_true", "present_false", "present_missing",
         ):
-            build_id = f"_:valid_{build_valid_name}_" \
-                f"incident_{incident_valid_name}"
+            build_id = f"_:status_{status_name}_incident_{present_name}"
             result = status_client.query(kcidb.orm.query.Pattern.parse(
                 ">build%#", [{(build_id,)}]
             ))
@@ -783,7 +745,7 @@ def test_status_builds(status_client):
                 "Incorrect number of builds returned " \
                 f"for ID {build_id!r}"
             build = result["build"][0]
-            assert build.valid == result_valid_value, \
+            assert build.valid == valid, \
                 f"Build {build_id!r} has incorrect " \
                 f"\"valid\" value {build.valid!r}"
 
@@ -791,41 +753,28 @@ def test_status_builds(status_client):
 def test_status_tests(status_client):
     """Check test status effects"""
 
-    for test_status_name, test_status_value in (
+    for status_name, status_value in (
         ("none", None),
         ("pass", "PASS"),
         ("fail", "FAIL"),
         ("error", "ERROR"),
     ):
-        for test_waived_name, test_waived_value in (
-            ("none", None),
-            ("false", False),
-            ("true", True),
+        for present_name in (
+            "none", "present_true", "present_false", "present_missing",
         ):
-            for incident_status_name, result_status_value, \
-                    result_waived_value in (
-                        ("none", test_status_value, test_waived_value),
-                        ("broken", test_status_value, test_waived_value),
-                        ("null", test_status_value, test_waived_value),
-                        ("pass", "PASS", test_waived_value),
-                        ("fail", "FAIL", test_waived_value),
-                        ("error", "ERROR", test_waived_value),
-                    ):
-                test_id = f"_:status_{test_status_name}_" \
-                    f"waived_{test_waived_name}_" \
-                    f"incident_{incident_status_name}"
-                result = status_client.query(kcidb.orm.query.Pattern.parse(
-                    ">test%#", [{(test_id,)}]
-                ))
-                assert set(result.keys()) == {"test"}, \
-                    "Unexpected object types returned"
-                assert len(result["test"]) == 1, \
-                    "Incorrect number of tests returned " \
-                    f"for ID {test_id!r}"
-                test = result["test"][0]
-                assert test.status == result_status_value, \
-                    f"Test {test_id!r} has incorrect " \
-                    f"\"status\" value {test.status!r}"
-                assert test.waived == result_waived_value, \
-                    f"Test {test_id!r} has incorrect " \
-                    f"\"waived\" value {test.waived!r}"
+            test_id = f"_:status_{status_name}_incident_{present_name}"
+            result = status_client.query(kcidb.orm.query.Pattern.parse(
+                ">test%#", [{(test_id,)}]
+            ))
+            assert set(result.keys()) == {"test"}, \
+                "Unexpected object types returned"
+            assert len(result["test"]) == 1, \
+                "Incorrect number of tests returned " \
+                f"for ID {test_id!r}"
+            test = result["test"][0]
+            assert test.status == status_value, \
+                f"Test {test_id!r} has incorrect " \
+                f"\"status\" value {test.status!r}"
+            assert test.waived is None, \
+                f"Test {test_id!r} has incorrect " \
+                f"\"waived\" value {test.waived!r}"

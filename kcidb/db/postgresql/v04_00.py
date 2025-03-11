@@ -349,6 +349,11 @@ class Schema(AbstractSchema):
                       "    log_excerpt,\n"
                       "    comment,\n"
                       "    valid,\n"
+                      "    CASE valid\n"
+                      "        WHEN TRUE THEN 'PASS'\n"
+                      "        WHEN FALSE THEN 'FAIL'\n"
+                      "        ELSE NULL\n"
+                      "    END AS status,\n"
                       "    misc\n"
                       "FROM builds",
             schema=Table(dict(
@@ -368,6 +373,7 @@ class Schema(AbstractSchema):
                 log_excerpt=TextColumn(),
                 comment=TextColumn(),
                 valid=BoolColumn(),
+                status=TextColumn(),
                 misc=JSONColumn(),
             )),
         ),

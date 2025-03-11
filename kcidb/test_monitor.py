@@ -39,14 +39,11 @@ def test_min():
         "version": dict(major=SCHEMA.major, minor=SCHEMA.minor),
         "checkouts": [
             {
-                "contacts": [
-                    "rdma-dev-team@redhat.com"
-                ],
                 "start_time": "2020-03-02T15:16:15.790000+00:00",
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                 "patchset_hash": "",
-                "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                 "misc": {
                     "pipeline_id": 467715
                 },
@@ -56,14 +53,11 @@ def test_min():
                 "valid": True,
             },
             {
-                "contacts": [
-                    "rdma-dev-team@redhat.com"
-                ],
                 "start_time": "2020-03-02T15:16:15.790000+00:00",
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                 "patchset_hash": "",
-                "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                 "misc": {
                     "pipeline_id": 467715
                 },
@@ -91,7 +85,7 @@ def test_min():
                 "output_files": [],
                 "checkout_id": "test:1",
                 "start_time": "2020-03-03T17:52:02.370000+00:00",
-                "valid": True
+                "status": "PASS",
             },
             {
                 "architecture": "aarch64",
@@ -110,7 +104,7 @@ def test_min():
                 "output_files": [],
                 "checkout_id": "test:1",
                 "start_time": "2020-03-03T17:52:02.370000+00:00",
-                "valid": True
+                "status": "PASS",
             },
         ],
         "tests": [
@@ -151,7 +145,6 @@ def test_min():
                 "path": "redhat_iommu_boot",
                 "start_time": "2020-03-04T21:30:57+00:00",
                 "status": "ERROR",
-                "waived": True
             },
             {
                 "build_id": "redhat:679936",
@@ -190,7 +183,6 @@ def test_min():
                 "path": "redhat_iommu_boot",
                 "start_time": "2020-03-04T21:30:57+00:00",
                 "status": "ERROR",
-                "waived": True
             },
         ],
         "issues": [
@@ -254,8 +246,8 @@ def test_mark_brown():
     """Check Mark Brown's subscription works"""
     notifications = match({
         "version": {
-            "major": 4,
-            "minor": 1
+            "major": 5,
+            "minor": 0
         },
         "checkouts": [
             {
@@ -268,7 +260,6 @@ def test_mark_brown():
                 "patchset_files": [],
                 "patchset_hash": "",
                 "start_time": "2021-11-29T14:36:59.751000+00:00",
-                "contacts": [],
                 "valid": True
             },
             {
@@ -281,7 +272,6 @@ def test_mark_brown():
                 "patchset_files": [],
                 "patchset_hash": "",
                 "start_time": "2021-11-26T01:27:55.210000+00:00",
-                "contacts": [],
                 "valid": True
             }
         ],
@@ -295,7 +285,7 @@ def test_mark_brown():
                 "duration": 486.695294857,
                 "architecture": "x86_64",
                 "config_name": "x86_64_defconfig+x86-chromebook+kselftest",
-                "valid": True
+                "status": "PASS",
             },
             {
                 "id": "redhat:1827126781",
@@ -305,7 +295,7 @@ def test_mark_brown():
                 "architecture": "ppc64le",
                 "command": "make -j24 INSTALL_MOD_STRIP=1 targz-pkg",
                 "config_name": "fedora",
-                "valid": False
+                "status": "FAIL",
             }
         ],
         "tests": [
@@ -316,7 +306,6 @@ def test_mark_brown():
                 "path": "ltp-timers.clock_getcpuclockid",
                 "comment": "ltp-timers on asus-C433TA-AJ0005-rammus in lab-collabora",
                 "status": "FAIL",
-                "waived": False,
                 "start_time": "2021-11-25T20:12:13.929000+00:00"
             }
         ]
@@ -450,7 +439,7 @@ def test_email_generated(empty_deployment):
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05dcb7e",
                 "patchset_hash": "",
-                "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                 "misc": {
                     "pipeline_id": 467715
                 },
@@ -467,7 +456,7 @@ def test_email_generated(empty_deployment):
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ba0bab",
                 "patchset_hash": "",
-                "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                 "misc": {
                     "pipeline_id": 467715
                 },
@@ -614,7 +603,7 @@ def test_email_generated(empty_deployment):
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "5e29d1443c46b6ca70a4c940a67e8c09f05ad334",
                 "patchset_hash": "",
-                "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                 "misc": {
                     "pipeline_id": 467715
                 },
@@ -631,7 +620,7 @@ def test_email_generated(empty_deployment):
                 "git_repository_branch": "wip/jgg-for-next",
                 "git_commit_hash": "1254e88b4fc1470d152f494c3590bb6a33ab33eb",
                 "patchset_hash": "",
-                "git_repository_url": "git://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
+                "git_repository_url": "https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git",
                 "misc": {
                     "pipeline_id": 467715
                 },

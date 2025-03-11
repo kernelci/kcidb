@@ -704,12 +704,13 @@ def source(empty_database):
     """An ORM source with data loaded"""
     source = empty_database
     source.load({
-        "version": {"major": 4, "minor": 1},
+        "version": {"major": 5, "minor": 0},
         "checkouts": [
             {
                 "id": "_:kernelci:5acb9c2a7bc836e"
                       "9e5172bbcd2311499c5b4e5f1",
-                "origin": "kernelci", "patchset_hash": "",
+                "origin": "kernelci",
+                "patchset_hash": "",
                 "git_commit_hash": "5acb9c2a7bc836e9e5172bb"
                                    "cd2311499c5b4e5f1",
                 "git_commit_name": "v5.15-4077-g5acb9c2a7bc8",
@@ -719,12 +720,14 @@ def source(empty_database):
                       "210cf85c5ec8d896",
                 "git_commit_hash": "82bcf49e5e6ad570ff61ffcd"
                                    "210cf85c5ec8d896",
-                "origin": "kernelci", "patchset_hash": ""
+                "origin": "kernelci",
+                "patchset_hash": ""
             },
             {
                 "id": "_:redhat:5acb9c2a7bc836e9619c65f9"
                       "709de72e90f2efd0",
-                "origin": "redhat", "patchset_hash": ""
+                "origin": "redhat",
+                "patchset_hash": ""
             }
         ],
         "builds": [
@@ -839,56 +842,63 @@ def source(empty_database):
         ],
         "tests": [
             {
-                "waived": False,
                 "start_time": "2021-11-23T03:52:13.660000+00:00",
-                "path": "baseline.login", "status": "PASS",
+                "path": "baseline.login",
+                "status": "PASS",
                 "id": "kernelci:kernelci.org:619c656de1fb4af479f2efaa",
                 "build_id": "kernelci:kernelci.org:619c64b171"
-                            "2847eccbf2efac", "origin": "kernelci"
+                            "2847eccbf2efac",
+                "origin": "kernelci"
             },
             {
-                "waived": False,
                 "start_time": "2021-11-23T03:52:13.666000+00:00",
-                "path": "baseline.dmesg.crit", "status": "PASS",
+                "path": "baseline.dmesg.crit",
+                "status": "PASS",
                 "id": "kernelci:kernelci.org:619c656de1fb4af479f2efac",
                 "build_id": "kernelci:kernelci.org:619c64b171"
-                            "2847eccbf2efac", "origin": "kernelci"
+                            "2847eccbf2efac",
+                "origin": "kernelci"
             },
             {
-                "waived": False,
                 "start_time": "2021-11-23T03:52:13.668000+00:00",
-                "path": "baseline.dmesg.alert", "status": "PASS",
+                "path": "baseline.dmesg.alert",
+                "status": "PASS",
                 "id": "kernelci:kernelci.org:619c656de1fb4af479f2efad",
                 "build_id": "kernelci:kernelci.org:619c64b171"
-                            "2847eccbf2efac", "origin": "kernelci"
+                            "2847eccbf2efac",
+                "origin": "kernelci"
             },
             {
-                "waived": False,
                 "start_time": "2021-11-23T03:52:13.671000+00:00",
-                "path": "baseline.dmesg.emerg", "status": "PASS",
+                "path": "baseline.dmesg.emerg",
+                "status": "PASS",
                 "id": "kernelci:kernelci.org:619c656de1fb4af479f2efae",
                 "build_id": "kernelci:kernelci.org:619c64b171"
-                            "2847eccbf2efac", "origin": "kernelci"
+                            "2847eccbf2efac",
+                "origin": "kernelci"
             },
             {
                 "build_id": "kernelci:kernelci.org:619c65f9709"
                             "de72e90f2efd0",
                 "id": "kernelci:kernelci.org:b9d8be63bc2abca6316"
-                      "5de5fd74f0f6d2f0b0d1c", "origin": "kernelci"
+                      "5de5fd74f0f6d2f0b0d1c",
+                "origin": "kernelci"
             },
             {
                 "build_id": "redhat:redhat.org:619c65f970"
                             "9de72e90f2efd0",
                 "id": "redhat:redhat.org:b9d8be63bc2abca63165"
                       "de5fd74f0f6d2f0b0d1c",
-                "origin": "redhat", "waived": True, "status": "DONE"
+                "origin": "redhat",
+                "status": "DONE"
             },
             {
                 "build_id": "kernelci:kernelci.org:619c65d3c1"
                             "b0a764f3f2efa0",
                 "id": "kernelci:kernelci.org:b9d8be63bc2abca63165"
                       "de5fd74f0f6d2f0b0e2b",
-                "origin": "kernelci", "status": "PASS", "waived": False,
+                "origin": "kernelci",
+                "status": "PASS",
                 "start_time": "2021-11-23T03:52:13.666000+00:00",
                 "path": "baseline.dmesg.crit"
             }
@@ -1037,7 +1047,6 @@ def test_run(source):
             build_id="kernelci:kernelci.org:619c64"
                      "b1712847eccbf2efac",
             origin="kernelci",
-            waived=False,
             start_time="2021-11-23T03:52:13.666000+00:00",
             path="baseline.dmesg.crit",
             status="PASS") in \
@@ -1048,7 +1057,6 @@ def test_run(source):
             build_id="kernelci:kernelci.org:619c64b171"
                      "2847eccbf2efac",
             origin="kernelci",
-            waived=False,
             start_time="2021-11-23T03:52:13.666000+00:00",
             path="baseline.dmesg.crit",
             status="PASS") in \
@@ -1162,7 +1170,6 @@ def test_build(source):
                 id="kernelci:kernelci.org:"
                    "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
                 origin="kernelci",
-                waived=False,
                 status="PASS",
                 start_time="2021-11-23T03:52:13.666000+00:00",
                 path="baseline.dmesg.crit")
@@ -1179,8 +1186,7 @@ def test_build(source):
                 id="redhat:redhat.org:b9d8be63bc"
                    "2abca63165de5fd74f0f6d2f0b0d1c",
                 origin="redhat",
-                status="DONE",
-                waived=True)
+                status="DONE")
         ]
     }
 
@@ -1380,7 +1386,8 @@ def test_checkout(source):
             build_id="kernelci:kernelci.org:619c65d3c1b0a764f3f2efa0",
             id="kernelci:kernelci.org:"
                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
-            status="PASS", waived=False, origin="kernelci",
+            status="PASS",
+            origin="kernelci",
             start_time="2021-11-23T03:52:13.666000+00:00",
             path="baseline.dmesg.crit",
         ) in \
@@ -1464,7 +1471,6 @@ def test_revision(source):
                "b9d8be63bc2abca63165de5fd74f0f6d2f0b0e2b",
             origin="kernelci",
             status="PASS",
-            waived=False,
             start_time="2021-11-23T03:52:13.666000+00:00",
             path="baseline.dmesg.crit") in \
         test_of_revision_dollar_sign
@@ -1794,7 +1800,6 @@ def test_incident(source):
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             origin="redhat",
             status="DONE",
-            waived=True,
         )])
 
     assert \
@@ -1806,7 +1811,6 @@ def test_incident(source):
             path="baseline.dmesg.emerg",
             start_time="2021-11-23T03:52:13.671000+00:00",
             status="PASS",
-            waived=False,
         )])
 
     assert \
@@ -1819,7 +1823,6 @@ def test_incident(source):
             path="baseline.dmesg.crit",
             start_time="2021-11-23T03:52:13.666000+00:00",
             status="PASS",
-            waived=False,
         )])
 
     assert \
@@ -1830,7 +1833,6 @@ def test_incident(source):
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             origin="redhat",
             status="DONE",
-            waived=True,
         )])
 
     assert \
@@ -1844,7 +1846,6 @@ def test_incident(source):
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             origin="redhat",
             status="DONE",
-            waived=True,
         )])
 
     assert \
@@ -1859,7 +1860,6 @@ def test_incident(source):
             "b9d8be63bc2abca63165de5fd74f0f6d2f0b0d1c",
             origin="redhat",
             status="DONE",
-            waived=True,
         )])
 
     assert \
