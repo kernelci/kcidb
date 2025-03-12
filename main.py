@@ -338,12 +338,9 @@ def kcidb_load_queue(event, context):
     LOGGER.debug("ACK'ed %u messages", len(msgs))
 
     if publisher:
-        # Upgrade the data to the latest I/O version to enable ID extraction
-        data = kcidb.io.SCHEMA.upgrade(data, copy=False)
-
         # Generate patterns matching all affected objects
         pattern_set = set()
-        for pattern in kcidb.orm.query.Pattern.from_io(data):
+        for pattern in kcidb.orm.query.Pattern.from_io(data, copy=False):
             # TODO Avoid formatting and parsing
             pattern_set |= \
                 kcidb.orm.query.Pattern.parse(repr(pattern) + "<*#")
