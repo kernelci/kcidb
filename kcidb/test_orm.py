@@ -607,6 +607,46 @@ def test_pattern_from_io():
         pattern(None, True, "incident", {("origin:5",)}),
     }
 
+    # Check a schema with broken upgrade works
+    io_data = {
+        "tests": [
+            {
+                "build_id": "origin:1",
+                "id": "origin:1",
+                "origin": "origin",
+                "path": "test..subtest",
+            },
+            {
+                "build_id": "origin:1",
+                "id": "origin:2",
+                "origin": "origin",
+                "path": ".test.subtest",
+            },
+            {
+                "build_id": "origin:1",
+                "id": "origin:3",
+                "origin": "origin",
+                "path": "test.subtest.",
+            },
+            {
+                "build_id": "origin:1",
+                "id": "origin:4",
+                "origin": "origin",
+                "path": "test.subtest",
+                "log_excerpt": "a\0b",
+            },
+        ],
+        **kcidb.io.schema.V4_5.new()
+    }
+    assert from_io(io_data) == {
+        pattern(None, True, "test", {
+            ("origin:1",),
+            ("origin:2",),
+            ("origin:3",),
+            ("origin:4",),
+        }),
+    }
+
 
 def test_pattern_repr():
     """Check various patterns can be converted to strings"""

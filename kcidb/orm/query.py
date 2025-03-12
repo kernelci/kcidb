@@ -785,36 +785,51 @@ class Pattern:
         return match_set
 
     @staticmethod
-    def from_io(io_data, schema=None, max_objs=0):
+    def from_io(io_data, schema=None, max_objs=0, copy=True):
         """
         Create a pattern set matching all objects in the supplied I/O data.
 
         Args:
             io_data:    The I/O data to create the pattern list from.
-                        Must adhere to the current schema version.
+                        Must adhere to the current, or earlier schema version.
             schema:     An object type schema to use, or None to use
                         kcidb.orm.data.SCHEMA.
             max_objs:   Maximum number of object IDs to put into each
                         created pattern (a positive integer).
                         Zero for no limit.
+            copy:       True if the io_data should be copied before the
+                        (possibly-necessary) upgrade. False if it should be
+                        upgraded in-place (if necessary).
 
         Returns:
             A set of Pattern objects matching the objects in the supplied I/O
             data.
         """
-        assert io.SCHEMA.is_compatible_exactly(io_data)
-        assert LIGHT_ASSERTS or io.SCHEMA.is_valid_exactly(io_data)
+        io_schema = io.SCHEMA.get_exactly_compatible(io_data)
+        assert io_schema is not None
+        assert LIGHT_ASSERTS or io.SCHEMA.is_valid(io_data)
         assert schema is None or isinstance(schema, Schema)
         assert isinstance(max_objs, int) and max_objs >= 0
 
         if schema is None:
             schema = SCHEMA
+
+        # The I/O schema version which breaks backwards compatibility
+        breaking_io_schema = io.schema.V5_0
+        # Do not upgrade across breaking boundary
+        if io_schema < breaking_io_schema:
+            io_schema = breaking_io_schema.previous
+        else:
+            io_schema = io.SCHEMA
+        io_data = io_schema.upgrade(io_data, copy=copy)
+
         # Assert all I/O object lists are represented in the OO schema
         assert set(schema.types) >= \
-            set(k[:-1] for k in io.SCHEMA.graph if k), \
+            set(k[:-1] for k in io_schema.graph if k), \
             "Specified OO types are not a superset of I/O types"
+        # Generate a pattern set matching all objects
         pattern_set = set()
-        for obj_list_name in io.SCHEMA.graph:
+        for obj_list_name in io_schema.graph:
             if not obj_list_name:
                 continue
             assert obj_list_name.endswith("s")
