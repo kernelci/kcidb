@@ -1,36 +1,5 @@
 {# Test macros #}
-
-{% macro status_emoji(status) %}
-    {{- "❌" if status == "FAIL" else
-        "💥" if status == "ERROR" else
-        "🟩" if status == "MISS" else
-        "✅" if status == "PASS" else
-        "🆗" if status == "DONE" else
-        "⏩" if status == "SKIP" else
-        "❓" -}}
-{% endmacro %}
-
-{% macro waived_emoji(waived) %}
-    {{- "🚧" if waived is true else
-        "" if waived is false else
-        "❓" -}}
-{% endmacro %}
-
-{% macro status_name(status) %}
-    {{- "UNKNOWN" if status is none else status -}}
-{% endmacro %}
-
-{% macro status_badge(status) %}
-    {{- status_emoji(status) + " " + status_name(status) -}}
-{% endmacro %}
-
-{% macro waived_status_emoji(waived, status) %}
-    {{- waived_emoji(waived) + status_emoji(status) -}}
-{% endmacro %}
-
-{% macro waived_status_badge(waived, status) %}
-    {{- waived_status_emoji(waived, status) + " " + status_name(status) -}}
-{% endmacro %}
+{% import "misc.j2" as misc_macros %}
 
 {% macro summary(test) %}
     {{- [test.path,
@@ -41,24 +10,22 @@
 {% macro container_summary(container, max_list_len) %}
     {% if container.tests %}
         {{- "\nTESTS" }}
-        {% set waived_status_nodes = container.tests_root.waived_status_nodes %}
+        {% set status_nodes = container.tests_root.status_nodes %}
         {{- "\n    Status" }}
             {{- "\n      " -}}
-            {% for waived, status_nodes in waived_status_nodes.items() %}
-                {% for status, nodes in status_nodes.items() %}
-                    {% if nodes %}
-                        {{- "  " + waived_status_emoji(waived, status) +
-                            " " + (nodes | length | string) -}}
-                    {% endif %}
-                {% endfor %}
+            {% for status, nodes in status_nodes.items() %}
+                {% if nodes %}
+                    {{- "  " + misc_macros.status_emoji(status) +
+                        " " + (nodes | length | string) -}}
+                {% endif %}
             {% endfor %}
             {{- "" }}
-        {% set errored_nodes = waived_status_nodes[false]["ERROR"] %}
+        {% set errored_nodes = status_nodes["ERROR"] %}
         {% if errored_nodes %}
             {{- "    Errors" }}
             {% for node in errored_nodes[:max_list_len] %}
                 {{- "        " +
-                    waived_status_emoji(node.waived, node.status) +
+                    misc_macros.status_emoji(node.status) +
                     " " + (node.path | default("?", true))
                 }}
             {% endfor %}
@@ -66,12 +33,12 @@
                 {{- "        ..." }}
             {% endif %}
         {% endif %}
-        {% set failed_nodes = waived_status_nodes[false]["FAIL"] %}
+        {% set failed_nodes = status_nodes["FAIL"] %}
         {% if failed_nodes %}
             {{- "    Failures" }}
             {% for node in failed_nodes[:max_list_len] %}
                 {{- "        " +
-                    waived_status_emoji(node.waived, node.status) +
+                    misc_macros.status_emoji(node.status) +
                     " " + (node.path | default("?", true))
                 }}
             {% endfor %}

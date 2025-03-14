@@ -85,8 +85,6 @@ class Schema(PreviousSchema):
                       "    \"culprit.code\" AS culprit_code,\n"
                       "    \"culprit.tool\" AS culprit_tool,\n"
                       "    \"culprit.harness\" AS culprit_harness,\n"
-                      "    build_valid,\n"
-                      "    test_status,\n"
                       "    comment,\n"
                       "    misc\n"
                       "FROM issues",

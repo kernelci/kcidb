@@ -61,8 +61,17 @@
 {% endmacro %}
 
 {% macro overview(issue, max_list_len) %}
-    {{ issue.report_subject }}
-    {{ issue.report_url }}
-
+    {%- if issue.report_subject -%}
+        {{- "    Report:  " + issue.report_subject + "\n" -}}
+    {%- endif -%}
+    {%- if issue.report_url -%}
+        {{- ("             " if issue.report_subject else "    Report:  ") +
+            issue.report_url + "\n" -}}
+    {%- endif -%}
+    {%- if issue.comment -%}
+        {{- "    Comment: " + issue.comment + "\n" -}}
+    {%- endif -%}
+    {{- "\n" if issue.report_subject or issue.report_url or issue.comment
+        else "" -}}
 {{ stats(issue, max_list_len) -}}
 {% endmacro %}

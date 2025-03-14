@@ -88,7 +88,6 @@ class Schema(PreviousSchema):
                       "    number.value AS number_value,\n"
                       "    number.unit AS number_unit,\n"
                       "    number.prefix AS number_prefix,\n"
-                      "    waived,\n"
                       "    start_time,\n"
                       "    duration,\n"
                       "    output_files,\n"

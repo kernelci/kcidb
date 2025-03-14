@@ -11,16 +11,15 @@ for this build so far. See complete and up-to-date report at:
 
 OVERVIEW
 
-         Build: {{ misc_macros.valid_badge(build.valid) }}
+         Build: {{ misc_macros.status_badge(build.status) }}
 {% if build.tests %}
-         Tests: {{ test_macros.waived_status_badge(build.tests_root.waived,
-                                                   build.tests_root.status) }}
+         Tests: {{ misc_macros.status_badge(build.tests_root.status) }}
 {% endif %}
 
 BUILD
 
     Status
-                {{ misc_macros.valid_badge(build.valid) }}
+                {{ misc_macros.status_badge(build.status) }}
 {% if build.checkout %}
     Checkout
                 {{ checkout_macros.summary(build.checkout) }}

@@ -1,4 +1,5 @@
 {# Build template macros #}
+{% import "misc.j2" as misc_macros %}
 
 {% macro summary(build) %}
     {{- [build.architecture, build.config_name,
@@ -9,66 +10,47 @@
 {% macro container_summary(container, max_list_len) %}
     {% if container.builds %}
         {{- "\nBUILDS" }}
-        {% set invalid_builds =
-                container.builds | selectattr("valid", "false") | list %}
-        {% set valid_builds =
-                container.builds | selectattr("valid", "true") | list %}
-        {% set unknown_builds =
-                container.builds | selectattr("valid", "none") | list %}
+        {% set row_fmt =
+            "%" + (
+                8 +
+                container.architecture_status_builds.keys() |
+                map("default", "?", true) | map("length") | max
+            ) | string + "s" +
+            misc_macros.emoji_count_row_fmt(
+                container.status_builds.values() | map("length")
+            ) +
+            "\n" %}
+
         {{- "\n    Status" }}
-            {% set invalid_build_count = invalid_builds | length %}
-            {% set valid_build_count = valid_builds | length %}
-            {% set unknown_build_count = unknown_builds | length %}
-            {% set build_fmt =
-                "%" +
-                ((8 + (container.architecture_valid_builds |
-                  map("default", "", true) | map("length") | max)) | string) +
-                "s" +
-                (("  %s %" +
-                  (invalid_build_count | string | length | string) + "s")
-                 if invalid_build_count else
-                 "%.0s%.0s") +
-                (("  %s %" +
-                  (valid_build_count | string | length | string) + "s")
-                 if valid_build_count else
-                 "%.0s%.0s") +
-                (("  %s %" +
-                  (unknown_build_count | string | length | string) + "s")
-                 if unknown_build_count else
-                 "%.0s%.0s")
-            %}
-            {% macro status(architecture,
-                            invalid_build_count,
-                            valid_build_count,
-                            unknown_build_count) %}
-                {{- build_fmt | format("?" if architecture is none
-                                       else architecture,
-                                       "❌" if invalid_build_count else "➖",
-                                       (invalid_build_count | string)
-                                       if invalid_build_count else "",
-                                       "✅" if valid_build_count else "➖",
-                                       (valid_build_count | string)
-                                       if valid_build_count else "",
-                                       "❓" if unknown_build_count else "➖",
-                                       (unknown_build_count | string)
-                                       if unknown_build_count else "") -}}
-            {% endmacro %}
-            {{- status("",
-                       invalid_build_count,
-                       valid_build_count,
-                       unknown_build_count) }}
-        {{- "\n    Architectures" }}
-            {% for architecture, valid_builds
-               in container.architecture_valid_builds.items() %}
-                {{- status(architecture,
-                           valid_builds[false] | length,
-                           valid_builds[true] | length,
-                           valid_builds[none] | length) }}
+        {% set row = namespace(args=("",)) %}
+        {% for status, builds in container.status_builds.items() %}
+            {% set row.args = row.args + (
+                misc_macros.status_emoji(status) if builds else "➖",
+                builds | length | string
+            ) %}
+        {% endfor %}
+        {{- row_fmt % row.args -}}
+
+        {{- "    Architectures" }}
+        {% for architecture, status_builds in
+            container.architecture_status_builds.items() %}
+            {% set row = namespace(args=(
+                    "?" if architecture is none else architecture,
+                )) %}
+            {% for status, builds in status_builds.items() %}
+                {% set row.args = row.args + (
+                    misc_macros.status_emoji(status) if builds else "➖",
+                    builds | length | string
+                ) %}
             {% endfor %}
-        {% if invalid_builds %}
+            {{- row_fmt % row.args -}}
+        {% endfor %}
+
+        {%- set failed_builds = container.status_builds["FAIL"] -%}
+        {% if failed_builds %}
             {{- "    Failures" }}
             {% set ns = namespace(build_summary_counts={}) %}
-            {% for build in invalid_builds %}
+            {% for build in failed_builds %}
                 {% set build_summary = summary(build) %}
                 {% set _ = ns.build_summary_counts.__setitem__(
                                 build_summary,
@@ -83,7 +65,8 @@
             {% if (build_summary_counts_items | length) > max_list_len %}
                 {{- "        ..." }}
             {% endif %}
-        {% endif %}
+        {%- endif -%}
+
         {{- "    By\n        " -}}
             {{- container.builds | map(attribute="origin") |
                 unique | sort | join(", ") }}

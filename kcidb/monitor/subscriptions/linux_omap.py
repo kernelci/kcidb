@@ -16,7 +16,7 @@ def match_revision(revision):
     if repo_url not in revision.repo_branch_checkouts:
         return ()
 
-    if revision.builds_valid is None:
+    if revision.builds_status is None:
         return ()
 
     # If the revision is not from 'maestro' or 'broonie' origin

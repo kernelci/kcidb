@@ -3,9 +3,9 @@
 
 {% macro tests_stats(container, root_test_path) %}
     {% if container.tests %}
-        {% set boot_tests = container.tests_root[root_test_path].waived_status_tests %}
-        {% set failed_tests = boot_tests[false]["FAIL"] | selectattr('origin', 'in', selected_origins) | list %}
-        {% set passed_tests = boot_tests[false]["PASS"] | selectattr('origin', 'in', selected_origins) | list %}
+        {% set boot_tests = container.tests_root[root_test_path].status_tests %}
+        {% set failed_tests = boot_tests["FAIL"] | selectattr('origin', 'in', selected_origins) | list %}
+        {% set passed_tests = boot_tests["PASS"] | selectattr('origin', 'in', selected_origins) | list %}
         {{- passed_tests | length | string + " passed, " +
             failed_tests | length | string + " failed" }}
     {% endif %}
@@ -14,7 +14,7 @@
 {% macro container_summary(container, max_list_len) %}
     {{- "\nBOOT TESTS" }}
     {% if container.tests %}
-        {% set failed_boot_tests = container.tests_root["boot"].waived_status_tests[false]["FAIL"] |
+        {% set failed_boot_tests = container.tests_root["boot"].status_tests["FAIL"] |
             selectattr('origin', 'in', selected_origins) | list %}
         {% if failed_boot_tests %}
             {{- "\n    Failures" }}
@@ -44,7 +44,7 @@
     {% endif %}
     {{- "\nRT TESTS" }}
     {% if container.tests %}
-        {% set failed_rt_tests = container.tests_root["rt-tests"].waived_status_tests[false]["FAIL"] |
+        {% set failed_rt_tests = container.tests_root["rt-tests"].status_tests["FAIL"] |
             selectattr('origin', 'in', selected_origins) | list %}
         {% if failed_rt_tests %}
             {{- "\n    Failures" }}

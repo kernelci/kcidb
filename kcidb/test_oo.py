@@ -148,107 +148,107 @@ def traversing_client(empty_database):
             ],
             "builds": [
                 {
-                    "id": "kernelci:valid1",
+                    "id": "kernelci:pass1",
                     "origin": "kernelci",
                     "checkout_id": "_:valid1",
-                    "architecture": "valid1",
+                    "architecture": "pass1",
                     "status": "PASS",
                 },
                 {
-                    "id": "kernelci:valid2",
+                    "id": "kernelci:pass2",
                     "origin": "kernelci",
                     "checkout_id": "_:valid1",
-                    "architecture": "valid2",
+                    "architecture": "pass2",
                     "status": "PASS",
                 },
                 {
-                    "id": "kernelci:invalid",
+                    "id": "kernelci:fail",
                     "origin": "kernelci",
                     "checkout_id": "_:valid1",
-                    "architecture": "invalid",
+                    "architecture": "fail",
                     "status": "FAIL",
                 },
                 {
-                    "id": "redhat:valid1",
+                    "id": "redhat:pass1",
                     "checkout_id": "_:valid2",
                     "origin": "redhat",
                     "status": "PASS",
-                    "architecture": "valid1",
+                    "architecture": "pass1",
                 },
                 {
-                    "id": "redhat:valid2",
+                    "id": "redhat:pass2",
                     "checkout_id": "_:valid2",
                     "origin": "redhat",
                     "status": "PASS",
-                    "architecture": "valid2",
+                    "architecture": "pass2",
                 },
                 {
-                    "id": "redhat:invalid",
+                    "id": "redhat:fail",
                     "checkout_id": "_:valid2",
                     "origin": "redhat",
                     "status": "FAIL",
-                    "architecture": "invalid",
+                    "architecture": "fail",
                 },
             ],
             "tests": [
                 {
-                    "id": "kernelci:valid1_1",
-                    "build_id": "kernelci:valid1",
+                    "id": "kernelci:pass1_1",
+                    "build_id": "kernelci:pass1",
                     "origin": "kernelci", "status": "PASS", "path": "pass1"
                 },
                 {
-                    "id": "kernelci:valid1_2",
-                    "build_id": "kernelci:valid1",
+                    "id": "kernelci:pass1_2",
+                    "build_id": "kernelci:pass1",
                     "origin": "kernelci", "status": "PASS", "path": "pass2"
                 },
                 {
-                    "id": "kernelci:valid1_3",
-                    "build_id": "kernelci:valid1",
+                    "id": "kernelci:pass1_3",
+                    "build_id": "kernelci:pass1",
                     "origin": "kernelci", "status": "FAIL", "path": "fail",
                 },
                 {
-                    "id": "kernelci:valid2_1",
-                    "build_id": "kernelci:valid2",
+                    "id": "kernelci:pass2_1",
+                    "build_id": "kernelci:pass2",
                     "origin": "kernelci", "status": "PASS", "path": "pass1"
                 },
                 {
-                    "id": "kernelci:valid2_2",
-                    "build_id": "kernelci:valid2",
+                    "id": "kernelci:pass2_2",
+                    "build_id": "kernelci:pass2",
                     "origin": "kernelci", "status": "PASS", "path": "pass2"
                 },
                 {
-                    "id": "kernelci:valid2_3",
-                    "build_id": "kernelci:valid2",
+                    "id": "kernelci:pass2_3",
+                    "build_id": "kernelci:pass2",
                     "origin": "kernelci", "status": "FAIL", "path": "fail"
                 },
                 {
-                    "id": "redhat:valid1_1",
-                    "build_id": "redhat:valid1",
+                    "id": "redhat:pass1_1",
+                    "build_id": "redhat:pass1",
                     "origin": "redhat", "status": "PASS", "path": "pass1"
                 },
                 {
-                    "id": "redhat:valid1_2",
-                    "build_id": "redhat:valid1",
+                    "id": "redhat:pass1_2",
+                    "build_id": "redhat:pass1",
                     "origin": "redhat", "status": "PASS", "path": "pass2",
                 },
                 {
-                    "id": "redhat:valid1_3",
-                    "build_id": "redhat:valid1",
+                    "id": "redhat:pass1_3",
+                    "build_id": "redhat:pass1",
                     "origin": "redhat", "status": "FAIL", "path": "fail",
                 },
                 {
-                    "id": "redhat:valid2_1",
-                    "build_id": "redhat:valid2",
+                    "id": "redhat:pass2_1",
+                    "build_id": "redhat:pass2",
                     "origin": "redhat", "status": "PASS", "path": "pass1"
                 },
                 {
-                    "id": "redhat:valid2_2",
-                    "build_id": "redhat:valid2",
+                    "id": "redhat:pass2_2",
+                    "build_id": "redhat:pass2",
                     "origin": "redhat", "status": "PASS", "path": "pass2",
                 },
                 {
-                    "id": "redhat:valid2_3",
-                    "build_id": "redhat:valid2",
+                    "id": "redhat:pass2_3",
+                    "build_id": "redhat:pass2",
                     "origin": "redhat", "status": "FAIL", "path": "fail",
                 },
             ],
@@ -270,36 +270,36 @@ def traversing_client(empty_database):
             ],
             "incidents": [
                 {
-                    "id": "kernelci:valid1_1_1",
+                    "id": "kernelci:pass1_1_1",
                     "origin": "kernelci",
                     "issue_id": "kernelci:1",
                     "issue_version": 1,
                     "present": True,
-                    "test_id": "kernelci:valid1_1",
+                    "test_id": "kernelci:pass1_1",
                 },
                 {
-                    "id": "kernelci:valid1_3_1",
+                    "id": "kernelci:pass1_3_1",
                     "origin": "kernelci",
                     "issue_id": "kernelci:1",
                     "issue_version": 1,
                     "present": True,
-                    "test_id": "kernelci:valid1_3",
+                    "test_id": "kernelci:pass1_3",
                 },
                 {
-                    "id": "redhat:valid1",
+                    "id": "redhat:pass1",
                     "origin": "redhat",
                     "issue_id": "redhat:1",
                     "issue_version": 1,
                     "present": True,
-                    "build_id": "redhat:valid1",
+                    "build_id": "redhat:pass1",
                 },
                 {
-                    "id": "redhat:valid2",
+                    "id": "redhat:pass2",
                     "origin": "redhat",
                     "issue_id": "redhat:1",
                     "issue_version": 1,
                     "present": True,
-                    "build_id": "redhat:valid2",
+                    "build_id": "redhat:pass2",
                 },
             ],
         }
@@ -310,6 +310,23 @@ def traversing_client(empty_database):
 def query_str(client, pattern_string):
     """Run OO client query with a parsed string."""
     return client.query(kcidb.orm.query.Pattern.parse(pattern_string))
+
+
+def filter_pass(container):
+    """
+    Filter out the PASS-status items in a container.
+    Args:
+        container:  A list whose items are object(s) that
+                    have "status" property.
+
+    Returns:
+        The list of object(s) with status property "PASS".
+    """
+    assert all(hasattr(i, "status") for i in container)
+    return list(filter(
+        lambda item: item.status == "PASS",
+        container
+    ))
 
 
 def filter_valid(container):
@@ -501,26 +518,38 @@ def test_traversing_revision_links(traversing_client):
             "invalid": (Checkout, 1),
         },
     })
-    assert_contains(revision.architecture_valid_builds, {
-        "invalid": {
-            False: (Build, 2),
-            True: (Build, 0),
+    assert_contains(revision.architecture_status_builds, {
+        "fail": {
+            "FAIL": (Build, 2),
+            "ERROR": (Build, 0),
+            "MISS": (Build, 0),
+            "PASS": (Build, 0),
+            "DONE": (Build, 0),
+            "SKIP": (Build, 0),
             None: (Build, 0),
         },
-        "valid1": {
-            False: (Build, 0),
-            True: (Build, 2),
+        "pass1": {
+            "FAIL": (Build, 0),
+            "ERROR": (Build, 0),
+            "MISS": (Build, 0),
+            "PASS": (Build, 2),
+            "DONE": (Build, 0),
+            "SKIP": (Build, 0),
             None: (Build, 0)
         },
-        "valid2": {
-            False: (Build, 0),
-            True: (Build, 2),
+        "pass2": {
+            "FAIL": (Build, 0),
+            "ERROR": (Build, 0),
+            "MISS": (Build, 0),
+            "PASS": (Build, 2),
+            "DONE": (Build, 0),
+            "SKIP": (Build, 0),
             None: (Build, 0)
         }
     })
 
     assert not revision.checkouts_valid
-    assert not revision.builds_valid
+    assert revision.builds_status == "FAIL"
 
     assert isinstance(revision.tests_root, Node)
 
@@ -530,8 +559,8 @@ def test_traversing_revision_links(traversing_client):
 
     assert_contains(revision.incidents, (Incident, 4))
     assert {i.id for i in revision.incidents} == \
-        {"kernelci:valid1_1_1", "kernelci:valid1_3_1",
-         "redhat:valid1", "redhat:valid2"}
+        {"kernelci:pass1_1_1", "kernelci:pass1_3_1",
+         "redhat:pass1", "redhat:pass2"}
 
 
 def test_traversing_valid_checkout_links(traversing_client):
@@ -558,13 +587,13 @@ def test_traversing_valid_checkout_links(traversing_client):
     assert_contains(checkouts[0].incidents, (Incident, 2))
     assert_contains(checkouts[1].incidents, (Incident, 2))
     assert {i.id for c in checkouts for i in c.incidents} == \
-        {"kernelci:valid1_1_1", "kernelci:valid1_3_1",
-         "redhat:valid1", "redhat:valid2"}
+        {"kernelci:pass1_1_1", "kernelci:pass1_3_1",
+         "redhat:pass1", "redhat:pass2"}
 
 
-def test_traversing_valid_build_links(traversing_client):
-    """Check that valid build links are successfully traversed."""
-    builds = filter_valid(
+def test_traversing_passing_build_links(traversing_client):
+    """Check that passing build links are successfully traversed."""
+    builds = filter_pass(
         query_str(
             traversing_client,
             '>revision["5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1", ""]'
@@ -726,11 +755,11 @@ def status_client(empty_database):
 
 def test_status_builds(status_client):
     """Check build status effects"""
-    for status_name, valid in (
+    for status_name, status_value in (
         ("none", None),
-        ("error", False),
-        ("fail", False),
-        ("pass", True),
+        ("error", "ERROR"),
+        ("fail", "FAIL"),
+        ("pass", "PASS"),
     ):
         for present_name in (
             "none", "present_true", "present_false", "present_missing",
@@ -745,9 +774,9 @@ def test_status_builds(status_client):
                 "Incorrect number of builds returned " \
                 f"for ID {build_id!r}"
             build = result["build"][0]
-            assert build.valid == valid, \
+            assert build.status == status_value, \
                 f"Build {build_id!r} has incorrect " \
-                f"\"valid\" value {build.valid!r}"
+                f"\"status\" value {build.status!r}"
 
 
 def test_status_tests(status_client):
@@ -775,6 +804,3 @@ def test_status_tests(status_client):
             assert test.status == status_value, \
                 f"Test {test_id!r} has incorrect " \
                 f"\"status\" value {test.status!r}"
-            assert test.waived is None, \
-                f"Test {test_id!r} has incorrect " \
-                f"\"waived\" value {test.waived!r}"
