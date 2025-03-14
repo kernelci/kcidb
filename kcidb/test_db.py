@@ -802,7 +802,6 @@ def test_upgrade(clean_database):
             },
             oo={
                 'revision': [{
-                    'contacts': None,
                     'git_commit_hash':
                         'f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
                     'git_commit_name':
@@ -855,7 +854,6 @@ def test_upgrade(clean_database):
                     'output_files': None,
                     'start_time': '2023-01-27T08:27:50.000000+00:00',
                     'status': 'PASS',
-                    'valid': True
                 }],
                 'test': [{
                     'build_id':
@@ -903,7 +901,6 @@ def test_upgrade(clean_database):
                     'number_value': None,
                     'number_unit': None,
                     'number_prefix': None,
-                    'waived': None
                 }],
                 'issue': [],
                 'issue_version': [],
@@ -937,7 +934,6 @@ def test_upgrade(clean_database):
             },
             oo={
                 "revision": [{
-                    "contacts": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
                     "git_commit_name":
@@ -987,7 +983,6 @@ def test_upgrade(clean_database):
                     "output_files": None,
                     "start_time": None,
                     "status": None,
-                    "valid": None,
                 }],
                 "test": [{
                     "build_id":
@@ -1010,7 +1005,6 @@ def test_upgrade(clean_database):
                     'number_value': None,
                     'number_unit': None,
                     'number_prefix': None,
-                    "waived": None,
                 }],
                 "issue": [],
                 "issue_version": [],
@@ -1071,7 +1065,6 @@ def test_upgrade(clean_database):
             },
             oo={
                 "revision": [{
-                    "contacts": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
                     "git_commit_name":
@@ -1121,7 +1114,6 @@ def test_upgrade(clean_database):
                     "output_files": None,
                     "start_time": None,
                     "status": None,
-                    "valid": None,
                 }],
                 "test": [{
                     "build_id":
@@ -1144,7 +1136,6 @@ def test_upgrade(clean_database):
                     'number_value': None,
                     'number_unit': None,
                     'number_prefix': None,
-                    "waived": None,
                 }],
                 "issue": [{
                     "id": "redhat:878234322",
@@ -1164,8 +1155,6 @@ def test_upgrade(clean_database):
                     "culprit_code": True,
                     "culprit_tool": False,
                     "culprit_harness": False,
-                    "build_valid": None,
-                    "test_status": None,
                     "version_num": 3,
                 }],
                 "incident": [{
@@ -1236,7 +1225,6 @@ def test_upgrade(clean_database):
             },
             oo={
                 "revision": [{
-                    "contacts": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
                     "git_commit_name":
@@ -1286,7 +1274,6 @@ def test_upgrade(clean_database):
                     "output_files": None,
                     "start_time": None,
                     "status": None,
-                    "valid": None,
                 }],
                 "test": [{
                     "build_id":
@@ -1309,7 +1296,6 @@ def test_upgrade(clean_database):
                     'number_value': None,
                     'number_unit': None,
                     'number_prefix': None,
-                    "waived": None,
                 }],
                 "issue": [{
                     "id": "redhat:878234322",
@@ -1329,8 +1315,6 @@ def test_upgrade(clean_database):
                     "culprit_code": True,
                     "culprit_tool": False,
                     "culprit_harness": False,
-                    "build_valid": None,
-                    "test_status": None,
                     "version_num": 3,
                 }],
                 "incident": [{
@@ -1415,7 +1399,6 @@ def test_upgrade(clean_database):
             },
             oo={
                 "revision": [{
-                    "contacts": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
                     "git_commit_name":
@@ -1465,7 +1448,6 @@ def test_upgrade(clean_database):
                     "output_files": None,
                     "start_time": None,
                     "status": None,
-                    "valid": None,
                 }],
                 "test": [{
                     "build_id":
@@ -1492,7 +1474,6 @@ def test_upgrade(clean_database):
                     "number_value": 1.6e-7,
                     "number_unit": "s",
                     "number_prefix": "metric",
-                    "waived": None,
                 }],
                 "issue": [{
                     "id": "redhat:878234322",
@@ -1512,8 +1493,6 @@ def test_upgrade(clean_database):
                     "culprit_code": True,
                     "culprit_tool": False,
                     "culprit_harness": False,
-                    "build_valid": None,
-                    "test_status": None,
                     "version_num": 3,
                 }],
                 "incident": [{
@@ -1602,7 +1581,6 @@ def test_upgrade(clean_database):
             },
             oo={
                 "revision": [{
-                    "contacts": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
                     "git_commit_name":
@@ -1652,7 +1630,6 @@ def test_upgrade(clean_database):
                     "output_files": None,
                     "start_time": None,
                     "status": None,
-                    "valid": None,
                 }],
                 "test": [{
                     "build_id":
@@ -1679,7 +1656,6 @@ def test_upgrade(clean_database):
                     "number_value": 1.6e-7,
                     "number_unit": "s",
                     "number_prefix": "metric",
-                    "waived": True,
                 }],
                 "issue": [{
                     "id": "redhat:878234322",
@@ -1699,8 +1675,6 @@ def test_upgrade(clean_database):
                     "culprit_code": True,
                     "culprit_tool": False,
                     "culprit_harness": False,
-                    "build_valid": None,
-                    "test_status": None,
                     "version_num": 3,
                 }],
                 "incident": [{
@@ -1789,7 +1763,6 @@ def test_upgrade(clean_database):
             },
             oo={
                 "revision": [{
-                    "contacts": None,
                     "git_commit_hash":
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
                     "git_commit_name":
@@ -1839,7 +1812,6 @@ def test_upgrade(clean_database):
                     "output_files": None,
                     "start_time": None,
                     "status": "PASS",
-                    "valid": True,
                 }],
                 "test": [{
                     "build_id":
@@ -1866,7 +1838,6 @@ def test_upgrade(clean_database):
                     "number_value": 1.6e-7,
                     "number_unit": "s",
                     "number_prefix": "metric",
-                    "waived": None,
                 }],
                 "issue": [{
                     "id": "redhat:878234322",
@@ -1886,8 +1857,6 @@ def test_upgrade(clean_database):
                     "culprit_code": True,
                     "culprit_tool": False,
                     "culprit_harness": False,
-                    "build_valid": None,
-                    "test_status": None,
                     "version_num": 3,
                 }],
                 "incident": [{

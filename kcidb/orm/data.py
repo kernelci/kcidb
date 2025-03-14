@@ -310,24 +310,14 @@ class Schema:
 
 # Latest I/O schema shared definitions
 _DEFS = io.SCHEMA.json['$defs']
-# Previous I/O schema shared definitions
-_PREV_DEFS = io.schema.V4_5.json['$defs']
 # Checkout properties from the current I/O schema
 _CHECKOUT = _DEFS['checkout']['properties']
-# Checkout properties from the previous I/O schema
-_PREV_CHECKOUT = _PREV_DEFS['checkout']['properties']
 # Build properties from the current I/O schema
 _BUILD = _DEFS['build']['properties']
-# Build properties from the previous I/O schema
-_PREV_BUILD = _PREV_DEFS['build']['properties']
 # Test properties from the current I/O schema
 _TEST = _DEFS['test']['properties']
-# Test properties from the previous I/O schema
-_PREV_TEST = _PREV_DEFS['test']['properties']
 # Issue properties from the current I/O schema
 _ISSUE = _DEFS['issue']['properties']
-# Issue properties from the previous I/O schema
-_PREV_ISSUE = _PREV_DEFS['issue']['properties']
 # Issue culprit properties from the current I/O schema
 _ISSUE_CULPRIT = _ISSUE['culprit']['properties']
 # Incident properties from the current I/O schema
@@ -347,7 +337,6 @@ SCHEMA = Schema(
                 patchset_hash=_CHECKOUT['patchset_hash'],
                 patchset_files=_CHECKOUT['patchset_files'],
                 git_commit_name=_CHECKOUT['git_commit_name'],
-                contacts=_PREV_CHECKOUT['contacts'],
             ),
             required_fields=set(),
             id_field_types=dict(git_commit_hash=str, patchset_hash=str),
@@ -400,7 +389,6 @@ SCHEMA = Schema(
                 log_url=_BUILD['log_url'],
                 log_excerpt=_BUILD['log_excerpt'],
                 comment=_BUILD['comment'],
-                valid=_PREV_BUILD['valid'],
                 status=_BUILD['status'],
                 misc=_BUILD['misc'],
             ),
@@ -424,7 +412,6 @@ SCHEMA = Schema(
                 number_value=_TEST_NUMBER['value'],
                 number_unit=_TEST_NUMBER['unit'],
                 number_prefix=_TEST_NUMBER['prefix'],
-                waived=_PREV_TEST['waived'],
                 start_time=_TEST['start_time'],
                 duration=_TEST['duration'],
                 output_files=_TEST['output_files'],
@@ -460,8 +447,6 @@ SCHEMA = Schema(
                 culprit_code=_ISSUE_CULPRIT['code'],
                 culprit_tool=_ISSUE_CULPRIT['tool'],
                 culprit_harness=_ISSUE_CULPRIT['harness'],
-                build_valid=_PREV_ISSUE['build_valid'],
-                test_status=_PREV_ISSUE['test_status'],
                 comment=_ISSUE['comment'],
                 misc=_ISSUE['misc'],
             ),

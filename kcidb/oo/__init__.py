@@ -113,10 +113,10 @@ VALID_PRIORITY = {
     None:   3,
 }
 
-# A dictionary of test "status" values and their priority, defined as a
-# positive integer, with lower values meaning higher priority. Sorted higher
-# priority first.
-TEST_STATUS_PRIORITY = {
+# A dictionary of "status" values and their priority, defined as a positive
+# integer, with lower values meaning higher priority. Sorted higher priority
+# first.
+STATUS_PRIORITY = {
     "FAIL":     1,
     "ERROR":    2,
     "MISS":     3,
@@ -124,27 +124,6 @@ TEST_STATUS_PRIORITY = {
     "DONE":     5,
     "SKIP":     6,
     None:       7,
-}
-
-# A dictionary of test "waived" values and their priority, defined as a
-# positive integer, with lower values meaning higher priority. Sorted higher
-# priority first.
-TEST_WAIVED_PRIORITY = {
-    False:  1,
-    True:   2,
-    None:   3,
-}
-
-# A dictionary of test "waived" values and dictionaries of test "status"
-# values and their combined priorities, defined as a positive integer, with
-# lower values meaning higher priority. Sorted higher priority first.
-TEST_WAIVED_STATUS_PRIORITY = {
-    waived: {
-        status:
-        (waived_priority - 1) * len(TEST_STATUS_PRIORITY) + status_priority
-        for status, status_priority in TEST_STATUS_PRIORITY.items()
-    }
-    for waived, waived_priority in TEST_WAIVED_PRIORITY.items()
 }
 
 
@@ -155,39 +134,43 @@ class BuildContainer(ABC):
         """A list of builds in this container"""
 
     @cached_property
-    def builds_valid(self):
-        """
-        Status of this container's builds.
-
-        True if all passed, false if at least one failed, and None, if there
-        were no builds, or their status isn't known.
-        """
+    def builds_status(self):
+        """Summarized status of this container's builds"""
         return min(
-            (build.valid for build in self.builds),
-            key=lambda valid: VALID_PRIORITY[valid],
+            (build.status for build in self.builds),
+            key=lambda s: STATUS_PRIORITY[s],
             default=None
         )
 
     @cached_property
-    def architecture_valid_builds(self):
+    def status_builds(self):
+        """
+        A dictionary of build status values and corresponding builds, sorted
+        from more to least important.
+        """
+        status_builds = {status: [] for status in STATUS_PRIORITY}
+        for build in self.builds:
+            status_builds[build.status].append(build)
+        return status_builds
+
+    @cached_property
+    def architecture_status_builds(self):
         """
         A dictionary of names of architectures and dictionaries of build
-        "valid" values and corresponding builds, sorted from more to least
+        status values and corresponding builds, sorted from more to least
         important.
         """
-        architecture_valid_builds = {}
+        architecture_status_builds = {}
         for build in self.builds:
-            if build.architecture not in architecture_valid_builds:
-                architecture_valid_builds[build.architecture] = {
-                    valid: [] for valid in VALID_PRIORITY
+            if build.architecture not in architecture_status_builds:
+                architecture_status_builds[build.architecture] = {
+                    status: [] for status in STATUS_PRIORITY
                 }
-            valid_builds = architecture_valid_builds[build.architecture]
-            valid_builds[build.valid].append(build)
+            status_builds = architecture_status_builds[build.architecture]
+            status_builds[build.status].append(build)
         return dict(sorted(
-            architecture_valid_builds.items(),
-            key=lambda item: tuple(
-                len(item[1][valid]) for valid in VALID_PRIORITY
-            ),
+            architecture_status_builds.items(),
+            key=lambda item: tuple(len(builds) for builds in item[1].values()),
             reverse=True
         ))
 
@@ -339,23 +322,13 @@ class Node(IncidentIssueVersionContainer):
                       (test.incidents for test in self.tests),
                       [])
 
-    @property
-    def waived(self):
-        """The summarized waived value of this test node"""
-        return self.waived_status[0]
-
-    @property
+    @cached_property
     def status(self):
         """The summarized status value of this test node"""
-        return self.waived_status[1]
-
-    @cached_property
-    def waived_status(self):
-        """The summarized waived and status values of this test node"""
         return min(
-            ((test.waived, test.status) for test in self.tests),
-            key=lambda ws: TEST_WAIVED_STATUS_PRIORITY[ws[0]][ws[1]],
-            default=(None, None)
+            (test.status for test in self.tests),
+            key=lambda s: STATUS_PRIORITY[s],
+            default=None
         )
 
     @cached_property
@@ -385,35 +358,27 @@ class Node(IncidentIssueVersionContainer):
         return nodes
 
     @cached_property
-    def waived_status_nodes(self):
+    def status_nodes(self):
         """
-        A dictionary of all waived values and dictionaries of all status
-        values and lists of nodes with corresponding waived and status values,
-        all in order of decreasing priority.
+        A dictionary of all status values and lists of nodes with
+        corresponding status values, all in order of decreasing priority.
         """
-        waived_status_nodes = {
-            waived: {status: [] for status in TEST_STATUS_PRIORITY}
-            for waived in TEST_WAIVED_PRIORITY
-        }
+        status_nodes = {status: [] for status in STATUS_PRIORITY}
         for node in self.nodes.values():
-            waived_status_nodes[node.waived][node.status].append(node)
-        return waived_status_nodes
+            status_nodes[node.status].append(node)
+        return status_nodes
 
     @cached_property
-    def waived_status_tests(self):
+    def status_tests(self):
         """
-        A dictionary of all waived values and dictionaries of all status
-        values and lists of tests (test runs) with corresponding waived and
-        status values, for this and all child nodes, all in order of
-        decreasing priority.
+        A dictionary of all status values and lists of tests (test runs) with
+        corresponding status values, for this and all child nodes, all in
+        order of decreasing priority.
         """
-        waived_status_tests = {
-            waived: {status: [] for status in TEST_STATUS_PRIORITY}
-            for waived in TEST_WAIVED_PRIORITY
-        }
+        status_tests = {status: [] for status in STATUS_PRIORITY}
         for test in self.tests:
-            waived_status_tests[test.waived][test.status].append(test)
-        return waived_status_tests
+            status_tests[test.status].append(test)
+        return status_tests
 
     def __getitem__(self, name):
         assert isinstance(name, (str, type(None)))
@@ -581,16 +546,6 @@ class Build(Object, TestContainer,
         return list({i.issue for i in self.test_incidents if i.issue})
 
     @cached_property
-    def valid(self):
-        """The "valid" value with incidents accounted"""
-        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
-        valid = min(
-            (issue.build_valid for issue in self.build_issues),
-            key=lambda v: VALID_PRIORITY[v], default=None
-        )
-        return self.__getattr__("valid") if valid is None else valid
-
-    @cached_property
     def log_error(self):
         """Get one-liner build error from log_excerpt.
         Return None if self.log_excerpt is not set or is empty"""
@@ -624,7 +579,7 @@ class Build(Object, TestContainer,
 class Test(Object, IncidentIssueVersionContainer):
     """An OO-representation of a test"""
 
-    # prevent class from being collected by unittest.
+    # Prevent the class from being collected by unittest.
     __test__ = False
 
     # Force ABC to recognize abstract method definition
@@ -633,16 +588,6 @@ class Test(Object, IncidentIssueVersionContainer):
         """A list of incidents of this container"""
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("incidents")
-
-    @cached_property
-    def status(self):
-        """The "status" value with incidents accounted"""
-        # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
-        status = min(
-            (issue.test_status for issue in self.issues),
-            key=lambda s: TEST_STATUS_PRIORITY[s], default=None
-        )
-        return self.__getattr__("status") if status is None else status
 
 
 class Issue(Object, IncidentContainer, BuildContainer, TestContainer):

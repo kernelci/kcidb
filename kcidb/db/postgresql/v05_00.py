@@ -85,8 +85,7 @@ class Schema(PreviousSchema):
                       "    git_commit_hash,\n"
                       "    patchset_hash,\n"
                       "    FIRST(patchset_files),\n"
-                      "    FIRST(git_commit_name),\n"
-                      "    NULL AS contacts\n"
+                      "    FIRST(git_commit_name)\n"
                       "FROM checkouts\n"
                       "GROUP BY git_commit_hash, patchset_hash",
         ),
@@ -108,7 +107,6 @@ class Schema(PreviousSchema):
                       "    log_url,\n"
                       "    log_excerpt,\n"
                       "    comment,\n"
-                      "    status = 'PASS'::STATUS AS valid,\n"
                       "    status,\n"
                       "    misc\n"
                       "FROM builds",
@@ -129,7 +127,6 @@ class Schema(PreviousSchema):
                       "    number_value,\n"
                       "    number_unit,\n"
                       "    number_prefix,\n"
-                      "    NULL AS waived,\n"
                       "    start_time,\n"
                       "    duration,\n"
                       "    output_files,\n"
@@ -148,8 +145,6 @@ class Schema(PreviousSchema):
                       "    culprit_code,\n"
                       "    culprit_tool,\n"
                       "    culprit_harness,\n"
-                      "    NULL AS build_valid,\n"
-                      "    NULL AS test_status,\n"
                       "    comment,\n"
                       "    misc\n"
                       "FROM issues",

@@ -238,8 +238,7 @@ class Schema(AbstractSchema):
                       "    git_commit_hash,\n"
                       "    patchset_hash,\n"
                       "    patchset_files,\n"
-                      "    git_commit_name,\n"
-                      "    contacts\n"
+                      "    git_commit_name\n"
                       "FROM checkouts\n"
                       "GROUP BY git_commit_hash, patchset_hash",
             schema=Table(dict(
@@ -247,7 +246,6 @@ class Schema(AbstractSchema):
                 patchset_hash=TextColumn(),
                 patchset_files=JSONColumn(),
                 git_commit_name=TextColumn(),
-                contacts=JSONColumn(),
             )),
         ),
         checkout=dict(
@@ -307,7 +305,6 @@ class Schema(AbstractSchema):
                       "    log_url,\n"
                       "    log_excerpt,\n"
                       "    comment,\n"
-                      "    valid,\n"
                       "    CASE valid\n"
                       "        WHEN TRUE THEN 'PASS'\n"
                       "        WHEN FALSE THEN 'FAIL'\n"
@@ -331,7 +328,6 @@ class Schema(AbstractSchema):
                 log_url=TextColumn(),
                 log_excerpt=TextColumn(),
                 comment=TextColumn(),
-                valid=BoolColumn(),
                 status=TextColumn(),
                 misc=JSONColumn(),
             )),
@@ -351,7 +347,6 @@ class Schema(AbstractSchema):
                       "    NULL AS number_value,\n"
                       "    NULL AS number_unit,\n"
                       "    NULL AS number_prefix,\n"
-                      "    waived,\n"
                       "    start_time,\n"
                       "    duration,\n"
                       "    output_files,\n"
@@ -372,7 +367,6 @@ class Schema(AbstractSchema):
                 number_value=Column("REAL"),
                 number_unit=TextColumn(),
                 number_prefix=TextColumn(),
-                waived=BoolColumn(),
                 start_time=TimestampColumn(),
                 duration=Column("REAL"),
                 output_files=JSONColumn(),
@@ -400,8 +394,6 @@ class Schema(AbstractSchema):
                       "    NULL AS culprit_code,\n"
                       "    NULL AS culprit_tool,\n"
                       "    NULL AS culprit_harness,\n"
-                      "    NULL AS build_valid,\n"
-                      "    NULL AS test_status,\n"
                       "    NULL AS comment,\n"
                       "    NULL AS misc\n"
                       "WHERE 0",
@@ -414,8 +406,6 @@ class Schema(AbstractSchema):
                 culprit_code=BoolColumn(),
                 culprit_tool=BoolColumn(),
                 culprit_harness=BoolColumn(),
-                build_valid=BoolColumn(),
-                test_status=TextColumn(),
                 comment=TextColumn(),
                 misc=JSONColumn(),
             )),

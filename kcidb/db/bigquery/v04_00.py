@@ -489,8 +489,7 @@ class Schema(AbstractSchema):
                       "    git_commit_hash,\n"
                       "    patchset_hash,\n"
                       "    ANY_VALUE(patchset_files) AS patchset_files,\n"
-                      "    ANY_VALUE(git_commit_name) AS git_commit_name,\n"
-                      "    ANY_VALUE(contacts) AS contacts\n"
+                      "    ANY_VALUE(git_commit_name) AS git_commit_name\n"
                       "FROM checkouts\n"
                       "GROUP BY git_commit_hash, patchset_hash",
             id_field_types=dict(
@@ -539,7 +538,6 @@ class Schema(AbstractSchema):
                       "    log_url,\n"
                       "    log_excerpt,\n"
                       "    comment,\n"
-                      "    valid,\n"
                       "    CASE valid\n"
                       "        WHEN TRUE THEN 'PASS'\n"
                       "        WHEN FALSE THEN 'FAIL'\n"
@@ -564,7 +562,6 @@ class Schema(AbstractSchema):
                       "    NULL AS number_value,\n"
                       "    NULL AS number_unit,\n"
                       "    NULL AS number_prefix,\n"
-                      "    waived,\n"
                       "    start_time,\n"
                       "    duration,\n"
                       "    output_files,\n"
@@ -596,8 +593,6 @@ class Schema(AbstractSchema):
                       '    FALSE AS culprit_code,\n'
                       '    FALSE AS culprit_tool,\n'
                       '    FALSE AS culprit_harness,\n'
-                      '    FALSE AS build_valid,\n'
-                      '    ""    AS test_status,\n'
                       '    ""    AS comment,\n'
                       '    ""    AS misc\n'
                       'FROM UNNEST([])',

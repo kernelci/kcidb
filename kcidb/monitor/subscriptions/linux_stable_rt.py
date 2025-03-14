@@ -20,7 +20,7 @@ def match_revision(revision):
 
     # If no builds found from 'maestro' or 'broonie' origin
     # or status is unknown for all the builds
-    if all(b.origin not in selected_origins or b.valid is None
+    if all(b.origin not in selected_origins or b.status is None
            for b in revision.builds):
         return ()
 

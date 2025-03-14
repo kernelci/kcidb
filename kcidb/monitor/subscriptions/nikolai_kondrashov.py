@@ -13,11 +13,10 @@ def _disabled_match_revision(revision):
     if revision.checkouts_valid is not None:
         if not revision.checkouts_valid:
             return (Message(subject='Checkouts' + subject_sfx, **msg_args),)
-        if revision.builds_valid is not None:
-            if not revision.builds_valid:
+        if revision.builds_status is not None:
+            if revision.builds_status == "FAIL":
                 return (Message(subject='Builds' + subject_sfx, **msg_args),)
-            if revision.tests_root.waived is False and \
-               revision.tests_root.status not in \
+            if revision.tests_root.status not in \
                (None, "PASS", "DONE", "SKIP"):
                 return (Message(subject='Tests' + subject_sfx, **msg_args),)
     return ()

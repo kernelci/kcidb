@@ -3,30 +3,30 @@
 
 {% macro build_stats(container) %}
     {% if container.builds %}
-        {% set invalid_builds =
-                container.builds | selectattr("valid", "false") |
+        {% set failed_builds =
+                container.builds | selectattr("status", "eq", "FAIL") |
                 selectattr('origin', 'in', selected_origins) | list %}
-        {% set valid_builds =
-                container.builds | selectattr("valid", "true") |
+        {% set passed_builds =
+                container.builds | selectattr("status", "eq", "PASS") |
                 selectattr('origin', 'in', selected_origins) | list %}
-        {% set invalid_build_count = invalid_builds | length %}
-        {% set valid_build_count = valid_builds | length %}
-        {{- valid_build_count | string + " passed, " +
-            invalid_build_count | string + " failed" }}
+        {% set failed_build_count = failed_builds | length %}
+        {% set passed_build_count = passed_builds | length %}
+        {{- passed_build_count | string + " passed, " +
+            failed_build_count | string + " failed" }}
     {% endif %}
 {% endmacro %}
 
 {% macro container_summary(container, max_list_len) %}
     {% if container.builds %}
         {{- "\nBUILDS" }}
-        {% set invalid_builds =
-                container.builds | selectattr("valid", "false") |
+        {% set failed_builds =
+                container.builds | selectattr("status", "eq", "FAIL") |
                 selectattr('origin', 'in', selected_origins) |
                 rejectattr('architecture', 'none') | list %}
-        {% set invalid_build_count = invalid_builds | length %}
-        {% if invalid_builds %}
+        {% set failed_build_count = failed_builds | length %}
+        {% if failed_builds %}
             {{- "\n    Failures" }}
-            {% for origin, builds in invalid_builds|groupby("origin") %}
+            {% for origin, builds in failed_builds|groupby("origin") %}
                 {% for build in builds %}
                     {{- [( indent + '-') + build.architecture,
                         none if build.config_name is none else ('(' + build.config_name + ')')] |

@@ -22,14 +22,14 @@ def _disabled_match_revision(revision):
     )
     if not set(revision.repo_branch_checkouts) & REPO_URL_SET:
         return ()
-    if revision.builds_valid is None:
+    if revision.builds_status is None:
         return ()
-    if not revision.builds_valid:
+    if revision.builds_status == "FAIL":
         return (Message(subject='Builds' + subject_sfx, **msg_args),)
     for test in revision.tests:
         # Ignore syzbot until we have issues/incidents
         if test.origin == "syzbot":
             continue
-        if test.status == "FAIL" and not test.waived:
+        if test.status == "FAIL":
             return (Message(subject='Tests' + subject_sfx, **msg_args),)
     return ()

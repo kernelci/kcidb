@@ -9,6 +9,38 @@
     {{- " UNKNOWN" if valid is none else " PASS" if valid else " FAIL" -}}
 {% endmacro %}
 
+{% macro status_emoji(status) %}
+    {{- "❌" if status == "FAIL" else
+        "💥" if status == "ERROR" else
+        "🟩" if status == "MISS" else
+        "✅" if status == "PASS" else
+        "🆗" if status == "DONE" else
+        "⏩" if status == "SKIP" else
+        "❓" -}}
+{% endmacro %}
+
+{% macro status_name(status) %}
+    {{- "UNKNOWN" if status is none else status -}}
+{% endmacro %}
+
+{% macro status_badge(status) %}
+    {{- status_emoji(status) + " " + status_name(status) -}}
+{% endmacro %}
+
+{#
+ # Generate a format specification for a row of emoji and count
+ # pairs, for a list of maximum counts.
+ #}
+{% macro emoji_count_row_fmt(max_counts) %}
+    {% for max_count in max_counts %}
+        {{-
+            ("  %s %" + (max_count | string | length | string) + "s")
+            if max_count else
+            "%.0s%.0s"
+        -}}
+    {% endfor %}
+{% endmacro %}
+
 {% macro legend() %}
 
 LEGEND

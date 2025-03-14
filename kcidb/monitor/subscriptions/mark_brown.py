@@ -23,7 +23,7 @@ def match_revision(revision):
     # If the revision is not from one of our repos,
     # or there are no finished builds
     if not repo_urls & set(revision.repo_branch_checkouts) or \
-            revision.builds_valid is None:
+            revision.builds_status is None:
         return ()
 
     # We need to send the notification one hour after the last build came in.
