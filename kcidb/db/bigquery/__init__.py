@@ -2,7 +2,7 @@
 
 import textwrap
 from kcidb.db.schematic import Driver as SchematicDriver
-from kcidb.db.bigquery.v05_01 import Schema as LatestSchema
+from kcidb.db.bigquery.v05_02 import Schema as LatestSchema
 
 
 class Driver(SchematicDriver):

@@ -19,7 +19,6 @@ class Schema(PreviousSchema):
 
     # A map of table names and Table constructor arguments
     # For use by descendants
-    # Add environment_compatible, and number_* fields
     TABLES_ARGS = merge_dicts(
         PreviousSchema.TABLES_ARGS,
         checkouts=merge_dicts(
