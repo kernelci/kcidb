@@ -163,7 +163,7 @@ function run_deploy() {
                   resources:
                     limits:
                       cpu: "1"
-                      memory: "1G"
+                      memory: "4G"
                 - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:latest
                   name: cloud-sql-proxy
                   args:
