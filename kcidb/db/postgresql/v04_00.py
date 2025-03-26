@@ -935,14 +935,22 @@ class Schema(AbstractSchema):
         with self.conn, self.conn.cursor() as cursor:
             for table_name, table_schema in self.TABLES.items():
                 if table_name in data:
+                    # Sort the objects by ID to avoid implicit
+                    # row-level deadlocks created by "UPSERTS"
+                    table_id_fields = tuple(self.io.id_fields[table_name])
+                    table_data = sorted(
+                        data[table_name],
+                        key=lambda obj, keys=table_id_fields:
+                            tuple(obj[k] for k in keys)
+                    )
+                    # Load the data
                     psycopg2.extras.execute_batch(
                         cursor,
                         table_schema.format_insert(
                             table_name, self.conn.load_prio_db,
                             with_metadata
                         ),
-                        table_schema.pack_iter(data[table_name],
-                                               with_metadata)
+                        table_schema.pack_iter(table_data, with_metadata)
                     )
         # Flip priority for the next load to maintain (rough)
         # parity with non-determinism of BigQuery's ANY_VALUE()
