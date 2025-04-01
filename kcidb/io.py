@@ -6,4 +6,4 @@
 from kcidb_io import *  # noqa: F403
 
 # The I/O schema version used by KCIDB
-SCHEMA = schema.V5_2  # noqa: F405
+SCHEMA = schema.V5_3  # noqa: F405
