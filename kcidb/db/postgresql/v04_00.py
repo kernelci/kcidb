@@ -304,7 +304,6 @@ class Schema(AbstractSchema):
                       "    message_id,\n"
                       "    start_time,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    valid,\n"
                       "    misc\n"
@@ -323,7 +322,6 @@ class Schema(AbstractSchema):
                 message_id=TextColumn(),
                 start_time=TimestampColumn(),
                 log_url=TextColumn(),
-                log_excerpt=TextColumn(),
                 comment=TextColumn(),
                 valid=BoolColumn(),
                 misc=JSONColumn(),
@@ -344,7 +342,6 @@ class Schema(AbstractSchema):
                       "    config_name,\n"
                       "    config_url,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    CASE valid\n"
                       "        WHEN TRUE THEN 'PASS'\n"
@@ -367,7 +364,6 @@ class Schema(AbstractSchema):
                 config_name=TextColumn(),
                 config_url=TextColumn(),
                 log_url=TextColumn(),
-                log_excerpt=TextColumn(),
                 comment=TextColumn(),
                 status=TextColumn(),
                 misc=JSONColumn(),
@@ -383,7 +379,6 @@ class Schema(AbstractSchema):
                       "    NULL AS environment_compatible,\n"
                       "    environment_misc,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    status,\n"
                       "    NULL AS number_value,\n"
                       "    NULL AS number_unit,\n"
@@ -403,7 +398,6 @@ class Schema(AbstractSchema):
                 environment_compatible=TextArrayColumn(),
                 environment_misc=JSONColumn(),
                 log_url=TextColumn(),
-                log_excerpt=TextColumn(),
                 status=TextColumn(),
                 number_value=FloatColumn(),
                 number_unit=TextColumn(),

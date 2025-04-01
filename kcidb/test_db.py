@@ -823,7 +823,6 @@ def test_upgrade(clean_database):
                         'https://android.googlesource.com/kernel/common.git',
                     'id':
                         '_:tuxsuite:f00af9d68ed146b47fdbfe91134fcf04c36e6d78',
-                    'log_excerpt': None,
                     'log_url': None,
                     'message_id': None,
                     'misc': None,
@@ -847,7 +846,6 @@ def test_upgrade(clean_database):
                     'duration': None,
                     'id': 'tuxsuite:2KtyFbORDouvFKy49kQtfgCmcac',
                     'input_files': None,
-                    'log_excerpt': None,
                     'log_url': 'https://storage.tuxsuite.com/public/'
                         'clangbuiltlinux/continuous-integration2/builds/'
                         '2KtyFbORDouvFKy49kQtfgCmcac/build.log',
@@ -866,7 +864,6 @@ def test_upgrade(clean_database):
                     'environment_compatible': None,
                     'environment_misc': None,
                     'id': 'syzbot:bf7c6406637722a401e0',
-                    'log_excerpt': None,
                     'log_url': None,
                     'misc': {
                         'origin_url':
@@ -955,7 +952,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -978,7 +974,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -996,7 +991,6 @@ def test_upgrade(clean_database):
                     "environment_misc": None,
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1086,7 +1080,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -1109,7 +1102,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1127,7 +1119,6 @@ def test_upgrade(clean_database):
                     "environment_misc": None,
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1246,7 +1237,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -1269,7 +1259,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1287,7 +1276,6 @@ def test_upgrade(clean_database):
                     "environment_misc": None,
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1420,7 +1408,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -1443,7 +1430,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1465,7 +1451,6 @@ def test_upgrade(clean_database):
                     "environment_misc": {"foo": "bar"},
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1602,7 +1587,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -1625,7 +1609,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1647,7 +1630,6 @@ def test_upgrade(clean_database):
                     "environment_misc": {"foo": "bar"},
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1784,7 +1766,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -1807,7 +1788,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1829,7 +1809,6 @@ def test_upgrade(clean_database):
                     "environment_misc": {"foo": "bar"},
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -1970,7 +1949,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -1993,7 +1971,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -2015,7 +1992,6 @@ def test_upgrade(clean_database):
                     "environment_misc": {"foo": "bar"},
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -2157,7 +2133,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -2180,7 +2155,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -2202,7 +2176,6 @@ def test_upgrade(clean_database):
                     "environment_misc": {"foo": "bar"},
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",

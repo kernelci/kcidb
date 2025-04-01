@@ -486,6 +486,11 @@ class Checkout(Object, BuildTestContainer, IncidentIssueVersionContainer):
         return self.__getattr__("builds")
 
     @cached_property
+    def log_excerpt(self):
+        """An empty log excerpt to tide us over until we could do better"""
+        return None
+
+    @cached_property
     def incidents(self):
         """A list of incidents of this checkout's builds and tests"""
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
@@ -509,6 +514,11 @@ class Build(Object, TestContainer,
     def tests(self):
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("tests")
+
+    @cached_property
+    def log_excerpt(self):
+        """An empty log excerpt to tide us over until we could do better"""
+        return None
 
     @cached_property
     def incidents(self):
@@ -588,6 +598,11 @@ class Test(Object, IncidentIssueVersionContainer):
         """A list of incidents of this container"""
         # It isn't, pylint: disable=bad-option-value,unnecessary-dunder-call
         return self.__getattr__("incidents")
+
+    @cached_property
+    def log_excerpt(self):
+        """An empty log excerpt to tide us over until we could do better"""
+        return None
 
 
 class Issue(Object, IncidentContainer, BuildContainer, TestContainer):

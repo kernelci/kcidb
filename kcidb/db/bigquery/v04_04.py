@@ -71,7 +71,6 @@ class Schema(PreviousSchema):
                       "    message_id,\n"
                       "    start_time,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    valid,\n"
                       "    misc\n"

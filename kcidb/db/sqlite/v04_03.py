@@ -59,7 +59,6 @@ class Schema(PreviousSchema):
                       "environment_compatible,\n"
                       "    \"environment.misc\" AS environment_misc,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    status,\n"
                       "    \"number.value\" AS number_value,\n"
                       "    \"number.unit\" AS number_unit,\n"

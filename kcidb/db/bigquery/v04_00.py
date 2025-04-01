@@ -512,7 +512,6 @@ class Schema(AbstractSchema):
                       "    message_id,\n"
                       "    start_time,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    valid,\n"
                       "    misc\n"
@@ -536,7 +535,6 @@ class Schema(AbstractSchema):
                       "    config_name,\n"
                       "    config_url,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    CASE valid\n"
                       "        WHEN TRUE THEN 'PASS'\n"
@@ -566,7 +564,6 @@ class Schema(AbstractSchema):
                       "    duration,\n"
                       "    output_files,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    misc\n"
                       "FROM tests",
