@@ -102,7 +102,6 @@ class Schema(PreviousSchema):
                       "    config_name,\n"
                       "    config_url,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    status,\n"
                       "    misc\n"
@@ -127,7 +126,6 @@ class Schema(PreviousSchema):
                       "    duration,\n"
                       "    output_files,\n"
                       "    log_url,\n"
-                      "    log_excerpt,\n"
                       "    comment,\n"
                       "    misc\n"
                       "FROM tests",
