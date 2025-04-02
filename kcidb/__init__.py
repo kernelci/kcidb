@@ -1,8 +1,13 @@
 """Kernel CI reporting"""
 
+import datetime
+import os
 import sys
+from io import BytesIO
+import gzip
 import email
 import logging
+import requests
 from kcidb.misc import LIGHT_ASSERTS
 # Silence flake8 "imported but unused" warning
 from kcidb import io, db, mq, orm, oo, monitor, tests, unittest, misc # noqa
@@ -407,3 +412,95 @@ def ingest_main():
             )
             sys.stdout.write("\x00")
             sys.stdout.flush()
+
+
+def triage_main():
+    """Execute the kcidb-triage command-line tool"""
+    sys.excepthook = misc.log_and_print_excepthook
+    description = 'kcidb-triage - Triage builds/tests against issues in ' \
+        'the specified object set'
+    parser = oo.ArgumentParser(database="json", description=description)
+    parser.add_argument(
+        '-b', '--cache-bucket',
+        help='Name of the cache bucket to try fetching artifacts from. '
+        'The value of KCIDB_CACHE_BUCKET_NAME is used, if not specified. '
+        'Otherwise artifacts are downloaded from the original URLs.'
+    )
+    args = parser.parse_args()
+    # Get the objects to be triaged
+    pattern_set = set()
+    for pattern_string in args.pattern_strings:
+        pattern_set |= orm.query.Pattern.parse(pattern_string)
+    oo_client = oo.Client(db.Client(args.database))
+    objects = oo_client.query(pattern_set)
+    # Create the cache client
+    cache_bucket = args.cache_bucket or \
+        os.environ.get("KCIDB_CACHE_BUCKET_NAME")
+    cache_client = cache_bucket and cache.Client(cache_bucket, 0, 0)
+    cache_ttl = datetime.timedelta(seconds=30)
+    requests_session = requests.Session()
+    output = io.SCHEMA.new()
+    output_incidents = output.setdefault("incidents", [])
+
+    def fetch_log(obj):
+        """Fetch the text of the main log for an object"""
+        if not obj.log_url:
+            return None
+        log_url = (
+            cache_client and
+            cache_client.map(obj.log_url, cache_ttl)
+        ) or obj.log_url
+        try:
+            LOGGER.debug("Downloading log for %s ID %r from %r",
+                         type(obj).__name__, obj.get_id(), log_url)
+            response = requests_session.get(log_url,
+                                            timeout=30,
+                                            allow_redirects=True)
+        except requests.exceptions.RequestException as err:
+            LOGGER.error("Failed downloading log for %s ID %r "
+                         "from %r: %s", type(obj).__name__,
+                         obj.get_id(), log_url, str(err))
+            return None
+        content_type = response.headers['Content-Type']
+        if content_type == 'application/gzip':
+            with gzip.GzipFile(fileobj=BytesIO(response.content)) as f:
+                return f.read().decode('utf-8')
+        else:
+            return response.text
+
+    # For each issue
+    for issue in objects["issue"]:
+        issue_version = issue.latest_version
+        # For each build
+        for build in objects.get("build", []):
+            LOGGER.debug("Triaging build ID %r", build.id)
+            # If we have the main log for the build
+            log = fetch_log(build)
+            # If we detect the issue in the log
+            # TODO Fetch the actual pattern from the issue
+            if "undefined reference" in log:
+                output_incidents.append(dict(
+                    id=f"_:{issue_version.id}:{issue_version.version_num}:"
+                    f"build:{build.id}:error",
+                    issue_id=issue.id,
+                    issue_version=issue.version_num,
+                    build_id=build.id,
+                    present=True,
+                ))
+        # For each test
+        for test in objects.get("test", []):
+            LOGGER.debug("Triaging test ID %r", test.id)
+            # If we have the main log for the test
+            log = fetch_log(test)
+            # If we detect the issue in the log
+            # TODO Fetch the actual pattern from the issue
+            if "FAIL" in log:
+                output_incidents.append(dict(
+                    id=f"_:{issue_version.id}:{issue_version.version_num}:"
+                    f"test:{test.id}:error",
+                    issue_id=issue.id,
+                    issue_version=issue.version_num,
+                    test_id=test.id,
+                    present=True,
+                ))
+    misc.json_dump(output_incidents, sys.stdout, indent=4)
