@@ -80,6 +80,7 @@ setuptools.setup(
             "kcidb-query = kcidb:query_main",
             "kcidb-notify = kcidb:notify_main",
             "kcidb-ingest = kcidb:ingest_main",
+            "kcidb-triage = kcidb:triage_main",
             "kcidb-db-schemas = kcidb.db:schemas_main",
             "kcidb-db-init = kcidb.db:init_main",
             "kcidb-db-upgrade = kcidb.db:upgrade_main",
