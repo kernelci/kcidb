@@ -2332,7 +2332,6 @@ def test_upgrade(clean_database):
                     "id":
                         "_:kernelci:"
                         "5acb9c2a7bc836e9e5172bbcd2311499c5b4e5f1",
-                    "log_excerpt": None,
                     "log_url": None,
                     "message_id": None,
                     "misc": None,
@@ -2355,7 +2354,6 @@ def test_upgrade(clean_database):
                     "duration": None,
                     "id": "google:google.org:a1d993c3n4c448b2j0l1hbf1",
                     "input_files": None,
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
@@ -2377,7 +2375,6 @@ def test_upgrade(clean_database):
                     "environment_misc": {"foo": "bar"},
                     "id":
                         "google:google.org:a19di3j5h67f8d9475f26v11",
-                    "log_excerpt": None,
                     "log_url": None,
                     "misc": None,
                     "origin": "google",
