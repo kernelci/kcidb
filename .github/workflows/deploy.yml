@@ -140,6 +140,8 @@ jobs:
           ]'
           declare -a args=(
             kernelci-production ""
+            --mute-updates
+            --mute-url-updates
             --grafana-url=https://kcidb.kernelci.org
             --grafana-public
             --grafana-anonymous
