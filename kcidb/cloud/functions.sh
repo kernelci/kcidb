@@ -15,6 +15,7 @@ declare _FUNCTIONS_SH=
 #       --heavy-asserts=true|false
 #       --new-topic=NAME --new-load-subscription=NAME
 #       --updated-publish=true|false
+#       --updated-urls-publish=true|false
 #       --updated-topic=NAME
 #       --load-queue-trigger-topic=NAME
 #       --purge-db-trigger-topic=NAME
@@ -41,7 +42,9 @@ function functions_env() {
                           optimize \
                           heavy_asserts \
                           new_topic new_load_subscription \
-                          updated_publish updated_topic \
+                          updated_publish \
+                          updated_urls_publish \
+                          updated_topic \
                           load_queue_trigger_topic \
                           purge_db_trigger_topic \
                           archive_trigger_topic \
@@ -108,6 +111,9 @@ function functions_env() {
     fi
     if "$updated_publish"; then
         env[KCIDB_UPDATED_PUBLISH]="1"
+    fi
+    if "$updated_urls_publish"; then
+        env[KCIDB_UPDATED_URLS_PUBLISH]="1"
     fi
     if [ "$format" == "yaml" ]; then
         # Silly Python and its significant whitespace

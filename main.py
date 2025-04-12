@@ -93,6 +93,8 @@ _SPOOL_CLIENT = None
 _UPDATED_URLS_PUBLISHER = None
 # True if the database updates should be published to the updated queue
 UPDATED_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_PUBLISH", ""))
+# True if the URL updates should be published to the corresponding queue
+UPDATED_URLS_PUBLISH = bool(os.environ.get("KCIDB_UPDATED_URLS_PUBLISH", ""))
 # The publisher object for the queue with patterns matching objects updated by
 # loading submissions.
 _UPDATED_QUEUE_PUBLISHER = None
@@ -217,7 +219,7 @@ def get_updated_urls_publisher():
     """Create or retrieve the updated URLs publisher client"""
     # It's alright, pylint: disable=global-statement
     global _UPDATED_URLS_PUBLISHER
-    if _UPDATED_URLS_PUBLISHER is None:
+    if UPDATED_URLS_PUBLISH and _UPDATED_URLS_PUBLISHER is None:
         _UPDATED_URLS_PUBLISHER = kcidb.mq.URLListPublisher(
             PROJECT_ID,
             os.environ["KCIDB_UPDATED_URLS_TOPIC"]
@@ -317,25 +319,27 @@ def kcidb_load_queue(event, context):
     db_client.load(data)
     LOGGER.info("Loaded %u objects", obj_num)
 
-    # Get or create the URL publisher client
-    urls_publisher = get_updated_urls_publisher()
-
-    # Extract URLs from the data using URL_FIELDS_SPEC
-    urls = extract_fields(URL_FIELDS_SPEC, data)
-
-    # Divide the extracted URLs into slices of 64 using isliced
-    urls_slices = kcidb.misc.isliced(set(urls), 64)
-
-    # Process each slice of URLs
-    for urls in urls_slices:
-        LOGGER.info("Publishing extracted URLs: %s", list(urls))
-        # Publish the extracted URLs
-        urls_publisher.publish(list(urls))
-
     # Acknowledge all the loaded messages
     for msg in msgs:
         subscriber.ack(msg[0])
     LOGGER.debug("ACK'ed %u messages", len(msgs))
+
+    # Get or create the URL publisher client
+    urls_publisher = get_updated_urls_publisher()
+
+    # If we got a publisher (publishing is enabled)
+    if urls_publisher:
+        # Extract URLs from the data using URL_FIELDS_SPEC
+        urls = extract_fields(URL_FIELDS_SPEC, data)
+
+        # Divide the extracted URLs into slices of 64 using isliced
+        urls_slices = kcidb.misc.isliced(set(urls), 64)
+
+        # Process each slice of URLs
+        for urls in urls_slices:
+            LOGGER.info("Publishing extracted URLs: %s", list(urls))
+            # Publish the extracted URLs
+            urls_publisher.publish(list(urls))
 
     if publisher:
         # Generate patterns matching all affected objects
