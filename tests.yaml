@@ -57,7 +57,7 @@ bootrr:
   home: https://github.com/andersson/bootrr
 bpf:
   title: In-tree BPF test suite module
-  home: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/lib/test_bpf.c
+  home: https://github.com/torvalds/linux/blob/master/lib/test_bpf.c
 dacapobench:
   title: DaCapo Java benchmarking suite
   home: http://dacapobench.sourceforge.net/
