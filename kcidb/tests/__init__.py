@@ -21,6 +21,7 @@ def validate_main():
     catalog = yaml.safe_load(sys.stdin)
     schema.validate(catalog)
     if args.urls:
+        exc_list = []
         for test in catalog.values():
             try:
                 requests.head(test['home'], timeout=60).raise_for_status()
@@ -28,3 +29,10 @@ def validate_main():
                 requests.head(
                     test['home'], timeout=60, verify=False
                 ).raise_for_status()
+            except requests.exceptions.RequestException as exc:
+                exc_list.append(exc)
+
+        for exc in exc_list:
+            print(exc, file=sys.stderr)
+
+        return int(bool(exc_list))
