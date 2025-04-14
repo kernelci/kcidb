@@ -296,7 +296,7 @@ redhat_watchdog_test:
   home: https://gitlab.com/cki-project/kernel-tests/-/tree/main/watchdog/hw-generic
 rt-tests:
   title: RT-linux test suite
-  home: https://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git
+  home: https://wiki.linuxfoundation.org/realtime/documentation/howto/tools/rt-tests
 selinux:
   title: SELinux Regression Test Suite for the Linux Kernel
   home: https://github.com/SELinuxProject/selinux-testsuite
