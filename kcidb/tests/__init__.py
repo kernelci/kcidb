@@ -35,4 +35,7 @@ def validate_main():
         for exc in exc_list:
             print(exc, file=sys.stderr)
 
-        return int(bool(exc_list))
+        if exc_list:
+            return 1
+
+    return 0
