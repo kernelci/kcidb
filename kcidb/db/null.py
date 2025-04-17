@@ -3,6 +3,7 @@
 import textwrap
 import datetime
 import kcidb.io as io
+from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db.abstract import Driver as AbstractDriver
 
 
@@ -235,15 +236,17 @@ class Driver(AbstractDriver):
         del pattern_set
         return {}
 
-    def load(self, data, with_metadata, copy):
+    def load_iter(self, data_iter, with_metadata, copy):
         """
-        Load data into the database.
+        Load an iterable of datasets into the database,
+        at least per-table atomically.
 
         Args:
-            data:           The JSON data to load into the database. Must
-                            adhere to the I/O version of the database schema.
-                            Will be modified, if "copy" is False.
-            with_metadata:  True if any metadata in the data should
+            data_iter:      The iterable of JSON datasets to load into the
+                            database. Each dataset must adhere to the I/O
+                            version of the database schema, and will be
+                            modified, if "copy" is False.
+            with_metadata:  True if any metadata in the datasets should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
@@ -251,3 +254,11 @@ class Driver(AbstractDriver):
                             packing. False, if the loaded data should be
                             packed in-place.
         """
+        assert self.is_initialized()
+        assert isinstance(with_metadata, bool)
+        assert isinstance(copy, bool)
+        io_schema = self.get_schema()[1]
+        # Exhaust generators
+        for data in data_iter:
+            assert io_schema.is_compatible_directly(data)
+            assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
