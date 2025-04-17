@@ -1,7 +1,10 @@
 """
 Kernel CI BigQuery report database - miscellaneous schema definitions
 """
+import re
 from google.cloud.bigquery.schema import SchemaField as Field
+from google.protobuf import \
+    descriptor_pb2, descriptor_pool, message_factory
 
 
 class JSONInvalidError(Exception):
@@ -137,3 +140,131 @@ def validate_json_obj_list(field_list, obj_list):
         validate_json_obj(field_list, obj)
 
     return obj_list
+
+# You're wrong, pylint: disable=no-member
+
+
+# The Protobuf field types corresponding to BigQuery field types
+PROTOBUF_FIELD_TYPES = {
+    names[1]: getattr(descriptor_pb2.FieldDescriptorProto, "TYPE_" + names[2])
+    for names in re.finditer(
+        r"\s*(\S+)\s+(\S+)\s*\n",
+        """
+            STRING      STRING
+            BYTES       BYTES
+            INTEGER     INT64
+            INT64       INT64
+            FLOAT       DOUBLE
+            FLOAT64     DOUBLE
+            BOOLEAN     BOOL
+            BOOL        BOOL
+            TIMESTAMP   STRING
+            DATE        STRING
+            TIME        STRING
+            DATETIME    STRING
+            NUMERIC     STRING
+            BIGNUMERIC  STRING
+            GEOGRAPHY   STRING
+        """
+    )
+}
+
+
+def protobuf_msg_desc_fill(desc, field_list):
+    """
+    Fill a protobuf message descriptor with definitions from a (BigQuery
+    schema) field list.
+
+    Args:
+        desc:       The protobuf message descriptor to fill with the field
+                    list definition.
+        field_list: The list/tuple of BigQuery SchemaField objects to describe
+                    as a message.
+
+    Returns:
+        The filled protobuf message descriptor.
+    """
+    assert isinstance(desc, descriptor_pb2.DescriptorProto)
+    assert isinstance(field_list, (list, tuple))
+    assert all(isinstance(field, Field) for field in field_list)
+
+    # It's a type, pylint: disable=invalid-name
+    FDP = descriptor_pb2.FieldDescriptorProto
+
+    for i, field in enumerate(field_list, start=1):
+        field_desc = desc.field.add()
+        field_desc.name = field.name
+        field_desc.number = i
+
+        if field.mode == "REPEATED":
+            field_desc.label = FDP.LABEL_REPEATED
+        else:
+            field_desc.label = FDP.LABEL_OPTIONAL
+
+        if field.field_type.upper() == "RECORD":
+            protobuf_msg_desc_fill(
+                desc.nested_type.add(), field.fields
+            ).name = field.name
+            field_desc.type = FDP.TYPE_MESSAGE
+            field_desc.type_name = field.name
+        else:
+            field_desc.type = PROTOBUF_FIELD_TYPES[field.field_type]
+            if field.mode != "REPEATED":
+                field_desc.proto3_optional = True
+                oneof = desc.oneof_decl.add()
+                oneof.name = "_" + field.name
+                field_desc.oneof_index = len(desc.oneof_decl) - 1
+
+    return desc
+
+
+def protobuf_file_desc_create(name, field_list):
+    """
+    Create a protobuf file descriptor from a BigQuery table schema field list.
+
+    Args:
+        name:       The name of the object type stored in the table
+                    (singular). Will be used for naming the file
+                    (as <name>.proto) and the message type (literally).
+                    The file will belong to "org.kernelci.bq" package.
+        field_list: The list of SchemaField objects defining the table schema.
+
+    Returns:
+        The created file descriptor.
+    """
+    assert isinstance(name, str)
+    assert name.isidentifier()
+    assert isinstance(field_list, (list, tuple))
+    assert all(isinstance(field, Field) for field in field_list)
+
+    desc = descriptor_pb2.FileDescriptorProto(
+        package="org.kernelci.bq",
+        name=name + ".proto",
+    )
+    protobuf_msg_desc_fill(desc.message_type.add(), field_list).name = name
+
+    return desc
+
+
+def protobuf_msg_type_create(name, field_list):
+    """
+    Create a protobuf message class for a table with the schema described by a
+    list of SchemaField objects.
+
+    Args:
+        name:       The name of the object type stored in the table
+                    (singular). Will be used for naming the message type.
+        field_list: The list of SchemaField objects defining the table schema.
+
+    Returns:
+        The created message class.
+    """
+    assert isinstance(name, str)
+    assert name.isidentifier()
+    assert isinstance(field_list, (list, tuple))
+    assert all(isinstance(field, Field) for field in field_list)
+    pool = descriptor_pool.DescriptorPool()
+    pool.Add(protobuf_file_desc_create(name, field_list))
+    return message_factory.GetMessageClass(
+        pool.FindMessageTypeByName("org.kernelci.bq." + name)
+    )
