@@ -3,6 +3,9 @@
 import sys
 import email
 import logging
+import os
+import re
+import requests
 from kcidb.misc import LIGHT_ASSERTS
 # Silence flake8 "imported but unused" warning
 from kcidb import io, db, mq, orm, oo, monitor, tests, unittest, misc # noqa
@@ -20,7 +23,17 @@ class DatabaseNotInitialized(Exception):
 
 
 class Client:
-    """Kernel CI reporting client"""
+    """Kernel CI reporting client
+    Regex for validating REST URI format
+    http(s)://token@host[:port]
+    """
+    REST_REGEX = re.compile(
+        r'^(?:(?P<scheme>https?)://)?'
+        r'(?:(?P<token>[^@]+)@)?'
+        r'(?P<host>[^:/]+)'
+        r'(?::(?P<port>\d+))?'
+        r'(/.*)?$',
+    )
 
     def __init__(self, database=None, project_id=None, topic_name=None):
         """
@@ -44,6 +57,21 @@ class Client:
             `kcidb.db.IncompatibleSchema` if the database schema
             is incompatible with the current I/O schema.
         """
+        # verify if environment have KCIDB_REST variable
+        rest = os.environ.get("KCIDB_REST")
+        if rest:
+            if not isinstance(rest, str) or not rest:
+                raise ValueError("KCIDB_REST must be a non-empty string")
+            if not self.validate_rest_uri(rest):
+                raise ValueError("KCIDB_REST must be a valid URI")
+            self._resturi = rest
+            self.db_client = None
+            self.mq_publisher = None
+            # We return early, because this is a new feature
+            # and the legacy logic is bypassed in REST-enabled environment
+            return
+
+        self._resturi = None
         assert database is None or \
             isinstance(database, str) and database
         assert project_id is None or \
@@ -59,6 +87,93 @@ class Client:
         self.mq_publisher = \
             mq.IOPublisher(project_id, topic_name) \
             if project_id and topic_name else None
+
+    def validate_rest_uri(self, uri):
+        """
+        Validate the REST URI format.
+        http(s)://token@host[:port]
+
+        Args:
+            uri: The URI to validate.
+
+        Returns:
+            True if the URI is valid, False otherwise.
+        """
+        rest_regex = self.REST_REGEX
+        match = rest_regex.match(uri)
+        if match:
+            host = match.group('host')
+            port = match.group('port')
+            scheme = match.group('scheme')
+            token = match.group('token')
+            if scheme and scheme not in ['http', 'https']:
+                return False
+            if not token:
+                return False
+            if port and not re.match(r'^\d+$', port):
+                return False
+            if host and not re.match(r'^[a-zA-Z0-9.-]+$', host):
+                return False
+            return True
+        return False
+
+    def rest_submit(self, data):
+        """Submit reports over REST API.
+        Args:
+            data:   A JSON object with the report data to submit.
+                    Must adhere to the current, or an earlier version of I/O
+                    schema. Note that this function will not validate the
+                    submitted data.
+        Returns:
+            Submission ID string.
+
+        Uses the environment variable KCIDB_REST to get the REST URI
+        and credentials.
+        """
+        print("Submitting report over REST API")
+        vre = self.REST_REGEX
+        match = vre.match(self._resturi)
+        if match:
+            host = match.group('host')
+            port = match.group('port')
+            scheme = match.group('scheme') or 'https'
+            token = match.group('token')
+            url = None
+            if scheme not in ['http', 'https']:
+                raise ValueError("Invalid scheme in REST URI")
+            if not port:
+                url = f"{scheme}://{host}/submit"
+            else:
+                url = f"{scheme}://{host}:{port}/submit"
+            headers = {'Content-Type': 'application/json'}
+            # add token
+            headers['Authorization'] = f"Bearer {token}"
+            try:
+                response = requests.post(url, json=data,
+                                         headers=headers,
+                                         timeout=60)
+            except requests.exceptions.RequestException as e:
+                raise e
+
+            if response.status_code == 200:
+                try:
+                    submission_id = response.json().get('id')
+                    if not submission_id:
+                        raise ValueError("No submission ID in response")
+                    return submission_id
+                except ValueError as ve:
+                    raise requests.exceptions.RequestException(
+                        f"Error parsing response: {ve}"
+                    )
+                except Exception as e:
+                    raise requests.exceptions.RequestException(
+                        f"Error parsing response: {e}"
+                    )
+            raise requests.exceptions.RequestException(
+                f"Error submitting report: {response.status_code} "
+                f"{response.text}"
+            )
+        raise ValueError("Invalid REST URI format")
 
     def submit(self, data):
         """
@@ -79,6 +194,9 @@ class Client:
         """
         assert io.SCHEMA.is_compatible(data)
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
+        # Submit over rest if self._rest is set
+        if self._resturi:
+            return self.rest_submit(data)
         if not self.mq_publisher:
             raise NotImplementedError
         return self.mq_publisher.publish(data)
@@ -103,6 +221,10 @@ class Client:
         """
         assert io.SCHEMA.is_compatible(data)
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
+        # Submit over rest if self._rest is set
+        # TODO: future?
+        if self._resturi:
+            return self.rest_submit(data)
         if not self.mq_publisher:
             raise NotImplementedError
         return self.mq_publisher.future_publish(data)
