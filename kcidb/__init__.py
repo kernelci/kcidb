@@ -130,7 +130,7 @@ class Client:
         Uses the environment variable KCIDB_REST to get the REST URI
         and credentials.
         """
-        print("Submitting report over REST API")
+        LOGGER.debug("Submitting report over REST API")
         vre = self.REST_REGEX
         match = vre.match(self._resturi)
         if match:
