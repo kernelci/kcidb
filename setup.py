@@ -43,13 +43,6 @@ setuptools.setup(
     # Must match requirements.txt.
     # Let's make that easier, pylint: disable=line-too-long
     install_requires=[
-        "google-cloud-bigquery",
-        "google-cloud-pubsub",
-        "google-cloud-storage",
-        "functions-framework",
-        "google-cloud-firestore",
-        "google-cloud-secret-manager",
-        "google-cloud-logging",
         "flask",
         "psycopg2",
         "jsonschema[format]",
@@ -59,7 +52,7 @@ setuptools.setup(
         "python-dateutil",
         "cached-property",
         "kcidb-io@git+https://github.com/kernelci/kcidb-io.git",
-        "jq@git+https://github.com/kernelci/jq.py.git@1.7.0.post1",
+        "jq",
     ],
     extras_require=dict(
         dev=[
@@ -90,15 +83,8 @@ setuptools.setup(
             "kcidb-db-dump = kcidb.db:dump_main",
             "kcidb-db-query = kcidb.db:query_main",
             "kcidb-db-time = kcidb.db:time_main",
-            "kcidb-mq-email-publisher = kcidb.mq:email_publisher_main",
-            "kcidb-mq-email-subscriber = kcidb.mq:email_subscriber_main",
-            "kcidb-mq-io-publisher = kcidb.mq:io_publisher_main",
-            "kcidb-mq-io-subscriber = kcidb.mq:io_subscriber_main",
-            "kcidb-mq-pattern-publisher = kcidb.mq:pattern_publisher_main",
-            "kcidb-mq-pattern-subscriber = kcidb.mq:pattern_subscriber_main",
             "kcidb-oo-query = kcidb.oo:query_main",
             "kcidb-tests-validate = kcidb.tests:validate_main",
-            "kcidb-monitor-spool-wipe = kcidb.monitor.spool:wipe_main",
         ]
     ),
     package_data={

@@ -39,16 +39,13 @@ def test_json_output_options():
 
 def test_submit_main():
     """Check kcidb-submit works"""
+    argv = ["kcidb.submit_main"]
+
     driver_source = textwrap.dedent("""
-        from unittest.mock import patch, Mock
-        with patch("kcidb.mq.Publisher.__init__",
-                   return_value=None) as init, \
-             patch("kcidb.mq.Publisher.future_publish") as future_publish:
-            status = function()
-            init.assert_called_once_with("project", "topic")
-        return status
+        import os
+        os.environ["KCIDB_REST"] = "https://token@example.com"
+        return function()
     """)
-    argv = ["kcidb.submit_main", "-p", "project", "-t", "topic"]
 
     assert_executes("", *argv, driver_source=driver_source)
     assert_executes('{', *argv, driver_source=driver_source,
@@ -58,45 +55,80 @@ def test_submit_main():
 
     empty = kcidb.io.SCHEMA.new()
 
-    driver_source = textwrap.dedent(f"""
+    driver_source = textwrap.dedent("""
+        import os
         from unittest.mock import patch, Mock
-        future = Mock()
-        future.done = lambda: True
-        future.add_done_callback = lambda cb: cb(future)
-        future.result = Mock(return_value="id")
-        with patch("kcidb.mq.Publisher.__init__",
-                   return_value=None) as init, \
-             patch("kcidb.mq.Publisher.future_publish",
-                   return_value=future) as future_publish:
+        os.environ["KCIDB_REST"] = "https://token@example.com"
+        response = Mock()
+        response.status_code = 200
+        response.json = Mock(return_value={"id": "id"})
+        response.text = ""
+        with patch("kcidb.requests.post", return_value=response) as post:
             status = function()
-            init.assert_called_once_with("project", "topic")
-            future_publish.assert_called_once_with({repr(empty)})
+            assert post.call_count == 1
         return status
     """)
     assert_executes(json.dumps(empty), *argv,
                     driver_source=driver_source,
                     stdout_re="id\n")
 
-    driver_source = textwrap.dedent(f"""
-        from unittest.mock import patch, Mock, call
-        future = Mock()
-        future.done = lambda: True
-        future.add_done_callback = lambda cb: cb(future)
-        future.result = Mock(return_value="id")
-        with patch("kcidb.mq.Publisher.__init__",
-                   return_value=None) as init, \
-             patch("kcidb.mq.Publisher.future_publish",
-                   return_value=future) as future_publish:
+    driver_source = textwrap.dedent("""
+        import os
+        from unittest.mock import patch, Mock
+        os.environ["KCIDB_REST"] = "https://token@example.com"
+        response = Mock()
+        response.status_code = 200
+        response.json = Mock(return_value={"id": "id"})
+        response.text = ""
+        with patch("kcidb.requests.post", return_value=response) as post:
             status = function()
-            init.assert_called_once_with("project", "topic")
-            assert future_publish.call_count == 2
-            future_publish.assert_has_calls([call({repr(empty)}),
-                                             call({repr(empty)})])
+            assert post.call_count == 2
         return status
     """)
     assert_executes(json.dumps(empty) + json.dumps(empty), *argv,
                     driver_source=driver_source,
                     stdout_re="id\nid\n")
+
+    driver_source = textwrap.dedent("""
+        import os
+        from unittest.mock import patch, Mock
+        from itertools import count
+        os.environ["KCIDB_REST"] = "http://localhost:8080/submit"
+        counter = count()
+        def post(*args, **kwargs):
+            response = Mock()
+            if next(counter) == 0:
+                response.status_code = 500
+                response.text = "fail"
+                response.json = Mock(return_value={})
+                return response
+            response.status_code = 200
+            response.json = Mock(return_value={"id": "id"})
+            response.text = ""
+            return response
+        with patch("kcidb.requests.post", side_effect=post) as post:
+            status = function()
+            assert post.call_count == 2
+        return status
+    """)
+    assert_executes(json.dumps(empty) + json.dumps(empty), *argv,
+                    driver_source=driver_source,
+                    stdout_re="id\n",
+                    stderr_re=".*Error submitting report.*",
+                    status=1)
+
+
+def test_rest_uri_validation():
+    """Check REST URI validation accepts local tokenless URIs."""
+    client = kcidb.Client(rest_uri="http://localhost:8080/submit")
+    # pylint: disable=protected-access
+    assert client._resturi == "http://localhost:8080/submit"
+    try:
+        kcidb.Client(rest_uri="https://example.com/submit")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Expected ValueError for missing token")
 
 
 def test_query_main():
@@ -194,7 +226,8 @@ def test_validate_main():
     assert_executes('{"version":{"major":2,"minor":0}}',
                     "kcidb.validate_main", "1",
                     status=1,
-                    stderr_re=".*ValidationError: 1 was expected.*")
+                    # jsonschema error wording varies by version; keep loose.
+                    stderr_re=".*ValidationError:.*")
     assert_executes('{"version":{"major":4,"minor":0}}',
                     "kcidb.validate_main", "0",
                     status=2,

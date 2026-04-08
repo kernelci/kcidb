@@ -29,17 +29,11 @@ flowchart LR
             kcidb_XX["kcidb_XX<br/>checkouts<br/>builds<br/>tests"]
         end
 
-        subgraph "Pub/Sub"
-            kcidb_trigger["kcidb_trigger"]
-            kcidb_load_queue["kcidb_load_queue"]
-            kcidb_new["kcidb_new"]
-        end
-
-        subgraph "Cloud Functions"
-            kcidb_updated["kcidb_updated"]
-            kcidb_spool_notifications["kcidb_spool_notifications"]
-            kcidb_send_notification["kcidb_send_notification"]
-        end
+    subgraph "Cloud Functions"
+        kcidb_updated["kcidb_updated"]
+        kcidb_spool_notifications["kcidb_spool_notifications"]
+        kcidb_send_notification["kcidb_send_notification"]
+    end
 
         subgraph Firestore
             notifications["notifications"]
@@ -80,11 +74,7 @@ flowchart LR
     kcidb_XX --> kcidb_query
     kcidb_XX --> kcidb_webdashboard
 
-    kcidb_trigger --> kcidb_new
-    kcidb_submit --> kcidb_new
-    kcidb_new --> kcidb_load_queue
-    kcidb_load_queue --> kcidb_XX
-    kcidb_load_queue --> kcidb_updated
+    kcidb_submit --> kcidb_updated
     kcidb_updated --> kcidb_spool_notifications
     kcidb_spool_notifications --> notifications
     notifications --> kcidb_send_notification
@@ -154,33 +144,14 @@ KernelCI data submissions.
 A major feature of the new architecture is the ability to create self-hosted
 installations of KernelCI, which can be deployed on any cloud provider or on-premises.
 
-### Legacy Architecture
-
-In legacy, whenever a client submits reports, either via `kcidb-submit` or the kcidb
-library, they go to a Pub/Sub message queue topic named `kcidb_new`, then to
-the `kcidb_load_queue` "Cloud Function", which loads the data to the CloudSQL
-dataset, and then pushes the list of updated objects to `kcidb_updated` topic.
-The `kcidb_load_queue` function is triggered periodically via messages to
-`kcidb_trigger` topic, pushed there by the Cloud Scheduler service.
-
-That topic is watched by `kcidb_spool_notifications` function, which picks up
-the data, generates report notifications, and stores them in a Firestore
-collection named `notifications`.
-
-The last "Cloud Function", `kcidb_send_notification`, picks up the created
-notifications from the Firestore collection, and sends them out through GMail,
-using the `bot@kernelci.org` account, authenticating with the password stored
-in `kcidb_smtp_password` secret, within Secret Manager.
-
 ### Caching System
 
 ```mermaid
 flowchart TB
-    A[CI System] -->|Publish I/O data| B(kcidb_new)
+    A[CI System] -->|Publish I/O data| B(kcidb_submit)
 
     subgraph Data Submission
-        B(kcidb_new) -->|Pull I/O data| C(["kcidb_load_queue()"])
-        C(["kcidb_load_queue()"]) -->|Publish URLs| D(kcidb_updated_urls)
+        B(kcidb_submit) -->|Publish URLs| D(kcidb_updated_urls)
     end
 
     subgraph Caching System
@@ -198,26 +169,25 @@ flowchart TB
 
     subgraph Legend
     K([Cloud Functions])
-    M(Pub/Sub Topic)
     end
 ```
 
-1. **Publishing Initial Data**: The CI System initiates the process by publishing I/O data to the `kcidb_new` topic. This topic acts as a holding area for the data.
+1. **Publishing Initial Data**: The CI System initiates the process by submitting I/O data via the KCIDB submission system.
 
 2. **URLs Extraction**:
-The `kcidb_load_queue()` function pulls the I/O data from the `kcidb_new` topic, store it in the database and also extracts URLs from it. This extracted URL data is then published to the `kcidb_updated_urls` topic.
+The submission processing extracts URLs and publishes them to the `kcidb_updated_urls` queue.
 
-3. **URL Processing and Cache Logic**: The `kcidb_cache_urls()` function receives the URLs from the `kcidb_updated_urls` topic and fetch the file from that location and store them in the Google Cloud Storage Bucket.
+3. **URL Processing and Cache Logic**: The `kcidb_cache_urls()` function receives the URLs from the `kcidb_updated_urls` queue, fetches the files from their locations, and stores them in the Google Cloud Storage bucket.
 
 ### Cache Request Handling
 
 1. **User File Request**: When a user requests a file then that request is directed to the `kcidb_cache_redirect()` cloud function. This function serves as the entry point for processing user requests and initiating the cache lookup process.
 
-2. **Cache Lookup**: The `kcidb_cache_redirect()` function interacts with the Google Cloud Storage Bucket to find and serve the file from there, if its available.
+2. **Cache Lookup**: The `kcidb_cache_redirect()` function interacts with the Google Cloud Storage bucket to find and serve the file from there, if its available.
 
 3. **File Availability Check**: If the requested file is found within the cache storage, the `kcidb_cache_redirect()` function performs a redirection to the location of the file within the Google Cloud Storage Bucket and serve it to the user.
 
-4. **Fallback Mechanism**: In cases where the requested file is not present within the ccache storage, then `kcidb_cache_redirect()` function redirect the user to the original URL from which the file was initially requested.
+4. **Fallback Mechanism**: In cases where the requested file is not present within the cache storage, then `kcidb_cache_redirect()` function redirects the user to the original URL from which the file was initially requested.
 
 Setup
 -----
@@ -407,4 +377,3 @@ To upgrade the dataset schema, do the following.
         kcidb-db-dump -d bigquery:kernelci01_archive > kernelci01_archive.json
         # Using new-schema kcidb
         kcidb-db-load -d bigquery:kernelci02 < kernelci01_archive.json
-

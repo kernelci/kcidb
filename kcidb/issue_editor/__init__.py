@@ -11,11 +11,15 @@ import kcidb
 
 app = Flask(__name__)
 
-project_id = os.environ.get("KCIDB_PROJECT")
-topic_name = os.environ.get("KCIDB_NEW_TOPIC")
 ORIGIN = "maestro"
 
-client = kcidb.mq.IOPublisher(project_id, topic_name)
+
+def get_client():
+    """Create a REST client for submissions."""
+    rest_uri = os.environ.get("KCIDB_REST")
+    if not rest_uri:
+        raise RuntimeError("KCIDB_REST must be set for submissions")
+    return kcidb.Client(rest_uri=rest_uri)
 
 
 @app.route('/')
@@ -109,9 +113,9 @@ def submit_issue():  # pylint: disable=too-many-locals
         return jsonify(report), 200
 
     try:
-        submission_id = client.publish(report)
+        submission_id = get_client().submit(report)
     except Exception as e:  # pylint: disable=broad-exception-caught
-        print("Error:", str(e))
+        return jsonify({"error": str(e)}), 500
     return jsonify({
         "submission_id": submission_id,
         "issue_id": issue["id"],
@@ -188,7 +192,7 @@ def submit_incidents():  # pylint: disable=too-many-locals
         return jsonify(report), 200
 
     try:
-        submission_id = client.publish(report)
+        submission_id = get_client().submit(report)
     except Exception as e:  # pylint: disable=broad-exception-caught
-        print("Error:", str(e))
+        return jsonify({"error": str(e)}), 500
     return jsonify({"submission_id": submission_id}), 200

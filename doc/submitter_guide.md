@@ -451,11 +451,17 @@ data.
 As soon as you have your report data pass validation (e.g. with the
 `kcidb-validate` tool), you should be able to submit it to the database.
 
+Submission is done over the KCIDB REST API. To authenticate, set the
+`KCIDB_REST` environment variable to the endpoint with your token:
+
+```bash
+export KCIDB_REST="https://token@db.kernelci.org/"
+```
+
 If you're using shell, and e.g. have your data in file `report.json`, pipe it
 to the `kcidb-submit` tool like this:
 
-    kcidb-submit -p kernelci-production \
-                 -t playground_kcidb_new < report.json
+    kcidb-submit < report.json
 
 If you're using Python 3, and e.g. have variable `report` holding standard
 JSON representation of your report, you can submit it like this:
@@ -463,28 +469,12 @@ JSON representation of your report, you can submit it like this:
 ```python
 import kcidb
 
-client = kcidb.Client(project_id="kernelci-production",
-                      topic_name="playground_kcidb_new")
+client = kcidb.Client()
 client.submit(report)
 ```
 
 Your data could take up to a few minutes to reach the database, but after that
 you should be able to find it in our [dashboard][dashboard].
-
-### Submitting directly
-
-If for any reason you cannot use the command-line tools, and you don't use
-Python 3 (e.g. you are using another language in a "serverless" environment),
-you can interface with KCIDB submission system directly.
-
-NOTE: this interface is less stable than the command-line, and the library
-interfaces, and is more likely to change in the future.
-
-You will have to use one of the Google Cloud [Pub/Sub client
-libraries][pub_sub_libraries] or [service APIs][pub_sub_apis] to publish your
-reports to the Pub/Sub topic specified above, using the provided credentials.
-Please make sure to validate each report against the schema output by
-`kcidb-schema` before publishing it.
 
 ### Submitting objects multiple times
 
@@ -508,16 +498,7 @@ reporting faster!
 [datetime_format]: https://tools.ietf.org/html/rfc3339#section-5.6
 [tests]: https://github.com/kernelci/kcidb/blob/master/tests.yaml
 [dashboard]: https://kcidb.kernelci.org/
-[pub_sub_libraries]: https://cloud.google.com/pubsub/docs/reference/libraries
-[pub_sub_apis]: https://cloud.google.com/pubsub/docs/reference/service_apis_overview
-
 ### Migration from legacy Pub/Sub to REST API
 
-The legacy Pub/Sub API is deprecated and will be removed in the future. The REST API is the recommended way to interact with KCIDB.
-
-If you are using kcidb as a library, or the `kcidb-submit` tool, you can switch to the REST API by setting the `KCIDB_REST` environment variable to the appropriate endpoint with token.
-```bash
-export KCIDB_REST="https://token@db.kernelci.org/"
-```
-
-After setting the environment variable, you can use the same commands as before, and they will automatically use the REST API instead of the legacy Pub/Sub API.
+The legacy Pub/Sub API is deprecated. The REST API is the supported way to
+interact with KCIDB.

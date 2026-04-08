@@ -5,14 +5,13 @@ import email
 import logging
 import os
 import re
-import requests
 import concurrent.futures
-from functools import partial
 import time
+
+import requests
 from kcidb.misc import LIGHT_ASSERTS
 # Silence flake8 "imported but unused" warning
-from kcidb import io, db, mq, orm, oo, monitor, tests, unittest, misc # noqa
-from kcidb import cache # noqa
+from kcidb import io, db, orm, oo, monitor, tests, unittest, misc # noqa
 
 
 # Module's logger
@@ -28,7 +27,8 @@ class DatabaseNotInitialized(Exception):
 class Client:
     """Kernel CI reporting client
     Regex for validating REST URI format
-    http(s)://token@host[:port]
+    http(s)://[token@]host[:port][/path]
+    Token may be omitted for local endpoints (e.g. localhost).
     """
     REST_REGEX = re.compile(
         r'^(?:(?P<scheme>https?)://)?'
@@ -37,8 +37,9 @@ class Client:
         r'(?::(?P<port>\d+))?'
         r'(/.*)?$',
     )
+    LOCAL_REST_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0"}
 
-    def __init__(self, database=None, project_id=None, topic_name=None, max_workers=10):
+    def __init__(self, database=None, rest_uri=None, max_workers=10):
         """
         Initialize a reporting client
 
@@ -46,13 +47,8 @@ class Client:
             database:       The database specification string to use for
                             accessing the report database.
                             Can be None to have querying disabled.
-            project_id:     ID of the Google Cloud project hosting the message
-                            queue accepting submissions.
-                            Can be None to have submitting disabled.
-            topic_name:     Name of the message queue topic to publish
-                            submissions to. The message queue should be
-                            located within the specified Google Cloud project.
-                            Can be None, to have submitting disabled.
+            rest_uri:       REST URI to use for submissions. If not provided,
+                            the KCIDB_REST environment variable is used.
             max_workers:    Maximum number of worker threads for concurrent
                             submissions. Defaults to 10.
 
@@ -67,43 +63,31 @@ class Client:
         self._max_workers = max_workers
 
         # verify if environment have KCIDB_REST variable
-        rest = os.environ.get("KCIDB_REST")
+        rest = rest_uri or os.environ.get("KCIDB_REST")
         if rest:
             if not isinstance(rest, str) or not rest:
                 raise ValueError("KCIDB_REST must be a non-empty string")
             if not self.validate_rest_uri(rest):
                 raise ValueError("KCIDB_REST must be a valid URI")
             self._resturi = rest
-            self.db_client = None
-            self.mq_publisher = None
-            self._executor = None
-            # We return early, because this is a new feature
-            # and the legacy logic is bypassed in REST-enabled environment
-            return
-
-        self._resturi = None
-        assert database is None or \
-            isinstance(database, str) and database
-        assert project_id is None or \
-            isinstance(project_id, str) and project_id
-        assert topic_name is None or \
-            isinstance(topic_name, str) and topic_name
+        else:
+            self._resturi = None
+        assert database is None or isinstance(database, str) and database
         if database is None:
             self.db_client = None
         else:
             self.db_client = db.Client(database)
             if not self.db_client.is_initialized():
                 raise DatabaseNotInitialized()
-        self.mq_publisher = \
-            mq.IOPublisher(project_id, topic_name) \
-            if project_id and topic_name else None
         self._executor = None
 
     @property
     def executor(self):
         """Get or create the thread pool executor for REST submissions."""
         if self._executor is None:
-            self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=self._max_workers)
+            self._executor = concurrent.futures.ThreadPoolExecutor(
+                max_workers=self._max_workers
+            )
         return self._executor
 
     def __del__(self):
@@ -114,7 +98,7 @@ class Client:
     def validate_rest_uri(self, uri):
         """
         Validate the REST URI format.
-        http(s)://token@host[:port]
+        http(s)://[token@]host[:port][/path]
 
         Args:
             uri: The URI to validate.
@@ -131,7 +115,7 @@ class Client:
             token = match.group('token')
             if scheme and scheme not in ['http', 'https']:
                 return False
-            if not token:
+            if not token and host not in self.LOCAL_REST_HOSTS:
                 return False
             if port and not re.match(r'^\d+$', port):
                 return False
@@ -159,22 +143,36 @@ class Client:
             except requests.exceptions.Timeout as e:
                 last_error = e
                 if attempt < max_retries - 1:
-                    LOGGER.warning(f"Request timeout, retrying ({attempt + 1}/{max_retries})...")
+                    LOGGER.warning(
+                        "Request timeout, retrying (%s/%s)...",
+                        attempt + 1,
+                        max_retries,
+                    )
                     time.sleep(2 ** attempt)  # Exponential backoff
                     continue
             except requests.exceptions.ConnectionError as e:
                 last_error = e
                 if attempt < max_retries - 1:
-                    LOGGER.warning(f"Connection error, retrying ({attempt + 1}/{max_retries})...")
+                    LOGGER.warning(
+                        "Connection error, retrying (%s/%s)...",
+                        attempt + 1,
+                        max_retries,
+                    )
                     time.sleep(2 ** attempt)
                     continue
             except requests.exceptions.RequestException as e:
                 # Check if it's a server error (5xx)
                 if hasattr(e, 'response') and e.response is not None:
-                    if e.response.status_code >= 500 and attempt < max_retries - 1:
+                    is_server_error = e.response.status_code >= 500
+                    should_retry = attempt < max_retries - 1
+                    if is_server_error and should_retry:
                         last_error = e
-                        LOGGER.warning(f"Server error {e.response.status_code}, "
-                                      f"retrying ({attempt + 1}/{max_retries})...")
+                        LOGGER.warning(
+                            "Server error %s, retrying (%s/%s)...",
+                            e.response.status_code,
+                            attempt + 1,
+                            max_retries,
+                        )
                         time.sleep(2 ** attempt)
                         continue
                 # For client errors or other issues, don't retry
@@ -183,6 +181,7 @@ class Client:
         # If we've exhausted all retries, raise the last error
         if last_error:
             raise last_error
+        raise RuntimeError("Retry attempts exhausted")
 
     def rest_submit(self, data):
         """Submit reports over REST API.
@@ -214,7 +213,8 @@ class Client:
                 url = f"{scheme}://{host}:{port}/submit"
             headers = {'Content-Type': 'application/json'}
             # add token
-            headers['Authorization'] = f"Bearer {token}"
+            if token:
+                headers['Authorization'] = f"Bearer {token}"
             try:
                 response = requests.post(url, json=data,
                                          headers=headers,
@@ -256,17 +256,13 @@ class Client:
             Submission ID string.
 
         Raises:
-            `NotImplementedError`, if not supplied with a project ID or an MQ
-            topic name at initialization time.
+            `NotImplementedError`, if REST submission is not configured.
         """
         assert io.SCHEMA.is_compatible(data)
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
-        # Submit over rest if self._rest is set
-        if self._resturi:
-            return self.rest_submit(data)
-        if not self.mq_publisher:
+        if not self._resturi:
             raise NotImplementedError
-        return self.mq_publisher.publish(data)
+        return self.rest_submit(data)
 
     def future_submit(self, data):
         """
@@ -283,19 +279,15 @@ class Client:
             A future which will return the Submission ID string.
 
         Raises:
-            `NotImplementedError`, if not supplied with a project ID or an MQ
-            topic name at initialization time.
+            `NotImplementedError`, if REST submission is not configured.
         """
         assert io.SCHEMA.is_compatible(data)
         assert LIGHT_ASSERTS or io.SCHEMA.is_valid(data)
-        # Submit over rest if self._rest is set
-        if self._resturi:
-            # Submit the REST request with retry using shared executor
-            future = self.executor.submit(self._rest_submit_with_retry, data)
-            return future
-        if not self.mq_publisher:
+        if not self._resturi:
             raise NotImplementedError
-        return self.mq_publisher.future_publish(data)
+        # Submit the REST request with retry using shared executor
+        future = self.executor.submit(self._rest_submit_with_retry, data)
+        return future
 
     def submit_iter(self, data_iter, done_cb=None):
         """
@@ -310,40 +302,47 @@ class Client:
                         each report returned by the iterator, in order.
 
         Raises:
-            `NotImplementedError`, if not supplied with a project ID or an MQ
-            topic name at initialization time.
+            `NotImplementedError`, if REST submission is not configured.
         """
-        if self._resturi:
-            # Convert iterator to list to preserve order for done_cb
-            data_list = list(data_iter)
-            submission_results = []
-
-            # Submit all tasks with retry logic using shared executor
-            future_to_data = {
-                self.executor.submit(self._rest_submit_with_retry, data): (idx, data)
-                for idx, data in enumerate(data_list)
-            }
-
-            # Process completed futures in order
-            for future in concurrent.futures.as_completed(future_to_data):
-                idx, data = future_to_data[future]
-                try:
-                    submission_id = future.result()
-                    submission_results.append((idx, submission_id, None))
-                except Exception as e:
-                    LOGGER.error(f"Error submitting report: {e}")
-                    submission_results.append((idx, None, e))
-
-            # Call done_cb in original order if provided
-            if done_cb:
-                submission_results.sort(key=lambda x: x[0])
-                for idx, submission_id, error in submission_results:
-                    if submission_id and not error:
-                        done_cb(submission_id)
-            return
-        if not self.mq_publisher:
+        if not self._resturi:
             raise NotImplementedError
-        return self.mq_publisher.publish_iter(data_iter, done_cb=done_cb)
+        # Convert iterator to list to preserve order for done_cb
+        data_list = list(data_iter)
+        submission_results = []
+
+        # Submit all tasks with retry logic using shared executor
+        future_to_data = {
+            self.executor.submit(
+                self._rest_submit_with_retry,
+                data,
+            ): (idx, data)
+            for idx, data in enumerate(data_list)
+        }
+
+        # Process completed futures in order
+        errors = []
+        for future in concurrent.futures.as_completed(future_to_data):
+            idx, data = future_to_data[future]
+            try:
+                submission_id = future.result()
+                submission_results.append((idx, submission_id, None))
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                LOGGER.error("Error submitting report: %s", e)
+                submission_results.append((idx, None, e))
+                errors.append(e)
+
+        # Call done_cb in original order if provided
+        if done_cb:
+            submission_results.sort(key=lambda x: x[0])
+            for idx, submission_id, error in submission_results:
+                if submission_id and not error:
+                    done_cb(submission_id)
+        if errors:
+            if len(errors) == 1:
+                raise errors[0]
+            raise RuntimeError(
+                f"{len(errors)} submissions failed"
+            ) from errors[0]
 
     # We can live with this for now, pylint: disable=too-many-arguments
     # Or if you prefer, pylint: disable=too-many-positional-arguments
@@ -437,20 +436,12 @@ def submit_main():
     """Execute the kcidb-submit command-line tool"""
     sys.excepthook = misc.log_and_print_excepthook
     description = \
-        'kcidb-submit - Submit Kernel CI reports, print submission IDs'
+        'kcidb-submit - Submit Kernel CI reports over REST, print IDs'
     parser = misc.InputArgumentParser(description=description)
-    parser.add_argument(
-        '-p', '--project',
-        help='ID of the Google Cloud project containing the message queue',
-        required=True
-    )
-    parser.add_argument(
-        '-t', '--topic',
-        help='Name of the message queue topic to publish to',
-        required=True
-    )
     args = parser.parse_args()
-    client = Client(project_id=args.project, topic_name=args.topic)
+    if not os.environ.get("KCIDB_REST"):
+        parser.error("KCIDB_REST environment variable is required")
+    client = Client()
 
     def print_submission_id(submission_id):
         print(submission_id, file=sys.stdout)

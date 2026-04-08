@@ -44,7 +44,7 @@ def test_reset(clean_database):
 
 def test_init_main():
     """Check kcidb-db-init works"""
-    argv = ["kcidb.db.init_main", "-d", "bigquery:project.dataset"]
+    argv = ["kcidb.db.init_main", "-d", "sqlite::memory:"]
     driver_source = textwrap.dedent("""
         from unittest.mock import patch, Mock
         client = Mock()
@@ -53,7 +53,7 @@ def test_init_main():
         with patch("kcidb.db.Client", return_value=client) as \
                 Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         client.init.assert_called_once()
         return status
     """)
@@ -62,7 +62,7 @@ def test_init_main():
 
 def test_cleanup_main():
     """Check kcidb-db-cleanup works"""
-    argv = ["kcidb.db.cleanup_main", "-d", "bigquery:project.dataset"]
+    argv = ["kcidb.db.cleanup_main", "-d", "sqlite::memory:"]
     driver_source = textwrap.dedent("""
         from unittest.mock import patch, Mock
         client = Mock()
@@ -71,7 +71,7 @@ def test_cleanup_main():
         with patch("kcidb.db.Client", return_value=client) as \
                 Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         client.cleanup.assert_called_once()
         return status
     """)
@@ -80,7 +80,7 @@ def test_cleanup_main():
 
 def test_empty_main():
     """Check kcidb-db-empty works"""
-    argv = ["kcidb.db.empty_main", "-d", "bigquery:project.dataset"]
+    argv = ["kcidb.db.empty_main", "-d", "sqlite::memory:"]
     driver_source = textwrap.dedent("""
         from unittest.mock import patch, Mock
         client = Mock()
@@ -89,7 +89,7 @@ def test_empty_main():
         with patch("kcidb.db.Client", return_value=client) as \
                 Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         client.empty.assert_called_once()
         return status
     """)
@@ -99,7 +99,7 @@ def test_empty_main():
 def test_dump_main():
     """Check kcidb-db-dump works"""
     empty = kcidb.io.SCHEMA.new()
-    argv = ["kcidb.db.dump_main", "-d", "bigquery:project.dataset",
+    argv = ["kcidb.db.dump_main", "-d", "sqlite::memory:",
             "--indent=0"]
 
     driver_source = textwrap.dedent(f"""
@@ -109,7 +109,7 @@ def test_dump_main():
         with patch("kcidb.db.Client", return_value=client) as \
                 Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         client.dump_iter.assert_called_once()
         return status
     """)
@@ -123,7 +123,7 @@ def test_dump_main():
         with patch("kcidb.db.Client", return_value=client) as \
                 Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         client.dump_iter.assert_called_once()
         return status
     """)
@@ -139,11 +139,11 @@ def test_query_main():
         with patch("kcidb.db.Client"):
             return function()
     """)
-    argv = ["kcidb.db.query_main", "-d", "bigquery:project.dataset"]
+    argv = ["kcidb.db.query_main", "-d", "sqlite::memory:"]
     assert_executes("", *argv, driver_source=driver_source)
 
     argv = [
-        "kcidb.db.query_main", "-d", "bigquery:project.dataset",
+        "kcidb.db.query_main", "-d", "sqlite::memory:",
         "-c", "test:checkout:1", "-b", "test:build:1",
         "-t", "test:test:1",
         "--parents", "--children", "--objects-per-report", "10",
@@ -160,7 +160,7 @@ def test_query_main():
         )))
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         client.query_iter.assert_called_once_with(
             ids=dict(checkouts=["test:checkout:1"],
                      builds=["test:build:1"],
@@ -194,7 +194,7 @@ def test_load_main():
         with patch("kcidb.db.Client", return_value=client):
             return function()
     """)
-    argv = ["kcidb.db.load_main", "-d", "bigquery:project.dataset"]
+    argv = ["kcidb.db.load_main", "-d", "sqlite::memory:"]
 
     assert_executes("", *argv, driver_source=driver_source)
     assert_executes('{', *argv, driver_source=driver_source,
@@ -212,7 +212,7 @@ def test_load_main():
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         client.load.assert_called_once_with({repr(empty)},
                                             with_metadata=False,
                                             copy=False)
@@ -229,7 +229,7 @@ def test_load_main():
         client.load = Mock()
         with patch("kcidb.db.Client", return_value=client) as Client:
             status = function()
-        Client.assert_called_once_with("bigquery:project.dataset")
+        Client.assert_called_once_with("sqlite::memory:")
         assert client.load.call_count == 2
         client.load.assert_has_calls([
             call({repr(empty)}, with_metadata=False, copy=False),
@@ -2772,8 +2772,7 @@ def test_purge(empty_database):
     # If this is a database and schema which *should* support purging
     if all(
         isinstance(driver,
-                   (kcidb.db.bigquery.Driver,
-                    kcidb.db.postgresql.Driver,
+                   (kcidb.db.postgresql.Driver,
                     kcidb.db.sqlite.Driver)) and
         driver.get_schema()[0] >= (4, 2)
         for driver in drivers
@@ -2828,8 +2827,7 @@ def test_dump_limits(empty_database):
     # If this is a database and schema which *should* support purging
     if all(
         isinstance(driver,
-                   (kcidb.db.bigquery.Driver,
-                    kcidb.db.postgresql.Driver,
+                   (kcidb.db.postgresql.Driver,
                     kcidb.db.sqlite.Driver)) and
         driver.get_schema()[0] >= (4, 2)
         for driver in drivers

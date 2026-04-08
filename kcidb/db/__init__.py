@@ -9,7 +9,7 @@ import kcidb.orm
 import kcidb.misc
 from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db import abstract, schematic, mux, \
-    bigquery, postgresql, sqlite, json, null, misc  # noqa: F401
+    postgresql, sqlite, json, null, misc  # noqa: F401
 
 # It's OK for now, pylint: disable=too-many-lines
 
@@ -29,7 +29,7 @@ class MuxDriver(mux.Driver):
             The driver documentation string.
         """
         return super().get_doc() + \
-            "\n            Example: postgresql bigquery:kcidb_01"
+            "\n            Example: postgresql sqlite"
 
     @classmethod
     def get_drivers(cls):
@@ -45,7 +45,6 @@ class MuxDriver(mux.Driver):
 
 # A dictionary of known driver names and types
 DRIVER_TYPES = dict(
-    bigquery=bigquery.Driver,
     postgresql=postgresql.Driver,
     sqlite=sqlite.Driver,
     json=json.Driver,
@@ -674,13 +673,10 @@ class DBHelpAction(argparse.Action):
               "driver-specific\n"
               "parameter string.\n"
               "\n"
-              "For example, \"-d bigquery:kernelci-production.kcidb_01\" "
-              "requests the use of\n"
-              "the \"bigquery\" database driver with the parameter string\n"
-              "\"kernelci-production.kcidb_01\", from which the driver "
-              "extracts the Google\n"
-              "Cloud project \"kernelci-production\" and the dataset "
-              "\"kcidb_01\" to connect to.\n"
+              "For example, \"-d postgresql:dbname=kcidb\" requests the use "
+              "of\n"
+              "the \"postgresql\" database driver with the parameter string\n"
+              "\"dbname=kcidb\".\n"
               "\n"
               "Available drivers and format of their parameter strings "
               "follow.\n")

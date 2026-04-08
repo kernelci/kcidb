@@ -1,14 +1,5 @@
-# Pip requirements for Google Cloud Functions.
-# Must match install_requires from setup.py.
-google-cloud-bigquery
-google-cloud-pubsub
-google-cloud-firestore
-google-cloud-storage
-google-cloud-secret-manager
-google-cloud-logging
 flask
 psycopg2
-functions-framework
 jsonschema[format]
 requests
 pyyaml
@@ -16,4 +7,4 @@ jinja2
 python-dateutil
 cached-property
 kcidb-io@git+https://github.com/kernelci/kcidb-io.git
-jq@git+https://github.com/kernelci/jq.py.git@1.7.0.post1
+jq

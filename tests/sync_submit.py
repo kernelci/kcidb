@@ -40,10 +40,6 @@ def load_submission_files(submission_dir, limit=None):
 
 def main():
     parser = argparse.ArgumentParser(description="Test synchronous kcidb submission")
-    parser.add_argument("--project", "-p", help="Google Cloud project ID", 
-                       default=os.environ.get("KCIDB_PROJECT_ID"))
-    parser.add_argument("--topic", "-t", help="PubSub topic name",
-                       default=os.environ.get("KCIDB_TOPIC"))
     parser.add_argument("--limit", "-l", type=int, help="Limit number of submissions to test", 
                        default=30)
     parser.add_argument("--submissions-dir", "-s", help="Directory containing submission files",
@@ -53,20 +49,12 @@ def main():
     
     args = parser.parse_args()
     
-    # Check for KCIDB_REST first, as it takes precedence
     rest_uri = os.environ.get("KCIDB_REST")
-    
-    if rest_uri:
-        print(f"Using REST API: {rest_uri}")
-        # For REST, we don't need project/topic
-    elif args.project and args.topic:
-        print(f"Using PubSub: project={args.project}, topic={args.topic}")
-    else:
-        print("Error: Either KCIDB_REST environment variable or both --project and --topic are required")
-        print("Options:")
-        print("  1. Set KCIDB_REST environment variable (e.g., export KCIDB_REST=https://token@db.kernelci.org/)")
-        print("  2. Set --project/--topic or KCIDB_PROJECT_ID/KCIDB_TOPIC environment variables")
+    if not rest_uri:
+        print("Error: KCIDB_REST environment variable is required")
+        print("Example: export KCIDB_REST=https://token@db.kernelci.org/")
         return 1
+    print(f"Using REST API: {rest_uri}")
     
     # Get the path to submissions directory
     script_dir = Path(__file__).parent.parent
@@ -87,13 +75,8 @@ def main():
     
     # Initialize kcidb client
     try:
-        if rest_uri:
-            # When using REST, we don't pass project_id/topic_name
-            client = kcidb.Client(max_workers=args.max_workers)
-            print(f"Initialized kcidb client for REST API with {args.max_workers} workers")
-        else:
-            client = kcidb.Client(project_id=args.project, topic_name=args.topic, max_workers=args.max_workers)
-            print(f"Initialized kcidb client for PubSub with {args.max_workers} workers")
+        client = kcidb.Client(rest_uri=rest_uri, max_workers=args.max_workers)
+        print(f"Initialized kcidb client for REST API with {args.max_workers} workers")
     except Exception as e:
         print(f"Error initializing kcidb client: {e}")
         return 1
