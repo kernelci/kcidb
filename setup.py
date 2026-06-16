@@ -44,6 +44,7 @@ setuptools.setup(
     # Let's make that easier, pylint: disable=line-too-long
     install_requires=[
         "google-cloud-bigquery",
+        "google-cloud-bigquery-storage",
         "google-cloud-pubsub",
         "google-cloud-storage",
         "functions-framework",

@@ -6,7 +6,6 @@ import datetime
 import kcidb.io as io
 import kcidb.orm as orm
 from kcidb.db.misc import UnsupportedSchema
-from kcidb.misc import LIGHT_ASSERTS
 from kcidb.db.abstract import Driver as AbstractDriver
 
 
@@ -353,15 +352,17 @@ class Schema(ABC, metaclass=MetaSchema):
                    for r in pattern_set)
 
     @abstractmethod
-    def load(self, data, with_metadata, copy):
+    def load_iter(self, data_iter, with_metadata, copy):
         """
-        Load data into the database.
+        Load an iterable of datasets into the database,
+        at least per-table atomically.
 
         Args:
-            data:           The JSON data to load into the database. Must
-                            adhere to the schema's version of the I/O schema.
-                            Will be modified, if "copy" is False.
-            with_metadata:  True if any metadata in the data should
+            data_iter:      The iterable of JSON datasets to load into the
+                            database. Each dataset must adhere to the I/O
+                            version of the database schema, and will be
+                            modified, if "copy" is False.
+            with_metadata:  True if any metadata in the datasets should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
@@ -777,16 +778,16 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
         assert self.is_initialized()
         return self.schema.oo_query(pattern_set)
 
-    def load(self, data, with_metadata, copy):
+    def load_iter(self, data_iter, with_metadata, copy):
         """
-        Load data into the database.
-        The database must be initialized.
+        Load an iterable of datasets into the database, at least per-table
+        atomically. The database must be initialized.
 
         Args:
-            data:           The JSON data to load into the database.
-                            Must adhere to the current database schema's
-                            version of the I/O schema.
-                            Will be modified, if "copy" is False.
+            data_iter:      The iterable of JSON datasets to load into the
+                            database. Each dataset must adhere to the
+                            database's supported I/O schema version, and will
+                            be modified, if "copy" is False.
             with_metadata:  True if any metadata in the data should
                             also be loaded into the database. False if it
                             should be discarded and the database should
@@ -796,8 +797,7 @@ class Driver(AbstractDriver, metaclass=MetaDriver):
                             packed in-place.
         """
         assert self.is_initialized()
-        assert self.schema.io.is_compatible_directly(data)
-        assert LIGHT_ASSERTS or self.schema.io.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
         assert isinstance(copy, bool)
-        self.schema.load(data, with_metadata=with_metadata, copy=copy)
+        self.schema.load_iter(data_iter,
+                              with_metadata=with_metadata, copy=copy)

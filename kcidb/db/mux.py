@@ -481,38 +481,40 @@ class Driver(AbstractDriver):
         """
         return self.drivers[0].oo_query(pattern_set)
 
-    def load(self, data, with_metadata, copy):
+    def load_iter(self, data_iter, with_metadata, copy):
         """
-        Load data into the databases.
+        Load an iterable of datasets into the databases,
+        at least per-table atomically.
         The databases must be initialized.
 
         Args:
-            data:           The JSON data to load into the databases.
-                            Must adhere to the current database schema's
-                            version of the I/O schema.
-                            Will be modified, if "copy" is False.
-            with_metadata:  True if any metadata in the data should
-                            also be loaded into the databases. False if it
-                            should be discarded and the databases should
-                            generate their metadata themselves.
+            data_iter:      The iterable of JSON datasets to load into the
+                            database. Each dataset must adhere to the I/O
+                            version of the database schema, and will be
+                            modified, if "copy" is False.
+            with_metadata:  True if any metadata in the datasets should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
             copy:           True, if the loaded data should be copied before
                             packing. False, if the loaded data should be
                             packed in-place.
         """
-        # The mux driver I/O schema is the oldest across member drivers
         io_schema = self.get_schema()[1]
-        assert io_schema.is_compatible_directly(data)
         assert isinstance(with_metadata, bool)
         assert isinstance(copy, bool)
+        # Avoid data interference between drivers
+        copy = copy or len(self.drivers) > 1
+        # We can only do better with asyncio, yet we're not using this driver
+        # right now, so let's postpone that
+        data_list = list(data_iter)
+        assert all(io_schema.is_compatible_directly(data)
+                   for data in data_list)
         # Load data into every driver
         for driver in self.drivers:
-            # Only copy if we need to upgrade
             driver_io_schema = driver.get_schema()[1]
-            driver.load(
-                driver_io_schema.upgrade(data)
-                if driver_io_schema != io_schema else data,
-                with_metadata=with_metadata,
-                copy=copy
-            )
-            # We don't want to pack packed data again
-            copy = True
+            for data in data_list:
+                driver.load(
+                    driver_io_schema.upgrade(data, copy=copy),
+                    with_metadata=with_metadata,
+                )

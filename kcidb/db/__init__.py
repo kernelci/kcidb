@@ -56,6 +56,7 @@ DRIVER_TYPES = dict(
 
 class Client(kcidb.orm.Source):
     """Kernel CI report database client"""
+    # No, pylint: disable=too-many-public-methods
 
     def __init__(self, database):
         """
@@ -622,6 +623,29 @@ class Client(kcidb.orm.Source):
         LOGGER.debug("OO Query: %r", pattern_set)
         return self.driver.oo_query(pattern_set)
 
+    def load_iter(self, data_iter, with_metadata=False, copy=True):
+        """
+        Load an iterable of datasets into the database,
+        at least per-table atomically.
+
+        Args:
+            data_iter:      The iterable of JSON datasets to load into the
+                            database. Each dataset must adhere to the
+                            database's supported I/O schema version.
+                            Will be modified, if "copy" is False.
+            with_metadata:  True if any metadata in the data should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
+        """
+        assert LIGHT_ASSERTS or self.is_initialized()
+        assert isinstance(with_metadata, bool)
+        self.driver.load_iter(data_iter,
+                              with_metadata=with_metadata, copy=copy)
+
     def load(self, data, with_metadata=False, copy=True):
         """
         Load data into the database.
@@ -644,7 +668,7 @@ class Client(kcidb.orm.Source):
         assert io_schema.is_compatible_directly(data)
         assert LIGHT_ASSERTS or io_schema.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
-        self.driver.load(data, with_metadata=with_metadata, copy=copy)
+        self.load_iter([data], with_metadata=with_metadata, copy=copy)
 
 
 class DBHelpAction(argparse.Action):

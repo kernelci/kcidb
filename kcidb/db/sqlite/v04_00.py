@@ -854,15 +854,16 @@ class Schema(AbstractSchema):
         assert LIGHT_ASSERTS or orm.data.SCHEMA.is_valid(objs)
         return objs
 
-    def load(self, data, with_metadata, copy):
+    def load_iter(self, data_iter, with_metadata, copy):
         """
-        Load data into the database.
+        Load an iterable of datasets into the database atomically.
 
         Args:
-            data:           The JSON data to load into the database. Must
-                            adhere to the I/O version of the database schema.
-                            Will be modified, if "copy" is False.
-            with_metadata:  True if any metadata in the data should
+            data_iter:      The iterable of JSON datasets to load into the
+                            database. Each dataset must adhere to the I/O
+                            version of the database schema, and will be
+                            modified, if "copy" is False.
+            with_metadata:  True if any metadata in the datasets should
                             also be loaded into the database. False if it
                             should be discarded and the database should
                             generate its metadata itself.
@@ -870,23 +871,24 @@ class Schema(AbstractSchema):
                             packing. False, if the loaded data should be
                             packed in-place.
         """
-        assert self.io.is_compatible_directly(data)
-        assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
         assert isinstance(with_metadata, bool)
         assert isinstance(copy, bool)
         with self.conn:
             cursor = self.conn.cursor()
             try:
-                for table_name, table_schema in self.TABLES.items():
-                    if table_name in data:
-                        cursor.executemany(
-                            table_schema.format_insert(
-                                table_name, self.conn.load_prio_db,
-                                with_metadata
-                            ),
-                            table_schema.pack_iter(data[table_name],
-                                                   with_metadata)
-                        )
+                for data in data_iter:
+                    assert self.io.is_compatible_directly(data)
+                    assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
+                    for table_name, table_schema in self.TABLES.items():
+                        if table_name in data:
+                            cursor.executemany(
+                                table_schema.format_insert(
+                                    table_name, self.conn.load_prio_db,
+                                    with_metadata
+                                ),
+                                table_schema.pack_iter(data[table_name],
+                                                       with_metadata)
+                            )
             finally:
                 cursor.close()
         # Flip priority for the next load to maintain (rough)

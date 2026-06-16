@@ -6,11 +6,18 @@ import logging
 import textwrap
 import datetime
 from collections import namedtuple
+from concurrent.futures import wait, ALL_COMPLETED
 from functools import reduce
+from google.protobuf import descriptor_pb2, json_format
 from google.cloud import bigquery
 from google.cloud.bigquery.schema import SchemaField as Field
 from google.api_core.exceptions import BadRequest as GoogleBadRequest
 from google.api_core.exceptions import NotFound as GoogleNotFound
+from google.cloud import bigquery_storage_v1
+from google.cloud.bigquery_storage_v1.types import \
+    WriteStream, ProtoRows, ProtoSchema, \
+    AppendRowsRequest, BatchCommitWriteStreamsRequest
+from google.cloud.bigquery_storage_v1.writer import AppendRowsStream
 import kcidb.io as io
 import kcidb.orm as orm
 from kcidb.misc import LIGHT_ASSERTS
@@ -18,7 +25,8 @@ from kcidb.db.schematic import \
     Schema as AbstractSchema, \
     Connection as AbstractConnection
 from kcidb.db.misc import NotFound, NoTimestamps
-from kcidb.db.bigquery.schema import validate_json_obj_list
+from kcidb.db.bigquery.schema import \
+    validate_json_obj_list, protobuf_msg_type_create
 
 # We'll manage for now, pylint: disable=too-many-lines
 
@@ -46,6 +54,13 @@ class Connection(AbstractConnection):
                         project.
     """)
 
+    # A table's write setup namedtuple type containing:
+    # the table's "path" ("path"),
+    # the "pending" write stream ("stream"),
+    # the write manager ("manager"),
+    # and the Protobuf message type matching the schema ("msg_type")
+    WriteSetup = namedtuple("WriteSetup", "path stream manager msg_type")
+
     def __init__(self, params):
         """
         Initialize a BigQuery connection.
@@ -71,6 +86,7 @@ class Connection(AbstractConnection):
             project_id = None
             dataset_name = params
         self.client = bigquery.Client(project=project_id)
+        self.write_client = bigquery_storage_v1.BigQueryWriteClient()
         self.dataset_ref = bigquery.DatasetReference(
             self.client.project, dataset_name
         )
@@ -107,6 +123,55 @@ class Connection(AbstractConnection):
                 query_parameters=query_parameters,
                 default_dataset=self.dataset_ref)
         return self.client.query(query_string, job_config=job_config)
+
+    def write_setup_create(self, table_name, field_list):
+        """
+        Create a "write setup" for a table with the specified name: a
+        namedtuple with a "pending" write stream ("stream"), write manager
+        ("manager"), and the Protobuf message type matching the schema
+        ("msg_type").
+
+        Args:
+            table_name: The name of the table to create the stream for
+                        (plural from name of the type of stored objects).
+            field_list: The list of SchemaField objects defining the table
+                        schema.
+
+        Returns:
+            The created "write setup".
+        """
+        assert isinstance(table_name, str)
+        assert table_name.isidentifier()
+        assert table_name.endswith("s")
+        # Using self.dataset_ref.table(table_name).path doesn't work 🤦
+        path = self.write_client.table_path(
+            self.dataset_ref.project,
+            self.dataset_ref.dataset_id,
+            table_name
+        )
+
+        stream = self.write_client.create_write_stream(
+            parent=path,
+            write_stream=WriteStream(type_=WriteStream.Type.PENDING)
+        )
+
+        msg_type = protobuf_msg_type_create(table_name[:-1], field_list)
+
+        # We couldn't just have a function returning it, couldn't we? 🤦
+        # You're wrong, pylint: disable=no-member
+        desc = descriptor_pb2.DescriptorProto()
+        msg_type.DESCRIPTOR.CopyToProto(desc)
+        manager = AppendRowsStream(
+            self.write_client,
+            AppendRowsRequest(
+                write_stream=stream.name,
+                proto_rows=AppendRowsRequest.ProtoData(
+                    writer_schema=ProtoSchema(proto_descriptor=desc)
+                )
+            )
+        )
+
+        return self.WriteSetup(path, stream, manager, msg_type)
 
     def set_schema_version(self, version):
         """
@@ -1179,6 +1244,100 @@ class Schema(AbstractSchema):
                 else:
                     node[key] = cls._pack_node(value, with_metadata, copy)
         return node
+
+    # Blame Google, pylint: disable=too-many-locals
+    def load_iter(self, data_iter, with_metadata, copy):
+        """
+        Load an iterable of datasets into the database,
+        at least per-table atomically.
+
+        Args:
+            data_iter:      The iterable of JSON datasets to load into the
+                            database. Each dataset must adhere to the I/O
+                            version of the database schema, and will be
+                            modified, if "copy" is False.
+            with_metadata:  True if any metadata in the datasets should
+                            also be loaded into the database. False if it
+                            should be discarded and the database should
+                            generate its metadata itself.
+            copy:           True, if the loaded data should be copied before
+                            packing. False, if the loaded data should be
+                            packed in-place.
+        """
+        assert isinstance(with_metadata, bool)
+        assert isinstance(copy, bool)
+
+        # A map of table schemas with metadata fields potentially filtered out
+        table_map = {
+            table_name: [
+                f for f in table_schema
+                if with_metadata or not f.name.startswith("_")
+            ]
+            for table_name, table_schema in self.TABLE_MAP.items()
+        }
+
+        # A dictionary of table names and write setups (WriteSetup tuples).
+        write_setups = {}
+
+        # For each dataset in the iterable
+        for data in data_iter:
+            assert self.io.is_compatible_directly(data)
+            assert LIGHT_ASSERTS or self.io.is_valid_exactly(data)
+
+            # Futures for each table's rows being sent
+            futures = []
+
+            # For each table (object list) name
+            for table_name, table_schema in table_map.items():
+                # If the dataset has no data for the table
+                table_data = data.get(table_name)
+                if not table_data:
+                    continue
+
+                # If a write setup for this table hasn't been created yet
+                if table_name not in write_setups:
+                    write_setups[table_name] = self.conn.write_setup_create(
+                        # Write to the underlying "raw" table
+                        "_" + table_name, table_schema
+                    )
+                # Get the write setup
+                write_setup = write_setups[table_name]
+
+                # Generate JSON-dict representation of table objects
+                obj_list = self._pack_node(table_data, with_metadata, copy)
+                if not LIGHT_ASSERTS:
+                    validate_json_obj_list(table_schema, obj_list)
+
+                # Serialize into protobuf messages
+                rows = ProtoRows()
+                for obj in obj_list:
+                    # You're wrong, pylint: disable=no-member
+                    rows.serialized_rows.append(json_format.ParseDict(
+                        obj, write_setup.msg_type()
+                    ).SerializeToString())
+
+                # Schedule sending the rows
+                futures.append(write_setup.manager.send(AppendRowsRequest(
+                    proto_rows=AppendRowsRequest.ProtoData(rows=rows)
+                )))
+
+            # Wait for all rows to be sent and check results
+            for future in wait(futures, return_when=ALL_COMPLETED)[0]:
+                future.result()
+
+        # Shutdown all background threads, close streaming connections,
+        # and finalize and commit pending streams
+        for write_setup in write_setups.values():
+            write_setup.manager.close()
+            self.conn.write_client.finalize_write_stream(
+                write_setup.stream.name
+            )
+            self.conn.write_client.batch_commit_write_streams(
+                BatchCommitWriteStreamsRequest(
+                    parent=write_setup.path,
+                    write_streams=[write_setup.stream.name]
+                )
+            )
 
     def load(self, data, with_metadata, copy):
         """
